@@ -25,6 +25,7 @@ export const lightTheme: HermesTheme = {
     amber: '#d4c8c0',
     red: '#d4bbb5',
     blue: '#7fb5ba',
+    accent: '#7fb5ba',
   },
   status: {
     new: { bg: '#e3f5f6', fg: '#4a6fa5' },
@@ -51,6 +52,7 @@ export const darkTheme: HermesTheme = {
     amber: '#d4c8c0',
     red: '#d4bbb5',
     blue: '#7fb5ba',
+    accent: '#7fb5ba',
   },
   status: {
     new: { bg: '#1a2a35', fg: '#6aafc0' },

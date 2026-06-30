@@ -48,4 +48,13 @@ export const emailQueueApi = {
 
   send: (id: string) =>
     client.post(`/email-queue/${id}/send`),
+
+  bulkApprove: (ids: string[]) =>
+    client.post('/email-queue/bulk-approve', { ids }),
+
+  bulkReject: (ids: string[], reason?: string) =>
+    client.post('/email-queue/bulk-reject', { ids, reason }),
+
+  bulkSend: (ids: string[]) =>
+    client.post('/email-queue/bulk-send', { ids }),
 };
