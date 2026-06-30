@@ -83,9 +83,10 @@ const StatLabel = styled.div`
 /* ── Card ── */
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
 `;
 
 const CardBody = styled.div`padding: ${({ theme }) => theme.spacing.md}px;`;
@@ -101,7 +102,7 @@ const ProfileHeader = styled.div`
 
 const ProfileIcon = styled.div`
   width: 56px; height: 56px; border-radius: 50%;
-  background: linear-gradient(135deg, #7fb5ba 0%, #5699a3 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   display: flex; align-items: center; justify-content: center;
   color: #fff; flex-shrink: 0;
   svg { width: 28px; height: 28px; }
@@ -117,28 +118,33 @@ const ProfileInfo = styled.div`
 
 const TabBar = styled.div`
   display: flex; gap: 0; overflow-x: auto;
-  border-bottom: 2px solid ${({ theme }) => theme.colors.border};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   ${media.mobile} { gap: 0; }
 `;
 
 const Tab = styled.button<{ $active?: boolean }>`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
-  border: none; background: none;
+  border: none;
+  background: ${({ $active }) => $active
+    ? 'linear-gradient(180deg, transparent 0%, rgba(37,99,235,0.04) 100%)'
+    : 'transparent'};
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-  color: ${({ $active, theme }) => $active ? '#7fb5ba' : theme.colors.textTertiary};
-  border-bottom: 2px solid ${({ $active }) => $active ? '#7fb5ba' : 'transparent'};
-  margin-bottom: -2px; white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s;
+  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textTertiary};
+  border-bottom: 2px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
+  margin-bottom: -1px; white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
   &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
 `;
 
-const TabCount = styled.span`
+const TabCount = styled.span<{ $active?: boolean }>`
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 20px; height: 18px; padding: 0 5px;
   border-radius: 9px; margin-left: 6px;
   font-size: 0.625rem; font-weight: 600;
-  background: ${({ theme }) => theme.colors.surfaceMuted};
-  color: ${({ theme }) => theme.colors.textTertiary};
+  background: ${({ $active, theme }) => $active
+    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+    : theme.colors.surfaceMuted};
+  color: ${({ $active }) => $active ? '#fff' : theme.colors.textTertiary};
 `;
 
 /* ── Table ── */
@@ -155,7 +161,8 @@ const Table = styled.table`
   th {
     font-weight: 600; text-transform: uppercase; font-size: 0.6875rem;
     color: ${({ theme }) => theme.colors.textTertiary};
-    border-bottom: 2px solid ${({ theme }) => theme.colors.border};
+    background: linear-gradient(180deg, #fafbfc 0%, #f4f5f7 100%);
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   }
   ${media.mobile} {
     min-width: 480px;
@@ -166,13 +173,16 @@ const Table = styled.table`
 `;
 
 const TRow = styled.tr<{ $even?: boolean }>`
-  background: ${({ $even, theme }) => $even ? theme.colors.surfaceMuted : theme.colors.surface};
-  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  background: ${({ $even, theme }) => $even
+    ? 'linear-gradient(180deg, #fafbfc 0%, #f4f5f7 100%)'
+    : theme.colors.surface};
+  transition: background 0.15s;
+  &:hover {
+    background: linear-gradient(90deg, #eff6ff 0%, #fafbfc 50%, #fafbfc 100%);
+  }
   td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
   cursor: pointer;
 `;
-
-/* ── Avatar ── */
 
 const NameCell = styled.div`
   display: flex; align-items: center; gap: ${({ theme }) => theme.spacing.sm}px;
@@ -180,10 +190,12 @@ const NameCell = styled.div`
 
 const AvatarCircle = styled.div<{ $bg: string }>`
   width: 36px; height: 36px; border-radius: 50%;
-  background: ${({ $bg }) => $bg};
+  background: linear-gradient(135deg, ${({ $bg }) => $bg} 0%, ${({ $bg }) => $bg}cc 100%);
   display: flex; align-items: center; justify-content: center;
   font-size: 0.8125rem; font-weight: 600; color: #fff;
   flex-shrink: 0;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2);
+  border: 1.5px solid rgba(255,255,255,0.5);
 `;
 
 const UserName = styled.span`
@@ -193,17 +205,19 @@ const UserName = styled.span`
 /* ── Role badge ── */
 
 const ROLE_COLORS: Record<string, { bg: string; fg: string; avatar: string }> = {
-  admin:   { bg: '#4a6fa518', fg: '#4a6fa5', avatar: '#4a6fa5' },
-  manager: { bg: '#d4c8c018', fg: '#d4c8c0', avatar: '#d4c8c0' },
-  user:    { bg: '#7fb5ba18', fg: '#7fb5ba', avatar: '#7fb5ba' },
+  admin:   { bg: '#1d4ed818', fg: '#1d4ed8', avatar: '#1d4ed8' },
+  manager: { bg: '#f59e0b18', fg: '#f59e0b', avatar: '#f59e0b' },
+  user:    { bg: '#3b82f618', fg: '#3b82f6', avatar: '#3b82f6' },
 };
 
 const RoleBadge = styled.span<{ $bg: string; $fg: string }>`
   display: inline-block; padding: 2px 10px; border-radius: 99px;
   font-size: 0.6875rem; font-weight: 600;
-  background: ${({ $bg }) => $bg};
+  background: linear-gradient(135deg, ${({ $bg }) => $bg} 0%, ${({ $bg }) => $bg}dd 100%);
   color: ${({ $fg }) => $fg};
   text-transform: capitalize;
+  border: 1px solid ${({ $bg }) => $bg}55;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
 `;
 
 /* ── Permissions ── */
@@ -372,7 +386,7 @@ const DpActivityItem = styled.div`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #7fb5ba;
+    background: #3b82f6;
     border: 2px solid ${({ theme }) => theme.colors.surface};
   }
 `;
@@ -396,9 +410,9 @@ const DpPermBadge = styled.span<{ $active?: boolean }>`
   border-radius: 99px;
   font-size: 0.75rem;
   font-weight: 500;
-  background: ${({ $active }) => $active ? '#5699a318' : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#5699a3' : theme.colors.textTertiary};
-  border: 1px solid ${({ $active }) => $active ? '#5699a340' : '#29324018'};
+  background: ${({ $active }) => $active ? '#2563eb18' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textTertiary};
+  border: 1px solid ${({ $active }) => $active ? '#2563eb40' : '#0f172a18'};
 `;
 
 const DpFooter = styled.div`
@@ -425,8 +439,8 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   white-space: nowrap;
   transition: opacity 0.15s;
   background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? '#d4bbb5' :
-    $variant === 'primary' ? '#5699a3' : theme.colors.surfaceMuted};
+    $variant === 'danger' ? '#ef4444' :
+    $variant === 'primary' ? '#2563eb' : theme.colors.surfaceMuted};
   color: ${({ $variant }) =>
     $variant === 'danger' ? '#fff' :
     $variant === 'primary' ? '#fff' : 'inherit'};
@@ -476,7 +490,7 @@ function formatDate(iso?: string): string {
 
 function roleProps(role: string) {
   const lower = role.toLowerCase();
-  return ROLE_COLORS[lower] ?? { bg: '#29324018', fg: '#293240', avatar: '#6c757d' };
+  return ROLE_COLORS[lower] ?? { bg: '#0f172a18', fg: '#0f172a', avatar: '#6c757d' };
 }
 
 function getInitials(name: string): string {
@@ -658,7 +672,7 @@ const Users: React.FC = () => {
                 </DpField>
                 <DpField>
                   <DpFieldLabel>Status</DpFieldLabel>
-                  <DpFieldValue style={{ color: '#5699a3' }}>Active</DpFieldValue>
+                  <DpFieldValue style={{ color: '#2563eb' }}>Active</DpFieldValue>
                 </DpField>
                 <DpField>
                   <DpFieldLabel>Join Date</DpFieldLabel>

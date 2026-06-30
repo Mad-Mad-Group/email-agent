@@ -140,12 +140,14 @@ const SmallBtn = styled.button<{ $danger?: boolean }>`
   padding: 4px;
   border-radius: 4px;
   cursor: pointer;
-  color: ${({ theme, $danger }) => $danger ? '#d4bbb5' : theme.colors.textSecondary};
+  color: ${({ theme, $danger }) => $danger ? '#ef4444' : theme.colors.textSecondary};
   display: flex;
   align-items: center;
+  transition: background 0.15s, color 0.15s, transform 0.1s;
   &:hover {
-    background: ${({ theme }) => theme.colors.canvas};
-    color: ${({ theme, $danger }) => $danger ? '#c44' : theme.colors.textPrimary};
+    background: ${({ $danger }) => $danger ? 'rgba(239,68,68,0.1)' : '#f4f5f7'};
+    color: ${({ theme, $danger }) => $danger ? '#dc2626' : theme.colors.textPrimary};
+    transform: translateY(-1px);
   }
 `;
 
@@ -163,12 +165,14 @@ const TemplateItem = styled.div<{ $active: boolean }>`
   ${({ $active, theme }) =>
     $active
       ? css`
-          background: ${theme.colors.canvas};
-          border-left-color: #5699a3;
+          background: linear-gradient(90deg, #eff6ff 0%, #fafbfc 100%);
+          border-left-color: #2563eb;
+          box-shadow: inset 0 0 0 1px #dbeafe;
         `
       : css`
           &:hover {
-            background: ${theme.colors.canvas};
+            background: #f4f5f7;
+            border-left-color: #cbd5e1;
           }
         `}
 `;
@@ -295,7 +299,7 @@ const CategorySelect = styled.select`
   outline: none;
   cursor: pointer;
   &:focus {
-    border-color: #5699a3;
+    border-color: #2563eb;
   }
 `;
 
@@ -318,7 +322,7 @@ const RichEditor = styled.div`
   .variable-tag {
     display: inline-block;
     background: rgba(86, 153, 163, 0.12);
-    color: #5699a3;
+    color: #2563eb;
     border: 1px solid rgba(86, 153, 163, 0.3);
     border-radius: 3px;
     padding: 0 4px;
@@ -346,7 +350,7 @@ const SaveBtn = styled.button`
   padding: 5px 12px;
   border-radius: 6px;
   border: none;
-  background: #5699a3;
+  background: #2563eb;
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 500;
@@ -376,7 +380,7 @@ const PreviewTab = styled.button<{ $active: boolean }>`
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  border-bottom: 2px solid ${({ $active }) => $active ? '#5699a3' : 'transparent'};
+  border-bottom: 2px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
   &:hover { background: ${({ theme }) => theme.colors.surface}; }
 `;
 
@@ -440,7 +444,7 @@ const VarItem = styled.button`
   text-align: left;
   transition: all 0.15s;
   &:hover {
-    border-color: #5699a3;
+    border-color: #2563eb;
     background: rgba(86, 153, 163, 0.04);
   }
 `;
@@ -448,7 +452,7 @@ const VarItem = styled.button`
 const VarKey = styled.span`
   font-size: 0.75rem;
   font-family: 'SF Mono', 'Fira Code', monospace;
-  color: #5699a3;
+  color: #2563eb;
   white-space: nowrap;
 `;
 

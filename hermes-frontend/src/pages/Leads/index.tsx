@@ -72,7 +72,7 @@ const IconSortArrow = () => (
 
 const IconLeadScraper = () => (
   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="40" height="40" rx="10" fill="#7fb5ba"/>
+    <rect width="40" height="40" rx="10" fill="#3b82f6"/>
     <path d="M13 17a7 7 0 0 1 14 0" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
     <circle cx="20" cy="15" r="3.5" stroke="#fff" strokeWidth="1.8"/>
     <path d="M11 28c0-3.87 4.03-7 9-7s9 3.13 9 7" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
@@ -82,7 +82,7 @@ const IconLeadScraper = () => (
 /* ── Avatar color from name hash ── */
 
 const hashColor = (name: string): string => {
-  const colors = ['#7fb5ba', '#5699a3', '#d4c8c0', '#d4bbb5', '#4a6fa5', '#8b929a', '#6da59e', '#a89490'];
+  const colors = ['#3b82f6', '#2563eb', '#f59e0b', '#ef4444', '#1d4ed8', '#94a3b8', '#10b981', '#94a3b8'];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -147,25 +147,34 @@ const KpiRow = styled.div`
 `;
 
 const KpiCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
   padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md}px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.04);
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+  }
 `;
 
 const KpiIconWrap = styled.div<{ $bg: string; $fg: string }>`
   width: 44px;
   height: 44px;
-  border-radius: 10px;
-  background: ${({ $bg }) => $bg};
+  border-radius: 12px;
+  background: linear-gradient(135deg, ${({ $bg }) => $bg} 0%, ${({ $bg }) => $bg}cc 100%);
   color: ${({ $fg }) => $fg};
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
   svg { width: 22px; height: 22px; }
 `;
 
@@ -228,13 +237,20 @@ const AddBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border: none;
   border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ theme }) => theme.colors.blue};
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  &:hover { opacity: 0.85; }
+  box-shadow: 0 1px 2px rgba(37,99,235,0.2), 0 2px 4px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.15);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(37,99,235,0.3), 0 2px 4px rgba(37,99,235,0.15), inset 0 1px 0 rgba(255,255,255,0.2);
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
+  }
+  &:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(37,99,235,0.2); }
 `;
 
 /* ── Tabs Row ── */
@@ -242,42 +258,46 @@ const AddBtn = styled.button`
 const TabsRow = styled.div`
   display: flex;
   align-items: stretch;
-  border-bottom: 2px solid ${({ theme }) => theme.colors.border};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   gap: 0;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   background: ${({ theme }) => theme.colors.surface};
   border-radius: ${({ theme }) => theme.radii.card}px ${({ theme }) => theme.radii.card}px 0 0;
-  box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 
 const TabItem = styled.button<{ $active?: boolean }>`
   flex: none;
   padding: 14px ${({ theme }) => theme.spacing.lg}px;
-  background: none;
+  background: ${({ $active }) => $active
+    ? 'linear-gradient(180deg, transparent 0%, rgba(37,99,235,0.04) 100%)'
+    : 'transparent'};
   border: none;
   border-bottom: 2px solid ${({ $active, theme }) => $active ? theme.colors.blue : 'transparent'};
-  margin-bottom: -2px;
+  margin-bottom: -1px;
   font-size: 0.8125rem;
   font-weight: ${({ $active }) => $active ? 700 : 500};
   color: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.textSecondary};
   cursor: pointer;
   white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s;
+  position: relative;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
   &:hover {
     color: ${({ theme }) => theme.colors.blue};
   }
 `;
 
-const TabCount = styled.span`
+const TabCount = styled.span<{ $active?: boolean }>`
   display: inline-block;
   margin-left: 6px;
   padding: 1px 7px;
   border-radius: 10px;
   font-size: 0.6875rem;
   font-weight: 600;
-  background: ${({ theme }) => theme.colors.surfaceMuted};
-  color: ${({ theme }) => theme.colors.textTertiary};
+  background: ${({ $active, theme }) => $active
+    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+    : theme.colors.surfaceMuted};
+  color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textTertiary};
 `;
 
 /* ── Search Bar ── */
@@ -288,13 +308,12 @@ const SearchBar = styled.div`
   gap: ${({ theme }) => theme.spacing.sm}px;
   padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
   background: ${({ theme }) => theme.colors.surface};
-  box-shadow: ${({ theme }) => theme.shadows.card};
   ${media.mobile} { flex-direction: column; }
 `;
 
 const SearchInput = styled.input`
   flex: 1;
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
+  padding: 9px ${({ theme }) => theme.spacing.md}px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.875rem;
@@ -302,8 +321,14 @@ const SearchInput = styled.input`
   min-width: 240px;
   color: ${({ theme }) => theme.colors.textPrimary};
   background: ${({ theme }) => theme.colors.surface};
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  transition: border-color 0.15s, box-shadow 0.15s;
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.blue};
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12), 0 1px 2px rgba(15,23,42,0.04);
+  }
+  &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
   ${media.mobile} { min-width: 0; width: 100%; }
 `;
 
@@ -311,8 +336,9 @@ const SearchInput = styled.input`
 
 const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
   overflow: hidden;
 `;
 
@@ -336,7 +362,8 @@ const Table = styled.table`
     font-size: 0.6875rem;
     letter-spacing: 0.03em;
     color: ${({ theme }) => theme.colors.textTertiary};
-    border-bottom: 2px solid ${({ theme }) => theme.colors.border};
+    background: linear-gradient(180deg, #fafbfc 0%, #f4f5f7 100%);
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
     user-select: none;
     cursor: default;
   }
@@ -349,9 +376,15 @@ const Table = styled.table`
 `;
 
 const TRow = styled.tr<{ $even?: boolean }>`
-  background: ${({ $even, theme }) => $even ? theme.colors.surfaceMuted : theme.colors.surface};
-  &:hover { background: ${({ theme }) => `${theme.colors.blue}08`}; }
+  background: ${({ $even, theme }) => $even
+    ? 'linear-gradient(180deg, #fafbfc 0%, #f4f5f7 100%)'
+    : theme.colors.surface};
+  transition: background 0.15s ease;
+  &:hover {
+    background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+  }
   td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
+  &:last-child td { border-bottom: none; }
 `;
 
 const NameCell = styled.div`
@@ -364,7 +397,7 @@ const Avatar = styled.div<{ $color: string }>`
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: ${({ $color }) => $color};
+  background: linear-gradient(135deg, ${({ $color }) => $color} 0%, ${({ $color }) => $color}cc 100%);
   color: #fff;
   display: flex;
   align-items: center;
@@ -373,6 +406,8 @@ const Avatar = styled.div<{ $color: string }>`
   font-weight: 700;
   flex-shrink: 0;
   text-transform: uppercase;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2);
+  border: 1.5px solid rgba(255,255,255,0.6);
 `;
 
 const NameText = styled.div`
@@ -399,7 +434,11 @@ const StatusBadge = styled.span<{ $status?: string }>`
   ${({ $status, theme }) => {
     const s = theme.status as Record<string, { bg: string; fg: string }>;
     const entry = s[$status ?? 'new'] ?? s.new;
-    return `background: ${entry.bg}; color: ${entry.fg};`;
+    return `
+      background: linear-gradient(135deg, ${entry.bg} 0%, ${entry.bg} 100%);
+      color: ${entry.fg};
+      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    `;
   }}
 `;
 
@@ -414,24 +453,31 @@ const Tag = styled.span`
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 0.6875rem;
-  background: ${({ theme }) => theme.colors.surfaceMuted};
+  background: linear-gradient(135deg, #f4f5f7 0%, #e5e7eb 100%);
   color: ${({ theme }) => theme.colors.textSecondary};
+  border: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const ActionBtn = styled.button<{ $color: string }>`
   width: 30px;
   height: 30px;
   border: none;
-  border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ $color }) => $color}14;
+  border-radius: 8px;
+  background: ${({ $color }) => $color}22;
   color: ${({ $color }) => $color};
   cursor: pointer;
   margin-right: 4px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s;
-  &:hover { background: ${({ $color }) => $color}28; }
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s, color 0.15s;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+  &:hover {
+    transform: translateY(-1px);
+    background: ${({ $color }) => $color};
+    color: #fff;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
 `;
 
 const EmptyCell = styled.td`
@@ -459,15 +505,25 @@ const PageBtns = styled.div`
   gap: 4px;
 `;
 
-const PageBtn = styled.button`
+const PageBtn = styled.button<{ $active?: boolean }>`
   padding: 5px 12px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid ${({ $active, theme }) => $active ? 'transparent' : theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ theme }) => theme.colors.surface};
-  color: ${({ theme }) => theme.colors.textSecondary};
+  background: ${({ $active }) => $active
+    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+    : '#fff'};
+  color: ${({ $active }) => $active ? '#fff' : '#475569'};
   font-size: 0.75rem;
+  font-weight: ${({ $active }) => $active ? 600 : 500};
   cursor: pointer;
-  &:hover:not(:disabled) { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  box-shadow: ${({ $active }) => $active
+    ? '0 2px 6px rgba(37,99,235,0.25), inset 0 1px 0 rgba(255,255,255,0.15)'
+    : '0 1px 2px rgba(15,23,42,0.04)'};
+  transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    ${({ $active }) => $active ? '' : 'background: #f4f5f7; border-color: #cbd5e1;'}
+  }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 `;
 
@@ -544,7 +600,7 @@ const Label = styled.label`
 `;
 
 const Input = styled.input`
-  padding: ${({ theme }) => theme.spacing.sm}px;
+  padding: 9px ${({ theme }) => theme.spacing.sm}px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.8125rem;
@@ -552,7 +608,13 @@ const Input = styled.input`
   color: ${({ theme }) => theme.colors.textPrimary};
   background: ${({ theme }) => theme.colors.surface};
   box-sizing: border-box;
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.blue};
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12), 0 1px 2px rgba(15,23,42,0.04);
+  }
 `;
 
 const ModalFooter = styled.div`
@@ -561,19 +623,27 @@ const ModalFooter = styled.div`
   gap: ${({ theme }) => theme.spacing.sm}px;
   padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
   border-top: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surfaceMuted};
 `;
 
 const PrimaryBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border: none;
   border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ theme }) => theme.colors.blue};
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  &:hover { opacity: 0.85; }
+  box-shadow: 0 1px 2px rgba(37,99,235,0.2), 0 2px 4px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.15);
+  transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
+    box-shadow: 0 4px 12px rgba(37,99,235,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+  &:active:not(:disabled) { transform: translateY(0); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
@@ -585,7 +655,13 @@ const SecondaryBtn = styled.button`
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 0.8125rem;
   cursor: pointer;
-  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  transition: background 0.15s, border-color 0.15s, transform 0.15s;
+  &:hover {
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+    transform: translateY(-1px);
+  }
 `;
 
 /* ── Footer ── */
@@ -776,7 +852,7 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   white-space: nowrap;
   transition: opacity 0.15s;
   background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? '#d4bbb5' :
+    $variant === 'danger' ? '#ef4444' :
     $variant === 'primary' ? theme.colors.blue : theme.colors.surfaceMuted};
   color: ${({ $variant }) =>
     $variant === 'danger' ? '#fff' :
@@ -924,7 +1000,7 @@ const Leads: React.FC = () => {
       {/* KPI Cards */}
       <KpiRow>
         <KpiCard>
-          <KpiIconWrap $bg="#e3f5f6" $fg="#7fb5ba">
+          <KpiIconWrap $bg="#e3f5f6" $fg="#3b82f6">
             <IconUsers />
           </KpiIconWrap>
           <KpiText>
@@ -933,7 +1009,7 @@ const Leads: React.FC = () => {
           </KpiText>
         </KpiCard>
         <KpiCard>
-          <KpiIconWrap $bg="#ebf3f4" $fg="#5699a3">
+          <KpiIconWrap $bg="#ebf3f4" $fg="#2563eb">
             <IconSparkle />
           </KpiIconWrap>
           <KpiText>
@@ -942,7 +1018,7 @@ const Leads: React.FC = () => {
           </KpiText>
         </KpiCard>
         <KpiCard>
-          <KpiIconWrap $bg="#f5f0eb" $fg="#d4c8c0">
+          <KpiIconWrap $bg="#f5f0eb" $fg="#f59e0b">
             <IconClock />
           </KpiIconWrap>
           <KpiText>
@@ -951,7 +1027,7 @@ const Leads: React.FC = () => {
           </KpiText>
         </KpiCard>
         <KpiCard>
-          <KpiIconWrap $bg="#e0f2f1" $fg="#6da59e">
+          <KpiIconWrap $bg="#e0f2f1" $fg="#10b981">
             <IconCheckCircle />
           </KpiIconWrap>
           <KpiText>
@@ -1028,8 +1104,8 @@ const Leads: React.FC = () => {
                           style={{
                             marginTop: 4,
                             padding: '6px 14px',
-                            border: '1px solid #7fb5ba',
-                            background: '#7fb5ba',
+                            border: '1px solid #3b82f6',
+                            background: '#3b82f6',
                             color: '#fff',
                             borderRadius: 4,
                             cursor: 'pointer',
@@ -1077,18 +1153,18 @@ const Leads: React.FC = () => {
                         <td>
                           {lead.status && lead.status !== 'contacted' && NEXT_STATUS[lead.status] && (
                             <ActionBtn
-                              $color="#7fb5ba"
+                              $color="#3b82f6"
                               title={STATUS_LABEL[lead.status]}
                               onClick={(e) => { e.stopPropagation(); handleStatusChange(lead._id, NEXT_STATUS[lead.status!]); }}
                             >
                               <IconArrowRight />
                             </ActionBtn>
                           )}
-                          <ActionBtn $color="#d4c8c0" title="View" onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); }}>
+                          <ActionBtn $color="#f59e0b" title="View" onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); }}>
                             <IconEye />
                           </ActionBtn>
                           <ActionBtn
-                            $color="#d4bbb5"
+                            $color="#ef4444"
                             title="Delete"
                             onClick={(e) => { e.stopPropagation(); handleDelete(lead._id); }}
                           >

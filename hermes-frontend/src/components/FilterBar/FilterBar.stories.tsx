@@ -31,7 +31,7 @@ export const WithSearchAndFilters: Story = {
         placeholder="Search..."
         style={{
           padding: '4px 8px',
-          border: '1px solid #e4e7ea',
+          border: '1px solid #e5e7eb',
           borderRadius: 6,
           fontSize: '0.875rem',
         }}

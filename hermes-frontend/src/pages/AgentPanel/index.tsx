@@ -313,8 +313,8 @@ const TimelineList = styled.ul`
 `;
 
 const pulseGlow = keyframes`
-  0%, 100% { box-shadow: 0 0 0 0 rgba(86,153,163,0.4); }
-  50%      { box-shadow: 0 0 0 5px rgba(86,153,163,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
+  50%      { box-shadow: 0 0 0 5px rgba(37,99,235,0); }
 `;
 
 const TimelineItem = styled.li<{ $status: TaskStep['status'] }>`
