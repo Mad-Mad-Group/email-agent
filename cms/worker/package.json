@@ -1,0 +1,17 @@
+{
+  "name": "lead-cms-worker",
+  "version": "1.0.0",
+  "description": "AI Agent worker — claim tasks from NestJS API, call Hermes agent",
+  "scripts": {
+    "build": "tsc",
+    "worker": "node dist/agent.js",
+    "start": "npm run build && npm run worker"
+  },
+  "dependencies": {
+    "mongodb": "^6.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  }
+}

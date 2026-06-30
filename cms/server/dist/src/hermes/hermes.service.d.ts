@@ -1,0 +1,31 @@
+import { OnModuleInit } from '@nestjs/common';
+import { Model } from 'mongoose';
+import { TasksService } from '../tasks/tasks.service';
+import { TaskEvents } from '../tasks/task-events';
+import { SseService } from '../sse/sse.service';
+import { Campaign, CampaignDocument } from './schemas/campaign.schema';
+import { RunHermesDto } from './dto/run-hermes.dto';
+export declare class HermesService implements OnModuleInit {
+    private readonly campaigns;
+    private readonly tasks;
+    private readonly taskEvents;
+    private readonly sse;
+    constructor(campaigns: Model<CampaignDocument>, tasks: TasksService, taskEvents: TaskEvents, sse: SseService);
+    onModuleInit(): void;
+    run(dto: RunHermesDto): Promise<{
+        campaign_id: string;
+        first_task: string;
+    }>;
+    private onTaskCompleted;
+    private enqueueStage;
+    private finish;
+    getCampaign(id: string): Promise<(import("mongoose").FlattenMaps<import("mongoose").Document<unknown, {}, Campaign, {}, {}> & Campaign & {
+        _id: import("mongoose").Types.ObjectId;
+    } & {
+        __v: number;
+    }> & Required<{
+        _id: import("mongoose").Types.ObjectId;
+    }>) | null>;
+    private progress;
+    private log;
+}

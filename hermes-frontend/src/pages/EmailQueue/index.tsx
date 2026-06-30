@@ -1,0 +1,1225 @@
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import styled from 'styled-components';
+import { useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail } from '../../api/hooks';
+import { EmailItem } from '../../api/emailQueue';
+import { media } from '../../styles/media';
+import EmailTemplateEditor from './EmailTemplateEditor';
+
+/* ══════════════════════════════════════
+   Email Queue — LUNO-style 3-panel UI
+   ══════════════════════════════════════ */
+
+/* ── Icons (inline SVG helper, 16×16 viewBox) ── */
+
+const I = ({ d, size = 16, fill }: { d: string; size?: number; fill?: string }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 16 16"
+    fill={fill || 'none'}
+    stroke="currentColor"
+    strokeWidth="1.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d={d} />
+  </svg>
+);
+
+const icons = {
+  inbox: 'M2 10l3-3h6l3 3M2 10v3a1 1 0 001 1h10a1 1 0 001-1v-3M2 10h3.5a1 1 0 011 1v0a1 1 0 001 1h1a1 1 0 001-1v0a1 1 0 011-1H14',
+  clock: 'M8 3v5l3 2M14 8a6 6 0 11-12 0 6 6 0 0112 0z',
+  check: 'M3 8.5l3.5 3.5L13 5',
+  x: 'M4 4l8 8M12 4l-8 8',
+  send: 'M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z',
+  shield: 'M8 1.5L2.5 4v4c0 3.5 2.3 5.8 5.5 6.5 3.2-.7 5.5-3 5.5-6.5V4L8 1.5z',
+  exclamation: 'M8 1a7 7 0 100 14A7 7 0 008 1zM8 5v3M8 10.5v.5',
+  envelope: 'M2 4h12v8H2zM2 4l6 5 6-5',
+  eye: 'M1 8s3-5 7-5 7 5 7 5-3 5-7 5-7-5-7-5zM8 10a2 2 0 100-4 2 2 0 000 4z',
+  search: 'M11 11l3 3M10 6.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0z',
+  angleLeft: 'M10 3L5 8l5 5',
+  angleRight: 'M6 3l5 5-5 5',
+  arrowLeft: 'M12 8H3M7 4L3 8l4 4',
+  play: 'M5 3l8 5-8 5V3z',
+};
+
+/* ── Avatar helper ── */
+
+const avatarPalette = ['#7fb5ba', '#5699a3', '#d4c8c0', '#d4bbb5', '#4a6fa5', '#8b929a', '#6da59e', '#a89490'];
+
+const getAvatarColor = (name: string): string => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return avatarPalette[Math.abs(hash) % avatarPalette.length];
+};
+
+const getInitial = (email: EmailItem): string => {
+  const name = getDisplayName(email);
+  return name.charAt(0).toUpperCase();
+};
+
+const getDisplayName = (email: EmailItem): string => {
+  const addr = email.to_email || 'Unknown';
+  const local = addr.split('@')[0] || addr;
+  return local.split(/[._-]/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+};
+
+/* ── Status helpers ── */
+
+type StatusValue = 'pending' | 'approved' | 'rejected' | 'sent' | 'failed';
+
+interface StatusFolderDef {
+  id: string;
+  label: string;
+  icon: string;
+  filterValue: string;
+  badgeColor: string;
+}
+
+const statusFolders: StatusFolderDef[] = [
+  { id: 'all', label: 'All', icon: 'inbox', filterValue: '', badgeColor: '#8b929a' },
+  { id: 'pending', label: 'Pending', icon: 'clock', filterValue: 'pending', badgeColor: '#d4c8c0' },
+  { id: 'approved', label: 'Approved', icon: 'check', filterValue: 'approved', badgeColor: '#5699a3' },
+  { id: 'rejected', label: 'Rejected', icon: 'x', filterValue: 'rejected', badgeColor: '#d4bbb5' },
+  { id: 'sent', label: 'Sent', icon: 'send', filterValue: 'sent', badgeColor: '#7fb5ba' },
+  { id: 'failed', label: 'Failed', icon: 'exclamation', filterValue: 'failed', badgeColor: '#d4bbb5' },
+];
+
+const statusColorMap: Record<string, string> = {
+  pending: '#d4c8c0',
+  approved: '#5699a3',
+  rejected: '#d4bbb5',
+  sent: '#7fb5ba',
+  failed: '#d4bbb5',
+};
+
+/* ══════════════════════════════════════
+   Styled Components
+   ══════════════════════════════════════ */
+
+/* ── Layout ── */
+
+const Page = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md}px;
+`;
+
+const PageTabs = styled.div`
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  margin-bottom: -${({ theme }) => theme.spacing.md}px;
+`;
+
+const PageTab = styled.button<{ $active: boolean }>`
+  padding: 10px 20px;
+  border: none;
+  background: none;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: ${({ $active, theme }) => $active ? '#5699a3' : theme.colors.textSecondary};
+  border-bottom: 2px solid ${({ $active }) => $active ? '#5699a3' : 'transparent'};
+  margin-bottom: -1px;
+  transition: all 0.15s;
+  &:hover {
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
+`;
+
+const Card = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  display: flex;
+  min-height: 620px;
+  overflow: hidden;
+  ${media.mobile} {
+    flex-direction: column;
+    min-height: auto;
+  }
+`;
+
+/* ── Sidebar ── */
+
+const Sidebar = styled.div`
+  width: 220px;
+  min-width: 220px;
+  border-right: 1px solid ${({ theme }) => theme.colors.border};
+  display: flex;
+  flex-direction: column;
+  padding: ${({ theme }) => theme.spacing.md}px 0;
+  ${media.mobile} {
+    width: 100%;
+    min-width: 100%;
+    border-right: none;
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+    max-height: 240px;
+    overflow-y: auto;
+  }
+  ${media.tablet} {
+    width: 180px;
+    min-width: 180px;
+  }
+`;
+
+const SidebarSearch = styled.div`
+  padding: 0 ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.md}px;
+`;
+
+const SearchInput = styled.input`
+  width: 100%;
+  box-sizing: border-box;
+  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.sm}px 32px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  font-size: 0.8125rem;
+  outline: none;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ theme }) => theme.colors.surface};
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.textTertiary};
+  }
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.blue};
+  }
+`;
+
+const SearchWrap = styled.div`
+  position: relative;
+  svg {
+    position: absolute;
+    left: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: ${({ theme }) => theme.colors.textTertiary};
+    pointer-events: none;
+  }
+`;
+
+const FolderList = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+`;
+
+const FolderItem = styled.li<{ $active?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+  padding: 8px ${({ theme }) => theme.spacing.md}px;
+  font-size: 0.8125rem;
+  color: ${({ $active, theme }) => ($active ? theme.colors.textPrimary : theme.colors.textSecondary)};
+  font-weight: ${({ $active }) => ($active ? 600 : 400)};
+  background: ${({ $active, theme }) => ($active ? theme.colors.surfaceMuted : 'transparent')};
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover {
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+  }
+  svg {
+    flex-shrink: 0;
+    color: ${({ $active, theme }) => ($active ? theme.colors.textPrimary : theme.colors.textTertiary)};
+  }
+`;
+
+const FolderBadge = styled.span<{ $color: string }>`
+  margin-left: auto;
+  background: ${({ $color }) => $color};
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+`;
+
+/* ── Main Panel ── */
+
+const MainPanel = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+`;
+
+/* ── Toolbar ── */
+
+const Toolbar = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  gap: ${({ theme }) => theme.spacing.sm}px;
+  flex-wrap: wrap;
+  min-height: 48px;
+`;
+
+const ToolbarLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+`;
+
+const ToolbarTitle = styled.h2`
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const ToolbarRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+const IconBtn = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+`;
+
+/* ── Email List ── */
+
+const EmailListWrap = styled.div`
+  flex: 1;
+  overflow-y: auto;
+`;
+
+const EmailRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+  padding: 6px ${({ theme }) => theme.spacing.md}px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  cursor: pointer;
+  position: relative;
+  transition: background 0.12s;
+  &:hover {
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+  }
+  &:hover .hover-actions {
+    display: flex;
+  }
+  ${media.mobile} {
+    padding: 8px ${({ theme }) => theme.spacing.sm}px;
+    gap: 6px;
+  }
+`;
+
+const AvatarCircle = styled.div<{ $bg: string }>`
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  background: ${({ $bg }) => $bg};
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  user-select: none;
+`;
+
+const SenderCol = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 180px;
+  min-width: 140px;
+  flex-shrink: 0;
+  ${media.mobile} { width: 120px; min-width: 100px; }
+`;
+
+const EmailContent = styled.div`
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+`;
+
+const SenderName = styled.span`
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.blue};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const SubjectLine = styled.span`
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const Preview = styled.span`
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  ${media.mobile} {
+    display: none;
+  }
+`;
+
+const StatusBadge = styled.span<{ $status?: string }>`
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 99px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: capitalize;
+  white-space: nowrap;
+  flex-shrink: 0;
+  ${({ $status }) => {
+    const color = statusColorMap[$status || ''] || '#d4c8c0';
+    return `background: ${color}22; color: ${color};`;
+  }}
+`;
+
+const DateCell = styled.span`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  white-space: nowrap;
+  flex-shrink: 0;
+`;
+
+const HoverActions = styled.div`
+  display: none;
+  position: absolute;
+  right: ${({ theme }) => theme.spacing.md}px;
+  top: 50%;
+  transform: translateY(-50%);
+  gap: 2px;
+  background: ${({ theme }) => theme.colors.surface};
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  padding: 2px;
+`;
+
+const HoverBtn = styled.button<{ $color?: string }>`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  background: transparent;
+  color: ${({ $color, theme }) => $color || theme.colors.textSecondary};
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  &:hover {
+    background: ${({ $color }) => ($color ? $color + '18' : '#f8f9fa')};
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+`;
+
+/* ── Empty / Loading states ── */
+
+const EmptyState = styled.div`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+  padding: ${({ theme }) => theme.spacing.xl}px;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  font-size: 0.875rem;
+`;
+
+/* ── Detail View ── */
+
+const DetailToolbar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  min-height: 48px;
+`;
+
+const DetailToolbarBtn = styled.button<{ $color?: string }>`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border: 1px solid ${({ $color, theme }) => $color || theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  background: ${({ $color }) => ($color ? $color + '12' : 'transparent')};
+  color: ${({ $color, theme }) => $color || theme.colors.textSecondary};
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s;
+  &:hover {
+    background: ${({ $color }) => ($color ? $color + '25' : '#f8f9fa')};
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+`;
+
+const DetailWrap = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md}px;
+  ${media.mobile} {
+    padding: ${({ theme }) => theme.spacing.sm}px;
+  }
+`;
+
+const BackLink = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.blue};
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  &:hover {
+    text-decoration: underline;
+  }
+`;
+
+const SubjectHeading = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  margin: 0;
+`;
+
+const DetailSenderRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+  ${media.mobile} {
+    flex-wrap: wrap;
+  }
+`;
+
+const DetailSenderInfo = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const DetailSenderName = styled.span`
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const DetailSenderEmail = styled.span`
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.blue};
+  margin-left: 6px;
+`;
+
+const DetailDateRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  flex-shrink: 0;
+`;
+
+const DetailMeta = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.md}px;
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  align-items: center;
+`;
+
+const EmailBodyText = styled.div`
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  padding: ${({ theme }) => theme.spacing.md}px;
+  background: ${({ theme }) => theme.colors.canvas};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  white-space: pre-wrap;
+  max-height: 400px;
+  overflow-y: auto;
+`;
+
+const DetailActions = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+  padding-top: ${({ theme }) => theme.spacing.sm}px;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const ActionButton = styled.button<{ $color: string }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: 1px solid ${({ $color }) => $color};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  background: ${({ $color }) => $color};
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  &:hover {
+    opacity: 0.88;
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const OutlineBtn = styled.button<{ $color?: string }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px;
+  border: 1px solid ${({ $color, theme }) => $color || theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  background: transparent;
+  color: ${({ $color, theme }) => $color || theme.colors.textSecondary};
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover {
+    background: ${({ $color }) => ($color ? $color + '12' : '#f8f9fa')};
+  }
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+/* ── Modal (fallback preview) ── */
+
+const Overlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+`;
+
+const Modal = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  width: 600px;
+  max-width: 95vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+  ${media.mobile} {
+    width: 95%;
+  }
+`;
+
+const ModalHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  h2 {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
+`;
+
+const CloseBtn = styled.button`
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  &:hover {
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
+`;
+
+const ModalBody = styled.div`
+  padding: ${({ theme }) => theme.spacing.lg}px;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.md}px;
+`;
+
+const ModalMeta = styled.div`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.md}px;
+  flex-wrap: wrap;
+  align-items: center;
+`;
+
+const ModalContent = styled.div`
+  padding: ${({ theme }) => theme.spacing.md}px;
+  background: ${({ theme }) => theme.colors.canvas};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  white-space: pre-wrap;
+  line-height: 1.6;
+  max-height: 300px;
+  overflow-y: auto;
+`;
+
+const ModalFooter = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+/* ── Footer ── */
+
+const Footer = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+  padding: ${({ theme }) => theme.spacing.md}px 0 0;
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
+const FooterLinks = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.md}px;
+  a {
+    color: ${({ theme }) => theme.colors.textTertiary};
+    text-decoration: none;
+    &:hover {
+      color: ${({ theme }) => theme.colors.textPrimary};
+    }
+  }
+`;
+
+/* ══════════════════════════════════════
+   Component
+   ══════════════════════════════════════ */
+
+const LIMIT = 10;
+
+type ViewType = 'list' | 'detail';
+
+const EmailQueue: React.FC = () => {
+  const { t } = useTranslation();
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('');
+  const [view, setView] = useState<ViewType>('list');
+  const [activeEmail, setActiveEmail] = useState<EmailItem | null>(null);
+  const [modalPreview, setModalPreview] = useState<EmailItem | null>(null);
+  const [pageTab, setPageTab] = useState<'queue' | 'templates'>('queue');
+
+  const translatedStatusFolders: StatusFolderDef[] = [
+    { id: 'all', label: t('emailQueue.all'), icon: 'inbox', filterValue: '', badgeColor: '#8b929a' },
+    { id: 'pending', label: t('emailQueue.pending'), icon: 'clock', filterValue: 'pending', badgeColor: '#d4c8c0' },
+    { id: 'approved', label: t('emailQueue.approved'), icon: 'check', filterValue: 'approved', badgeColor: '#5699a3' },
+    { id: 'rejected', label: t('emailQueue.rejected'), icon: 'x', filterValue: 'rejected', badgeColor: '#d4bbb5' },
+    { id: 'sent', label: t('emailQueue.sent'), icon: 'send', filterValue: 'sent', badgeColor: '#7fb5ba' },
+    { id: 'failed', label: t('emailQueue.failed'), icon: 'exclamation', filterValue: 'failed', badgeColor: '#d4bbb5' },
+  ];
+
+  // 攞可攞到嘅全部 email（backend DTO 限 limit ≤ 100）。
+  // status/search filtering 全部 client side 做，咁 sidebar badge count
+  // 就唔會因為切換 tab 而變。
+  const { data, isLoading, error, refetch } = useEmailQueue({ page: 1, limit: 100 });
+
+  const approve = useApproveEmail();
+  const reject = useRejectEmail();
+  const send = useSendEmail();
+
+  const apiEmails: EmailItem[] = data?.data ?? [];
+  // 唔再 fall back 去 MOCK_EMAILS —— backend 失敗應該 user-facing 出 error，
+  // 唔可以悄悄 display demo 假資料。
+  const allEmails: EmailItem[] = apiEmails;
+
+  // Client-side filtering（status + search）
+  const searchFiltered = search.trim()
+    ? allEmails.filter(e => {
+        const q = search.trim().toLowerCase();
+        return (e.to_email || '').toLowerCase().includes(q) ||
+               (e.subject || '').toLowerCase().includes(q);
+      })
+    : allEmails;
+  const statusFiltered = statusFilter
+    ? searchFiltered.filter(e => e.status === statusFilter)
+    : searchFiltered;
+
+  // 分頁（client side）
+  const total = statusFiltered.length;
+  const totalPages = Math.max(1, Math.ceil(total / LIMIT));
+  const emails = statusFiltered.slice((page - 1) * LIMIT, page * LIMIT);
+
+  // Per-status counts for sidebar badges（用全量數據計，唔受 filter 影響）
+  const statusCounts: Record<string, number> = {};
+  for (const e of allEmails) {
+    const s = e.status || 'pending';
+    statusCounts[s] = (statusCounts[s] || 0) + 1;
+  }
+
+  const handleReject = (id: string) => {
+    const reason = window.prompt(t('emailQueue.rejectPrompt'));
+    reject.mutate({ id, reason: reason || undefined });
+  };
+
+  const openDetail = (item: EmailItem) => {
+    setActiveEmail(item);
+    setView('detail');
+  };
+
+  const goList = () => {
+    setView('list');
+    setActiveEmail(null);
+  };
+
+  const formatDate = (dateStr?: string): string => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  };
+
+  const formatDateFull = (dateStr?: string): string => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+    });
+  };
+
+  /* ── Sidebar ── */
+
+  const renderSidebar = () => (
+    <Sidebar>
+      <SidebarSearch>
+        <SearchWrap>
+          <I d={icons.search} size={14} />
+          <SearchInput
+            placeholder={t('emailQueue.searchPlaceholder')}
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+          />
+        </SearchWrap>
+      </SidebarSearch>
+
+      <FolderList>
+        {translatedStatusFolders.map((f) => (
+          <FolderItem
+            key={f.id}
+            $active={statusFilter === f.filterValue}
+            onClick={() => {
+              setStatusFilter(f.filterValue);
+              setPage(1);
+              if (view === 'detail') goList();
+            }}
+          >
+            <I d={(icons as Record<string, string>)[f.icon] || icons.inbox} />
+            {f.label}
+            {f.id === 'all' ? (
+              <FolderBadge $color={f.badgeColor}>{allEmails.length}</FolderBadge>
+            ) : (
+              <FolderBadge $color={f.badgeColor}>
+                {statusCounts[f.filterValue] || 0}
+              </FolderBadge>
+            )}
+          </FolderItem>
+        ))}
+      </FolderList>
+    </Sidebar>
+  );
+
+  /* ── List View ── */
+
+  const renderList = () => (
+    <MainPanel>
+      <Toolbar>
+        <ToolbarLeft>
+          <ToolbarTitle>{t('emailQueue.outbox')}</ToolbarTitle>
+        </ToolbarLeft>
+        <ToolbarRight>
+          {total > 0 && (
+            <span>
+              {t('emailQueue.showingRange', { start: (page - 1) * LIMIT + 1, end: Math.min(page * LIMIT, total), total })}
+            </span>
+          )}
+          <IconBtn disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>
+            <I d={icons.angleLeft} />
+          </IconBtn>
+          <IconBtn disabled={page >= totalPages} onClick={() => setPage((p) => p + 1)}>
+            <I d={icons.angleRight} />
+          </IconBtn>
+        </ToolbarRight>
+      </Toolbar>
+
+      <EmailListWrap>
+        {error ? (
+          <EmptyState>
+            <strong style={{ color: '#c0392b', display: 'block', marginBottom: 8 }}>
+              {t('common.error')}
+            </strong>
+            <span style={{ color: '#7f8c8d', fontSize: 13, display: 'block', marginBottom: 12 }}>
+              {(error as any)?.message || String(error)}
+            </span>
+            <button
+              onClick={() => refetch()}
+              style={{
+                padding: '6px 14px',
+                border: '1px solid #7fb5ba',
+                background: '#7fb5ba',
+                color: '#fff',
+                borderRadius: 4,
+                cursor: 'pointer',
+                fontSize: 13,
+              }}
+            >
+              {t('common.retry') || '重試'}
+            </button>
+          </EmptyState>
+        ) : isLoading ? (
+          <EmptyState>
+            <I d={icons.clock} size={24} />
+            {t('emailQueue.loadingEmails')}
+          </EmptyState>
+        ) : emails.length === 0 ? (
+          <EmptyState>
+            <I d={icons.envelope} size={24} />
+            {t('emailQueue.noEmails')}
+          </EmptyState>
+        ) : (
+          emails.map((item) => {
+            const displayName = getDisplayName(item);
+            const avatarColor = getAvatarColor(displayName);
+            const initial = getInitial(item);
+            const status = item.status || 'pending';
+
+            return (
+              <EmailRow key={item._id} onClick={() => openDetail(item)}>
+                <SenderCol>
+                  <AvatarCircle $bg={avatarColor}>{initial}</AvatarCircle>
+                  <SenderName>{displayName}</SenderName>
+                </SenderCol>
+                <EmailContent>
+                  <SubjectLine>{item.subject || t('emailQueue.noSubject')}</SubjectLine>
+                  <Preview>{(item.body || '').replace(/<[^>]*>/g, ' ').trim()}</Preview>
+                </EmailContent>
+                <StatusBadge $status={status}>{status}</StatusBadge>
+                <DateCell>{formatDate(item.created_at)}</DateCell>
+
+                {/* Hover action buttons */}
+                <HoverActions className="hover-actions">
+                  {status === 'pending' && (
+                    <>
+                      <HoverBtn
+                        $color="#5699a3"
+                        title={t('emailQueue.approve')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          approve.mutate(item._id);
+                        }}
+                        disabled={approve.isPending}
+                      >
+                        <I d={icons.check} />
+                      </HoverBtn>
+                      <HoverBtn
+                        $color="#d4bbb5"
+                        title={t('emailQueue.reject')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleReject(item._id);
+                        }}
+                        disabled={reject.isPending}
+                      >
+                        <I d={icons.x} />
+                      </HoverBtn>
+                    </>
+                  )}
+                  {status === 'approved' && (
+                    <HoverBtn
+                      $color="#7fb5ba"
+                      title={t('emailQueue.send')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        send.mutate(item._id);
+                      }}
+                      disabled={send.isPending}
+                    >
+                      <I d={icons.play} />
+                    </HoverBtn>
+                  )}
+                  <HoverBtn
+                    $color="#d4c8c0"
+                    title={t('emailQueue.preview')}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setModalPreview(item);
+                    }}
+                  >
+                    <I d={icons.eye} />
+                  </HoverBtn>
+                </HoverActions>
+              </EmailRow>
+            );
+          })
+        )}
+      </EmailListWrap>
+    </MainPanel>
+  );
+
+  /* ── Detail View ── */
+
+  const renderDetail = () => {
+    if (!activeEmail) return null;
+    const item = activeEmail;
+    const displayName = getDisplayName(item);
+    const avatarColor = getAvatarColor(displayName);
+    const initial = getInitial(item);
+    const status = item.status || 'pending';
+
+    return (
+      <MainPanel>
+        <DetailToolbar>
+          {status === 'pending' && (
+            <>
+              <DetailToolbarBtn
+                $color="#5699a3"
+                onClick={() => {
+                  approve.mutate(item._id);
+                  goList();
+                }}
+                disabled={approve.isPending}
+              >
+                <I d={icons.check} />
+                {t('emailQueue.approve')}
+              </DetailToolbarBtn>
+              <DetailToolbarBtn
+                $color="#d4bbb5"
+                onClick={() => {
+                  handleReject(item._id);
+                  goList();
+                }}
+                disabled={reject.isPending}
+              >
+                <I d={icons.x} />
+                {t('emailQueue.reject')}
+              </DetailToolbarBtn>
+            </>
+          )}
+          {status === 'approved' && (
+            <DetailToolbarBtn
+              $color="#7fb5ba"
+              onClick={() => {
+                send.mutate(item._id);
+                goList();
+              }}
+              disabled={send.isPending}
+            >
+              <I d={icons.send} />
+              {t('emailQueue.send')}
+            </DetailToolbarBtn>
+          )}
+        </DetailToolbar>
+
+        <DetailWrap>
+          <BackLink onClick={goList}>
+            <I d={icons.arrowLeft} />
+            {t('emailQueue.backToList')}
+          </BackLink>
+
+          <SubjectHeading>{item.subject || t('emailQueue.noSubject')}</SubjectHeading>
+
+          <DetailSenderRow>
+            <AvatarCircle $bg={avatarColor}>{initial}</AvatarCircle>
+            <DetailSenderInfo>
+              <DetailSenderName>{t('emailQueue.to_email')} {displayName}</DetailSenderName>
+              {item.to_email && <DetailSenderEmail>&lt;{item.to_email}&gt;</DetailSenderEmail>}
+            </DetailSenderInfo>
+            <DetailDateRight>
+              <span>{formatDateFull(item.created_at)}</span>
+            </DetailDateRight>
+          </DetailSenderRow>
+
+          <DetailMeta>
+            <span>
+              {t('emailQueue.status')} <StatusBadge $status={status}>{status}</StatusBadge>
+            </span>
+            {item.error?.rejected_reason && <span>{t('emailQueue.reason')} {item.error?.rejected_reason}</span>}
+            {item.lead_id && <span>{t('emailQueue.lead')} {item.lead_id}</span>}
+          </DetailMeta>
+
+          <EmailBodyText dangerouslySetInnerHTML={{ __html: item.body || t('emailQueue.emptyBody') }} />
+        </DetailWrap>
+      </MainPanel>
+    );
+  };
+
+  /* ── Modal Preview (fallback) ── */
+
+  const renderModal = () => {
+    if (!modalPreview) return null;
+    const item = modalPreview;
+    const status = item.status || 'pending';
+
+    return (
+      <Overlay onClick={() => setModalPreview(null)}>
+        <Modal onClick={(e) => e.stopPropagation()}>
+          <ModalHeader>
+            <h2>{item.subject || t('emailQueue.noSubject')}</h2>
+            <CloseBtn onClick={() => setModalPreview(null)}>&times;</CloseBtn>
+          </ModalHeader>
+          <ModalBody>
+            <ModalMeta>
+              <span>{t('emailQueue.to_email')} {item.to_email || '—'}</span>
+              <span>
+                {t('emailQueue.status')} <StatusBadge $status={status}>{status}</StatusBadge>
+              </span>
+              {item.error?.rejected_reason && <span>{t('emailQueue.reason')} {item.error?.rejected_reason}</span>}
+              {item.lead_id && <span>{t('emailQueue.lead')} {item.lead_id}</span>}
+            </ModalMeta>
+            <ModalContent dangerouslySetInnerHTML={{ __html: item.body || t('emailQueue.emptyBody') }} />
+          </ModalBody>
+          <ModalFooter>
+            {status === 'pending' && (
+              <>
+                <ActionButton
+                  $color="#5699a3"
+                  onClick={() => {
+                    approve.mutate(item._id);
+                    setModalPreview(null);
+                  }}
+                  disabled={approve.isPending}
+                >
+                  {t('emailQueue.approve')}
+                </ActionButton>
+                <ActionButton
+                  $color="#d4bbb5"
+                  onClick={() => {
+                    handleReject(item._id);
+                    setModalPreview(null);
+                  }}
+                  disabled={reject.isPending}
+                >
+                  {t('emailQueue.reject')}
+                </ActionButton>
+              </>
+            )}
+            {status === 'approved' && (
+              <ActionButton
+                $color="#7fb5ba"
+                onClick={() => {
+                  send.mutate(item._id);
+                  setModalPreview(null);
+                }}
+                disabled={send.isPending}
+              >
+                {t('emailQueue.send')}
+              </ActionButton>
+            )}
+            <OutlineBtn onClick={() => setModalPreview(null)}>{t('common.close')}</OutlineBtn>
+          </ModalFooter>
+        </Modal>
+      </Overlay>
+    );
+  };
+
+  return (
+    <Page>
+      <PageTabs>
+        <PageTab $active={pageTab === 'queue'} onClick={() => setPageTab('queue')}>
+          寄件匣
+        </PageTab>
+        <PageTab $active={pageTab === 'templates'} onClick={() => setPageTab('templates')}>
+          郵件樣板
+        </PageTab>
+      </PageTabs>
+
+      {pageTab === 'queue' ? (
+        <>
+          <Card>
+            {renderSidebar()}
+            {view === 'list' && renderList()}
+            {view === 'detail' && renderDetail()}
+          </Card>
+          {renderModal()}
+        </>
+      ) : (
+        <EmailTemplateEditor />
+      )}
+
+      <Footer>
+        <span>{t('footer.copyrightHermes', { year: 2024 })}</span>
+        <FooterLinks>
+          <a href="#">{t('footer.documentation')}</a>
+          <a href="#">{t('footer.support')}</a>
+          <a href="#">{t('footer.faqs')}</a>
+        </FooterLinks>
+      </Footer>
+    </Page>
+  );
+};
+
+export default EmailQueue;
