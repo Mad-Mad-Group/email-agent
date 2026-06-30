@@ -83,9 +83,9 @@ function hermesJson(prompt, opts = {}) {
         return pick(callHermes(strict, opts.timeout));
     }
 }
-const API = process.env.API_URL || 'http://192.168.1.111:4000/api';
+const API = process.env.API_URL || 'http://localhost:4000/api';
 const MONGO = process.env.MONGODB_URI ||
-    'mongodb://leadteam:leadteam2026@192.168.1.111:27017/lead_scraper';
+    'mongodb://leadteam:leadteam2026@localhost:27017/lead_scraper';
 const EMAIL = process.env.AGENT_EMAIL || 'admin@test.com';
 const PASS = process.env.AGENT_PASS || '123456';
 const AGENT_ID = process.env.AGENT_ID || 'WORKER-1';

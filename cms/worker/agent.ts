@@ -89,7 +89,7 @@ function hermesJson(
 const API = process.env.API_URL || 'http://localhost:4000/api';
 const MONGO =
   process.env.MONGODB_URI ||
-  'mongodb://localhost:27017/lead_scraper';
+  'mongodb://leadteam:leadteam2026@localhost:27017/lead_scraper';
 const EMAIL = process.env.AGENT_EMAIL || 'admin@test.com';
 const PASS = process.env.AGENT_PASS || '123456';
 const AGENT_ID = process.env.AGENT_ID || 'WORKER-1';
