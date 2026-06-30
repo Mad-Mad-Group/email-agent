@@ -255,13 +255,13 @@ const KPI_DATA = [
 
 const CRYPTO_CARDS = [
   // BTC: steady climb with one mild dip mid-way
-  { symbol: 'BTC', name: 'Bitcoin', price: '$25,450', change: '+ 1.25', up: true, color: '#f59e0b',
+  { symbol: 'BTC', name: 'Bitcoin', price: '$25,450', change: '+ 1.25', up: true, color: '#c19862',
     spark: '0,30 40,28 80,25 120,22 160,24 200,20 240,17 280,13 320,10 360,8 380,7' },
   // XRP: flat start, then gradual rise in second half
   { symbol: 'XRP', name: 'Ripple', price: '$25,450', change: '+ 0.25', up: true, color: '#6aa8bf',
     spark: '0,22 50,21 100,22 150,20 190,18 230,15 270,12 310,10 350,9 380,8' },
   // NEO: dip then strong recovery
-  { symbol: 'NEO', name: 'Neo', price: '$25,450', change: '+ 0.50', up: true, color: '#2563eb',
+  { symbol: 'NEO', name: 'Neo', price: '$25,450', change: '+ 0.50', up: true, color: '#567ebb',
     spark: '0,14 50,18 100,24 150,28 190,26 230,20 270,15 310,10 350,7 380,5' },
   // ETH: slow decline with brief stabilisation
   { symbol: 'ETH', name: 'Ethereum', price: '$25,450', change: '- 0.73', up: false, color: '#8b92b3',
@@ -269,12 +269,12 @@ const CRYPTO_CARDS = [
 ];
 
 const LIVE_COINS = [
-  { symbol: 'NEO', name: 'Neo', price: '$25,450', bg: '#2563eb' },
+  { symbol: 'NEO', name: 'Neo', price: '$25,450', bg: '#567ebb' },
   { symbol: 'ETH', name: 'Ethereum', price: '$25,450', bg: '#8b92b3' },
   { symbol: 'XLM', name: 'Stellar', price: '$25,450', bg: '#6ab8c7' },
   { symbol: 'QTUM', name: 'Qtum', price: '$25,450', bg: '#6a9dbf' },
   { symbol: 'LTC', name: 'Litecoin', price: '$25,450', bg: '#b5b2b2' },
-  { symbol: 'BTG', name: 'Bitcoin Gold', price: '$25,450', bg: '#f59e0b' },
+  { symbol: 'BTG', name: 'Bitcoin Gold', price: '$25,450', bg: '#c19862' },
   { symbol: 'DASH', name: 'Dash', price: '$25,450', bg: '#6a8faa' },
   { symbol: 'EOS', name: 'EOS', price: '$25,450', bg: '#5e5a6b' },
   { symbol: 'ADA', name: 'Cardano', price: '$25,450', bg: '#5c6ba3' },
@@ -293,13 +293,13 @@ const TRANSACTIONS = [
 ];
 
 const MARKET_CAP = [
-  { rank: 1, symbol: 'BTC', name: 'Bitcoin', price: '$11,590.90', change: '+5.24%', up: true, bg: '#f59e0b' },
+  { rank: 1, symbol: 'BTC', name: 'Bitcoin', price: '$11,590.90', change: '+5.24%', up: true, bg: '#c19862' },
   { rank: 2, symbol: 'ETH', name: 'Ethereum', price: '$1,485.40', change: '+8.12%', up: true, bg: '#8b92b3' },
   { rank: 3, symbol: 'XRP', name: 'Ripple', price: '$0.8525', change: '-2.03%', up: false, bg: '#6aa8bf' },
   { rank: 4, symbol: 'BCH', name: 'Bitcoin Cash', price: '$540.80', change: '+3.18%', up: true, bg: '#8daa6e' },
   { rank: 5, symbol: 'ADA', name: 'Cardano', price: '$0.3254', change: '-1.45%', up: false, bg: '#5c6ba3' },
   { rank: 6, symbol: 'LTC', name: 'Litecoin', price: '$165.50', change: '+4.87%', up: true, bg: '#b5b2b2' },
-  { rank: 7, symbol: 'NEO', name: 'Neo', price: '$125.30', change: '+2.55%', up: true, bg: '#2563eb' },
+  { rank: 7, symbol: 'NEO', name: 'Neo', price: '$125.30', change: '+2.55%', up: true, bg: '#567ebb' },
   { rank: 8, symbol: 'XLM', name: 'Stellar', price: '$0.4120', change: '-0.95%', up: false, bg: '#6ab8c7' },
 ];
 
@@ -533,24 +533,24 @@ const InteractiveBtcChart: React.FC = () => {
       <svg width="100%" height="100%" viewBox="0 0 600 200" preserveAspectRatio="none">
         <defs>
           <linearGradient id="btcGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
-            <stop offset="100%" stopColor="#f59e0b" stopOpacity={0.02} />
+            <stop offset="0%" stopColor="#c19862" stopOpacity={0.3} />
+            <stop offset="100%" stopColor="#c19862" stopOpacity={0.02} />
           </linearGradient>
         </defs>
         {[0, 50, 100, 150, 200].map(y => (
           <line key={y} x1="0" y1={y} x2="600" y2={y} stroke="#e5e7eb" strokeWidth="0.5" />
         ))}
         <path d={`${btcPath()} L600,200 L0,200 Z`} fill="url(#btcGrad)" />
-        <path d={btcPath()} fill="none" stroke="#f59e0b" strokeWidth="2" ref={pathRef} />
+        <path d={btcPath()} fill="none" stroke="#c19862" strokeWidth="2" ref={pathRef} />
         {hover && (
           <>
-            <line x1={hover.svgX} y1="0" x2={hover.svgX} y2="200" stroke="#f59e0b" strokeWidth="0.8" strokeDasharray="4,3" opacity="0.5" />
+            <line x1={hover.svgX} y1="0" x2={hover.svgX} y2="200" stroke="#c19862" strokeWidth="0.8" strokeDasharray="4,3" opacity="0.5" />
             <line x1="0" y1={hover.svgY} x2="600" y2={hover.svgY} stroke="#aaa" strokeWidth="0.5" strokeDasharray="3,3" opacity="0.4" />
-            <circle cx={hover.svgX} cy={hover.svgY} r="4" fill="#fff" stroke="#f59e0b" strokeWidth="2" />
+            <circle cx={hover.svgX} cy={hover.svgY} r="4" fill="#fff" stroke="#c19862" strokeWidth="2" />
           </>
         )}
       </svg>
-      {hover && <Tooltip $x={hover.px} $y={hover.py - 8} $color="#f59e0b">{hover.val}</Tooltip>}
+      {hover && <Tooltip $x={hover.px} $y={hover.py - 8} $color="#c19862">{hover.val}</Tooltip>}
     </ChartArea>
   );
 };
@@ -736,7 +736,7 @@ const Dashboard: React.FC = () => {
               {TRANSACTIONS.map((tx, i) => (
                 <tr key={i}>
                   <td>{tx.date}</td>
-                  <td style={{ color: tx.type === 'Buy' ? '#2563eb' : '#ef4444', fontWeight: 600 }}>{tx.type === 'Buy' ? t('dashboard.buy') : t('dashboard.sell')}</td>
+                  <td style={{ color: tx.type === 'Buy' ? '#567ebb' : '#c47474', fontWeight: 600 }}>{tx.type === 'Buy' ? t('dashboard.buy') : t('dashboard.sell')}</td>
                   <td>{tx.amount}</td>
                   <td>{tx.remaining}</td>
                   <td>{tx.price}</td>

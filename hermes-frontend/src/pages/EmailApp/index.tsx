@@ -248,7 +248,7 @@ const StarBtn = styled.button<{ $active?: boolean }>`
 `;
 
 /* Initial-based avatar */
-const avatarPalette = ['#3b82f6', '#10b981', '#f59e0b', '#f87171', '#3b82f6', '#94a3b8', '#10b981', '#94a3b8'];
+const avatarPalette = ['#6890c2', '#5fa088', '#c19862', '#c78787', '#6890c2', '#94a3b8', '#5fa088', '#94a3b8'];
 
 const getAvatarColor = (name: string): string => {
   let hash = 0;
@@ -822,10 +822,10 @@ interface EmailData {
 }
 
 const colorMap: Record<string, string> = {
-  pdf: '#f87171',
-  exc: '#10b981',
-  zip: '#3b82f6',
-  docx: '#3b82f6',
+  pdf: '#c78787',
+  exc: '#5fa088',
+  zip: '#6890c2',
+  docx: '#6890c2',
 };
 
 const emails: EmailData[] = [

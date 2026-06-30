@@ -72,7 +72,7 @@ const IconSortArrow = () => (
 
 const IconLeadScraper = () => (
   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="40" height="40" rx="10" fill="#3b82f6"/>
+    <rect width="40" height="40" rx="10" fill="#6890c2"/>
     <path d="M13 17a7 7 0 0 1 14 0" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
     <circle cx="20" cy="15" r="3.5" stroke="#fff" strokeWidth="1.8"/>
     <path d="M11 28c0-3.87 4.03-7 9-7s9 3.13 9 7" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
@@ -82,7 +82,7 @@ const IconLeadScraper = () => (
 /* ── Avatar color from name hash ── */
 
 const hashColor = (name: string): string => {
-  const colors = ['#3b82f6', '#2563eb', '#f59e0b', '#ef4444', '#1d4ed8', '#94a3b8', '#10b981', '#94a3b8'];
+  const colors = ['#6890c2', '#567ebb', '#c19862', '#c47474', '#4367a3', '#94a3b8', '#5fa088', '#94a3b8'];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -147,7 +147,7 @@ const KpiRow = styled.div`
 `;
 
 const KpiCard = styled.div`
-  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  background: #ffffff;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
   box-shadow: 0 1px 2px rgba(15,23,42,0.04);
@@ -237,7 +237,7 @@ const AddBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border: none;
   border-radius: ${({ theme }) => theme.radii.control}px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #6890c2 0%, #567ebb 50%, #4367a3 100%);
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -248,7 +248,7 @@ const AddBtn = styled.button`
   &:hover {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(37,99,235,0.3), 0 2px 4px rgba(37,99,235,0.15), inset 0 1px 0 rgba(255,255,255,0.2);
-    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
+    background: linear-gradient(135deg, #829ecf 0%, #6890c2 50%, #567ebb 100%);
   }
   &:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(37,99,235,0.2); }
 `;
@@ -270,7 +270,7 @@ const TabItem = styled.button<{ $active?: boolean }>`
   flex: none;
   padding: 14px ${({ theme }) => theme.spacing.lg}px;
   background: ${({ $active }) => $active
-    ? 'linear-gradient(180deg, transparent 0%, rgba(37,99,235,0.04) 100%)'
+    ? 'transparent'
     : 'transparent'};
   border: none;
   border-bottom: 2px solid ${({ $active, theme }) => $active ? theme.colors.blue : 'transparent'};
@@ -295,7 +295,7 @@ const TabCount = styled.span<{ $active?: boolean }>`
   font-size: 0.6875rem;
   font-weight: 600;
   background: ${({ $active, theme }) => $active
-    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+    ? 'linear-gradient(135deg, #6890c2 0%, #567ebb 100%)'
     : theme.colors.surfaceMuted};
   color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textTertiary};
 `;
@@ -362,7 +362,7 @@ const Table = styled.table`
     font-size: 0.6875rem;
     letter-spacing: 0.03em;
     color: ${({ theme }) => theme.colors.textTertiary};
-    background: linear-gradient(180deg, #fafbfc 0%, #f4f5f7 100%);
+    background: #f9fafb;
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
     user-select: none;
     cursor: default;
@@ -377,7 +377,7 @@ const Table = styled.table`
 
 const TRow = styled.tr<{ $even?: boolean }>`
   background: ${({ $even, theme }) => $even
-    ? 'linear-gradient(180deg, #fafbfc 0%, #f4f5f7 100%)'
+    ? '#f9fafb'
     : theme.colors.surface};
   transition: background 0.15s ease;
   &:hover {
@@ -453,7 +453,7 @@ const Tag = styled.span`
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 0.6875rem;
-  background: linear-gradient(135deg, #f4f5f7 0%, #e5e7eb 100%);
+  background: #f4f5f7;
   color: ${({ theme }) => theme.colors.textSecondary};
   border: 1px solid ${({ theme }) => theme.colors.border};
 `;
@@ -510,7 +510,7 @@ const PageBtn = styled.button<{ $active?: boolean }>`
   border: 1px solid ${({ $active, theme }) => $active ? 'transparent' : theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
   background: ${({ $active }) => $active
-    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+    ? 'linear-gradient(135deg, #6890c2 0%, #567ebb 100%)'
     : '#fff'};
   color: ${({ $active }) => $active ? '#fff' : '#475569'};
   font-size: 0.75rem;
@@ -630,7 +630,7 @@ const PrimaryBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border: none;
   border-radius: ${({ theme }) => theme.radii.control}px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #6890c2 0%, #567ebb 50%, #4367a3 100%);
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
@@ -640,7 +640,7 @@ const PrimaryBtn = styled.button`
   transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
   &:hover:not(:disabled) {
     transform: translateY(-1px);
-    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
+    background: linear-gradient(135deg, #829ecf 0%, #6890c2 50%, #567ebb 100%);
     box-shadow: 0 4px 12px rgba(37,99,235,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
   }
   &:active:not(:disabled) { transform: translateY(0); }
@@ -852,7 +852,7 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   white-space: nowrap;
   transition: opacity 0.15s;
   background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? '#ef4444' :
+    $variant === 'danger' ? '#c47474' :
     $variant === 'primary' ? theme.colors.blue : theme.colors.surfaceMuted};
   color: ${({ $variant }) =>
     $variant === 'danger' ? '#fff' :
@@ -1000,7 +1000,7 @@ const Leads: React.FC = () => {
       {/* KPI Cards */}
       <KpiRow>
         <KpiCard>
-          <KpiIconWrap $bg="#e3f5f6" $fg="#3b82f6">
+          <KpiIconWrap $bg="#e3f5f6" $fg="#6890c2">
             <IconUsers />
           </KpiIconWrap>
           <KpiText>
@@ -1009,7 +1009,7 @@ const Leads: React.FC = () => {
           </KpiText>
         </KpiCard>
         <KpiCard>
-          <KpiIconWrap $bg="#ebf3f4" $fg="#2563eb">
+          <KpiIconWrap $bg="#ebf3f4" $fg="#567ebb">
             <IconSparkle />
           </KpiIconWrap>
           <KpiText>
@@ -1018,7 +1018,7 @@ const Leads: React.FC = () => {
           </KpiText>
         </KpiCard>
         <KpiCard>
-          <KpiIconWrap $bg="#f5f0eb" $fg="#f59e0b">
+          <KpiIconWrap $bg="#f5f0eb" $fg="#c19862">
             <IconClock />
           </KpiIconWrap>
           <KpiText>
@@ -1027,7 +1027,7 @@ const Leads: React.FC = () => {
           </KpiText>
         </KpiCard>
         <KpiCard>
-          <KpiIconWrap $bg="#e0f2f1" $fg="#10b981">
+          <KpiIconWrap $bg="#e0f2f1" $fg="#5fa088">
             <IconCheckCircle />
           </KpiIconWrap>
           <KpiText>
@@ -1104,8 +1104,8 @@ const Leads: React.FC = () => {
                           style={{
                             marginTop: 4,
                             padding: '6px 14px',
-                            border: '1px solid #3b82f6',
-                            background: '#3b82f6',
+                            border: '1px solid #6890c2',
+                            background: '#6890c2',
                             color: '#fff',
                             borderRadius: 4,
                             cursor: 'pointer',
@@ -1153,18 +1153,18 @@ const Leads: React.FC = () => {
                         <td>
                           {lead.status && lead.status !== 'contacted' && NEXT_STATUS[lead.status] && (
                             <ActionBtn
-                              $color="#3b82f6"
+                              $color="#6890c2"
                               title={STATUS_LABEL[lead.status]}
                               onClick={(e) => { e.stopPropagation(); handleStatusChange(lead._id, NEXT_STATUS[lead.status!]); }}
                             >
                               <IconArrowRight />
                             </ActionBtn>
                           )}
-                          <ActionBtn $color="#f59e0b" title="View" onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); }}>
+                          <ActionBtn $color="#c19862" title="View" onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); }}>
                             <IconEye />
                           </ActionBtn>
                           <ActionBtn
-                            $color="#ef4444"
+                            $color="#c47474"
                             title="Delete"
                             onClick={(e) => { e.stopPropagation(); handleDelete(lead._id); }}
                           >

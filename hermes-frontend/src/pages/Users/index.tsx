@@ -83,7 +83,7 @@ const StatLabel = styled.div`
 /* ── Card ── */
 
 const Card = styled.div`
-  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  background: #ffffff;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
   box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
@@ -102,7 +102,7 @@ const ProfileHeader = styled.div`
 
 const ProfileIcon = styled.div`
   width: 56px; height: 56px; border-radius: 50%;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: linear-gradient(135deg, #6890c2 0%, #567ebb 100%);
   display: flex; align-items: center; justify-content: center;
   color: #fff; flex-shrink: 0;
   svg { width: 28px; height: 28px; }
@@ -126,11 +126,11 @@ const Tab = styled.button<{ $active?: boolean }>`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border: none;
   background: ${({ $active }) => $active
-    ? 'linear-gradient(180deg, transparent 0%, rgba(37,99,235,0.04) 100%)'
+    ? 'transparent'
     : 'transparent'};
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textTertiary};
-  border-bottom: 2px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#567ebb' : theme.colors.textTertiary};
+  border-bottom: 2px solid ${({ $active }) => $active ? '#567ebb' : 'transparent'};
   margin-bottom: -1px; white-space: nowrap;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
   &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
@@ -142,7 +142,7 @@ const TabCount = styled.span<{ $active?: boolean }>`
   border-radius: 9px; margin-left: 6px;
   font-size: 0.625rem; font-weight: 600;
   background: ${({ $active, theme }) => $active
-    ? 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)'
+    ? 'linear-gradient(135deg, #6890c2 0%, #567ebb 100%)'
     : theme.colors.surfaceMuted};
   color: ${({ $active }) => $active ? '#fff' : theme.colors.textTertiary};
 `;
@@ -161,7 +161,7 @@ const Table = styled.table`
   th {
     font-weight: 600; text-transform: uppercase; font-size: 0.6875rem;
     color: ${({ theme }) => theme.colors.textTertiary};
-    background: linear-gradient(180deg, #fafbfc 0%, #f4f5f7 100%);
+    background: #f9fafb;
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   }
   ${media.mobile} {
@@ -174,11 +174,11 @@ const Table = styled.table`
 
 const TRow = styled.tr<{ $even?: boolean }>`
   background: ${({ $even, theme }) => $even
-    ? 'linear-gradient(180deg, #fafbfc 0%, #f4f5f7 100%)'
+    ? '#f9fafb'
     : theme.colors.surface};
   transition: background 0.15s;
   &:hover {
-    background: linear-gradient(90deg, #eff6ff 0%, #fafbfc 50%, #fafbfc 100%);
+    background: #f0f7ff;
   }
   td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
   cursor: pointer;
@@ -205,9 +205,9 @@ const UserName = styled.span`
 /* ── Role badge ── */
 
 const ROLE_COLORS: Record<string, { bg: string; fg: string; avatar: string }> = {
-  admin:   { bg: '#1d4ed818', fg: '#1d4ed8', avatar: '#1d4ed8' },
-  manager: { bg: '#f59e0b18', fg: '#f59e0b', avatar: '#f59e0b' },
-  user:    { bg: '#3b82f618', fg: '#3b82f6', avatar: '#3b82f6' },
+  admin:   { bg: '#4367a318', fg: '#4367a3', avatar: '#4367a3' },
+  manager: { bg: '#c1986218', fg: '#c19862', avatar: '#c19862' },
+  user:    { bg: '#6890c218', fg: '#6890c2', avatar: '#6890c2' },
 };
 
 const RoleBadge = styled.span<{ $bg: string; $fg: string }>`
@@ -386,7 +386,7 @@ const DpActivityItem = styled.div`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #3b82f6;
+    background: #6890c2;
     border: 2px solid ${({ theme }) => theme.colors.surface};
   }
 `;
@@ -410,9 +410,9 @@ const DpPermBadge = styled.span<{ $active?: boolean }>`
   border-radius: 99px;
   font-size: 0.75rem;
   font-weight: 500;
-  background: ${({ $active }) => $active ? '#2563eb18' : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textTertiary};
-  border: 1px solid ${({ $active }) => $active ? '#2563eb40' : '#0f172a18'};
+  background: ${({ $active }) => $active ? '#567ebb18' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#567ebb' : theme.colors.textTertiary};
+  border: 1px solid ${({ $active }) => $active ? '#567ebb40' : '#0f172a18'};
 `;
 
 const DpFooter = styled.div`
@@ -439,8 +439,8 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   white-space: nowrap;
   transition: opacity 0.15s;
   background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? '#ef4444' :
-    $variant === 'primary' ? '#2563eb' : theme.colors.surfaceMuted};
+    $variant === 'danger' ? '#c47474' :
+    $variant === 'primary' ? '#567ebb' : theme.colors.surfaceMuted};
   color: ${({ $variant }) =>
     $variant === 'danger' ? '#fff' :
     $variant === 'primary' ? '#fff' : 'inherit'};
@@ -672,7 +672,7 @@ const Users: React.FC = () => {
                 </DpField>
                 <DpField>
                   <DpFieldLabel>Status</DpFieldLabel>
-                  <DpFieldValue style={{ color: '#2563eb' }}>Active</DpFieldValue>
+                  <DpFieldValue style={{ color: '#567ebb' }}>Active</DpFieldValue>
                 </DpField>
                 <DpField>
                   <DpFieldLabel>Join Date</DpFieldLabel>

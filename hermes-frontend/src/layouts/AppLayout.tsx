@@ -92,7 +92,7 @@ const MobileHamburgerBtn = styled.button<{ $open?: boolean }>`
   border: none;
   border-radius: ${({ theme }) => theme.radii.control}px;
   background: transparent;
-  color: var(--primary, #2563eb);
+  color: var(--primary, #567ebb);
   cursor: pointer;
   position: fixed;
   top: 12px;

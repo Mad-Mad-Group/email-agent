@@ -725,9 +725,9 @@ const IsometricWorld: React.FC = () => {
             <ellipse cx="11" cy="40" rx="10" ry="3" fill="rgba(0,0,0,.06)" />
             {/* Trunk with bark texture */}
             <rect x="9" y="26" width="5" height="14" fill="#7a5a14" />
-            <rect x="9" y="26" width="2" height="14" fill="#92400e" />
-            <line x1="10" y1="28" x2="10" y2="38" stroke="#92400e" strokeWidth="0.4" opacity="0.3" />
-            <line x1="12" y1="27" x2="12" y2="39" stroke="#92400e" strokeWidth="0.3" opacity="0.2" />
+            <rect x="9" y="26" width="2" height="14" fill="#6e3011" />
+            <line x1="10" y1="28" x2="10" y2="38" stroke="#6e3011" strokeWidth="0.4" opacity="0.3" />
+            <line x1="12" y1="27" x2="12" y2="39" stroke="#6e3011" strokeWidth="0.3" opacity="0.2" />
             {/* Bottom foliage (largest, darkest) */}
             <ellipse cx="11" cy="22" rx="12" ry="10" fill={dark?'#2d7a24':'#3a9a30'} />
             {/* Middle foliage */}
@@ -822,26 +822,26 @@ const IsometricWorld: React.FC = () => {
         {/* Bench 1 — left */}
         <g transform="translate(45,182)">
           {/* Seat */}
-          <polygon points="0,4 20,14 20,16 0,6" fill="#92400e" stroke="#92400e" strokeWidth="0.5" />
+          <polygon points="0,4 20,14 20,16 0,6" fill="#6e3011" stroke="#6e3011" strokeWidth="0.5" />
           {/* Backrest */}
-          <polygon points="0,0 20,10 20,13 0,3" fill="#d97706" stroke="#92400e" strokeWidth="0.5" />
+          <polygon points="0,0 20,10 20,13 0,3" fill="#a87b40" stroke="#6e3011" strokeWidth="0.5" />
           {/* Legs */}
           <rect x="1" y="6" width="2" height="6" fill="#475569" />
           <rect x="17" y="16" width="2" height="6" fill="#475569" />
           <rect x="9" y="11" width="2" height="6" fill="#475569" />
           {/* Armrests */}
-          <rect x="0" y="2" width="2" height="5" rx="0.5" fill="#92400e" />
-          <rect x="18" y="12" width="2" height="5" rx="0.5" fill="#92400e" />
+          <rect x="0" y="2" width="2" height="5" rx="0.5" fill="#6e3011" />
+          <rect x="18" y="12" width="2" height="5" rx="0.5" fill="#6e3011" />
         </g>
         {/* Bench 2 — right */}
         <g transform="translate(335,187)">
-          <polygon points="20,4 0,14 0,16 20,6" fill="#92400e" stroke="#92400e" strokeWidth="0.5" />
-          <polygon points="20,0 0,10 0,13 20,3" fill="#d97706" stroke="#92400e" strokeWidth="0.5" />
+          <polygon points="20,4 0,14 0,16 20,6" fill="#6e3011" stroke="#6e3011" strokeWidth="0.5" />
+          <polygon points="20,0 0,10 0,13 20,3" fill="#a87b40" stroke="#6e3011" strokeWidth="0.5" />
           <rect x="17" y="6" width="2" height="6" fill="#475569" />
           <rect x="1" y="16" width="2" height="6" fill="#475569" />
           <rect x="9" y="11" width="2" height="6" fill="#475569" />
-          <rect x="18" y="2" width="2" height="5" rx="0.5" fill="#92400e" />
-          <rect x="0" y="12" width="2" height="5" rx="0.5" fill="#92400e" />
+          <rect x="18" y="2" width="2" height="5" rx="0.5" fill="#6e3011" />
+          <rect x="0" y="12" width="2" height="5" rx="0.5" fill="#6e3011" />
         </g>
 
         {/* ── Floor (diamond) — refined with subtle gradient ── */}
@@ -903,12 +903,12 @@ const IsometricWorld: React.FC = () => {
         <line x1="30" y1="230" x2="200" y2="145" stroke="#fff" strokeWidth="0.6" opacity="0.2" />
 
         {/* Left wall window — enhanced glass effect */}
-        <polygon points="75,253 140,220 140,185 75,218" fill="#78bbdd" stroke="#1d4ed8" strokeWidth="1.5" />
+        <polygon points="75,253 140,220 140,185 75,218" fill="#78bbdd" stroke="#4367a3" strokeWidth="1.5" />
         {/* Glass gradient overlay */}
         <polygon points="75,253 140,220 140,185 75,218" fill="url(#bldgHi)" />
         {/* Window cross */}
-        <line x1="108" y1="236" x2="108" y2="201" stroke="#1d4ed8" strokeWidth="1" />
-        <line x1="75" y1="236" x2="140" y2="203" stroke="#1d4ed8" strokeWidth="1" />
+        <line x1="108" y1="236" x2="108" y2="201" stroke="#4367a3" strokeWidth="1" />
+        <line x1="75" y1="236" x2="140" y2="203" stroke="#4367a3" strokeWidth="1" />
         {/* Shine — brighter */}
         <polygon points="78,249 78,222 100,211 100,238" fill="rgba(255,255,255,.25)" />
         {/* Window sill shadow */}
@@ -942,11 +942,11 @@ const IsometricWorld: React.FC = () => {
         <line x1="200" y1="145" x2="370" y2="230" stroke="#fff" strokeWidth="0.6" opacity="0.2" />
 
         {/* Right wall window — enhanced glass effect */}
-        <polygon points="255,218 320,250 320,215 255,183" fill="#78bbdd" stroke="#1d4ed8" strokeWidth="1.5" />
+        <polygon points="255,218 320,250 320,215 255,183" fill="#78bbdd" stroke="#4367a3" strokeWidth="1.5" />
         <polygon points="255,218 320,250 320,215 255,183" fill="url(#bldgHi)" />
         {/* Window cross */}
-        <line x1="288" y1="234" x2="288" y2="199" stroke="#1d4ed8" strokeWidth="1" />
-        <line x1="255" y1="201" x2="320" y2="233" stroke="#1d4ed8" strokeWidth="1" />
+        <line x1="288" y1="234" x2="288" y2="199" stroke="#4367a3" strokeWidth="1" />
+        <line x1="255" y1="201" x2="320" y2="233" stroke="#4367a3" strokeWidth="1" />
         {/* Shine — brighter */}
         <polygon points="258,215 258,188 280,199 280,226" fill="rgba(255,255,255,.25)" />
         {/* Window sill shadow */}
@@ -956,15 +956,15 @@ const IsometricWorld: React.FC = () => {
         <defs>
           <linearGradient id="doorGrad" x1="0" y1="0" x2="1" y2="0.5">
             <stop offset="0%" stopColor="#9a7520" />
-            <stop offset="50%" stopColor="#92400e" />
+            <stop offset="50%" stopColor="#6e3011" />
             <stop offset="100%" stopColor="#7a5a10" />
           </linearGradient>
         </defs>
         <polygon points={doorPts} fill="url(#doorGrad)" stroke="#5a3a08" strokeWidth="1.5" />
         {/* Door panels — with depth */}
-        <polygon points="322,258 336,265 336,234 322,227" fill="#9a7520" stroke="#92400e" strokeWidth="0.8" />
+        <polygon points="322,258 336,265 336,234 322,227" fill="#9a7520" stroke="#6e3011" strokeWidth="0.8" />
         <polygon points="323,256 335,263 335,236 323,229" fill="rgba(255,255,255,0.06)" />
-        <polygon points="339,267 350,272 350,241 339,236" fill="#9a7520" stroke="#92400e" strokeWidth="0.8" />
+        <polygon points="339,267 350,272 350,241 339,236" fill="#9a7520" stroke="#6e3011" strokeWidth="0.8" />
         <polygon points="340,265 349,270 349,243 340,238" fill="rgba(255,255,255,0.06)" />
         {/* Wood grain lines */}
         <g stroke="#7a5510" strokeWidth="0.3" opacity="0.2">
@@ -1076,7 +1076,7 @@ const IsometricWorld: React.FC = () => {
           <ellipse cx="6" cy="5" rx="3" ry="4" fill="#cceeff" opacity="0.4" />
           <ellipse cx="4" cy="5" rx="1.5" ry="4" fill="#fff" opacity="0.12" />
           {/* Hot/Cold taps */}
-          <ellipse cx="3.5" cy="17" rx="1.8" ry="1.2" fill="#ef4444" />
+          <ellipse cx="3.5" cy="17" rx="1.8" ry="1.2" fill="#c47474" />
           <ellipse cx="8.5" cy="17" rx="1.8" ry="1.2" fill="#3498db" />
           {/* Drip tray */}
           <rect x="1" y="20" width="10" height="1.5" rx="0.5" fill="#cbd5e1" />
@@ -1091,7 +1091,7 @@ const IsometricWorld: React.FC = () => {
           <ellipse cx="10" cy="0" rx="14" ry="7" fill="#c8a060" stroke="#b89050" strokeWidth="0.5" />
           <rect x="8" y="0" width="4" height="14" fill="#b89050" />
           {/* Snacks */}
-          <rect x="2" y="-5" width="6" height="4" rx="2" fill="#ef4444" />
+          <rect x="2" y="-5" width="6" height="4" rx="2" fill="#c47474" />
           <rect x="10" y="-4" width="5" height="3" rx="1.5" fill="#f39c12" />
           <circle cx="18" cy="-2" r="2.5" fill="#27ae60" />
         </g>
@@ -1164,16 +1164,16 @@ const IsometricWorld: React.FC = () => {
           <polygon points="22,28 50,14 50,28 22,42" fill="#6a4e2e" />
           {/* Dual monitors */}
           <rect x="4" y="-18" width="18" height="14" rx="1" fill="#0f172a" stroke="#111" strokeWidth="1" />
-          <rect x="6" y="-16" width="14" height="10" fill="#2563eb" />
+          <rect x="6" y="-16" width="14" height="10" fill="#567ebb" />
           <rect x="24" y="-16" width="16" height="12" rx="1" fill="#0f172a" stroke="#111" strokeWidth="0.8" />
-          <rect x="26" y="-14" width="12" height="8" fill="#2563eb" />
+          <rect x="26" y="-14" width="12" height="8" fill="#567ebb" />
           <rect x="10" y="-4" width="4" height="6" fill="#1e293b" /> {/* Stand 1 */}
           <rect x="30" y="-4" width="3" height="5" fill="#1e293b" /> {/* Stand 2 */}
           {/* Mouse */}
           <ellipse cx="44" cy="10" rx="3" ry="2" fill="#1e293b" />
           {/* Mini figurine (pixel robot) */}
           <g transform="translate(-2,2)">
-            <rect x="0" y="0" width="5" height="6" rx="1" fill="#ef4444" />
+            <rect x="0" y="0" width="5" height="6" rx="1" fill="#c47474" />
             <rect x="1" y="-2" width="3" height="3" rx="1" fill="#cbd5e1" />
             <rect x="1.5" y="-1" width="1" height="1" fill="#0f172a" />
             <rect x="2.5" y="-1" width="1" height="1" fill="#0f172a" />
@@ -1194,7 +1194,7 @@ const IsometricWorld: React.FC = () => {
           <polygon points="30,36 65,18 65,26 30,44" fill="#3a2818" />
           {/* Ultrawide monitor */}
           <rect x="6" y="-14" width="30" height="13" rx="1" fill="#0f172a" stroke="#111" strokeWidth="1" />
-          <rect x="8" y="-12" width="26" height="9" fill="#8b5cf6" />
+          <rect x="8" y="-12" width="26" height="9" fill="#9782b3" />
           <rect x="14" y="-8" width="5" height="4" fill="rgba(255,255,255,.4)">
             <animate attributeName="opacity" values="1;0;1" dur="0.6s" repeatCount="indefinite" />
           </rect>
@@ -1254,7 +1254,7 @@ const IsometricWorld: React.FC = () => {
           {/* Backrest */}
           <rect x="1" y="-12" width="14" height="13" rx="2" fill="#0f172a" />
           {/* Racing stripe */}
-          <rect x="2" y="-11" width="12" height="4" rx="1" fill="#ef4444" />
+          <rect x="2" y="-11" width="12" height="4" rx="1" fill="#c47474" />
           <rect x="2" y="-11" width="12" height="1.5" rx="0.5" fill="#f05050" opacity="0.3" />
           {/* Side bolsters */}
           <rect x="0" y="-10" width="2" height="10" rx="0.5" fill="#2a2a2a" />
@@ -1275,7 +1275,7 @@ const IsometricWorld: React.FC = () => {
 
         {/* Person 1 — Scraper dev, typing (with headphones!) */}
         <g transform="translate(108,215)">
-          <TypingPerson x={0} y={0} hair="#4a3520" shirt="#3b82f6" dur="0.35s" />
+          <TypingPerson x={0} y={0} hair="#4a3520" shirt="#6890c2" dur="0.35s" />
           {/* Headphones on head */}
           <path d="M-1,2 Q1,-4 13,-4 Q15,2 13,4" fill="none" stroke="#1e293b" strokeWidth="2" />
           <rect x="-2" y="1" width="3" height="4" rx="1" fill="#475569" />
@@ -1291,7 +1291,7 @@ const IsometricWorld: React.FC = () => {
 
         {/* Person 2 — Email dev at standing desk */}
         <g>
-          <TypingPerson x={233} y={222} hair="#6b4226" skin="#f0c896" shirt="#2563eb" dur="0.45s" />
+          <TypingPerson x={233} y={222} hair="#6b4226" skin="#f0c896" shirt="#567ebb" dur="0.45s" />
           {/* Speech bubble — 幫緊你幫緊你 (offset timing) */}
           <g transform="translate(233,222)" opacity="0.92">
             <animate attributeName="opacity" values="0;0;0;0;0;0.92;0.92;0.92;0;0" dur="8s" repeatCount="indefinite" />
@@ -1302,7 +1302,7 @@ const IsometricWorld: React.FC = () => {
         </g>
 
         {/* Person 3 — Qualifier dev, typing */}
-        <TypingPerson x={148} y={280} hair="#2d1810" skin="#e8b878" shirt="#8b5cf6" dur="0.3s" />
+        <TypingPerson x={148} y={280} hair="#2d1810" skin="#e8b878" shirt="#9782b3" dur="0.3s" />
         {/* Speech bubble — 幫緊你 (Qualifier, offset timing) */}
         <g transform="translate(148,280)" opacity="0.92">
           <animate attributeName="opacity" values="0;0;0;0;0;0;0;0.92;0.92;0" dur="8s" repeatCount="indefinite" />
@@ -1313,7 +1313,7 @@ const IsometricWorld: React.FC = () => {
 
         {/* Person 4 — Manager at big executive desk (right side of office) */}
         <g transform="translate(252,300)">
-          <TypingPerson x={0} y={0} hair="#1a1a2e" skin="#f5d0a9" shirt="#ef4444" dur="0.5s" />
+          <TypingPerson x={0} y={0} hair="#1a1a2e" skin="#f5d0a9" shirt="#c47474" dur="0.5s" />
           {/* Extra hair for manager — fuller, slicked back */}
           <path d="M-1,3 Q-1,-4 7.5,-4 Q16,-4 16,3 L16,1 Q16,-2 12,-3 L7.5,-3.5 Q3,-3 1,-2 Q-1,-1 -1,1 Z" fill="#1a1a2e" />
           <path d="M14,1 Q15,-1 15,2 L14,4 Q14,3 14,1 Z" fill="#1a1a2e" opacity="0.7" />
@@ -1343,9 +1343,9 @@ const IsometricWorld: React.FC = () => {
           <rect x="10" y="-20" width="28" height="16" rx="1.5" fill="#1a1a1a" stroke="#111" strokeWidth="1.2" />
           <rect x="12" y="-18" width="24" height="12" fill="#2c2c2c" />
           {/* Dashboard on screen */}
-          <rect x="14" y="-16" width="9" height="4" rx="0.5" fill="#2563eb" opacity="0.7" />
-          <rect x="24" y="-16" width="10" height="4" rx="0.5" fill="#f59e0b" opacity="0.5" />
-          <rect x="14" y="-11" width="20" height="3" rx="0.5" fill="#2563eb" opacity="0.4" />
+          <rect x="14" y="-16" width="9" height="4" rx="0.5" fill="#567ebb" opacity="0.7" />
+          <rect x="24" y="-16" width="10" height="4" rx="0.5" fill="#c19862" opacity="0.5" />
+          <rect x="14" y="-11" width="20" height="3" rx="0.5" fill="#567ebb" opacity="0.4" />
           {/* Monitor stand */}
           <rect x="20" y="-4" width="8" height="5" rx="0.5" fill="#1e293b" />
           <rect x="18" y="1" width="12" height="1.5" rx="0.5" fill="#475569" />
@@ -1421,10 +1421,10 @@ const IsometricWorld: React.FC = () => {
           {/* Shadow */}
           <ellipse cx="8" cy="11" rx="7" ry="2" fill="rgba(0,0,0,.06)" />
           {/* Body — smooth ellipse */}
-          <ellipse cx="5" cy="4.5" rx="6" ry="3.5" fill="#92400e" />
-          <ellipse cx="5" cy="5" rx="4" ry="2" fill="#d97706" opacity="0.3" />
+          <ellipse cx="5" cy="4.5" rx="6" ry="3.5" fill="#6e3011" />
+          <ellipse cx="5" cy="5" rx="4" ry="2" fill="#a87b40" opacity="0.3" />
           {/* Head — rounded */}
-          <ellipse cx="13" cy="2.5" rx="4" ry="3.5" fill="#d97706" />
+          <ellipse cx="13" cy="2.5" rx="4" ry="3.5" fill="#a87b40" />
           <ellipse cx="12.5" cy="2" rx="2.5" ry="1.8" fill="#b08828" opacity="0.2" />
           {/* Ears — floppy */}
           <ellipse cx="11.5" cy="-1" rx="1.8" ry="2.2" fill="#7a5510" />
@@ -1438,7 +1438,7 @@ const IsometricWorld: React.FC = () => {
           {/* Tongue (sticking out) */}
           <ellipse cx="16" cy="5" rx="1" ry="1.2" fill="#e87070" opacity="0.7" />
           {/* Tail — curved, wagging */}
-          <path d="M-1,2 Q-4,-1 -2,-4 Q-1,-5 0,-3" fill="none" stroke="#d97706" strokeWidth="1.8" strokeLinecap="round">
+          <path d="M-1,2 Q-4,-1 -2,-4 Q-1,-5 0,-3" fill="none" stroke="#a87b40" strokeWidth="1.8" strokeLinecap="round">
             <animateTransform attributeName="transform" type="rotate" values="-10,0,1;10,0,1;-10,0,1" dur="0.3s" repeatCount="indefinite" />
           </path>
           {/* Legs — with rounded paws */}
@@ -1458,24 +1458,24 @@ const IsometricWorld: React.FC = () => {
 
         {/* ── Tags ── */}
         <g fontFamily="monospace" fontWeight="700" fontSize="7">
-          <rect x="93" y="205" width="44" height="12" rx="6" fill="#3b82f6" opacity=".85" />
+          <rect x="93" y="205" width="44" height="12" rx="6" fill="#6890c2" opacity=".85" />
           <text x="115" y="214" fill="#fff" textAnchor="middle">SCRAPER</text>
 
-          <rect x="225" y="213" width="34" height="12" rx="6" fill="#2563eb" opacity=".85" />
+          <rect x="225" y="213" width="34" height="12" rx="6" fill="#567ebb" opacity=".85" />
           <text x="242" y="222" fill="#fff" textAnchor="middle">EMAIL</text>
 
-          <rect x="133" y="272" width="50" height="12" rx="6" fill="#8b5cf6" opacity=".85" />
+          <rect x="133" y="272" width="50" height="12" rx="6" fill="#9782b3" opacity=".85" />
           <text x="158" y="281" fill="#fff" textAnchor="middle">QUALIFIER</text>
         </g>
 
         {/* ── Status LEDs ── */}
-        <circle cx="143" cy="210" r="3" fill="#10b981">
+        <circle cx="143" cy="210" r="3" fill="#5fa088">
           <animate attributeName="opacity" values="1;.4;1" dur="2s" repeatCount="indefinite" />
         </circle>
-        <circle cx="265" cy="218" r="3" fill="#f59e0b">
+        <circle cx="265" cy="218" r="3" fill="#c19862">
           <animate attributeName="opacity" values="1;.4;1" dur="2s" repeatCount="indefinite" />
         </circle>
-        <circle cx="187" cy="277" r="3" fill="#10b981">
+        <circle cx="187" cy="277" r="3" fill="#5fa088">
           <animate attributeName="opacity" values="1;.4;1" dur="2s" repeatCount="indefinite" />
         </circle>
 

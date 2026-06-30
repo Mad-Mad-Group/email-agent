@@ -36,7 +36,7 @@ const PageSub = styled.small`
 /* ── Card ── */
 
 const Card = styled.div`
-  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  background: #ffffff;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
   box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
@@ -103,14 +103,14 @@ const FeedbackText = styled.span`
 const PrimaryBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.lg}px;
   border: none; border-radius: ${({ theme }) => theme.radii.control}px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #6890c2 0%, #567ebb 50%, #4367a3 100%);
   color: #fff;
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
   box-shadow: 0 1px 2px rgba(37,99,235,0.2), 0 2px 4px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.15);
   transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
   &:hover:not(:disabled) {
     transform: translateY(-1px);
-    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
+    background: linear-gradient(135deg, #829ecf 0%, #6890c2 50%, #567ebb 100%);
     box-shadow: 0 4px 12px rgba(37,99,235,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
   }
   &:active:not(:disabled) { transform: translateY(0); }

@@ -297,7 +297,7 @@ const PlusBtn = styled.button`
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: var(--primary, #2563eb);
+  background: var(--primary, #567ebb);
   color: #fff;
   font-size: 1rem;
   cursor: pointer;
@@ -371,7 +371,7 @@ const MLink = styled(NavLink)`
   }
 
   &.active {
-    color: var(--primary, #2563eb);
+    color: var(--primary, #567ebb);
     font-weight: 600;
   }
 
@@ -389,7 +389,7 @@ const MLinkButton = styled.button<{ $active?: boolean }>`
   padding: 8px 12px;
   border-radius: 8px;
   font-size: 0.8125rem;
-  color: ${({ theme, $active }) => $active ? 'var(--primary, #2563eb)' : theme.colors.textSecondary};
+  color: ${({ theme, $active }) => $active ? 'var(--primary, #567ebb)' : theme.colors.textSecondary};
   font-weight: ${({ $active }) => $active ? 600 : 400};
   text-decoration: none;
   transition: all 0.15s ease;
@@ -443,7 +443,7 @@ const SubLink = styled(NavLink)`
   }
 
   &.active {
-    color: var(--primary, #2563eb);
+    color: var(--primary, #567ebb);
     font-weight: 500;
   }
 `;
@@ -451,7 +451,7 @@ const SubLink = styled(NavLink)`
 const Badge = styled.span`
   font-size: 0.6875rem;
   font-weight: 600;
-  background: var(--primary, #2563eb);
+  background: var(--primary, #567ebb);
   color: #fff;
   padding: 1px 7px;
   border-radius: 20px;

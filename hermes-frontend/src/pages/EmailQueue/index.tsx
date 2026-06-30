@@ -46,7 +46,7 @@ const icons = {
 
 /* ── Avatar helper ── */
 
-const avatarPalette = ['#3b82f6', '#2563eb', '#f59e0b', '#ef4444', '#1d4ed8', '#94a3b8', '#10b981', '#94a3b8'];
+const avatarPalette = ['#6890c2', '#567ebb', '#c19862', '#c47474', '#4367a3', '#94a3b8', '#5fa088', '#94a3b8'];
 
 const getAvatarColor = (name: string): string => {
   let hash = 0;
@@ -81,18 +81,18 @@ interface StatusFolderDef {
 
 const statusFolders: StatusFolderDef[] = [
   { id: 'all', label: 'All', icon: 'inbox', filterValue: '', badgeColor: '#94a3b8' },
-  { id: 'pending', label: 'Pending', icon: 'clock', filterValue: 'pending', badgeColor: '#f59e0b' },
-  { id: 'approved', label: 'Approved', icon: 'check', filterValue: 'approved', badgeColor: '#10b981' },
-  { id: 'rejected', label: 'Rejected', icon: 'x', filterValue: 'rejected', badgeColor: '#ef4444' },
-  { id: 'sent', label: 'Sent', icon: 'send', filterValue: 'sent', badgeColor: '#2563eb' },
+  { id: 'pending', label: 'Pending', icon: 'clock', filterValue: 'pending', badgeColor: '#c19862' },
+  { id: 'approved', label: 'Approved', icon: 'check', filterValue: 'approved', badgeColor: '#5fa088' },
+  { id: 'rejected', label: 'Rejected', icon: 'x', filterValue: 'rejected', badgeColor: '#c47474' },
+  { id: 'sent', label: 'Sent', icon: 'send', filterValue: 'sent', badgeColor: '#567ebb' },
   { id: 'failed', label: 'Failed', icon: 'exclamation', filterValue: 'failed', badgeColor: '#475569' },
 ];
 
 const statusColorMap: Record<string, string> = {
-  pending: '#f59e0b',
-  approved: '#10b981',
-  rejected: '#ef4444',
-  sent: '#2563eb',
+  pending: '#c19862',
+  approved: '#5fa088',
+  rejected: '#c47474',
+  sent: '#567ebb',
   failed: '#475569',
 };
 
@@ -119,13 +119,13 @@ const PageTab = styled.button<{ $active: boolean }>`
   padding: 10px 20px;
   border: none;
   background: ${({ $active }) => $active
-    ? 'linear-gradient(180deg, transparent 0%, rgba(37,99,235,0.04) 100%)'
+    ? 'transparent'
     : 'transparent'};
   font-size: 0.875rem;
   font-weight: ${({ $active }) => $active ? 700 : 500};
   cursor: pointer;
-  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textSecondary};
-  border-bottom: 2px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#567ebb' : theme.colors.textSecondary};
+  border-bottom: 2px solid ${({ $active }) => $active ? '#567ebb' : 'transparent'};
   margin-bottom: -1px;
   transition: all 0.15s;
   &:hover {
@@ -236,7 +236,7 @@ const FolderItem = styled.li<{ $active?: boolean }>`
   }
   svg {
     flex-shrink: 0;
-    color: ${({ $active, theme }) => ($active ? '#2563eb' : theme.colors.textTertiary)};
+    color: ${({ $active, theme }) => ($active ? '#567ebb' : theme.colors.textTertiary)};
   }
 `;
 
@@ -328,17 +328,23 @@ const EmailListWrap = styled.div`
   overflow-y: auto;
 `;
 
-const EmailRow = styled.div`
+const EmailRow = styled.div<{ $selected?: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm}px;
   padding: 8px ${({ theme }) => theme.spacing.md}px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  border-left: 3px solid ${({ $selected, theme }) => $selected ? (theme.colors as any).accent || theme.colors.blue : 'transparent'};
   cursor: pointer;
   position: relative;
-  transition: background 0.12s;
+  background: ${({ $selected, theme }) => $selected
+    ? '#f0f7ff'
+    : 'transparent'};
+  transition: background 0.12s, border-left-color 0.12s;
   &:hover {
-    background: linear-gradient(90deg, #eff6ff 0%, #fafbfc 50%, #fafbfc 100%);
+    background: ${({ $selected }) => $selected
+      ? '#e0eef9'
+      : '#f0f7ff'};
   }
   &:hover .hover-actions {
     display: flex;
@@ -424,7 +430,7 @@ const StatusBadge = styled.span<{ $status?: string }>`
   white-space: nowrap;
   flex-shrink: 0;
   ${({ $status }) => {
-    const color = statusColorMap[$status || ''] || '#f59e0b';
+    const color = statusColorMap[$status || ''] || '#c19862';
     return `background: linear-gradient(135deg, ${color}1a 0%, ${color}26 100%); color: ${color}; border: 1px solid ${color}33;`;
   }}
 `;
@@ -502,8 +508,8 @@ const BulkCheckbox = styled.input`
   transition: all 0.15s;
 
   &:checked {
-    background: ${({ theme }) => theme.colors.accent};
-    border-color: ${({ theme }) => theme.colors.accent};
+    background: ${({ theme }) => (theme.colors as any).accent || theme.colors.blue};
+    border-color: ${({ theme }) => (theme.colors as any).accent || theme.colors.blue};
   }
   &:checked::after {
     content: '';
@@ -516,8 +522,12 @@ const BulkCheckbox = styled.input`
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);
   }
-  &:hover { border-color: ${({ theme }) => theme.colors.accent}; }
-  &:focus { outline: none; box-shadow: 0 0 0 3px ${({ theme }) => `${theme.colors.accent}33`}; }
+  &:hover { border-color: ${({ theme }) => (theme.colors as any).accent || theme.colors.blue}; }
+  &:focus { outline: none; box-shadow: 0 0 0 3px ${({ theme }) => `${(theme.colors as any).accent || theme.colors.blue}33`}; }
+`;
+
+const ToolbarCheckbox = styled(BulkCheckbox)`
+  margin: 0 12px 0 0;
 `;
 
 const BulkActionBar = styled.div`
@@ -526,13 +536,13 @@ const BulkActionBar = styled.div`
   gap: 12px;
   padding: 10px 16px;
   margin: 0 0 12px;
-  background: ${({ theme }) => `${theme.colors.accent}15`};
-  border: 1px solid ${({ theme }) => `${theme.colors.accent}44`};
+  background: ${({ theme }) => `${(theme.colors as any).accent || theme.colors.blue}15`};
+  border: 1px solid ${({ theme }) => `${(theme.colors as any).accent || theme.colors.blue}44`};
   border-radius: 8px;
   font-size: 0.875rem;
   color: ${({ theme }) => theme.colors.textPrimary};
 
-  strong { color: ${({ theme }) => theme.colors.accent}; margin: 0 4px; }
+  strong { color: ${({ theme }) => (theme.colors as any).accent || theme.colors.blue}; margin: 0 4px; }
 `;
 
 const BulkBtn = styled.button<{ $color: string }>`
@@ -856,10 +866,10 @@ const EmailQueue: React.FC = () => {
 
   const translatedStatusFolders: StatusFolderDef[] = [
     { id: 'all', label: t('emailQueue.all'), icon: 'inbox', filterValue: '', badgeColor: '#94a3b8' },
-    { id: 'pending', label: t('emailQueue.pending'), icon: 'clock', filterValue: 'pending', badgeColor: '#f59e0b' },
-    { id: 'approved', label: t('emailQueue.approved'), icon: 'check', filterValue: 'approved', badgeColor: '#10b981' },
-    { id: 'rejected', label: t('emailQueue.rejected'), icon: 'x', filterValue: 'rejected', badgeColor: '#ef4444' },
-    { id: 'sent', label: t('emailQueue.sent'), icon: 'send', filterValue: 'sent', badgeColor: '#2563eb' },
+    { id: 'pending', label: t('emailQueue.pending'), icon: 'clock', filterValue: 'pending', badgeColor: '#c19862' },
+    { id: 'approved', label: t('emailQueue.approved'), icon: 'check', filterValue: 'approved', badgeColor: '#5fa088' },
+    { id: 'rejected', label: t('emailQueue.rejected'), icon: 'x', filterValue: 'rejected', badgeColor: '#c47474' },
+    { id: 'sent', label: t('emailQueue.sent'), icon: 'send', filterValue: 'sent', badgeColor: '#567ebb' },
     { id: 'failed', label: t('emailQueue.failed'), icon: 'exclamation', filterValue: 'failed', badgeColor: '#475569' },
   ];
 
@@ -887,6 +897,8 @@ const EmailQueue: React.FC = () => {
     });
   };
   const clearSelection = () => setSelectedIds(new Set());
+  const selectAll = (ids: string[]) => setSelectedIds(new Set(ids));
+  const deselectAll = () => setSelectedIds(new Set());
 
   const handleBulkApprove = () => {
     if (selectedIds.size === 0) return;
@@ -927,6 +939,10 @@ const EmailQueue: React.FC = () => {
   const total = statusFiltered.length;
   const totalPages = Math.max(1, Math.ceil(total / LIMIT));
   const emails = statusFiltered.slice((page - 1) * LIMIT, page * LIMIT);
+  // 全選/全不選狀態: 考慮所有 filter 後的 email（唔只當前頁）
+  const visibleIds = statusFiltered.map(e => e._id);
+  const allSelected = visibleIds.length > 0 && visibleIds.every(id => selectedIds.has(id));
+  const someSelected = !allSelected && visibleIds.some(id => selectedIds.has(id));
 
   // Per-status counts for sidebar badges（用全量數據計，唔受 filter 影響）
   const statusCounts: Record<string, number> = {};
@@ -1018,6 +1034,18 @@ const EmailQueue: React.FC = () => {
     <MainPanel>
       <Toolbar>
         <ToolbarLeft>
+          <ToolbarCheckbox
+            type="checkbox"
+            checked={allSelected}
+            ref={(el) => {
+              if (el) el.indeterminate = someSelected;
+            }}
+            onChange={(e) => {
+              if (e.target.checked) selectAll(visibleIds);
+              else deselectAll();
+            }}
+            aria-label="全選/全不選"
+          />
           <ToolbarTitle>{t('emailQueue.outbox')}</ToolbarTitle>
         </ToolbarLeft>
         <ToolbarRight>
@@ -1048,8 +1076,8 @@ const EmailQueue: React.FC = () => {
               onClick={() => refetch()}
               style={{
                 padding: '6px 14px',
-                border: '1px solid #3b82f6',
-                background: '#3b82f6',
+                border: '1px solid #6890c2',
+                background: '#6890c2',
                 color: '#fff',
                 borderRadius: 4,
                 cursor: 'pointer',
@@ -1102,7 +1130,7 @@ const EmailQueue: React.FC = () => {
               const status = item.status || 'pending';
 
               return (
-                <EmailRow key={item._id} onClick={() => openDetail(item)}>
+                <EmailRow key={item._id} $selected={selectedIds.has(item._id)} onClick={() => openDetail(item)}>
                 <BulkCheckbox
                   type="checkbox"
                   checked={selectedIds.has(item._id)}
@@ -1126,7 +1154,7 @@ const EmailQueue: React.FC = () => {
                   {status === 'pending' && (
                     <>
                       <HoverBtn
-                        $color="#2563eb"
+                        $color="#567ebb"
                         title={t('emailQueue.approve')}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1137,7 +1165,7 @@ const EmailQueue: React.FC = () => {
                         <I d={icons.check} />
                       </HoverBtn>
                       <HoverBtn
-                        $color="#ef4444"
+                        $color="#c47474"
                         title={t('emailQueue.reject')}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1151,7 +1179,7 @@ const EmailQueue: React.FC = () => {
                   )}
                   {status === 'approved' && (
                     <HoverBtn
-                      $color="#3b82f6"
+                      $color="#6890c2"
                       title={t('emailQueue.send')}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1163,7 +1191,7 @@ const EmailQueue: React.FC = () => {
                     </HoverBtn>
                   )}
                   <HoverBtn
-                    $color="#f59e0b"
+                    $color="#c19862"
                     title={t('emailQueue.preview')}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1198,7 +1226,7 @@ const EmailQueue: React.FC = () => {
           {status === 'pending' && (
             <>
               <DetailToolbarBtn
-                $color="#2563eb"
+                $color="#567ebb"
                 onClick={() => {
                   approve.mutate(item._id);
                   goList();
@@ -1209,7 +1237,7 @@ const EmailQueue: React.FC = () => {
                 {t('emailQueue.approve')}
               </DetailToolbarBtn>
               <DetailToolbarBtn
-                $color="#ef4444"
+                $color="#c47474"
                 onClick={() => {
                   handleReject(item._id);
                   goList();
@@ -1223,7 +1251,7 @@ const EmailQueue: React.FC = () => {
           )}
           {status === 'approved' && (
             <DetailToolbarBtn
-              $color="#3b82f6"
+              $color="#6890c2"
               onClick={() => {
                 send.mutate(item._id);
                 goList();
@@ -1298,7 +1326,7 @@ const EmailQueue: React.FC = () => {
             {status === 'pending' && (
               <>
                 <ActionButton
-                  $color="#2563eb"
+                  $color="#567ebb"
                   onClick={() => {
                     approve.mutate(item._id);
                     setModalPreview(null);
@@ -1308,7 +1336,7 @@ const EmailQueue: React.FC = () => {
                   {t('emailQueue.approve')}
                 </ActionButton>
                 <ActionButton
-                  $color="#ef4444"
+                  $color="#c47474"
                   onClick={() => {
                     handleReject(item._id);
                     setModalPreview(null);
@@ -1321,7 +1349,7 @@ const EmailQueue: React.FC = () => {
             )}
             {status === 'approved' && (
               <ActionButton
-                $color="#3b82f6"
+                $color="#6890c2"
                 onClick={() => {
                   send.mutate(item._id);
                   setModalPreview(null);

@@ -344,8 +344,8 @@ const Customers: React.FC = () => {
                     <td>{c.address}</td>
                     <td>
                       <ActionBtn $color="#c9a055" title={t('customers.favorite')}>&#9733;</ActionBtn>
-                      <ActionBtn $color="#3b82f6" title={t('customers.settings')}>&#9881;</ActionBtn>
-                      <ActionBtn $color="#f87171" title={t('customers.delete')}>&#128465;</ActionBtn>
+                      <ActionBtn $color="#6890c2" title={t('customers.settings')}>&#9881;</ActionBtn>
+                      <ActionBtn $color="#c78787" title={t('customers.delete')}>&#128465;</ActionBtn>
                     </td>
                   </TRow>
                 ))}

@@ -74,7 +74,7 @@ const HamburgerIcon = styled.span<{ $collapsed?: boolean }>`
     display: block;
     width: 22px;
     height: 2px;
-    background: var(--primary, #2563eb);
+    background: var(--primary, #567ebb);
     border-radius: 2px;
     transition: all 0.3s ease;
     position: absolute;
@@ -148,7 +148,7 @@ const SearchBar = styled.div`
       color: ${({ theme }) => theme.colors.textTertiary};
     }
     &:focus {
-      border-color: var(--primary, #2563eb);
+      border-color: var(--primary, #567ebb);
     }
   }
 `;
@@ -208,7 +208,7 @@ const LangLabel = styled.span`
   font-weight: 700;
   line-height: 1;
   color: #fff;
-  background: var(--primary, #2563eb);
+  background: var(--primary, #567ebb);
   padding: 1px 3px;
   border-radius: 3px;
   pointer-events: none;
@@ -237,7 +237,7 @@ const LangOption = styled.li<{ $active?: boolean }>`
   padding: 8px 14px;
   font-size: 0.8125rem;
   cursor: pointer;
-  color: ${({ theme, $active }) => $active ? 'var(--primary, #2563eb)' : theme.colors.textSecondary};
+  color: ${({ theme, $active }) => $active ? 'var(--primary, #567ebb)' : theme.colors.textSecondary};
   font-weight: ${({ $active }) => ($active ? 600 : 400)};
   transition: all 0.15s;
 
@@ -305,7 +305,7 @@ const UserAvatar = styled.div`
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: var(--primary, #2563eb);
+  background: var(--primary, #567ebb);
   display: flex;
   align-items: center;
   justify-content: center;

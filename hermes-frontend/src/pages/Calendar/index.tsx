@@ -74,7 +74,7 @@ const CalTitle = styled.h2`font-size: 1.1rem; font-weight: 600; margin: 0;`;
 const CalNav = styled.div`display: flex; gap: 4px; align-items: center;`;
 const CalBtn = styled.button<{ $primary?: boolean; $disabled?: boolean }>`
   padding: 6px 14px; border-radius: 6px; border: none; font-size: 0.8125rem; cursor: pointer;
-  background: ${({ $primary }) => $primary ? 'var(--primary, #f87171)' : '#f0f3f5'};
+  background: ${({ $primary }) => $primary ? 'var(--primary, #c78787)' : '#f0f3f5'};
   color: ${({ $primary, $disabled }) => $disabled ? '#aaa' : $primary ? '#fff' : '#0f172a'};
   opacity: ${({ $disabled }) => $disabled ? 0.6 : 1};
   &:hover { opacity: 0.85; }
@@ -115,13 +115,13 @@ const CellDay = styled.div<{ $today?: boolean }>`
   ${({ $today }) => $today && `
     display: inline-flex; align-items: center; justify-content: center;
     width: 22px; height: 22px; border-radius: 50%;
-    background: var(--primary, #f87171); color: #fff;
+    background: var(--primary, #c78787); color: #fff;
   `}
 `;
 
 const EventBlock = styled.div<{ $color?: string }>`
   padding: 2px 6px; margin: 1px 0; border-radius: 3px; font-size: 0.65rem;
-  background: ${({ $color }) => $color || '#2563eb'};
+  background: ${({ $color }) => $color || '#567ebb'};
   color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   cursor: pointer;
   ${media.mobile} {
@@ -153,15 +153,15 @@ interface CalEvent {
 }
 
 const EVENTS: CalEvent[] = [
-  { day: 1, title: 'All Day Event', type: 'block', color: '#2563eb' },
-  { day: 7, title: 'Long Event', type: 'block', color: '#2563eb', span: 3 },
+  { day: 1, title: 'All Day Event', type: 'block', color: '#567ebb' },
+  { day: 7, title: 'Long Event', type: 'block', color: '#567ebb', span: 3 },
   { day: 9, title: 'Repeating Event', time: '4p', type: 'dot' },
   { day: 16, title: 'Repeating Event', time: '4p', type: 'dot' },
-  { day: 23, title: 'Conference', type: 'block', color: '#2563eb', span: 2 },
+  { day: 23, title: 'Conference', type: 'block', color: '#567ebb', span: 2 },
   { day: 24, title: 'Meeting', time: '10:30a', type: 'dot' },
   { day: 24, title: 'Lunch', time: '12p', type: 'dot' },
   { day: 25, title: 'Birthday Party', time: '7a', type: 'dot' },
-  { day: 28, title: 'Click for Google', type: 'block', color: '#2563eb' },
+  { day: 28, title: 'Click for Google', type: 'block', color: '#567ebb' },
 ];
 
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();

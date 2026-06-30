@@ -87,21 +87,21 @@ function getParamsSummary(task: TaskItem): string {
 interface ColumnCfg { key: string; label: string; bg: string; gradient?: string; }
 
 const COLUMNS: ColumnCfg[] = [
-  { key: 'pending',    label: 'Pending',    bg: '#3b82f6', gradient: 'linear-gradient(135deg, #60a5fa 0%, #2563eb 100%)' },
-  { key: 'processing', label: 'Processing', bg: '#f59e0b', gradient: 'linear-gradient(135deg, #fbbf24 0%, #d97706 100%)' },
-  { key: 'completed',  label: 'Completed',  bg: '#10b981', gradient: 'linear-gradient(135deg, #34d399 0%, #059669 100%)' },
-  { key: 'failed',     label: 'Failed',     bg: '#ef4444', gradient: 'linear-gradient(135deg, #f87171 0%, #dc2626 100%)' },
+  { key: 'pending',    label: 'Pending',    bg: '#6890c2', gradient: 'linear-gradient(135deg, #829ecf 0%, #567ebb 100%)' },
+  { key: 'processing', label: 'Processing', bg: '#c19862', gradient: 'linear-gradient(135deg, #c7a76b 0%, #a87b40 100%)' },
+  { key: 'completed',  label: 'Completed',  bg: '#5fa088', gradient: 'linear-gradient(135deg, #75b294 0%, #46816a 100%)' },
+  { key: 'failed',     label: 'Failed',     bg: '#c47474', gradient: 'linear-gradient(135deg, #c78787 0%, #a85a5a 100%)' },
 ];
 
 /* ── Skill color palette ── */
 
 const SKILL_COLORS: Record<string, string> = {
-  S1: '#3b82f6', S2: '#f59e0b', S3: '#2563eb', S4: '#10b981',
-  scrape: '#3b82f6', email: '#f59e0b', analyze: '#2563eb',
+  S1: '#6890c2', S2: '#c19862', S3: '#567ebb', S4: '#5fa088',
+  scrape: '#6890c2', email: '#c19862', analyze: '#567ebb',
 };
 function skillColor(id: string): string {
   if (SKILL_COLORS[id]) return SKILL_COLORS[id];
-  const p = ['#3b82f6', '#f59e0b', '#2563eb', '#1d4ed8', '#ef4444', '#94a3b8'];
+  const p = ['#6890c2', '#c19862', '#567ebb', '#4367a3', '#c47474', '#94a3b8'];
   let h = 0;
   for (let i = 0; i < id.length; i++) h = id.charCodeAt(i) + ((h << 5) - h);
   return p[Math.abs(h) % p.length];
@@ -109,7 +109,7 @@ function skillColor(id: string): string {
 
 /* ── Avatar ── */
 
-const AV_PALETTE = ['#3b82f6', '#f59e0b', '#2563eb', '#ef4444', '#1d4ed8', '#94a3b8'];
+const AV_PALETTE = ['#6890c2', '#c19862', '#567ebb', '#c47474', '#4367a3', '#94a3b8'];
 function avColor(s: string): string {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h);
@@ -210,7 +210,7 @@ const Col = styled.div`
   min-width: 0;
   display: flex; flex-direction: column;
   border-radius: ${({ theme }) => theme.radii.card}px;
-  background: linear-gradient(180deg, #fafbfc 0%, #f4f5f7 100%);
+  background: #f9fafb;
   border: 1px solid ${({ theme }) => theme.colors.border};
   box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
   overflow: hidden;
@@ -280,7 +280,7 @@ const ColBody = styled.div<{ $collapsed?: boolean }>`
 /* ── Card ── */
 
 const Card = styled.div`
-  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  background: #ffffff;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.tile}px;
   padding: 12px ${({ theme }) => theme.spacing.md}px;
@@ -380,9 +380,9 @@ function fmtDate(iso: string): string {
 
 function priorityColor(p: string): string {
   switch (p) {
-    case 'high': case 'urgent': return '#ef4444';
-    case 'normal': return '#f59e0b';
-    case 'low': return '#2563eb';
+    case 'high': case 'urgent': return '#c47474';
+    case 'normal': return '#c19862';
+    case 'low': return '#567ebb';
     default: return '#94a3b8';
   }
 }

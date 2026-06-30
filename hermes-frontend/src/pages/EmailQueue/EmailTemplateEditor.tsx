@@ -140,13 +140,13 @@ const SmallBtn = styled.button<{ $danger?: boolean }>`
   padding: 4px;
   border-radius: 4px;
   cursor: pointer;
-  color: ${({ theme, $danger }) => $danger ? '#ef4444' : theme.colors.textSecondary};
+  color: ${({ theme, $danger }) => $danger ? '#c47474' : theme.colors.textSecondary};
   display: flex;
   align-items: center;
   transition: background 0.15s, color 0.15s, transform 0.1s;
   &:hover {
     background: ${({ $danger }) => $danger ? 'rgba(239,68,68,0.1)' : '#f4f5f7'};
-    color: ${({ theme, $danger }) => $danger ? '#dc2626' : theme.colors.textPrimary};
+    color: ${({ theme, $danger }) => $danger ? '#a85a5a' : theme.colors.textPrimary};
     transform: translateY(-1px);
   }
 `;
@@ -165,8 +165,8 @@ const TemplateItem = styled.div<{ $active: boolean }>`
   ${({ $active, theme }) =>
     $active
       ? css`
-          background: linear-gradient(90deg, #eff6ff 0%, #fafbfc 100%);
-          border-left-color: #2563eb;
+          background: #f0f7ff;
+          border-left-color: #567ebb;
           box-shadow: inset 0 0 0 1px #dbeafe;
         `
       : css`
@@ -299,7 +299,7 @@ const CategorySelect = styled.select`
   outline: none;
   cursor: pointer;
   &:focus {
-    border-color: #2563eb;
+    border-color: #567ebb;
   }
 `;
 
@@ -322,7 +322,7 @@ const RichEditor = styled.div`
   .variable-tag {
     display: inline-block;
     background: rgba(86, 153, 163, 0.12);
-    color: #2563eb;
+    color: #567ebb;
     border: 1px solid rgba(86, 153, 163, 0.3);
     border-radius: 3px;
     padding: 0 4px;
@@ -350,7 +350,7 @@ const SaveBtn = styled.button`
   padding: 5px 12px;
   border-radius: 6px;
   border: none;
-  background: #2563eb;
+  background: #567ebb;
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 500;
@@ -380,7 +380,7 @@ const PreviewTab = styled.button<{ $active: boolean }>`
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  border-bottom: 2px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
+  border-bottom: 2px solid ${({ $active }) => $active ? '#567ebb' : 'transparent'};
   &:hover { background: ${({ theme }) => theme.colors.surface}; }
 `;
 
@@ -444,7 +444,7 @@ const VarItem = styled.button`
   text-align: left;
   transition: all 0.15s;
   &:hover {
-    border-color: #2563eb;
+    border-color: #567ebb;
     background: rgba(86, 153, 163, 0.04);
   }
 `;
@@ -452,7 +452,7 @@ const VarItem = styled.button`
 const VarKey = styled.span`
   font-size: 0.75rem;
   font-family: 'SF Mono', 'Fira Code', monospace;
-  color: #2563eb;
+  color: #567ebb;
   white-space: nowrap;
 `;
 

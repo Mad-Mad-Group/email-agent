@@ -87,7 +87,7 @@ const BtnRow = styled.div`
 const PrimaryBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border: none; border-radius: ${({ theme }) => theme.radii.control}px;
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+  background: linear-gradient(135deg, #6890c2 0%, #567ebb 50%, #4367a3 100%);
   color: #fff;
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
   white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
@@ -95,7 +95,7 @@ const PrimaryBtn = styled.button`
   transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
   &:hover:not(:disabled) {
     transform: translateY(-1px);
-    background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 50%, #2563eb 100%);
+    background: linear-gradient(135deg, #829ecf 0%, #6890c2 50%, #567ebb 100%);
     box-shadow: 0 4px 12px rgba(37,99,235,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
   }
   &:active:not(:disabled) { transform: translateY(0); }
@@ -146,18 +146,18 @@ const Table = styled.table`
   th {
     font-weight: 600; text-transform: uppercase; font-size: 0.6875rem;
     color: ${({ theme }) => theme.colors.textTertiary};
-    background: linear-gradient(180deg, #fafbfc 0%, #f4f5f7 100%);
+    background: #f9fafb;
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   }
 `;
 
 const TRow = styled.tr<{ $even?: boolean }>`
   background: ${({ $even, theme }) => $even
-    ? 'linear-gradient(180deg, #fafbfc 0%, #f4f5f7 100%)'
+    ? '#f9fafb'
     : theme.colors.surface};
   transition: background 0.15s;
   &:hover {
-    background: linear-gradient(90deg, #eff6ff 0%, #fafbfc 50%, #fafbfc 100%);
+    background: #f0f7ff;
   }
   td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
   cursor: pointer;
@@ -198,11 +198,11 @@ const ResultCard = styled.div`
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  background: linear-gradient(180deg, #ffffff 0%, #fafbfc 100%);
+  background: #ffffff;
   cursor: pointer;
   transition: all 0.15s;
   &:hover {
-    border-color: #2563eb;
+    border-color: #567ebb;
     box-shadow: 0 4px 12px rgba(37,99,235,0.12), 0 2px 4px rgba(15,23,42,0.04);
     transform: translateY(-1px);
   }
@@ -247,7 +247,7 @@ const RcMeta = styled.div`
 `;
 
 const RcPhone = styled.span`
-  font-size: 0.75rem; color: #2563eb; font-weight: 500;
+  font-size: 0.75rem; color: #567ebb; font-weight: 500;
 `;
 
 const RcStatusBadge = styled.span<{ $status: string }>`
@@ -260,15 +260,15 @@ const RcStatusBadge = styled.span<{ $status: string }>`
   letter-spacing: 0.03em;
   flex-shrink: 0;
   background: ${({ $status }) =>
-    $status === 'qualified' ? '#2563eb22' :
-    $status === 'contacted' ? '#f59e0b22' :
-    $status === 'rejected' ? '#ef444422' :
-    '#3b82f622'};
+    $status === 'qualified' ? '#567ebb22' :
+    $status === 'contacted' ? '#c1986222' :
+    $status === 'rejected' ? '#c4747422' :
+    '#6890c222'};
   color: ${({ $status }) =>
-    $status === 'qualified' ? '#2563eb' :
+    $status === 'qualified' ? '#567ebb' :
     $status === 'contacted' ? '#94a3b8' :
     $status === 'rejected' ? '#c44' :
-    '#3b82f6'};
+    '#6890c2'};
 `;
 
 const RcActions = styled.div`
@@ -286,8 +286,8 @@ const RcSmallBtn = styled.button`
   cursor: pointer;
   white-space: nowrap;
   &:hover {
-    border-color: #2563eb;
-    color: #2563eb;
+    border-color: #567ebb;
+    color: #567ebb;
   }
 `;
 
@@ -339,14 +339,14 @@ const FilterToggle = styled.button<{ $active: boolean }>`
   gap: 5px;
   padding: 4px 12px;
   border-radius: 99px;
-  border: 1px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
-  background: ${({ $active }) => $active ? '#2563eb22' : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textSecondary};
+  border: 1px solid ${({ $active }) => $active ? '#567ebb' : 'transparent'};
+  background: ${({ $active }) => $active ? '#567ebb22' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#567ebb' : theme.colors.textSecondary};
   font-size: 0.6875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
-  &:hover { border-color: #2563eb; color: #2563eb; }
+  &:hover { border-color: #567ebb; color: #567ebb; }
 `;
 
 const FilterDivider = styled.span`
@@ -376,7 +376,7 @@ const RatingSlider = styled.input`
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #2563eb;
+    background: #567ebb;
     cursor: pointer;
   }
 `;
@@ -387,14 +387,14 @@ const SourceChip = styled.button<{ $active: boolean }>`
   gap: 4px;
   padding: 3px 10px;
   border-radius: 99px;
-  border: 1px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
-  background: ${({ $active }) => $active ? '#2563eb22' : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textSecondary};
+  border: 1px solid ${({ $active }) => $active ? '#567ebb' : 'transparent'};
+  background: ${({ $active }) => $active ? '#567ebb22' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#567ebb' : theme.colors.textSecondary};
   font-size: 0.625rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
-  &:hover { border-color: #2563eb; }
+  &:hover { border-color: #567ebb; }
 `;
 
 /* ── Contact info icons on card ── */
@@ -411,7 +411,7 @@ const ContactIcon = styled.span<{ $has: boolean }>`
   align-items: center;
   gap: 3px;
   font-size: 0.625rem;
-  color: ${({ $has }) => $has ? '#2563eb' : '#cbd5e1'};
+  color: ${({ $has }) => $has ? '#567ebb' : '#cbd5e1'};
   svg { opacity: ${({ $has }) => $has ? 1 : 0.4}; }
 `;
 
@@ -497,8 +497,8 @@ const DpTypeBadge = styled.span`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  background: #2563eb22;
-  color: #2563eb;
+  background: #567ebb22;
+  color: #567ebb;
 `;
 
 const DpCloseBtn = styled.button`
@@ -760,7 +760,7 @@ const MockResult = styled.div<{ $highlighted?: boolean }>`
   border-left: 2px solid transparent;
   ${({ $highlighted }) => $highlighted && css`
     background: rgba(37,99,235,0.08);
-    border-left-color: #2563eb;
+    border-left-color: #567ebb;
   `}
 `;
 
@@ -815,7 +815,7 @@ const AgentDot = styled.span`
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #10b981;
+  background: #5fa088;
   animation: ${pulseAgent} 1.5s ease-in-out infinite;
 `;
 
@@ -833,7 +833,7 @@ const LogTime = styled.span`
 `;
 
 const LogUrl = styled.span`
-  color: #2563eb;
+  color: #567ebb;
 `;
 
 /* ── Pipeline Progress ── */
@@ -856,7 +856,7 @@ const ProgressBarOuter = styled.div`
 const ProgressBarInner = styled.div<{ $percent: number }>`
   height: 100%;
   width: ${({ $percent }) => $percent}%;
-  background: #2563eb;
+  background: #567ebb;
   border-radius: 4px;
   transition: width 0.4s ease;
 `;
@@ -888,7 +888,7 @@ const PipelineLogLine = styled.div<{ $level?: string }>`
   line-height: 1.6;
   color: ${({ $level, theme }) =>
     $level === 'error' ? theme.colors.red
-    : $level === 'warn' ? '#f59e0b'
+    : $level === 'warn' ? '#c19862'
     : theme.colors.textSecondary};
 `;
 
@@ -898,7 +898,7 @@ const PipelineLogTime = styled.span`
 `;
 
 const PipelineLogStage = styled.span`
-  color: #2563eb;
+  color: #567ebb;
   font-weight: 600;
   margin-right: 6px;
 `;
@@ -958,10 +958,10 @@ function renderResults(data: unknown, onRowClick?: (row: Record<string, unknown>
 /* ── Detail panel helpers ── */
 
 const TYPE_COLORS: Record<string, string> = {
-  business: '#2563eb',
-  person: '#3b82f6',
-  place: '#f59e0b',
-  default: '#2563eb',
+  business: '#567ebb',
+  person: '#6890c2',
+  place: '#c19862',
+  default: '#567ebb',
 };
 
 function getResultTitle(row: Record<string, unknown>): string {
@@ -990,9 +990,9 @@ function getResultPreview(row: Record<string, unknown>): string {
 }
 
 const MOCK_RELATED = [
-  { title: 'Similar result in nearby area', type: 'location', color: '#2563eb' },
-  { title: 'Related business listing', type: 'business', color: '#3b82f6' },
-  { title: 'Matching industry entry', type: 'industry', color: '#f59e0b' },
+  { title: 'Similar result in nearby area', type: 'location', color: '#567ebb' },
+  { title: 'Related business listing', type: 'business', color: '#6890c2' },
+  { title: 'Matching industry entry', type: 'industry', color: '#c19862' },
 ];
 
 /* ── Mock search results (displayed by default) ── */
@@ -1014,13 +1014,13 @@ interface MockLead {
 }
 
 const MOCK_SEARCH_RESULTS: MockLead[] = [
-  { name: '宏達水電行', phone: '02-2720-1234', address: '台北市信義區松仁路100號', rating: 4.5, reviews: 128, source: 'Google Maps', status: 'new', color: '#2563eb', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'info@hongda.com.tw', website: 'hongda.com.tw' },
-  { name: '永豐水電工程', phone: '02-2705-5678', address: '台北市大安區復興南路200號', rating: 4.2, reviews: 85, source: 'Google Maps', status: 'new', color: '#3b82f6', hasEmail: false, hasPhone: true, hasWebsite: false },
-  { name: '大同水電維修', phone: '02-2562-9012', address: '台北市中山區南京東路50號', rating: 4.8, reviews: 203, source: 'Google Maps', status: 'contacted', color: '#f59e0b', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'service@datong-water.tw', website: 'datong-water.tw' },
-  { name: '建成水電服務', phone: '02-2302-3456', address: '台北市萬華區西園路88號', rating: 3.9, reviews: 42, source: 'LinkedIn', status: 'new', color: '#1d4ed8', hasEmail: true, hasPhone: true, hasWebsite: false, email: 'jiancheng.plumb@gmail.com' },
-  { name: '信義水電急修', phone: '02-2579-7890', address: '台北市松山區八德路300號', rating: 4.6, reviews: 156, source: 'Google Maps', status: 'qualified', color: '#2563eb', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'contact@xinyi-fix.com', website: 'xinyi-fix.com' },
-  { name: '台北水電到府', phone: '02-2771-2345', address: '台北市大安區忠孝東路四段120號', rating: 4.1, reviews: 67, source: 'LinkedIn', status: 'new', color: '#ef4444', hasEmail: false, hasPhone: true, hasWebsite: true, website: 'taipei-plumber.tw' },
-  { name: '全能水電工程行', phone: '02-2391-6789', address: '台北市中正區重慶南路一段80號', rating: 4.4, reviews: 112, source: 'Google Maps', status: 'new', color: '#3b82f6', hasEmail: true, hasPhone: true, hasWebsite: false, email: 'allpower@gmail.com' },
+  { name: '宏達水電行', phone: '02-2720-1234', address: '台北市信義區松仁路100號', rating: 4.5, reviews: 128, source: 'Google Maps', status: 'new', color: '#567ebb', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'info@hongda.com.tw', website: 'hongda.com.tw' },
+  { name: '永豐水電工程', phone: '02-2705-5678', address: '台北市大安區復興南路200號', rating: 4.2, reviews: 85, source: 'Google Maps', status: 'new', color: '#6890c2', hasEmail: false, hasPhone: true, hasWebsite: false },
+  { name: '大同水電維修', phone: '02-2562-9012', address: '台北市中山區南京東路50號', rating: 4.8, reviews: 203, source: 'Google Maps', status: 'contacted', color: '#c19862', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'service@datong-water.tw', website: 'datong-water.tw' },
+  { name: '建成水電服務', phone: '02-2302-3456', address: '台北市萬華區西園路88號', rating: 3.9, reviews: 42, source: 'LinkedIn', status: 'new', color: '#4367a3', hasEmail: true, hasPhone: true, hasWebsite: false, email: 'jiancheng.plumb@gmail.com' },
+  { name: '信義水電急修', phone: '02-2579-7890', address: '台北市松山區八德路300號', rating: 4.6, reviews: 156, source: 'Google Maps', status: 'qualified', color: '#567ebb', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'contact@xinyi-fix.com', website: 'xinyi-fix.com' },
+  { name: '台北水電到府', phone: '02-2771-2345', address: '台北市大安區忠孝東路四段120號', rating: 4.1, reviews: 67, source: 'LinkedIn', status: 'new', color: '#c47474', hasEmail: false, hasPhone: true, hasWebsite: true, website: 'taipei-plumber.tw' },
+  { name: '全能水電工程行', phone: '02-2391-6789', address: '台北市中正區重慶南路一段80號', rating: 4.4, reviews: 112, source: 'Google Maps', status: 'new', color: '#6890c2', hasEmail: true, hasPhone: true, hasWebsite: false, email: 'allpower@gmail.com' },
   { name: '北投水電材料行', phone: '02-2893-0123', address: '台北市北投區中央南路一段45號', rating: 3.7, reviews: 31, source: '104人力銀行', status: 'rejected', color: '#94a3b8', hasEmail: false, hasPhone: true, hasWebsite: false },
 ];
 
@@ -1179,7 +1179,7 @@ const SearchPage: React.FC = () => {
             reviews: 0,
             source: lead.source || 'Hermes',
             status: lead.status || 'new',
-            color: '#2563eb',
+            color: '#567ebb',
             hasEmail: !!(lead.email),
             hasPhone: !!(lead.phone),
             hasWebsite: !!(lead.website),
@@ -1226,7 +1226,7 @@ const SearchPage: React.FC = () => {
             reviews: 0,
             source: lead.source || 'Hermes',
             status: lead.status || 'new',
-            color: '#2563eb',
+            color: '#567ebb',
             hasEmail: !!(lead.email),
             hasPhone: !!(lead.phone),
             hasWebsite: !!(lead.website),
@@ -1455,7 +1455,7 @@ const SearchPage: React.FC = () => {
               <CardBody>
                 {/* ── Compact single-row filter ── */}
                 <FilterBar>
-                  <FilterLabel style={{ fontWeight: 600, color: '#2563eb' }}>{filteredResults.length} 筆結果</FilterLabel>
+                  <FilterLabel style={{ fontWeight: 600, color: '#567ebb' }}>{filteredResults.length} 筆結果</FilterLabel>
                   <FilterDivider />
                   <FilterToggle $active={filterEmail} onClick={() => setFilterEmail(p => !p)}>
                     Email({filteredResults.filter(r => r.hasEmail).length})
