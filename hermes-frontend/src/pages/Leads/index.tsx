@@ -1149,7 +1149,7 @@ const Leads: React.FC = () => {
                             {(!lead.industry_tags || lead.industry_tags.length === 0) && '—'}
                           </TagList>
                         </td>
-                        <td>{lead._imported_at ? new Date(lead._imported_at).toLocaleString() : '—'}</td>
+                        <td>{lead._imported_at ? new Date(lead._imported_at).toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</td>
                         <td>
                           {lead.status && lead.status !== 'contacted' && NEXT_STATUS[lead.status] && (
                             <ActionBtn
