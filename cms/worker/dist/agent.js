@@ -146,10 +146,54 @@ async function handle(task, db) {
         return doSend(p, db);
     return { note: `no handler for ${skill}` };
 }
-/** 定時回覆檢查（之後接 Hermes 查 Gmail / IMAP）。而家 stub，唔 crash。*/
-async function doReplyCheck(_p, _db) {
-    // TODO: callHermes("Check the agency inbox for new replies …") → 更新 lead
-    return { checked: true, note: 'reply-check stub（待接 Hermes 查 Gmail）' };
+/**
+ * 定時回覆檢查（inbound 閉環）：揾已聯絡未回覆嘅 lead → 叫 Hermes 查 inbox
+ * → 分類回覆 → 寫返 lead 的 _reply_* 欄。
+ * ⚠️ 要 Hermes 有 email 存取（~/.hermes/.env 配 EMAIL_/IMAP，或 Gmail）先真查到；
+ *    未配 → graceful 回 0，唔 crash。
+ */
+async function doReplyCheck(_p, db) {
+    // 已聯絡、有 email、未記錄過回覆嘅（batch 20）
+    const leads = await db
+        .collection('leads')
+        .find({
+        status: 'contacted',
+        email: { $nin: ['', null] },
+        _replied: { $ne: true },
+    })
+        .limit(20)
+        .toArray();
+    if (!leads.length)
+        return { checked: 0, note: '冇待查回覆嘅 lead' };
+    const senders = leads.map((l) => l.email).join(', ');
+    const prompt = `Check the agency email inbox for NEW replies from any of these senders: ${senders}.
+For each reply found, classify it. Use empty array if none found OR if you have no inbox access — do NOT invent replies.
+Output ONLY a JSON array:
+[{"from":"sender email","category":"interested|meeting|question|not_interested|auto_reply","summary":"一句撮要","next_action":"建議下一步"}]`;
+    let replies = [];
+    try {
+        replies = hermesJson(prompt, { array: true, timeout: 180000 });
+    }
+    catch {
+        return { checked: leads.length, replies: 0, note: 'inbox 查唔到（未配 email 存取？）' };
+    }
+    let updated = 0;
+    for (const r of replies) {
+        const lead = leads.find((l) => l.email === r?.from);
+        if (!lead)
+            continue;
+        await db.collection('leads').updateOne({ _id: lead._id }, {
+            $set: {
+                _replied: true,
+                _reply_category: r.category,
+                _reply_summary: r.summary,
+                _reply_next_action: r.next_action,
+                _reply_at: nowIso(),
+            },
+        });
+        updated++;
+    }
+    return { checked: leads.length, replies: replies.length, updated };
 }
 /** S1 搜尋 → 叫 Hermes 開 stealth browser 搵 Google Maps，回真公司 */
 async function doSearch(p, db) {
@@ -558,9 +602,23 @@ Reply DONE when sent.`);
     };
 }
 // ───────── main loop ─────────
+/** 登入重試（B API 一時連唔到都唔好死，backoff 重試）*/
+async function loginWithRetry() {
+    for (let attempt = 1;; attempt++) {
+        try {
+            await login();
+            return;
+        }
+        catch (e) {
+            const wait = Math.min(30000, 2000 * attempt);
+            log(`登入失敗（第 ${attempt} 次）：${e?.message ?? e} —— ${wait / 1000}s 後重試`);
+            await sleep(wait);
+        }
+    }
+}
 async function main() {
     log(`啟動 → API=${API} skill=${SKILL || 'any'}`);
-    await login();
+    await loginWithRetry();
     const client = new mongodb_1.MongoClient(MONGO);
     await client.connect();
     const db = client.db();
@@ -613,7 +671,10 @@ async function main() {
     log('已停止');
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// 安全網：唔好俾未捕捉嘅錯誤即刻殺 process（log 完繼續）
+process.on('unhandledRejection', (e) => console.error('[unhandledRejection]', e));
+process.on('uncaughtException', (e) => console.error('[uncaughtException]', e));
 main().catch((e) => {
-    console.error(e);
-    process.exit(1);
+    console.error('main crashed:', e);
+    process.exit(1); // 交俾 pm2（已設 restart-delay）重啟
 });

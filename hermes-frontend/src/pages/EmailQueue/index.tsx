@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import { useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail } from '../../api/hooks';
+import { useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail, useBulkApproveEmails, useBulkRejectEmails, useBulkSendEmails } from '../../api/hooks';
 import { EmailItem } from '../../api/emailQueue';
 import { media } from '../../styles/media';
 import EmailTemplateEditor from './EmailTemplateEditor';
@@ -485,6 +485,71 @@ const EmptyState = styled.div`
   font-size: 0.875rem;
 `;
 
+/* ── Bulk select UI ── */
+
+const BulkCheckbox = styled.input`
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 1.5px solid ${({ theme }) => theme.colors.border};
+  border-radius: 4px;
+  margin: 0 12px 0 4px;
+  cursor: pointer;
+  flex-shrink: 0;
+  background: ${({ theme }) => theme.colors.surface};
+  position: relative;
+  transition: all 0.15s;
+
+  &:checked {
+    background: ${({ theme }) => theme.colors.accent};
+    border-color: ${({ theme }) => theme.colors.accent};
+  }
+  &:checked::after {
+    content: '';
+    position: absolute;
+    left: 5px;
+    top: 1px;
+    width: 5px;
+    height: 10px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  &:hover { border-color: ${({ theme }) => theme.colors.accent}; }
+  &:focus { outline: none; box-shadow: 0 0 0 3px ${({ theme }) => `${theme.colors.accent}33`}; }
+`;
+
+const BulkActionBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  margin: 0 0 12px;
+  background: ${({ theme }) => `${theme.colors.accent}15`};
+  border: 1px solid ${({ theme }) => `${theme.colors.accent}44`};
+  border-radius: 8px;
+  font-size: 0.875rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  strong { color: ${({ theme }) => theme.colors.accent}; margin: 0 4px; }
+`;
+
+const BulkBtn = styled.button<{ $color: string }>`
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: none;
+  background: ${({ $color }) => $color};
+  color: #fff;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s;
+
+  &:hover:not(:disabled) { opacity: 0.85; transform: translateY(-1px); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+`;
+
 /* ── Detail View ── */
 
 const DetailToolbar = styled.div`
@@ -806,6 +871,40 @@ const EmailQueue: React.FC = () => {
   const approve = useApproveEmail();
   const reject = useRejectEmail();
   const send = useSendEmail();
+  const bulkApprove = useBulkApproveEmails();
+  const bulkReject = useBulkRejectEmails();
+  const bulkSend = useBulkSendEmails();
+
+  // Bulk selection state — checkbox per row
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const handleBulkApprove = () => {
+    if (selectedIds.size === 0) return;
+    bulkApprove.mutate([...selectedIds], { onSuccess: () => clearSelection() });
+  };
+  const handleBulkReject = () => {
+    if (selectedIds.size === 0) return;
+    const reason = window.prompt(`拒絕 ${selectedIds.size} 個 email 嘅原因?（可空）`) || undefined;
+    bulkReject.mutate(
+      { ids: [...selectedIds], reason },
+      { onSuccess: () => clearSelection() },
+    );
+  };
+  const handleBulkSend = () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`寄出 ${selectedIds.size} 個 email?`)) return;
+    bulkSend.mutate([...selectedIds], { onSuccess: () => clearSelection() });
+  };
 
   const apiEmails: EmailItem[] = data?.data ?? [];
   // 唔再 fall back 去 MOCK_EMAILS —— backend 失敗應該 user-facing 出 error，
@@ -971,14 +1070,46 @@ const EmailQueue: React.FC = () => {
             {t('emailQueue.noEmails')}
           </EmptyState>
         ) : (
-          emails.map((item) => {
-            const displayName = getDisplayName(item);
-            const avatarColor = getAvatarColor(displayName);
-            const initial = getInitial(item);
-            const status = item.status || 'pending';
+          <>
+            {selectedIds.size > 0 && (
+              <BulkActionBar>
+                <span>
+                  已選 <strong>{selectedIds.size}</strong> 個
+                </span>
+                <BulkBtn $color="#5699a3" onClick={handleBulkApprove} disabled={bulkApprove.isPending}>
+                  Approve ({selectedIds.size})
+                </BulkBtn>
+                <BulkBtn $color="#d4bbb5" onClick={handleBulkReject} disabled={bulkReject.isPending}>
+                  Reject ({selectedIds.size})
+                </BulkBtn>
+                <BulkBtn
+                  $color="#7fb5ba"
+                  onClick={handleBulkSend}
+                  disabled={bulkSend.isPending || statusFilter !== 'approved'}
+                  title={statusFilter !== 'approved' ? 'Send 只可喺 Approved panel 做' : ''}
+                >
+                  Send ({selectedIds.size})
+                </BulkBtn>
+                <BulkBtn $color="#888" onClick={clearSelection}>
+                  清除
+                </BulkBtn>
+              </BulkActionBar>
+            )}
+            {emails.map((item) => {
+              const displayName = getDisplayName(item);
+              const avatarColor = getAvatarColor(displayName);
+              const initial = getInitial(item);
+              const status = item.status || 'pending';
 
-            return (
-              <EmailRow key={item._id} onClick={() => openDetail(item)}>
+              return (
+                <EmailRow key={item._id} onClick={() => openDetail(item)}>
+                <BulkCheckbox
+                  type="checkbox"
+                  checked={selectedIds.has(item._id)}
+                  onClick={(e) => { e.stopPropagation(); }}
+                  onChange={() => toggleSelected(item._id)}
+                  aria-label={`select ${displayName}`}
+                />
                 <SenderCol>
                   <AvatarCircle $bg={avatarColor}>{initial}</AvatarCircle>
                   <SenderName>{displayName}</SenderName>
@@ -1044,7 +1175,8 @@ const EmailQueue: React.FC = () => {
                 </HoverActions>
               </EmailRow>
             );
-          })
+          })}
+          </>
         )}
       </EmailListWrap>
     </MainPanel>

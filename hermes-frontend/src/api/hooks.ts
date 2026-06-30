@@ -105,6 +105,31 @@ export const useSendEmail = () => {
   });
 };
 
+export const useBulkApproveEmails = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => emailQueueApi.bulkApprove(ids),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['emailQueue'] }),
+  });
+};
+
+export const useBulkRejectEmails = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ ids, reason }: { ids: string[]; reason?: string }) =>
+      emailQueueApi.bulkReject(ids, reason),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['emailQueue'] }),
+  });
+};
+
+export const useBulkSendEmails = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: string[]) => emailQueueApi.bulkSend(ids),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['emailQueue'] }),
+  });
+};
+
 /* ── Search ── */
 
 export const useSearch = () =>
