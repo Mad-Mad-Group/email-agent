@@ -14,6 +14,9 @@
 import { MongoClient, ObjectId, Db } from 'mongodb';
 import { randomBytes } from 'crypto';
 import { execFileSync } from 'child_process';
+import * as nodemailer from 'nodemailer';
+import { ImapFlow } from 'imapflow';
+import { simpleParser } from 'mailparser';
 import {
   BRAND_NAME,
   BRAND_TAGLINE,
@@ -152,57 +155,81 @@ async function handle(task: any, db: Db): Promise<unknown> {
   return { note: `no handler for ${skill}` };
 }
 
+/** 簡單分類回覆（keyword heuristic，參考舊 reply_analyzer；快、唔使 LLM）*/
+function classifyReply(subject: string, body: string): string {
+  const t = `${subject} ${body}`.toLowerCase();
+  if (/(out of office|auto-?reply|automatic reply|放假|自動回覆|不在)/.test(t)) return 'auto_reply';
+  if (/(not interested|no thank|unsubscribe|remove me|唔需要|唔感興趣|冇興趣|拒絕)/.test(t)) return 'not_interested';
+  if (/(meeting|zoom|call|schedule|available|開會|會議|時間|傾下|約|見面)/.test(t)) return 'meeting';
+  if (/(interested|tell me more|sounds good|有興趣|想了解|報價|quote|詳情)/.test(t)) return 'interested';
+  return 'question';
+}
+
 /**
- * 定時回覆檢查（inbound 閉環）：揾已聯絡未回覆嘅 lead → 叫 Hermes 查 inbox
- * → 分類回覆 → 寫返 lead 的 _reply_* 欄。
- * ⚠️ 要 Hermes 有 email 存取（~/.hermes/.env 配 EMAIL_/IMAP，或 Gmail）先真查到；
- *    未配 → graceful 回 0，唔 crash。
+ * 定時回覆檢查（inbound 閉環）：直接連 IMAP 讀 inbox → 對返已聯絡 lead
+ * → 分類 → 寫返 lead 的 _reply_* 欄。
+ * ⚠️ 用返 SMTP 同一組 creds（Gmail App Password 同時支援 SMTP 發 + IMAP 讀）。
+ *    未配 SMTP_USER/PASS → graceful 回 0，唔 crash。
  */
 async function doReplyCheck(_p: any, db: Db) {
-  // 已聯絡、有 email、未記錄過回覆嘅（batch 20）
   const leads = await db
     .collection('leads')
-    .find({
-      status: 'contacted',
-      email: { $nin: ['', null] },
-      _replied: { $ne: true },
-    })
-    .limit(20)
+    .find({ status: 'contacted', email: { $nin: ['', null] }, _replied: { $ne: true } })
+    .limit(100)
     .toArray();
   if (!leads.length) return { checked: 0, note: '冇待查回覆嘅 lead' };
 
-  const senders = leads.map((l) => l.email).join(', ');
-  const prompt = `Check the agency email inbox for NEW replies from any of these senders: ${senders}.
-For each reply found, classify it. Use empty array if none found OR if you have no inbox access — do NOT invent replies.
-Output ONLY a JSON array:
-[{"from":"sender email","category":"interested|meeting|question|not_interested|auto_reply","summary":"一句撮要","next_action":"建議下一步"}]`;
-
-  let replies: any[] = [];
-  try {
-    replies = hermesJson(prompt, { array: true, timeout: 180_000 });
-  } catch {
-    return { checked: leads.length, replies: 0, note: 'inbox 查唔到（未配 email 存取？）' };
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  if (!user || !pass) {
+    return { checked: leads.length, note: 'IMAP 未配（要 SMTP_USER/SMTP_PASS）' };
   }
 
+  const byEmail = new Map(leads.map((l) => [String(l.email).toLowerCase(), l]));
+  const client = new ImapFlow({
+    host: process.env.IMAP_HOST || 'imap.gmail.com',
+    port: Number(process.env.IMAP_PORT || 993),
+    secure: true,
+    auth: { user, pass },
+    logger: false,
+  });
+
+  let scanned = 0;
   let updated = 0;
-  for (const r of replies) {
-    const lead = leads.find((l) => l.email === r?.from);
-    if (!lead) continue;
-    await db.collection('leads').updateOne(
-      { _id: lead._id },
-      {
-        $set: {
-          _replied: true,
-          _reply_category: r.category,
-          _reply_summary: r.summary,
-          _reply_next_action: r.next_action,
-          _reply_at: nowIso(),
-        },
-      },
-    );
-    updated++;
+  try {
+    await client.connect();
+    const lock = await client.getMailboxLock('INBOX');
+    try {
+      const since = new Date(Date.now() - 14 * 864e5); // 近 14 日
+      for await (const msg of client.fetch({ since }, { source: true })) {
+        scanned++;
+        const parsed = await simpleParser(msg.source as Buffer);
+        const from = (parsed.from?.value?.[0]?.address || '').toLowerCase();
+        const lead = byEmail.get(from);
+        if (!lead) continue;
+        const category = classifyReply(parsed.subject || '', parsed.text || '');
+        await db.collection('leads').updateOne(
+          { _id: lead._id },
+          {
+            $set: {
+              _replied: true,
+              _reply_category: category,
+              _reply_summary: (parsed.subject || '').slice(0, 120),
+              _reply_at: nowIso(),
+            },
+          },
+        );
+        byEmail.delete(from); // 一個 lead 只更新一次
+        updated++;
+      }
+    } finally {
+      lock.release();
+    }
+    await client.logout();
+  } catch (e: any) {
+    return { checked: leads.length, replies: 0, note: 'IMAP 讀取失敗：' + (e?.message ?? e) };
   }
-  return { checked: leads.length, replies: replies.length, updated };
+  return { checked: leads.length, scanned, replies: updated };
 }
 
 /** S1 搜尋 → 叫 Hermes 開 stealth browser 搵 Google Maps，回真公司 */
@@ -603,36 +630,76 @@ async function doSend(p: any, db: Db) {
   const eq = await db
     .collection('email_queue')
     .findOne({ lead_id: lead.lead_id, status: 'pending' });
+  if (!eq) return { sent: false, note: '冇待發 email' };
 
-  if (process.env.ENABLE_REAL_SEND === 'true' && lead.email && eq) {
-    callHermes(
-      `Send an email using your email tool.
-To: ${lead.email}
-Subject: ${eq.subject}
-Body:
-${eq.body}
-Reply DONE when sent.`,
-    );
+  // 未開真發 → 只標 approved，唔寄
+  if (process.env.ENABLE_REAL_SEND !== 'true') {
     await db
       .collection('email_queue')
-      .updateOne({ _id: eq._id }, { $set: { status: 'sent', sent_at: nowIso() } });
-    await db
-      .collection('leads')
-      .updateOne({ _id }, { $set: { status: 'contacted', _email_sent: true } });
-    return { sent: true, real: true };
+      .updateMany(
+        { lead_id: lead.lead_id, status: 'pending' },
+        { $set: { status: 'approved' } },
+      );
+    return { sent: false, note: 'real send 停用（ENABLE_REAL_SEND=true 先發）' };
   }
 
+  // 真發：經 SMTP（nodemailer），一律寄去 TEST_RECIPIENT
+  if (!process.env.SMTP_HOST) {
+    return { sent: false, note: 'SMTP 未配（.env 填 SMTP_HOST/USER/PASS）' };
+  }
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: Number(process.env.SMTP_PORT) === 465,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  });
+  // 收件人：SEND_OVERRIDE 有設（測試安全）→ 一律寄去嗰度；冇設 → lead.email（真發）。
+  // creds（SMTP_USER/PASS）同收件人全部由跑 worker 嗰位喺 .env 設，唔 hardcode 落 code。
+  const override = process.env.SEND_OVERRIDE;
+  const to = override || lead.email;
+  if (!to) return { sent: false, note: '冇收件人（lead 冇 email，又冇 SEND_OVERRIDE）' };
+  // frontend 係用 pre-wrap + dangerouslySetInnerHTML render body（tag 當 HTML、換行照留）。
+  // 寄件要對齊：html 用同一個 pre-wrap 包住原 body（render 結果同 frontend 一模一樣），
+  // text 出一份 strip tag 但保留換行嘅純文字做 fallback（唔用 htmlToText，佢會併走換行）。
+  const bodyRaw = eq.body ?? '';
+  const bodyText = bodyRaw
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  const bodyHtml = `<div style="white-space:pre-wrap;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;line-height:1.6;font-size:14px;color:#1a1a1a">${bodyRaw}</div>`;
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to,
+      subject: override
+        ? `[TEST→${lead.email || '?'}] ${eq.subject ?? ''}` // 測試模式標明原收件人
+        : eq.subject ?? '',
+      text: bodyText,
+      html: bodyHtml,
+    });
+  } catch (e: any) {
+    // check 成功先標 sent（修「假 sent」bug）
+    await db
+      .collection('email_queue')
+      .updateOne(
+        { _id: eq._id },
+        { $set: { status: 'failed', error: { send_error: e?.message ?? String(e) } } },
+      );
+    return { sent: false, error: e?.message ?? String(e) };
+  }
   await db
     .collection('email_queue')
-    .updateMany(
-      { lead_id: lead.lead_id, status: 'pending' },
-      { $set: { status: 'approved' } },
-    );
-  return {
-    sent: false,
-    real: false,
-    note: 'real send 已停用（set ENABLE_REAL_SEND=true 先會真發 email）',
-  };
+    .updateOne({ _id: eq._id }, { $set: { status: 'sent', sent_at: nowIso() } });
+  await db
+    .collection('leads')
+    .updateOne({ _id }, { $set: { status: 'contacted', _email_sent: true } });
+  return { sent: true, to };
 }
 
 // ───────── main loop ─────────

@@ -72,7 +72,7 @@ const IconSortArrow = () => (
 
 const IconLeadScraper = () => (
   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="40" height="40" rx="10" fill="#6890c2"/>
+    <rect width="40" height="40" rx="10" fill="#3b82f6"/>
     <path d="M13 17a7 7 0 0 1 14 0" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
     <circle cx="20" cy="15" r="3.5" stroke="#fff" strokeWidth="1.8"/>
     <path d="M11 28c0-3.87 4.03-7 9-7s9 3.13 9 7" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
@@ -82,7 +82,7 @@ const IconLeadScraper = () => (
 /* ── Avatar color from name hash ── */
 
 const hashColor = (name: string): string => {
-  const colors = ['#6890c2', '#567ebb', '#c19862', '#c47474', '#4367a3', '#94a3b8', '#5fa088', '#94a3b8'];
+  const colors = ['#bfdbfe', '#c4b5fd', '#a5f3fc', '#bbf7d0'];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
@@ -167,13 +167,13 @@ const KpiIconWrap = styled.div<{ $bg: string; $fg: string }>`
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: linear-gradient(135deg, ${({ $bg }) => $bg} 0%, ${({ $bg }) => $bg}cc 100%);
+  background: ${({ $bg }) => $bg};
   color: ${({ $fg }) => $fg};
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.06), inset 0 1px 0 rgba(255,255,255,0.5);
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   svg { width: 22px; height: 22px; }
 `;
@@ -237,20 +237,20 @@ const AddBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border: none;
   border-radius: ${({ theme }) => theme.radii.control}px;
-  background: linear-gradient(135deg, #6890c2 0%, #567ebb 50%, #4367a3 100%);
+  background: #2563eb;
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(37,99,235,0.2), 0 2px 4px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 1px 2px rgba(15,23,42,0.08);
   transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
   &:hover {
     transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(37,99,235,0.3), 0 2px 4px rgba(37,99,235,0.15), inset 0 1px 0 rgba(255,255,255,0.2);
-    background: linear-gradient(135deg, #829ecf 0%, #6890c2 50%, #567ebb 100%);
+    box-shadow: 0 2px 8px rgba(15,23,42,0.1);
+    background: #3b82f6;
   }
-  &:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(37,99,235,0.2); }
+  &:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(15,23,42,0.06); }
 `;
 
 /* ── Tabs Row ── */
@@ -295,7 +295,7 @@ const TabCount = styled.span<{ $active?: boolean }>`
   font-size: 0.6875rem;
   font-weight: 600;
   background: ${({ $active, theme }) => $active
-    ? 'linear-gradient(135deg, #6890c2 0%, #567ebb 100%)'
+    ? '#2563eb'
     : theme.colors.surfaceMuted};
   color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textTertiary};
 `;
@@ -362,7 +362,7 @@ const Table = styled.table`
     font-size: 0.6875rem;
     letter-spacing: 0.03em;
     color: ${({ theme }) => theme.colors.textTertiary};
-    background: #f9fafb;
+    background: #f7f7f4;
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
     user-select: none;
     cursor: default;
@@ -377,11 +377,11 @@ const Table = styled.table`
 
 const TRow = styled.tr<{ $even?: boolean }>`
   background: ${({ $even, theme }) => $even
-    ? '#f9fafb'
+    ? '#f7f7f4'
     : theme.colors.surface};
   transition: background 0.15s ease;
   &:hover {
-    background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+    background: #f7f7f4;
   }
   td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
   &:last-child td { border-bottom: none; }
@@ -397,8 +397,8 @@ const Avatar = styled.div<{ $color: string }>`
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: linear-gradient(135deg, ${({ $color }) => $color} 0%, ${({ $color }) => $color}cc 100%);
-  color: #fff;
+  background: ${({ $color }) => $color};
+  color: #334155;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -406,8 +406,7 @@ const Avatar = styled.div<{ $color: string }>`
   font-weight: 700;
   flex-shrink: 0;
   text-transform: uppercase;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2);
-  border: 1.5px solid rgba(255,255,255,0.6);
+  box-shadow: none;
 `;
 
 const NameText = styled.div`
@@ -435,7 +434,7 @@ const StatusBadge = styled.span<{ $status?: string }>`
     const s = theme.status as Record<string, { bg: string; fg: string }>;
     const entry = s[$status ?? 'new'] ?? s.new;
     return `
-      background: linear-gradient(135deg, ${entry.bg} 0%, ${entry.bg} 100%);
+      background: ${entry.bg};
       color: ${entry.fg};
       box-shadow: 0 1px 2px rgba(0,0,0,0.06);
     `;
@@ -471,7 +470,7 @@ const ActionBtn = styled.button<{ $color: string }>`
   align-items: center;
   justify-content: center;
   transition: transform 0.15s, box-shadow 0.15s, background 0.15s, color 0.15s;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.4);
+  box-shadow: none;
   &:hover {
     transform: translateY(-1px);
     background: ${({ $color }) => $color};
@@ -510,14 +509,14 @@ const PageBtn = styled.button<{ $active?: boolean }>`
   border: 1px solid ${({ $active, theme }) => $active ? 'transparent' : theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
   background: ${({ $active }) => $active
-    ? 'linear-gradient(135deg, #6890c2 0%, #567ebb 100%)'
+    ? '#2563eb'
     : '#fff'};
   color: ${({ $active }) => $active ? '#fff' : '#475569'};
   font-size: 0.75rem;
   font-weight: ${({ $active }) => $active ? 600 : 500};
   cursor: pointer;
   box-shadow: ${({ $active }) => $active
-    ? '0 2px 6px rgba(37,99,235,0.25), inset 0 1px 0 rgba(255,255,255,0.15)'
+    ? '0 1px 2px rgba(15,23,42,0.08)'
     : '0 1px 2px rgba(15,23,42,0.04)'};
   transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
   &:hover:not(:disabled) {
@@ -630,18 +629,18 @@ const PrimaryBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border: none;
   border-radius: ${({ theme }) => theme.radii.control}px;
-  background: linear-gradient(135deg, #6890c2 0%, #567ebb 50%, #4367a3 100%);
+  background: #2563eb;
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(37,99,235,0.2), 0 2px 4px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 1px 2px rgba(15,23,42,0.08);
   transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
   &:hover:not(:disabled) {
     transform: translateY(-1px);
-    background: linear-gradient(135deg, #829ecf 0%, #6890c2 50%, #567ebb 100%);
-    box-shadow: 0 4px 12px rgba(37,99,235,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+    background: #3b82f6;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.1);
   }
   &:active:not(:disabled) { transform: translateY(0); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -852,7 +851,7 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   white-space: nowrap;
   transition: opacity 0.15s;
   background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? '#c47474' :
+    $variant === 'danger' ? '#dc2626' :
     $variant === 'primary' ? theme.colors.blue : theme.colors.surfaceMuted};
   color: ${({ $variant }) =>
     $variant === 'danger' ? '#fff' :
@@ -1000,7 +999,7 @@ const Leads: React.FC = () => {
       {/* KPI Cards */}
       <KpiRow>
         <KpiCard>
-          <KpiIconWrap $bg="#e3f5f6" $fg="#6890c2">
+          <KpiIconWrap $bg="#dbeafe" $fg="#3b82f6">
             <IconUsers />
           </KpiIconWrap>
           <KpiText>
@@ -1009,7 +1008,7 @@ const Leads: React.FC = () => {
           </KpiText>
         </KpiCard>
         <KpiCard>
-          <KpiIconWrap $bg="#ebf3f4" $fg="#567ebb">
+          <KpiIconWrap $bg="#dbeafe" $fg="#2563eb">
             <IconSparkle />
           </KpiIconWrap>
           <KpiText>
@@ -1018,7 +1017,7 @@ const Leads: React.FC = () => {
           </KpiText>
         </KpiCard>
         <KpiCard>
-          <KpiIconWrap $bg="#f5f0eb" $fg="#c19862">
+          <KpiIconWrap $bg="#fef3c7" $fg="#d97706">
             <IconClock />
           </KpiIconWrap>
           <KpiText>
@@ -1027,7 +1026,7 @@ const Leads: React.FC = () => {
           </KpiText>
         </KpiCard>
         <KpiCard>
-          <KpiIconWrap $bg="#e0f2f1" $fg="#5fa088">
+          <KpiIconWrap $bg="#dcfce7" $fg="#16a34a">
             <IconCheckCircle />
           </KpiIconWrap>
           <KpiText>
@@ -1095,7 +1094,7 @@ const Leads: React.FC = () => {
                   <tr>
                     <EmptyCell colSpan={8}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
-                        <strong style={{ color: '#c0392b' }}>{t('common.error')}</strong>
+                        <strong style={{ color: '#dc2626' }}>{t('common.error')}</strong>
                         <span style={{ color: '#7f8c8d', fontSize: 13 }}>
                           {(error as any)?.message || String(error)}
                         </span>
@@ -1104,8 +1103,8 @@ const Leads: React.FC = () => {
                           style={{
                             marginTop: 4,
                             padding: '6px 14px',
-                            border: '1px solid #6890c2',
-                            background: '#6890c2',
+                            border: '1px solid #3b82f6',
+                            background: '#3b82f6',
                             color: '#fff',
                             borderRadius: 4,
                             cursor: 'pointer',
@@ -1153,18 +1152,18 @@ const Leads: React.FC = () => {
                         <td>
                           {lead.status && lead.status !== 'contacted' && NEXT_STATUS[lead.status] && (
                             <ActionBtn
-                              $color="#6890c2"
+                              $color="#3b82f6"
                               title={STATUS_LABEL[lead.status]}
                               onClick={(e) => { e.stopPropagation(); handleStatusChange(lead._id, NEXT_STATUS[lead.status!]); }}
                             >
                               <IconArrowRight />
                             </ActionBtn>
                           )}
-                          <ActionBtn $color="#c19862" title="View" onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); }}>
+                          <ActionBtn $color="#d97706" title="View" onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); }}>
                             <IconEye />
                           </ActionBtn>
                           <ActionBtn
-                            $color="#c47474"
+                            $color="#dc2626"
                             title="Delete"
                             onClick={(e) => { e.stopPropagation(); handleDelete(lead._id); }}
                           >

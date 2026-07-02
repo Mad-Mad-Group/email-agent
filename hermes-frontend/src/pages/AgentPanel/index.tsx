@@ -125,7 +125,7 @@ const ProgressBarContainer = styled.div`
 const ProgressBarFill = styled.div<{ width: number }>`
   height: 100%;
   width: ${({ width }) => width}%;
-  background: linear-gradient(90deg, ${({ theme }) => theme.colors.blue}, ${({ theme }) => theme.colors.green});
+  background: ${({ theme }) => theme.colors.blue};
   border-radius: 6px;
   transition: width 0.5s ease;
 `;
@@ -313,8 +313,8 @@ const TimelineList = styled.ul`
 `;
 
 const pulseGlow = keyframes`
-  0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
-  50%      { box-shadow: 0 0 0 5px rgba(37,99,235,0); }
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
 `;
 
 const TimelineItem = styled.li<{ $status: TaskStep['status'] }>`

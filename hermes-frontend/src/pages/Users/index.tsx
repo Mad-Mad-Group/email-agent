@@ -102,7 +102,7 @@ const ProfileHeader = styled.div`
 
 const ProfileIcon = styled.div`
   width: 56px; height: 56px; border-radius: 50%;
-  background: linear-gradient(135deg, #6890c2 0%, #567ebb 100%);
+  background: #2563eb;
   display: flex; align-items: center; justify-content: center;
   color: #fff; flex-shrink: 0;
   svg { width: 28px; height: 28px; }
@@ -129,8 +129,8 @@ const Tab = styled.button<{ $active?: boolean }>`
     ? 'transparent'
     : 'transparent'};
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-  color: ${({ $active, theme }) => $active ? '#567ebb' : theme.colors.textTertiary};
-  border-bottom: 2px solid ${({ $active }) => $active ? '#567ebb' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textTertiary};
+  border-bottom: 2px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
   margin-bottom: -1px; white-space: nowrap;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
   &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
@@ -142,7 +142,7 @@ const TabCount = styled.span<{ $active?: boolean }>`
   border-radius: 9px; margin-left: 6px;
   font-size: 0.625rem; font-weight: 600;
   background: ${({ $active, theme }) => $active
-    ? 'linear-gradient(135deg, #6890c2 0%, #567ebb 100%)'
+    ? '#2563eb'
     : theme.colors.surfaceMuted};
   color: ${({ $active }) => $active ? '#fff' : theme.colors.textTertiary};
 `;
@@ -161,7 +161,7 @@ const Table = styled.table`
   th {
     font-weight: 600; text-transform: uppercase; font-size: 0.6875rem;
     color: ${({ theme }) => theme.colors.textTertiary};
-    background: #f9fafb;
+    background: #f7f7f4;
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   }
   ${media.mobile} {
@@ -174,11 +174,11 @@ const Table = styled.table`
 
 const TRow = styled.tr<{ $even?: boolean }>`
   background: ${({ $even, theme }) => $even
-    ? '#f9fafb'
+    ? '#f7f7f4'
     : theme.colors.surface};
   transition: background 0.15s;
   &:hover {
-    background: #f0f7ff;
+    background: #eff6ff;
   }
   td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
   cursor: pointer;
@@ -190,12 +190,11 @@ const NameCell = styled.div`
 
 const AvatarCircle = styled.div<{ $bg: string }>`
   width: 36px; height: 36px; border-radius: 50%;
-  background: linear-gradient(135deg, ${({ $bg }) => $bg} 0%, ${({ $bg }) => $bg}cc 100%);
+  background: ${({ $bg }) => $bg};
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.8125rem; font-weight: 600; color: #fff;
+  font-size: 0.8125rem; font-weight: 600; color: #334155;
   flex-shrink: 0;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2);
-  border: 1.5px solid rgba(255,255,255,0.5);
+  box-shadow: none;
 `;
 
 const UserName = styled.span`
@@ -205,15 +204,15 @@ const UserName = styled.span`
 /* ── Role badge ── */
 
 const ROLE_COLORS: Record<string, { bg: string; fg: string; avatar: string }> = {
-  admin:   { bg: '#4367a318', fg: '#4367a3', avatar: '#4367a3' },
-  manager: { bg: '#c1986218', fg: '#c19862', avatar: '#c19862' },
-  user:    { bg: '#6890c218', fg: '#6890c2', avatar: '#6890c2' },
+  admin:   { bg: '#1d4ed818', fg: '#1d4ed8', avatar: '#bfdbfe' },
+  manager: { bg: '#d9770618', fg: '#d97706', avatar: '#c4b5fd' },
+  user:    { bg: '#3b82f618', fg: '#3b82f6', avatar: '#a5f3fc' },
 };
 
 const RoleBadge = styled.span<{ $bg: string; $fg: string }>`
   display: inline-block; padding: 2px 10px; border-radius: 99px;
   font-size: 0.6875rem; font-weight: 600;
-  background: linear-gradient(135deg, ${({ $bg }) => $bg} 0%, ${({ $bg }) => $bg}dd 100%);
+  background: ${({ $bg }) => $bg};
   color: ${({ $fg }) => $fg};
   text-transform: capitalize;
   border: 1px solid ${({ $bg }) => $bg}55;
@@ -386,7 +385,7 @@ const DpActivityItem = styled.div`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #6890c2;
+    background: #3b82f6;
     border: 2px solid ${({ theme }) => theme.colors.surface};
   }
 `;
@@ -410,9 +409,9 @@ const DpPermBadge = styled.span<{ $active?: boolean }>`
   border-radius: 99px;
   font-size: 0.75rem;
   font-weight: 500;
-  background: ${({ $active }) => $active ? '#567ebb18' : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#567ebb' : theme.colors.textTertiary};
-  border: 1px solid ${({ $active }) => $active ? '#567ebb40' : '#0f172a18'};
+  background: ${({ $active }) => $active ? '#2563eb18' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textTertiary};
+  border: 1px solid ${({ $active }) => $active ? '#2563eb40' : '#0f172a18'};
 `;
 
 const DpFooter = styled.div`
@@ -439,8 +438,8 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   white-space: nowrap;
   transition: opacity 0.15s;
   background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? '#c47474' :
-    $variant === 'primary' ? '#567ebb' : theme.colors.surfaceMuted};
+    $variant === 'danger' ? '#dc2626' :
+    $variant === 'primary' ? '#2563eb' : theme.colors.surfaceMuted};
   color: ${({ $variant }) =>
     $variant === 'danger' ? '#fff' :
     $variant === 'primary' ? '#fff' : 'inherit'};
@@ -490,7 +489,7 @@ function formatDate(iso?: string): string {
 
 function roleProps(role: string) {
   const lower = role.toLowerCase();
-  return ROLE_COLORS[lower] ?? { bg: '#0f172a18', fg: '#0f172a', avatar: '#6c757d' };
+  return ROLE_COLORS[lower] ?? { bg: '#0f172a18', fg: '#0f172a', avatar: '#bbf7d0' };
 }
 
 function getInitials(name: string): string {
@@ -672,7 +671,7 @@ const Users: React.FC = () => {
                 </DpField>
                 <DpField>
                   <DpFieldLabel>Status</DpFieldLabel>
-                  <DpFieldValue style={{ color: '#567ebb' }}>Active</DpFieldValue>
+                  <DpFieldValue style={{ color: '#2563eb' }}>Active</DpFieldValue>
                 </DpField>
                 <DpField>
                   <DpFieldLabel>Join Date</DpFieldLabel>

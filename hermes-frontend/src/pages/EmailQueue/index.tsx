@@ -46,7 +46,7 @@ const icons = {
 
 /* ── Avatar helper ── */
 
-const avatarPalette = ['#6890c2', '#567ebb', '#c19862', '#c47474', '#4367a3', '#94a3b8', '#5fa088', '#94a3b8'];
+const avatarPalette = ['#bfdbfe', '#c4b5fd', '#a5f3fc', '#bbf7d0'];
 
 const getAvatarColor = (name: string): string => {
   let hash = 0;
@@ -81,18 +81,18 @@ interface StatusFolderDef {
 
 const statusFolders: StatusFolderDef[] = [
   { id: 'all', label: 'All', icon: 'inbox', filterValue: '', badgeColor: '#94a3b8' },
-  { id: 'pending', label: 'Pending', icon: 'clock', filterValue: 'pending', badgeColor: '#c19862' },
-  { id: 'approved', label: 'Approved', icon: 'check', filterValue: 'approved', badgeColor: '#5fa088' },
-  { id: 'rejected', label: 'Rejected', icon: 'x', filterValue: 'rejected', badgeColor: '#c47474' },
-  { id: 'sent', label: 'Sent', icon: 'send', filterValue: 'sent', badgeColor: '#567ebb' },
+  { id: 'pending', label: 'Pending', icon: 'clock', filterValue: 'pending', badgeColor: '#d97706' },
+  { id: 'approved', label: 'Approved', icon: 'check', filterValue: 'approved', badgeColor: '#16a34a' },
+  { id: 'rejected', label: 'Rejected', icon: 'x', filterValue: 'rejected', badgeColor: '#dc2626' },
+  { id: 'sent', label: 'Sent', icon: 'send', filterValue: 'sent', badgeColor: '#2563eb' },
   { id: 'failed', label: 'Failed', icon: 'exclamation', filterValue: 'failed', badgeColor: '#475569' },
 ];
 
 const statusColorMap: Record<string, string> = {
-  pending: '#c19862',
-  approved: '#5fa088',
-  rejected: '#c47474',
-  sent: '#567ebb',
+  pending: '#d97706',
+  approved: '#16a34a',
+  rejected: '#dc2626',
+  sent: '#2563eb',
   failed: '#475569',
 };
 
@@ -124,8 +124,8 @@ const PageTab = styled.button<{ $active: boolean }>`
   font-size: 0.875rem;
   font-weight: ${({ $active }) => $active ? 700 : 500};
   cursor: pointer;
-  color: ${({ $active, theme }) => $active ? '#567ebb' : theme.colors.textSecondary};
-  border-bottom: 2px solid ${({ $active }) => $active ? '#567ebb' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textSecondary};
+  border-bottom: 2px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
   margin-bottom: -1px;
   transition: all 0.15s;
   &:hover {
@@ -225,18 +225,18 @@ const FolderItem = styled.li<{ $active?: boolean }>`
   color: ${({ $active, theme }) => ($active ? theme.colors.textPrimary : theme.colors.textSecondary)};
   font-weight: ${({ $active }) => ($active ? 600 : 400)};
   background: ${({ $active, theme }) => ($active
-    ? 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)'
+    ? '#eff6ff'
     : 'transparent')};
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
   &:hover {
     background: ${({ $active, theme }) => ($active
-      ? 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)'
+      ? '#dbeafe'
       : theme.colors.surfaceMuted)};
   }
   svg {
     flex-shrink: 0;
-    color: ${({ $active, theme }) => ($active ? '#567ebb' : theme.colors.textTertiary)};
+    color: ${({ $active, theme }) => ($active ? '#2563eb' : theme.colors.textTertiary)};
   }
 `;
 
@@ -360,8 +360,8 @@ const AvatarCircle = styled.div<{ $bg: string }>`
   height: 28px;
   min-width: 28px;
   border-radius: 50%;
-  background: linear-gradient(135deg, ${({ $bg }) => $bg} 0%, ${({ $bg }) => $bg}cc 100%);
-  color: #fff;
+  background: ${({ $bg }) => $bg};
+  color: #334155;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -369,7 +369,7 @@ const AvatarCircle = styled.div<{ $bg: string }>`
   font-weight: 600;
   text-transform: uppercase;
   user-select: none;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.2);
+  box-shadow: none;
   border: 1px solid rgba(255,255,255,0.4);
 `;
 
@@ -430,8 +430,8 @@ const StatusBadge = styled.span<{ $status?: string }>`
   white-space: nowrap;
   flex-shrink: 0;
   ${({ $status }) => {
-    const color = statusColorMap[$status || ''] || '#c19862';
-    return `background: linear-gradient(135deg, ${color}1a 0%, ${color}26 100%); color: ${color}; border: 1px solid ${color}33;`;
+    const color = statusColorMap[$status || ''] || '#d97706';
+    return `background: #ffffff; color: ${color}; border: 1px solid ${color}33;`;
   }}
 `;
 
@@ -866,10 +866,10 @@ const EmailQueue: React.FC = () => {
 
   const translatedStatusFolders: StatusFolderDef[] = [
     { id: 'all', label: t('emailQueue.all'), icon: 'inbox', filterValue: '', badgeColor: '#94a3b8' },
-    { id: 'pending', label: t('emailQueue.pending'), icon: 'clock', filterValue: 'pending', badgeColor: '#c19862' },
-    { id: 'approved', label: t('emailQueue.approved'), icon: 'check', filterValue: 'approved', badgeColor: '#5fa088' },
-    { id: 'rejected', label: t('emailQueue.rejected'), icon: 'x', filterValue: 'rejected', badgeColor: '#c47474' },
-    { id: 'sent', label: t('emailQueue.sent'), icon: 'send', filterValue: 'sent', badgeColor: '#567ebb' },
+    { id: 'pending', label: t('emailQueue.pending'), icon: 'clock', filterValue: 'pending', badgeColor: '#d97706' },
+    { id: 'approved', label: t('emailQueue.approved'), icon: 'check', filterValue: 'approved', badgeColor: '#16a34a' },
+    { id: 'rejected', label: t('emailQueue.rejected'), icon: 'x', filterValue: 'rejected', badgeColor: '#dc2626' },
+    { id: 'sent', label: t('emailQueue.sent'), icon: 'send', filterValue: 'sent', badgeColor: '#2563eb' },
     { id: 'failed', label: t('emailQueue.failed'), icon: 'exclamation', filterValue: 'failed', badgeColor: '#475569' },
   ];
 
@@ -1066,7 +1066,7 @@ const EmailQueue: React.FC = () => {
       <EmailListWrap>
         {error ? (
           <EmptyState>
-            <strong style={{ color: '#c0392b', display: 'block', marginBottom: 8 }}>
+            <strong style={{ color: '#dc2626', display: 'block', marginBottom: 8 }}>
               {t('common.error')}
             </strong>
             <span style={{ color: '#7f8c8d', fontSize: 13, display: 'block', marginBottom: 12 }}>
@@ -1076,8 +1076,8 @@ const EmailQueue: React.FC = () => {
               onClick={() => refetch()}
               style={{
                 padding: '6px 14px',
-                border: '1px solid #6890c2',
-                background: '#6890c2',
+                border: '1px solid #3b82f6',
+                background: '#3b82f6',
                 color: '#fff',
                 borderRadius: 4,
                 cursor: 'pointer',
@@ -1104,14 +1104,14 @@ const EmailQueue: React.FC = () => {
                 <span>
                   已選 <strong>{selectedIds.size}</strong> 個
                 </span>
-                <BulkBtn $color="#5699a3" onClick={handleBulkApprove} disabled={bulkApprove.isPending}>
+                <BulkBtn $color="#2563eb" onClick={handleBulkApprove} disabled={bulkApprove.isPending}>
                   Approve ({selectedIds.size})
                 </BulkBtn>
-                <BulkBtn $color="#d4bbb5" onClick={handleBulkReject} disabled={bulkReject.isPending}>
+                <BulkBtn $color="#dc2626" onClick={handleBulkReject} disabled={bulkReject.isPending}>
                   Reject ({selectedIds.size})
                 </BulkBtn>
                 <BulkBtn
-                  $color="#7fb5ba"
+                  $color="#2563eb"
                   onClick={handleBulkSend}
                   disabled={bulkSend.isPending || statusFilter !== 'approved'}
                   title={statusFilter !== 'approved' ? 'Send 只可喺 Approved panel 做' : ''}
@@ -1154,7 +1154,7 @@ const EmailQueue: React.FC = () => {
                   {status === 'pending' && (
                     <>
                       <HoverBtn
-                        $color="#567ebb"
+                        $color="#2563eb"
                         title={t('emailQueue.approve')}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1165,7 +1165,7 @@ const EmailQueue: React.FC = () => {
                         <I d={icons.check} />
                       </HoverBtn>
                       <HoverBtn
-                        $color="#c47474"
+                        $color="#dc2626"
                         title={t('emailQueue.reject')}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1179,7 +1179,7 @@ const EmailQueue: React.FC = () => {
                   )}
                   {status === 'approved' && (
                     <HoverBtn
-                      $color="#6890c2"
+                      $color="#3b82f6"
                       title={t('emailQueue.send')}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1191,7 +1191,7 @@ const EmailQueue: React.FC = () => {
                     </HoverBtn>
                   )}
                   <HoverBtn
-                    $color="#c19862"
+                    $color="#d97706"
                     title={t('emailQueue.preview')}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1226,7 +1226,7 @@ const EmailQueue: React.FC = () => {
           {status === 'pending' && (
             <>
               <DetailToolbarBtn
-                $color="#567ebb"
+                $color="#2563eb"
                 onClick={() => {
                   approve.mutate(item._id);
                   goList();
@@ -1237,7 +1237,7 @@ const EmailQueue: React.FC = () => {
                 {t('emailQueue.approve')}
               </DetailToolbarBtn>
               <DetailToolbarBtn
-                $color="#c47474"
+                $color="#dc2626"
                 onClick={() => {
                   handleReject(item._id);
                   goList();
@@ -1251,7 +1251,7 @@ const EmailQueue: React.FC = () => {
           )}
           {status === 'approved' && (
             <DetailToolbarBtn
-              $color="#6890c2"
+              $color="#3b82f6"
               onClick={() => {
                 send.mutate(item._id);
                 goList();
@@ -1329,7 +1329,7 @@ const EmailQueue: React.FC = () => {
             {status === 'pending' && (
               <>
                 <ActionButton
-                  $color="#567ebb"
+                  $color="#2563eb"
                   onClick={() => {
                     approve.mutate(item._id);
                     setModalPreview(null);
@@ -1339,7 +1339,7 @@ const EmailQueue: React.FC = () => {
                   {t('emailQueue.approve')}
                 </ActionButton>
                 <ActionButton
-                  $color="#c47474"
+                  $color="#dc2626"
                   onClick={() => {
                     handleReject(item._id);
                     setModalPreview(null);
@@ -1352,7 +1352,7 @@ const EmailQueue: React.FC = () => {
             )}
             {status === 'approved' && (
               <ActionButton
-                $color="#6890c2"
+                $color="#3b82f6"
                 onClick={() => {
                   send.mutate(item._id);
                   setModalPreview(null);

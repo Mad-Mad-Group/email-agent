@@ -84,24 +84,24 @@ function getParamsSummary(task: TaskItem): string {
 
 /* ── Column config ── */
 
-interface ColumnCfg { key: string; label: string; bg: string; gradient?: string; }
+interface ColumnCfg { key: string; label: string; bg: string; }
 
 const COLUMNS: ColumnCfg[] = [
-  { key: 'pending',    label: 'Pending',    bg: '#6890c2', gradient: 'linear-gradient(135deg, #829ecf 0%, #567ebb 100%)' },
-  { key: 'processing', label: 'Processing', bg: '#c19862', gradient: 'linear-gradient(135deg, #c7a76b 0%, #a87b40 100%)' },
-  { key: 'completed',  label: 'Completed',  bg: '#5fa088', gradient: 'linear-gradient(135deg, #75b294 0%, #46816a 100%)' },
-  { key: 'failed',     label: 'Failed',     bg: '#c47474', gradient: 'linear-gradient(135deg, #c78787 0%, #a85a5a 100%)' },
+  { key: 'pending',    label: 'Pending',    bg: '#3b82f6' },
+  { key: 'processing', label: 'Processing', bg: '#d97706' },
+  { key: 'completed',  label: 'Completed',  bg: '#16a34a' },
+  { key: 'failed',     label: 'Failed',     bg: '#dc2626' },
 ];
 
 /* ── Skill color palette ── */
 
 const SKILL_COLORS: Record<string, string> = {
-  S1: '#6890c2', S2: '#c19862', S3: '#567ebb', S4: '#5fa088',
-  scrape: '#6890c2', email: '#c19862', analyze: '#567ebb',
+  S1: '#3b82f6', S2: '#d97706', S3: '#2563eb', S4: '#16a34a',
+  scrape: '#3b82f6', email: '#d97706', analyze: '#2563eb',
 };
 function skillColor(id: string): string {
   if (SKILL_COLORS[id]) return SKILL_COLORS[id];
-  const p = ['#6890c2', '#c19862', '#567ebb', '#4367a3', '#c47474', '#94a3b8'];
+  const p = ['#3b82f6', '#d97706', '#2563eb', '#1d4ed8', '#dc2626', '#94a3b8'];
   let h = 0;
   for (let i = 0; i < id.length; i++) h = id.charCodeAt(i) + ((h << 5) - h);
   return p[Math.abs(h) % p.length];
@@ -109,7 +109,7 @@ function skillColor(id: string): string {
 
 /* ── Avatar ── */
 
-const AV_PALETTE = ['#6890c2', '#c19862', '#567ebb', '#c47474', '#4367a3', '#94a3b8'];
+const AV_PALETTE = ['#bfdbfe', '#c4b5fd', '#a5f3fc', '#bbf7d0'];
 function avColor(s: string): string {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h);
@@ -210,7 +210,7 @@ const Col = styled.div`
   min-width: 0;
   display: flex; flex-direction: column;
   border-radius: ${({ theme }) => theme.radii.card}px;
-  background: #f9fafb;
+  background: #f7f7f4;
   border: 1px solid ${({ theme }) => theme.colors.border};
   box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
   overflow: hidden;
@@ -221,14 +221,13 @@ const Col = styled.div`
   }
 `;
 
-const ColHead = styled.div<{ $bg: string; $gradient?: string; $collapsed?: boolean }>`
+const ColHead = styled.div<{ $bg: string; $collapsed?: boolean }>`
   padding: 12px ${({ theme }) => theme.spacing.md}px;
-  background: ${({ $gradient, $bg }) => $gradient || $bg};
-  color: #fff;
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ $bg }) => $bg};
   font-size: 0.875rem; font-weight: 600;
   display: flex; align-items: center; justify-content: space-between;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.18), 0 3px 6px rgba(0,0,0,0.08);
-  text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  border-bottom: 2px solid ${({ $bg }) => $bg};
   ${media.mobile} {
     cursor: pointer;
     position: sticky;
@@ -251,10 +250,10 @@ const ColChevron = styled.span<{ $open: boolean }>`
 `;
 
 const ColCount = styled.span`
-  font-size: 0.75rem; font-weight: 600; opacity: 0.95;
-  background: rgba(255,255,255,0.25);
+  font-size: 0.75rem; font-weight: 600;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  color: inherit;
   padding: 2px 8px; border-radius: 99px;
-  backdrop-filter: blur(4px);
 `;
 
 const ColBody = styled.div<{ $collapsed?: boolean }>`
@@ -322,16 +321,15 @@ const CardMeta = styled.div`
 const Avatar = styled.span<{ $c: string }>`
   display: inline-flex; align-items: center; justify-content: center;
   width: 22px; height: 22px; border-radius: 50%;
-  background: linear-gradient(135deg, ${({ $c }) => $c} 0%, ${({ $c }) => $c}cc 100%);
-  color: #fff; font-size: 0.5625rem; font-weight: 700;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
-  border: 1px solid rgba(255,255,255,0.4);
+  background: ${({ $c }) => $c};
+  color: #334155; font-size: 0.5625rem; font-weight: 700;
+  box-shadow: none;
 `;
 
 const Pill = styled.span<{ $c: string }>`
   display: inline-block; padding: 1px 8px;
   border-radius: 99px; font-size: 0.625rem; font-weight: 600;
-  background: linear-gradient(135deg, ${({ $c }) => $c}1a 0%, ${({ $c }) => $c}26 100%);
+  background: ${({ $c }) => $c}0d;
   color: ${({ $c }) => $c};
   border: 1px solid ${({ $c }) => $c}33;
 `;
@@ -339,8 +337,8 @@ const Pill = styled.span<{ $c: string }>`
 const PriorityDot = styled.span<{ $c: string }>`
   display: inline-block; width: 8px; height: 8px;
   border-radius: 50%;
-  background: radial-gradient(circle, ${({ $c }) => $c} 0%, ${({ $c }) => $c}cc 100%);
-  box-shadow: 0 0 0 2px ${({ $c }) => $c}22, 0 1px 2px rgba(0,0,0,0.1);
+  background: ${({ $c }) => $c};
+  box-shadow: none;
 `;
 
 const CardDate = styled.span`
@@ -380,9 +378,9 @@ function fmtDate(iso: string): string {
 
 function priorityColor(p: string): string {
   switch (p) {
-    case 'high': case 'urgent': return '#c47474';
-    case 'normal': return '#c19862';
-    case 'low': return '#567ebb';
+    case 'high': case 'urgent': return '#dc2626';
+    case 'normal': return '#d97706';
+    case 'low': return '#2563eb';
     default: return '#94a3b8';
   }
 }
@@ -610,19 +608,14 @@ const WfList = styled.ul`
   &::before {
     content: ''; position: absolute; left: 61px;
     top: 18px; bottom: 18px; width: 2px;
-    background: linear-gradient(
-      180deg,
-      ${({ theme }) => theme.colors.green} 0%,
-      ${({ theme }) => theme.colors.blue} 50%,
-      ${({ theme }) => theme.colors.border} 100%
-    );
+    background: ${({ theme }) => theme.colors.blue};
     border-radius: 1px;
   }
 `;
 
 const pulseGlow = keyframes`
-  0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.4); }
-  50%      { box-shadow: 0 0 0 6px rgba(37,99,235,0); }
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
 `;
 
 const WfItem = styled.li<{ $s: 'done'|'active'|'pending' }>`
@@ -708,7 +701,7 @@ const ProgTrack = styled.div`
 
 const ProgFill = styled.div<{ $pct: number }>`
   height: 100%; width: ${({ $pct }) => $pct}%;
-  background: linear-gradient(90deg, ${({ theme }) => theme.colors.green}, ${({ theme }) => theme.colors.blue});
+  background: ${({ theme }) => theme.colors.blue};
   border-radius: 3px; transition: width 0.4s ease;
 `;
 
@@ -791,7 +784,7 @@ const Tasks: React.FC = () => {
           const isCollapsed = collapsedCols.has(col.key);
           return (
             <Col key={col.key}>
-              <ColHead $bg={col.bg} $gradient={col.gradient} $collapsed={isCollapsed} onClick={() => toggleCol(col.key)}>
+              <ColHead $bg={col.bg} $collapsed={isCollapsed} onClick={() => toggleCol(col.key)}>
                 <span style={{ display: 'flex', alignItems: 'center' }}>
                   {col.label}
                   <ColChevron $open={!isCollapsed}>

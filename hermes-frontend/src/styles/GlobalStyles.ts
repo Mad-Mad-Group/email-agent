@@ -9,22 +9,22 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   :root {
-    /* 主品牌色 — Linear / Vercel 蓝（低饱和版） */
-    --primary: #567ebb;
-    --primary-hover: #4367a3;
-    --primary-light: #d8e1ee;
+    /* 主品牌色 — Logo 蓝 */
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-light: #dbeafe;
 
-    /* 渐变用新调色板相邻两档，保留原本的 135deg */
-    --gradient-primary: linear-gradient(135deg, #6890c2 0%, #4367a3 100%);
-    --gradient-green:   linear-gradient(135deg, #5fa088 0%, #46816a 100%);
-    --gradient-gold:    linear-gradient(135deg, #c19862 0%, #a87b40 100%);
-    --gradient-danger:  linear-gradient(135deg, #c47474 0%, #a85a5a 100%);
+    /* 渐变 */
+    --gradient-primary: #2563eb;
+    --gradient-green: #16a34a;
+    --gradient-gold: #d97706;
+    --gradient-danger: #dc2626;
 
-    /* 状态色（低饱和） */
-    --success: #5fa088;
-    --warning: #c19862;
-    --danger:  #c47474;
-    --info:    #6890c2;
+    /* 状态色 */
+    --success: #16a34a;
+    --warning: #d97706;
+    --danger:  #dc2626;
+    --info:    #2563eb;
   }
 
   html {
