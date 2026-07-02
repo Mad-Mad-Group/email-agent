@@ -551,11 +551,13 @@ ${brand_1.BRAND_SIGNATURE}
 {"subject":"","body":""}`;
     const c = hermesJson(prompt);
     await db.collection('leads').updateOne({ _id }, { $set: { email_draft: c.body, _has_email_draft: true } });
+    // 測試模式：強制寄去自己嘅 email；正式上線改返 lead.email
+    const testRecipient = process.env.TEST_RECIPIENT_EMAIL || '';
     await db.collection('email_queue').insertOne({
         email_id: (0, crypto_1.randomBytes)(4).toString('hex'),
         lead_id: lead.lead_id,
         company_name: lead.company_name,
-        to_email: lead.email,
+        to_email: testRecipient || lead.email,
         subject: c.subject,
         body: c.body,
         status: 'pending',
