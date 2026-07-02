@@ -205,21 +205,36 @@ async function doReplyCheck(_p: any, db: Db) {
         scanned++;
         const parsed = await simpleParser(msg.source as Buffer);
         const from = (parsed.from?.value?.[0]?.address || '').toLowerCase();
-        const lead = byEmail.get(from);
+        const subject = parsed.subject || '';
+        // 測試(SEND_OVERRIDE)模式：回覆 subject 仲帶住「[TEST→realcompany@x.com]」標記
+        // → 由 subject 解返真 lead（因為回覆嘅寄件人係測試地址，對唔返 lead.email）。
+        // 正式模式：直接用寄件人地址 = lead.email 對返。
+        const tag = subject.match(/\[TEST→([^\]\s]+)\]/i);
+        let lead = tag ? byEmail.get(tag[1].toLowerCase()) : undefined;
+        if (!lead) lead = byEmail.get(from);
         if (!lead) continue;
-        const category = classifyReply(parsed.subject || '', parsed.text || '');
+        // 只當「似回覆」先計，避免誤中 newsletter / 無關信：
+        // 有測試標記、或 In-Reply-To/References header、或 subject 有 Re:/回覆。
+        const refs = parsed.references;
+        const isReply =
+          !!tag ||
+          !!parsed.inReplyTo ||
+          (Array.isArray(refs) ? refs.length > 0 : !!refs) ||
+          /^\s*(re|回覆|回复)\s*[:：]/i.test(subject);
+        if (!isReply) continue;
+        const category = classifyReply(subject, parsed.text || '');
         await db.collection('leads').updateOne(
           { _id: lead._id },
           {
             $set: {
               _replied: true,
               _reply_category: category,
-              _reply_summary: (parsed.subject || '').slice(0, 120),
+              _reply_summary: subject.slice(0, 120),
               _reply_at: nowIso(),
             },
           },
         );
-        byEmail.delete(from); // 一個 lead 只更新一次
+        byEmail.delete(String(lead.email).toLowerCase()); // 一個 lead 只更新一次
         updated++;
       }
     } finally {
@@ -228,6 +243,13 @@ async function doReplyCheck(_p: any, db: Db) {
     await client.logout();
   } catch (e: any) {
     return { checked: leads.length, replies: 0, note: 'IMAP 讀取失敗：' + (e?.message ?? e) };
+  } finally {
+    // 確保任何情況都收返個 connection（logout 過 / 未連上都無所謂）
+    try {
+      await client.close();
+    } catch {
+      /* ignore */
+    }
   }
   return { checked: leads.length, scanned, replies: updated };
 }
@@ -629,7 +651,10 @@ async function doSend(p: any, db: Db) {
   if (!lead) throw new Error('lead 唔存在');
   const eq = await db
     .collection('email_queue')
-    .findOne({ lead_id: lead.lead_id, status: 'pending' });
+    .findOne(
+      { lead_id: lead.lead_id, status: 'pending' },
+      { sort: { created_at: -1 } }, // 有多封草稿時攞最新嗰封
+    );
   if (!eq) return { sent: false, note: '冇待發 email' };
 
   // 未開真發 → 只標 approved，唔寄
