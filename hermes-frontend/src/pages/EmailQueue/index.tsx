@@ -352,9 +352,10 @@ const EmailRow = styled.div<{ $selected?: boolean }>`
     : 'transparent'};
   transition: background 0.12s, border-left-color 0.12s;
   &:hover {
-    background: ${({ $selected }) => $selected
+    background: ${({ $selected, theme }) => $selected
       ? '#e0eef9'
-      : '#f0f7ff'};
+      : theme.colors.surfaceMuted};
+    box-shadow: 0 1px 4px rgba(15,23,42,0.06);
   }
   &:hover .hover-actions {
     display: flex;
@@ -478,8 +479,8 @@ const HoverBtn = styled.button<{ $color?: string }>`
   cursor: pointer;
   transition: background 0.12s, color 0.12s, transform 0.1s;
   &:hover {
-    background: ${({ $color }) => ($color ? $color + '18' : '#f4f5f7')};
-    transform: translateY(-1px);
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+    box-shadow: 0 1px 4px rgba(15,23,42,0.06);
   }
   &:disabled {
     opacity: 0.4;
@@ -595,7 +596,7 @@ const DetailToolbarBtn = styled.button<{ $color?: string }>`
   cursor: pointer;
   transition: background 0.12s;
   &:hover {
-    background: ${({ $color }) => ($color ? $color + '25' : '#f4f5f7')};
+    background: ${({ theme }) => theme.colors.surfaceMuted};
   }
   &:disabled {
     opacity: 0.4;
@@ -737,7 +738,7 @@ const OutlineBtn = styled.button<{ $color?: string }>`
   cursor: pointer;
   transition: background 0.15s;
   &:hover {
-    background: ${({ $color }) => ($color ? $color + '12' : '#f4f5f7')};
+    background: ${({ theme }) => theme.colors.surfaceMuted};
   }
   &:disabled {
     opacity: 0.5;
