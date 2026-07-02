@@ -247,6 +247,71 @@ category 定義：interested=有興趣想了解；meeting=想開會/約時間；
     }
 }
 /**
+ * 收到回覆後，自動生成「回應對方回覆」嘅草稿（唔同 doFollowupDraft：嗰個係追唔覆嘅人，
+ * 呢個係回應覆咗嘅人）。按回覆分類 + 內容叫 Hermes 寫返一封 email，
+ * 入 email_queue 做 pending（人喺 Email Queue tick 完先真發）。
+ * 只對「有得傾」嘅分類回覆；auto_reply / not_interested 唔生成。
+ */
+const REPLY_DRAFT_CATS = ['meeting', 'interested', 'question'];
+async function maybeDraftReply(lead, analysis, db) {
+    if (!REPLY_DRAFT_CATS.includes(analysis.category))
+        return false;
+    // 攞返原本封 outreach 個 subject 做 "Re:"，令回覆睇落同一 thread
+    const orig = await db
+        .collection('email_queue')
+        .find({ lead_id: lead.lead_id })
+        .sort({ created_at: -1 })
+        .limit(1)
+        .toArray();
+    const origSubject = orig[0]?.subject || '';
+    const prompt = `你係 ${brand_1.BRAND_NAME} 嘅業務。潛在客戶「${lead.company_name || lead.email}」啱啱回覆咗我哋嘅 outreach email。
+請寫一封得體、簡短嘅跟進回覆（繁體中文，港式英文夾雜 OK）。淨係根據下面資料，唔好作事實、唔好過度承諾。
+
+對方回覆分類：${analysis.category}
+對方回覆摘要：${analysis.summary}
+建議下一步：${analysis.next_step}
+
+寫法：
+- meeting：確認 / 敲定會議時間，簡述議程，可提線上連結或到訪安排。
+- interested：多謝興趣，補充最貼題嘅重點或下一步（提議通話 / 發資料），唔好堆砌。
+- question：直接、誠實答返對方條問題；唔確定就照講唔確定。
+結尾用返簽名：
+${brand_1.BRAND_SIGNATURE}
+
+只回一個 JSON object（ENTIRE reply 只可以係佢）：{"subject":"","body":""}`;
+    try {
+        const c = hermesJson(prompt, { timeout: 120000 });
+        if (!c.body)
+            return false;
+        const subject = c.subject ||
+            (origSubject
+                ? /^re:/i.test(origSubject)
+                    ? origSubject
+                    : `Re: ${origSubject}`
+                : '跟進');
+        await db.collection('email_queue').insertOne({
+            email_id: (0, crypto_1.randomBytes)(4).toString('hex'),
+            lead_id: lead.lead_id,
+            company_name: lead.company_name,
+            to_email: lead.email,
+            subject,
+            body: c.body,
+            status: 'pending',
+            _via: 'hermes',
+            _type: 'reply', // 回應對方回覆（對比 outreach / followup）
+            _reply_category: analysis.category,
+            created_at: nowIso(),
+        });
+        await db
+            .collection('leads')
+            .updateOne({ _id: lead._id }, { $set: { _reply_drafted: true } });
+        return true;
+    }
+    catch {
+        return false; // Hermes 掛咗就唔生成，唔阻礙 reply-check
+    }
+}
+/**
  * 定時回覆檢查（inbound 閉環）：直接連 IMAP 讀 inbox → 對返已聯絡 lead
  * → 分類 → 寫返 lead 的 _reply_* 欄。
  * ⚠️ 用返 SMTP 同一組 creds（Gmail App Password 同時支援 SMTP 發 + IMAP 讀）。
@@ -348,6 +413,7 @@ async function doReplyCheck(_p, db) {
     }
     // IMAP 已閂，先至逐封叫 Hermes 分析（LLM 慢，唔應該連住 inbox 一路等）。
     let updated = 0;
+    let replyDrafts = 0;
     const via = {};
     for (const m of matched) {
         const a = analyzeReply(m.subject, m.text, m.lead);
@@ -413,8 +479,11 @@ async function doReplyCheck(_p, db) {
         }
         catch { /* SSE 通知失敗唔影響主流程 */ }
         updated++;
+        // 自動：一收到回覆即刻叫 Hermes 按內容生成「回應草稿」→ 入 Email Queue（等人 tick 完先發）
+        if (await maybeDraftReply(m.lead, a, db))
+            replyDrafts++;
     }
-    return { checked: leads.length, scanned, replies: updated, via };
+    return { checked: leads.length, scanned, replies: updated, reply_drafts: replyDrafts, via };
 }
 /** S1 搜尋 → 叫 Hermes 開 stealth browser 搵 Google Maps，回真公司 */
 async function doSearch(p, db) {
