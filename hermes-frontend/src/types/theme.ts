@@ -36,6 +36,7 @@ export interface HermesTheme {
   };
   fonts: {
     primary: string;
+    display: string;
     mono: string;
   };
   spacing: {

@@ -937,6 +937,40 @@ const EmailQueue: React.FC = () => {
   const [modalPreview, setModalPreview] = useState<EmailItem | null>(null);
   const [pageTab, setPageTab] = useState<'queue' | 'templates'>('queue');
   const [leadReply, setLeadReply] = useState<Lead | null>(null);
+  const [replyChecking, setReplyChecking] = useState(false);
+  const [replyCheckMsg, setReplyCheckMsg] = useState('');
+  const [followupChecking, setFollowupChecking] = useState(false);
+  const [followupCheckMsg, setFollowupCheckMsg] = useState('');
+
+  const handleCheckReplies = async () => {
+    setReplyChecking(true);
+    setReplyCheckMsg('');
+    try {
+      await client.post('/jobs/check-replies/run');
+      setReplyCheckMsg('已派發檢查回覆任務');
+      setTimeout(() => setReplyCheckMsg(''), 4000);
+    } catch (err: any) {
+      setReplyCheckMsg('觸發失敗: ' + (err?.message || '未知錯誤'));
+      setTimeout(() => setReplyCheckMsg(''), 5000);
+    } finally {
+      setReplyChecking(false);
+    }
+  };
+
+  const handleCheckFollowups = async () => {
+    setFollowupChecking(true);
+    setFollowupCheckMsg('');
+    try {
+      await client.post('/jobs/check-followups/run');
+      setFollowupCheckMsg('已派發檢查跟進任務');
+      setTimeout(() => setFollowupCheckMsg(''), 4000);
+    } catch (err: any) {
+      setFollowupCheckMsg('觸發失敗: ' + (err?.message || '未知錯誤'));
+      setTimeout(() => setFollowupCheckMsg(''), 5000);
+    } finally {
+      setFollowupChecking(false);
+    }
+  };
 
   const translatedStatusFolders: StatusFolderDef[] = [
     { id: 'all', label: t('emailQueue.all'), icon: 'inbox', filterValue: '', badgeColor: '#94a3b8' },
@@ -1136,6 +1170,34 @@ const EmailQueue: React.FC = () => {
             aria-label="全選/全不選"
           />
           <ToolbarTitle>{t('emailQueue.outbox')}</ToolbarTitle>
+          <DetailToolbarBtn
+            $color="#8b5cf6"
+            onClick={handleCheckReplies}
+            disabled={replyChecking}
+            style={{ marginLeft: 8 }}
+          >
+            <I d={icons.envelope} />
+            {replyChecking ? '檢查中…' : '檢查回覆'}
+          </DetailToolbarBtn>
+          {replyCheckMsg && (
+            <span style={{ fontSize: '0.75rem', color: replyCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a', marginLeft: 4 }}>
+              {replyCheckMsg}
+            </span>
+          )}
+          <DetailToolbarBtn
+            $color="#d97706"
+            onClick={handleCheckFollowups}
+            disabled={followupChecking}
+            style={{ marginLeft: 4 }}
+          >
+            <I d={icons.clock} />
+            {followupChecking ? '檢查中…' : '檢查跟進'}
+          </DetailToolbarBtn>
+          {followupCheckMsg && (
+            <span style={{ fontSize: '0.75rem', color: followupCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a', marginLeft: 4 }}>
+              {followupCheckMsg}
+            </span>
+          )}
         </ToolbarLeft>
         <ToolbarRight>
           {total > 0 && (

@@ -169,7 +169,13 @@ async function handle(task, db) {
     const p = task.params || {};
     const skill = task.skill_id;
     if (p.mode === 'reply_check')
-        return doReplyCheck(p, db); // cron 派嘅，冇 lead
+        return doReplyCheck(p, db);
+    if (p.mode === 'followup')
+        return doFollowupDraft(p, db);
+    if (p.mode === 'reoutreach')
+        return doReoutreachDraft(p, db);
+    if (p.mode === 'check_followups')
+        return doCheckFollowups(p, db);
     if (skill === 'S1')
         return doSearch(p, db);
     if (skill === 'S2' && (p.mode === 'enrich' || p.pipeline_stage === 'enrich'))
@@ -241,6 +247,71 @@ category 定義：interested=有興趣想了解；meeting=想開會/約時間；
     }
 }
 /**
+ * 收到回覆後，自動生成「回應對方回覆」嘅草稿（唔同 doFollowupDraft：嗰個係追唔覆嘅人，
+ * 呢個係回應覆咗嘅人）。按回覆分類 + 內容叫 Hermes 寫返一封 email，
+ * 入 email_queue 做 pending（人喺 Email Queue tick 完先真發）。
+ * 只對「有得傾」嘅分類回覆；auto_reply / not_interested 唔生成。
+ */
+const REPLY_DRAFT_CATS = ['meeting', 'interested', 'question'];
+async function maybeDraftReply(lead, analysis, db) {
+    if (!REPLY_DRAFT_CATS.includes(analysis.category))
+        return false;
+    // 攞返原本封 outreach 個 subject 做 "Re:"，令回覆睇落同一 thread
+    const orig = await db
+        .collection('email_queue')
+        .find({ lead_id: lead.lead_id })
+        .sort({ created_at: -1 })
+        .limit(1)
+        .toArray();
+    const origSubject = orig[0]?.subject || '';
+    const prompt = `你係 ${brand_1.BRAND_NAME} 嘅業務。潛在客戶「${lead.company_name || lead.email}」啱啱回覆咗我哋嘅 outreach email。
+請寫一封得體、簡短嘅跟進回覆（繁體中文，港式英文夾雜 OK）。淨係根據下面資料，唔好作事實、唔好過度承諾。
+
+對方回覆分類：${analysis.category}
+對方回覆摘要：${analysis.summary}
+建議下一步：${analysis.next_step}
+
+寫法：
+- meeting：確認 / 敲定會議時間，簡述議程，可提線上連結或到訪安排。
+- interested：多謝興趣，補充最貼題嘅重點或下一步（提議通話 / 發資料），唔好堆砌。
+- question：直接、誠實答返對方條問題；唔確定就照講唔確定。
+結尾用返簽名：
+${brand_1.BRAND_SIGNATURE}
+
+只回一個 JSON object（ENTIRE reply 只可以係佢）：{"subject":"","body":""}`;
+    try {
+        const c = hermesJson(prompt, { timeout: 120000 });
+        if (!c.body)
+            return false;
+        const subject = c.subject ||
+            (origSubject
+                ? /^re:/i.test(origSubject)
+                    ? origSubject
+                    : `Re: ${origSubject}`
+                : '跟進');
+        await db.collection('email_queue').insertOne({
+            email_id: (0, crypto_1.randomBytes)(4).toString('hex'),
+            lead_id: lead.lead_id,
+            company_name: lead.company_name,
+            to_email: lead.email,
+            subject,
+            body: c.body,
+            status: 'pending',
+            _via: 'hermes',
+            _type: 'reply', // 回應對方回覆（對比 outreach / followup）
+            _reply_category: analysis.category,
+            created_at: nowIso(),
+        });
+        await db
+            .collection('leads')
+            .updateOne({ _id: lead._id }, { $set: { _reply_drafted: true } });
+        return true;
+    }
+    catch {
+        return false; // Hermes 掛咗就唔生成，唔阻礙 reply-check
+    }
+}
+/**
  * 定時回覆檢查（inbound 閉環）：直接連 IMAP 讀 inbox → 對返已聯絡 lead
  * → 分類 → 寫返 lead 的 _reply_* 欄。
  * ⚠️ 用返 SMTP 同一組 creds（Gmail App Password 同時支援 SMTP 發 + IMAP 讀）。
@@ -260,6 +331,7 @@ async function doReplyCheck(_p, db) {
         return { checked: leads.length, note: 'IMAP 未配（要 SMTP_USER/SMTP_PASS）' };
     }
     const byEmail = new Map(leads.map((l) => [String(l.email).toLowerCase(), l]));
+    log(`[ReplyCheck] 待查 leads: ${leads.length}, emails: [${[...byEmail.keys()].join(', ')}]`);
     const client = new imapflow_1.ImapFlow({
         host: process.env.IMAP_HOST || 'imap.gmail.com',
         port: Number(process.env.IMAP_PORT || 993),
@@ -279,6 +351,7 @@ async function doReplyCheck(_p, db) {
                 const parsed = await (0, mailparser_1.simpleParser)(msg.source);
                 const from = (parsed.from?.value?.[0]?.address || '').toLowerCase();
                 const subject = parsed.subject || '';
+                log(`[ReplyCheck] #${scanned} from=${from} subject="${subject.slice(0, 80)}"`);
                 // 測試(SEND_OVERRIDE)模式：回覆 subject 仲帶住「[TEST→realcompany@x.com]」標記
                 // → 由 subject 解返真 lead（因為回覆嘅寄件人係測試地址，對唔返 lead.email）。
                 // 正式模式：直接用寄件人地址 = lead.email 對返。
@@ -286,8 +359,25 @@ async function doReplyCheck(_p, db) {
                 let lead = tag ? byEmail.get(tag[1].toLowerCase()) : undefined;
                 if (!lead)
                     lead = byEmail.get(from);
-                if (!lead)
+                // Fallback：測試模式下 from === SMTP_USER，用 subject 去 email_queue 反查 lead
+                if (!lead && from === (user || '').toLowerCase()) {
+                    const cleanSubject = subject.replace(/^\s*(re|回覆|回复)\s*[:：]\s*/i, '').trim();
+                    if (cleanSubject) {
+                        const eq = await db.collection('email_queue').findOne({ subject: cleanSubject, status: 'sent' }, { projection: { lead_id: 1 } });
+                        if (eq?.lead_id) {
+                            // lead_id 可能係 string，用 lead_id 欄位去 leads 搵
+                            const foundLead = leads.find((l) => l.lead_id === eq.lead_id || String(l._id) === String(eq.lead_id));
+                            if (foundLead) {
+                                lead = foundLead;
+                                log(`[ReplyCheck]   → fallback: 由 email_queue subject 反查到 lead=${foundLead.company_name || foundLead.email}`);
+                            }
+                        }
+                    }
+                }
+                if (!lead) {
+                    log(`[ReplyCheck]   → skip: 對唔上任何 lead (tag=${tag?.[1] || 'none'})`);
                     continue;
+                }
                 // 只當「似回覆」先計，避免誤中 newsletter / 無關信：
                 // 有測試標記、或 In-Reply-To/References header、或 subject 有 Re:/回覆。
                 const refs = parsed.references;
@@ -295,8 +385,11 @@ async function doReplyCheck(_p, db) {
                     !!parsed.inReplyTo ||
                     (Array.isArray(refs) ? refs.length > 0 : !!refs) ||
                     /^\s*(re|回覆|回复)\s*[:：]/i.test(subject);
-                if (!isReply)
+                if (!isReply) {
+                    log(`[ReplyCheck]   → skip: lead matched 但唔似回覆`);
                     continue;
+                }
+                log(`[ReplyCheck]   → ✓ matched lead=${lead.company_name || lead.email}`);
                 matched.push({ lead, subject, text: parsed.text || '' });
                 byEmail.delete(String(lead.email).toLowerCase()); // 一個 lead 只收一次
             }
@@ -320,6 +413,7 @@ async function doReplyCheck(_p, db) {
     }
     // IMAP 已閂，先至逐封叫 Hermes 分析（LLM 慢，唔應該連住 inbox 一路等）。
     let updated = 0;
+    let replyDrafts = 0;
     const via = {};
     for (const m of matched) {
         const a = analyzeReply(m.subject, m.text, m.lead);
@@ -356,6 +450,20 @@ async function doReplyCheck(_p, db) {
             });
             log(`  → 已建立會議事件：${m.lead.company_name}`);
         }
+        // not_interested → 自動派 reoutreach draft（換策略再嘗試，最多 1 次）
+        if (a.category === 'not_interested' && !m.lead._reoutreach_done) {
+            try {
+                await api('/tasks', 'POST', {
+                    skill_id: 'S3',
+                    title: `Re-outreach：${m.lead.company_name}`,
+                    params: { mode: 'reoutreach', lead_object_id: String(m.lead._id) },
+                });
+                log(`  → 已派 reoutreach task：${m.lead.company_name}`);
+            }
+            catch (e) {
+                log(`  → reoutreach 派 task 失敗：${e?.message ?? e}`);
+            }
+        }
         // 通知 NestJS SSE（經 API）
         try {
             await api('/sse/notify', 'POST', {
@@ -371,8 +479,11 @@ async function doReplyCheck(_p, db) {
         }
         catch { /* SSE 通知失敗唔影響主流程 */ }
         updated++;
+        // 自動：一收到回覆即刻叫 Hermes 按內容生成「回應草稿」→ 入 Email Queue（等人 tick 完先發）
+        if (await maybeDraftReply(m.lead, a, db))
+            replyDrafts++;
     }
-    return { checked: leads.length, scanned, replies: updated, via };
+    return { checked: leads.length, scanned, replies: updated, reply_drafts: replyDrafts, via };
 }
 /** S1 搜尋 → 叫 Hermes 開 stealth browser 搵 Google Maps，回真公司 */
 async function doSearch(p, db) {
@@ -745,6 +856,141 @@ ${brand_1.BRAND_SIGNATURE}
     });
     return { drafted: true, via: 'hermes', subject: c.subject };
 }
+/** 檢查邊啲 contacted leads 超過 5 日冇回覆，逐個派 followup draft task */
+async function doCheckFollowups(_p, db) {
+    const FOLLOWUP_DAYS = 5;
+    const MAX_FOLLOWUPS = 2;
+    const cutoff = new Date(Date.now() - FOLLOWUP_DAYS * 864e5).toISOString();
+    // 搵 contacted + 未回覆 + followup 次數未夠 + 最後發送/跟進已超過 N 日
+    const leads = await db
+        .collection('leads')
+        .find({
+        status: 'contacted',
+        _replied: { $ne: true },
+        $or: [
+            { _followup_count: { $exists: false } },
+            { _followup_count: { $lt: MAX_FOLLOWUPS } },
+        ],
+        // 上次發送或跟進時間要早過 cutoff
+        $and: [
+            {
+                $or: [
+                    { _last_followup_at: { $exists: false }, _last_sent_at: { $lte: cutoff } },
+                    { _last_followup_at: { $lte: cutoff } },
+                    // fallback：兩個都冇就用 updatedAt
+                    { _last_sent_at: { $exists: false }, _last_followup_at: { $exists: false } },
+                ],
+            },
+        ],
+    })
+        .limit(20)
+        .toArray();
+    let dispatched = 0;
+    for (const lead of leads) {
+        // 額外安全檢查：確保距離上次動作至少 FOLLOWUP_DAYS
+        const lastAction = lead._last_followup_at || lead._last_sent_at;
+        if (lastAction && new Date(lastAction).getTime() > Date.now() - FOLLOWUP_DAYS * 864e5) {
+            continue;
+        }
+        try {
+            await api('/tasks', 'POST', {
+                skill_id: 'S3',
+                title: `Follow-up #${(lead._followup_count || 0) + 1}：${lead.company_name}`,
+                params: { mode: 'followup', lead_object_id: String(lead._id) },
+            });
+            dispatched++;
+            log(`  → 派 followup task：${lead.company_name} (#${(lead._followup_count || 0) + 1})`);
+        }
+        catch (e) {
+            log(`  → followup 派 task 失敗：${lead.company_name} — ${e?.message ?? e}`);
+        }
+    }
+    return { checked: leads.length, dispatched };
+}
+/** Follow-up draft — 冇回覆超過 N 日，寫一封跟進 email（語氣唔同） */
+async function doFollowupDraft(p, db) {
+    const _id = new mongodb_1.ObjectId(p.lead_object_id);
+    const lead = await db.collection('leads').findOne({ _id });
+    if (!lead)
+        throw new Error('lead 唔存在');
+    const count = (lead._followup_count || 0) + 1;
+    const prompt = `Write a SHORT follow-up email (#${count}) in 繁體中文 (港式英文夾雜 OK) from ${brand_1.BRAND_NAME} (${brand_1.BRAND_TAGLINE})
+to「${lead.company_name}」. We previously reached out but got no reply.
+
+${brand_1.BRAND_CONTEXT_BLOCK}
+
+Previous pitch angle: ${lead._collab_primary || ''} — ${lead._collab_pitch || ''}.
+${brand_1.BRAND_TONE_GUIDE}
+
+This is follow-up #${count}. Keep it SHORTER and more casual than the first email.
+${count === 1 ? 'Gently check if they saw the previous email. Offer a quick 15-min call.' : 'Final follow-up — very brief, friendly, no pressure. Mention you won\'t follow up again.'}
+
+Output ONLY JSON with subject + body. Body MUST end with this signature block:
+
+${brand_1.BRAND_SIGNATURE}
+
+{"subject":"","body":""}`;
+    const c = hermesJson(prompt);
+    const testRecipient = process.env.TEST_RECIPIENT_EMAIL || '';
+    await db.collection('email_queue').insertOne({
+        email_id: (0, crypto_1.randomBytes)(4).toString('hex'),
+        lead_id: lead.lead_id,
+        company_name: lead.company_name,
+        to_email: testRecipient || lead.email,
+        subject: c.subject,
+        body: c.body,
+        status: 'pending',
+        _via: 'hermes',
+        _type: 'followup',
+        _followup_number: count,
+        created_at: nowIso(),
+    });
+    await db.collection('leads').updateOne({ _id }, { $set: { _followup_count: count, _last_followup_at: nowIso() } });
+    log(`  → followup #${count} drafted for ${lead.company_name}`);
+    return { drafted: true, type: 'followup', count, subject: c.subject };
+}
+/** Re-outreach draft — 對方回覆冇興趣，換角度再寫一封 */
+async function doReoutreachDraft(p, db) {
+    const _id = new mongodb_1.ObjectId(p.lead_object_id);
+    const lead = await db.collection('leads').findOne({ _id });
+    if (!lead)
+        throw new Error('lead 唔存在');
+    const prompt = `Write a B2B outreach email in 繁體中文 (港式英文夾雜 OK) from ${brand_1.BRAND_NAME} (${brand_1.BRAND_TAGLINE})
+to「${lead.company_name}」. They previously replied saying they're NOT interested.
+
+${brand_1.BRAND_CONTEXT_BLOCK}
+
+Previous angle was: ${lead._collab_primary || ''} — ${lead._collab_pitch || ''}
+Their reply summary: ${lead._reply_summary || 'declined / not interested'}
+
+Now try a COMPLETELY DIFFERENT angle and value proposition.
+Focus on a different service area or pain point they might have.
+Be respectful of their previous decline — acknowledge it briefly.
+${brand_1.BRAND_TONE_GUIDE}
+
+Output ONLY JSON with subject + body. Body MUST end with this signature block:
+
+${brand_1.BRAND_SIGNATURE}
+
+{"subject":"","body":""}`;
+    const c = hermesJson(prompt);
+    const testRecipient = process.env.TEST_RECIPIENT_EMAIL || '';
+    await db.collection('email_queue').insertOne({
+        email_id: (0, crypto_1.randomBytes)(4).toString('hex'),
+        lead_id: lead.lead_id,
+        company_name: lead.company_name,
+        to_email: testRecipient || lead.email,
+        subject: c.subject,
+        body: c.body,
+        status: 'pending',
+        _via: 'hermes',
+        _type: 'reoutreach',
+        created_at: nowIso(),
+    });
+    await db.collection('leads').updateOne({ _id }, { $set: { _reoutreach_done: true, _reoutreach_at: nowIso() } });
+    log(`  → reoutreach drafted for ${lead.company_name}`);
+    return { drafted: true, type: 'reoutreach', subject: c.subject };
+}
 /**
  * S4 發送 —— ⚠️ 預設【唔真發 email】（發冷 email 俾真公司係不可逆）。
  * 預設只標 email_queue = approved（等人手 / 開關確認）。
@@ -779,7 +1025,7 @@ async function doSend(p, db) {
     });
     // 收件人：SEND_OVERRIDE 有設（測試安全）→ 一律寄去嗰度；冇設 → lead.email（真發）。
     // creds（SMTP_USER/PASS）同收件人全部由跑 worker 嗰位喺 .env 設，唔 hardcode 落 code。
-    const override = process.env.SEND_OVERRIDE;
+    const override = process.env.SEND_OVERRIDE || process.env.TEST_RECIPIENT_EMAIL;
     const to = override || lead.email;
     if (!to)
         return { sent: false, note: '冇收件人（lead 冇 email，又冇 SEND_OVERRIDE）' };
@@ -821,7 +1067,7 @@ async function doSend(p, db) {
         .updateOne({ _id: eq._id }, { $set: { status: 'sent', sent_at: nowIso() } });
     await db
         .collection('leads')
-        .updateOne({ _id }, { $set: { status: 'contacted', _email_sent: true } });
+        .updateOne({ _id }, { $set: { status: 'contacted', _email_sent: true, _last_sent_at: nowIso() } });
     return { sent: true, to };
 }
 // ───────── main loop ─────────

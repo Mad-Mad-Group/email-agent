@@ -14,6 +14,9 @@ export declare class JobsService {
     checkReplies(): Promise<{
         task_id: string;
     }>;
+    checkFollowups(): Promise<{
+        task_id: string;
+    }>;
     run(name: string): Promise<{
         requeued: number;
     } | {

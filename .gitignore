@@ -34,3 +34,7 @@ cms/worker/agent.ts
 cms/server/.env.example
 cms/.DS_Store
 AGENTS.md
+cms/server/dist/tsconfig.build.tsbuildinfo
+cms/server/dist/tsconfig.build.tsbuildinfo
+cms/server/dist/tsconfig.build.tsbuildinfo
+cms/server/dist/tsconfig.build.tsbuildinfo
