@@ -24,6 +24,16 @@ export interface Lead {
   verification?: string;
   createdAt?: string;
   updatedAt?: string;
+  _imported_at?: string;
+
+  /* ── Reply fields (written by worker doReplyCheck) ── */
+  _replied?: boolean;
+  _reply_category?: 'interested' | 'not_interested' | 'meeting' | 'auto_reply' | 'question' | string;
+  _reply_summary?: string;
+  _reply_sentiment?: string;
+  _reply_next_step?: string;
+  _reply_via?: string;
+  _reply_at?: string;
 }
 
 export interface LeadListParams {

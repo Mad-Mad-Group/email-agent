@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail, useBulkApproveEmails, useBulkRejectEmails, useBulkSendEmails } from '../../api/hooks';
 import { EmailItem } from '../../api/emailQueue';
+import { Lead } from '../../api/leads';
+import client from '../../api/client';
 import { media } from '../../styles/media';
 import EmailTemplateEditor from './EmailTemplateEditor';
 
@@ -94,6 +96,14 @@ const statusColorMap: Record<string, string> = {
   rejected: '#dc2626',
   sent: '#2563eb',
   failed: '#475569',
+};
+
+const REPLY_CATEGORY_LABEL: Record<string, { text: string; bg: string; fg: string }> = {
+  interested:     { text: '有興趣',   bg: '#dcfce7', fg: '#16a34a' },
+  not_interested: { text: '冇興趣',   bg: '#fee2e2', fg: '#dc2626' },
+  meeting:        { text: '約時間',   bg: '#dbeafe', fg: '#2563eb' },
+  auto_reply:     { text: '自動回覆', bg: '#f3f4f6', fg: '#6b7280' },
+  question:       { text: '有問題',   bg: '#fef3c7', fg: '#d97706' },
 };
 
 /* ══════════════════════════════════════
@@ -821,6 +831,68 @@ const ModalFooter = styled.div`
   border-top: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
+/* ── Reply Section ── */
+
+const ReplySection = styled.div`
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  overflow: hidden;
+`;
+
+const ReplySectionHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px ${({ theme }) => theme.spacing.md}px;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const ReplyCategoryBadge = styled.span<{ $bg: string; $fg: string }>`
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 99px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background: ${({ $bg }) => $bg};
+  color: ${({ $fg }) => $fg};
+`;
+
+const ReplyBody = styled.div`
+  padding: ${({ theme }) => theme.spacing.md}px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const ReplyFieldRow = styled.div`
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.md}px;
+  flex-wrap: wrap;
+`;
+
+const ReplyField = styled.div`
+  flex: 1;
+  min-width: 140px;
+`;
+
+const ReplyFieldLabel = styled.div`
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  margin-bottom: 2px;
+`;
+
+const ReplyFieldValue = styled.div`
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
 /* ── Footer ── */
 
 const Footer = styled.div`
@@ -863,6 +935,7 @@ const EmailQueue: React.FC = () => {
   const [activeEmail, setActiveEmail] = useState<EmailItem | null>(null);
   const [modalPreview, setModalPreview] = useState<EmailItem | null>(null);
   const [pageTab, setPageTab] = useState<'queue' | 'templates'>('queue');
+  const [leadReply, setLeadReply] = useState<Lead | null>(null);
 
   const translatedStatusFolders: StatusFolderDef[] = [
     { id: 'all', label: t('emailQueue.all'), icon: 'inbox', filterValue: '', badgeColor: '#94a3b8' },
@@ -917,6 +990,21 @@ const EmailQueue: React.FC = () => {
     if (!window.confirm(`寄出 ${selectedIds.size} 個 email?`)) return;
     bulkSend.mutate([...selectedIds], { onSuccess: () => clearSelection() });
   };
+
+  // Fetch lead reply data when viewing detail of a sent email
+  useEffect(() => {
+    if (view !== 'detail' || !activeEmail?.lead_id) {
+      setLeadReply(null);
+      return;
+    }
+    client.get(`/leads/${activeEmail.lead_id}`)
+      .then((res) => {
+        const lead = (res.data as any)?.data ?? res.data;
+        if (lead?._replied) setLeadReply(lead);
+        else setLeadReply(null);
+      })
+      .catch(() => setLeadReply(null));
+  }, [view, activeEmail?.lead_id]);
 
   const apiEmails: EmailItem[] = data?.data ?? [];
   // 唔再 fall back 去 MOCK_EMAILS —— backend 失敗應該 user-facing 出 error，
@@ -1294,6 +1382,48 @@ const EmailQueue: React.FC = () => {
           </DetailMeta>
 
           <EmailBodyText dangerouslySetInnerHTML={{ __html: item.body || t('emailQueue.emptyBody') }} />
+
+          {/* Lead Reply Section */}
+          {leadReply && (() => {
+            const cat = REPLY_CATEGORY_LABEL[leadReply._reply_category || ''] || { text: leadReply._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
+            return (
+              <ReplySection>
+                <ReplySectionHeader>
+                  📩 對方回覆
+                  <ReplyCategoryBadge $bg={cat.bg} $fg={cat.fg}>{cat.text}</ReplyCategoryBadge>
+                  {leadReply._reply_at && (
+                    <span style={{ fontSize: '0.75rem', fontWeight: 400, color: '#94a3b8', marginLeft: 'auto' }}>
+                      {new Date(leadReply._reply_at).toLocaleString('zh-HK')}
+                    </span>
+                  )}
+                </ReplySectionHeader>
+                <ReplyBody>
+                  <ReplyFieldRow>
+                    <ReplyField>
+                      <ReplyFieldLabel>摘要</ReplyFieldLabel>
+                      <ReplyFieldValue>{leadReply._reply_summary || '—'}</ReplyFieldValue>
+                    </ReplyField>
+                  </ReplyFieldRow>
+                  <ReplyFieldRow>
+                    <ReplyField>
+                      <ReplyFieldLabel>情緒</ReplyFieldLabel>
+                      <ReplyFieldValue>{leadReply._reply_sentiment || '—'}</ReplyFieldValue>
+                    </ReplyField>
+                    <ReplyField>
+                      <ReplyFieldLabel>回覆方式</ReplyFieldLabel>
+                      <ReplyFieldValue>{leadReply._reply_via || '—'}</ReplyFieldValue>
+                    </ReplyField>
+                  </ReplyFieldRow>
+                  <ReplyFieldRow>
+                    <ReplyField>
+                      <ReplyFieldLabel>建議下一步</ReplyFieldLabel>
+                      <ReplyFieldValue>{leadReply._reply_next_step || '—'}</ReplyFieldValue>
+                    </ReplyField>
+                  </ReplyFieldRow>
+                </ReplyBody>
+              </ReplySection>
+            );
+          })()}
         </DetailWrap>
       </MainPanel>
     );
