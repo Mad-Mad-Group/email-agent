@@ -1,0 +1,35 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Node / TS build output
+node_modules/
+dist/
+build/
+.cache/
+*.tsbuildinfo
+
+# Lead-scraper specific
+uploads/
+hermes-frontend.zip
+ziiqRmns
+
+# OS / Editor noise
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*~
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Coverage
+coverage/
+cms/worker/agent.ts
+cms/server/.env.example
+cms/.DS_Store
