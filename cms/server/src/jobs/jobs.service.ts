@@ -53,6 +53,19 @@ export class JobsService {
     });
   }
 
+  /** 每日一次：檢查超過 5 日冇回覆嘅 leads，派 followup task */
+  @Cron(CronExpression.EVERY_DAY_AT_10AM)
+  async checkFollowups(): Promise<{ task_id: string }> {
+    return this.runJob('check-followups', async () => {
+      const task = await this.tasks.enqueue({
+        skill_id: SKILL.EMAIL_SEND,
+        title: '定時檢查跟進',
+        params: { mode: 'check_followups' },
+      });
+      return { task_id: task.task_id };
+    });
+  }
+
   /** 手動觸發（JobsController 用）*/
   async run(name: string) {
     switch (name) {
@@ -62,6 +75,8 @@ export class JobsService {
         return this.requeueOldPending();
       case 'check-replies':
         return this.checkReplies();
+      case 'check-followups':
+        return this.checkFollowups();
       default:
         throw new Error(`Unknown job: ${name}`);
     }

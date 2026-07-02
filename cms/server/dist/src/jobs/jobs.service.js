@@ -48,6 +48,16 @@ let JobsService = JobsService_1 = class JobsService {
             return { task_id: task.task_id };
         });
     }
+    async checkFollowups() {
+        return this.runJob('check-followups', async () => {
+            const task = await this.tasks.enqueue({
+                skill_id: task_status_enum_1.SKILL.EMAIL_SEND,
+                title: '定時檢查跟進',
+                params: { mode: 'check_followups' },
+            });
+            return { task_id: task.task_id };
+        });
+    }
     async run(name) {
         switch (name) {
             case 'reap-stalled-tasks':
@@ -56,6 +66,8 @@ let JobsService = JobsService_1 = class JobsService {
                 return this.requeueOldPending();
             case 'check-replies':
                 return this.checkReplies();
+            case 'check-followups':
+                return this.checkFollowups();
             default:
                 throw new Error(`Unknown job: ${name}`);
         }
@@ -106,6 +118,12 @@ __decorate([
     __metadata("design:paramtypes", []),
     __metadata("design:returntype", Promise)
 ], JobsService.prototype, "checkReplies", null);
+__decorate([
+    (0, schedule_1.Cron)(schedule_1.CronExpression.EVERY_DAY_AT_10AM),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], JobsService.prototype, "checkFollowups", null);
 exports.JobsService = JobsService = JobsService_1 = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [tasks_service_1.TasksService,

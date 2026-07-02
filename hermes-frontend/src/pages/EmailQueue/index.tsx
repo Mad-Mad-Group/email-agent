@@ -938,6 +938,8 @@ const EmailQueue: React.FC = () => {
   const [leadReply, setLeadReply] = useState<Lead | null>(null);
   const [replyChecking, setReplyChecking] = useState(false);
   const [replyCheckMsg, setReplyCheckMsg] = useState('');
+  const [followupChecking, setFollowupChecking] = useState(false);
+  const [followupCheckMsg, setFollowupCheckMsg] = useState('');
 
   const handleCheckReplies = async () => {
     setReplyChecking(true);
@@ -951,6 +953,21 @@ const EmailQueue: React.FC = () => {
       setTimeout(() => setReplyCheckMsg(''), 5000);
     } finally {
       setReplyChecking(false);
+    }
+  };
+
+  const handleCheckFollowups = async () => {
+    setFollowupChecking(true);
+    setFollowupCheckMsg('');
+    try {
+      await client.post('/jobs/check-followups/run');
+      setFollowupCheckMsg('已派發檢查跟進任務');
+      setTimeout(() => setFollowupCheckMsg(''), 4000);
+    } catch (err: any) {
+      setFollowupCheckMsg('觸發失敗: ' + (err?.message || '未知錯誤'));
+      setTimeout(() => setFollowupCheckMsg(''), 5000);
+    } finally {
+      setFollowupChecking(false);
     }
   };
 
@@ -1164,6 +1181,20 @@ const EmailQueue: React.FC = () => {
           {replyCheckMsg && (
             <span style={{ fontSize: '0.75rem', color: replyCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a', marginLeft: 4 }}>
               {replyCheckMsg}
+            </span>
+          )}
+          <DetailToolbarBtn
+            $color="#d97706"
+            onClick={handleCheckFollowups}
+            disabled={followupChecking}
+            style={{ marginLeft: 4 }}
+          >
+            <I d={icons.clock} />
+            {followupChecking ? '檢查中…' : '檢查跟進'}
+          </DetailToolbarBtn>
+          {followupCheckMsg && (
+            <span style={{ fontSize: '0.75rem', color: followupCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a', marginLeft: 4 }}>
+              {followupCheckMsg}
             </span>
           )}
         </ToolbarLeft>
