@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useEmailQueue } from '../../api/hooks';
+import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useEmailQueue, useApproveEmail, useSendEmail } from '../../api/hooks';
 import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
 import { media } from '../../styles/media';
@@ -948,19 +948,58 @@ const DraftMeta = styled.div`
   font-size: 0.6875rem;
   color: ${({ theme }) => theme.colors.textTertiary};
 `;
+const DraftActions = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+`;
+const DraftCheckLabel = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  cursor: pointer;
+  user-select: none;
+`;
+const DraftSendBtn = styled.button`
+  padding: 5px 14px;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background: ${({ theme }) => theme.colors.blue};
+  cursor: pointer;
+  &:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+`;
 
 const DRAFT_TYPE_LABEL: Record<string, { text: string; bg: string; fg: string }> = {
   reply: { text: '回應', bg: '#dcfce7', fg: '#15803d' },
   followup: { text: '跟進', bg: '#fef3c7', fg: '#b45309' },
 };
 
-/** 撳開 lead 時，show 佢喺 email_queue 嘅待發送草稿（回應 / 跟進 / 開發信）。 */
+/** 撳開 lead 時，show 佢喺 email_queue 嘅待發送草稿（回應 / 跟進 / 開發信），
+ *  剔「已檢視」→ 一鍵批准並發送（send 前會自動 approve）。 */
 const LeadReplyDraft: React.FC<{ companyName: string }> = ({ companyName }) => {
   const { data } = useEmailQueue({ search: companyName, status: 'pending' });
+  const approve = useApproveEmail();
+  const send = useSendEmail();
+  const [checked, setChecked] = useState<Record<string, boolean>>({});
   const drafts = ((data?.data as EmailItem[]) || [])
     .filter((e) => (e.company_name || '') === companyName)
     .sort((a, b) => (b._type === 'reply' ? 1 : 0) - (a._type === 'reply' ? 1 : 0));
   if (!drafts.length) return null;
+  const busy = approve.isPending || send.isPending;
+  const handleSend = (d: EmailItem) => {
+    if (d.status === 'approved') send.mutate(d._id);
+    else approve.mutate(d._id, { onSuccess: () => send.mutate(d._id) });
+  };
   return (
     <>
       <DpSectionTitle>待發送草稿</DpSectionTitle>
@@ -977,7 +1016,25 @@ const LeadReplyDraft: React.FC<{ companyName: string }> = ({ companyName }) => {
               <DraftSubject>{d.subject || '(冇標題)'}</DraftSubject>
             </DraftHead>
             <DraftBodyText>{d.body || '—'}</DraftBodyText>
-            <DraftMeta>寄往 {d.to_email || '—'} · 去 Email Queue approve → send</DraftMeta>
+            <DraftMeta>寄往 {d.to_email || '—'}</DraftMeta>
+            <DraftActions>
+              <DraftCheckLabel>
+                <input
+                  type="checkbox"
+                  checked={!!checked[d._id]}
+                  onChange={(e) =>
+                    setChecked((s) => ({ ...s, [d._id]: e.target.checked }))
+                  }
+                />
+                我已檢視，批准發送
+              </DraftCheckLabel>
+              <DraftSendBtn
+                disabled={!checked[d._id] || busy}
+                onClick={() => handleSend(d)}
+              >
+                {busy ? '發送中…' : '發送'}
+              </DraftSendBtn>
+            </DraftActions>
           </DraftBox>
         );
       })}
