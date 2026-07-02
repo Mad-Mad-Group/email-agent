@@ -223,11 +223,10 @@ const Col = styled.div`
 
 const ColHead = styled.div<{ $bg: string; $collapsed?: boolean }>`
   padding: 12px ${({ theme }) => theme.spacing.md}px;
-  background: ${({ theme }) => theme.colors.surface};
+  background: ${({ $bg }) => $bg + '0a'};
   color: ${({ $bg }) => $bg};
   font-size: 0.875rem; font-weight: 600;
   display: flex; align-items: center; justify-content: space-between;
-  border-bottom: 2px solid ${({ $bg }) => $bg};
   ${media.mobile} {
     cursor: pointer;
     position: sticky;
@@ -287,9 +286,8 @@ const Card = styled.div`
   transition: box-shadow 0.15s, transform 0.12s, border-color 0.15s;
   cursor: default;
   &:hover {
-    box-shadow: 0 4px 12px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.04);
+    box-shadow: 0 2px 8px rgba(15,23,42,0.07);
     transform: translateY(-1px);
-    border-color: ${({ theme }) => theme.colors.borderStrong};
   }
 `;
 

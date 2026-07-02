@@ -157,9 +157,8 @@ const KpiCard = styled.div`
   gap: ${({ theme }) => theme.spacing.md}px;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.04);
-    border-color: ${({ theme }) => theme.colors.borderStrong};
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(15,23,42,0.07);
   }
 `;
 
@@ -306,30 +305,49 @@ const SearchBar = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm}px;
-  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
+  padding: 10px ${({ theme }) => theme.spacing.lg}px;
   background: ${({ theme }) => theme.colors.surface};
   ${media.mobile} { flex-direction: column; }
 `;
 
-const SearchInput = styled.input`
+const SearchWrap = styled.div`
   flex: 1;
-  padding: 9px ${({ theme }) => theme.spacing.md}px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.control}px;
-  font-size: 0.875rem;
-  outline: none;
+  position: relative;
   min-width: 240px;
+  ${media.mobile} { min-width: 0; width: 100%; }
+`;
+
+const SearchIcon = styled.span`
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: ${({ theme }) => theme.colors.textTertiary};
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+`;
+
+const SearchInput = styled.input`
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  outline: none;
   color: ${({ theme }) => theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.surface};
-  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
   &:focus {
+    background: ${({ theme }) => theme.colors.surface};
     border-color: ${({ theme }) => theme.colors.blue};
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.12), 0 1px 2px rgba(15,23,42,0.04);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
   }
-  &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
-  ${media.mobile} { min-width: 0; width: 100%; }
+  &:hover:not(:focus) {
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+    background: ${({ theme }) => theme.colors.surface};
+  }
 `;
 
 /* ── Table ── */
@@ -379,9 +397,10 @@ const TRow = styled.tr<{ $even?: boolean }>`
   background: ${({ $even, theme }) => $even
     ? '#f7f7f4'
     : theme.colors.surface};
-  transition: background 0.15s ease;
+  transition: background 0.15s, box-shadow 0.15s;
   &:hover {
-    background: #f7f7f4;
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+    box-shadow: 0 1px 4px rgba(15,23,42,0.06);
   }
   td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
   &:last-child td { border-bottom: none; }
@@ -1068,11 +1087,14 @@ const Leads: React.FC = () => {
         </TabsRow>
 
         <SearchBar>
-          <SearchInput
-            placeholder={t('leads.searchPlaceholder')}
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }}
-          />
+          <SearchWrap>
+            <SearchIcon><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></SearchIcon>
+            <SearchInput
+              placeholder={t('leads.searchPlaceholder')}
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+            />
+          </SearchWrap>
         </SearchBar>
 
         <Card style={{ borderRadius: '0 0 8px 8px' }}>
