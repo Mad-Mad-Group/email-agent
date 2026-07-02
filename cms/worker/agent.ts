@@ -14,6 +14,7 @@
 import { MongoClient, ObjectId, Db } from 'mongodb';
 import { randomBytes } from 'crypto';
 import { execFileSync } from 'child_process';
+import * as nodemailer from 'nodemailer';
 import {
   BRAND_NAME,
   BRAND_TAGLINE,
@@ -601,36 +602,57 @@ async function doSend(p: any, db: Db) {
   const eq = await db
     .collection('email_queue')
     .findOne({ lead_id: lead.lead_id, status: 'pending' });
+  if (!eq) return { sent: false, note: '冇待發 email' };
 
-  if (process.env.ENABLE_REAL_SEND === 'true' && lead.email && eq) {
-    callHermes(
-      `Send an email using your email tool.
-To: ${lead.email}
-Subject: ${eq.subject}
-Body:
-${eq.body}
-Reply DONE when sent.`,
-    );
+  // ⚠️ 測試安全閥：所有 email 一律改寄去呢個地址，唔會寄俾真公司。
+  //    上 production 真發時，改 SEND_OVERRIDE 做 "" 或者攞走呢句就用返 lead.email。
+  const TEST_RECIPIENT = process.env.SEND_OVERRIDE || 'angusmomoli@gmail.com';
+
+  // 未開真發 → 只標 approved，唔寄
+  if (process.env.ENABLE_REAL_SEND !== 'true') {
     await db
       .collection('email_queue')
-      .updateOne({ _id: eq._id }, { $set: { status: 'sent', sent_at: nowIso() } });
-    await db
-      .collection('leads')
-      .updateOne({ _id }, { $set: { status: 'contacted', _email_sent: true } });
-    return { sent: true, real: true };
+      .updateMany(
+        { lead_id: lead.lead_id, status: 'pending' },
+        { $set: { status: 'approved' } },
+      );
+    return { sent: false, note: 'real send 停用（ENABLE_REAL_SEND=true 先發）' };
   }
 
+  // 真發：經 SMTP（nodemailer），一律寄去 TEST_RECIPIENT
+  if (!process.env.SMTP_HOST) {
+    return { sent: false, note: 'SMTP 未配（.env 填 SMTP_HOST/USER/PASS）' };
+  }
+  const transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT || 587),
+    secure: Number(process.env.SMTP_PORT) === 465,
+    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+  });
+  try {
+    await transporter.sendMail({
+      from: process.env.SMTP_FROM || process.env.SMTP_USER,
+      to: TEST_RECIPIENT, // ← set死測試收件人，唔用 lead.email
+      subject: `[TEST→${lead.email || '?'}] ${eq.subject ?? ''}`, // 標明原本收件人
+      text: eq.body ?? '',
+    });
+  } catch (e: any) {
+    // check 成功先標 sent（修「假 sent」bug）
+    await db
+      .collection('email_queue')
+      .updateOne(
+        { _id: eq._id },
+        { $set: { status: 'failed', error: { send_error: e?.message ?? String(e) } } },
+      );
+    return { sent: false, error: e?.message ?? String(e) };
+  }
   await db
     .collection('email_queue')
-    .updateMany(
-      { lead_id: lead.lead_id, status: 'pending' },
-      { $set: { status: 'approved' } },
-    );
-  return {
-    sent: false,
-    real: false,
-    note: 'real send 已停用（set ENABLE_REAL_SEND=true 先會真發 email）',
-  };
+    .updateOne({ _id: eq._id }, { $set: { status: 'sent', sent_at: nowIso() } });
+  await db
+    .collection('leads')
+    .updateOne({ _id }, { $set: { status: 'contacted', _email_sent: true } });
+  return { sent: true, to: TEST_RECIPIENT };
 }
 
 // ───────── main loop ─────────
