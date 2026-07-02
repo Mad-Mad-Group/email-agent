@@ -656,6 +656,21 @@ async function doSend(p: any, db: Db) {
   const override = process.env.SEND_OVERRIDE;
   const to = override || lead.email;
   if (!to) return { sent: false, note: '冇收件人（lead 冇 email，又冇 SEND_OVERRIDE）' };
+  // frontend 係用 pre-wrap + dangerouslySetInnerHTML render body（tag 當 HTML、換行照留）。
+  // 寄件要對齊：html 用同一個 pre-wrap 包住原 body（render 結果同 frontend 一模一樣），
+  // text 出一份 strip tag 但保留換行嘅純文字做 fallback（唔用 htmlToText，佢會併走換行）。
+  const bodyRaw = eq.body ?? '';
+  const bodyText = bodyRaw
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, '\n')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+  const bodyHtml = `<div style="white-space:pre-wrap;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;line-height:1.6;font-size:14px;color:#1a1a1a">${bodyRaw}</div>`;
   try {
     await transporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
@@ -663,7 +678,8 @@ async function doSend(p: any, db: Db) {
       subject: override
         ? `[TEST→${lead.email || '?'}] ${eq.subject ?? ''}` // 測試模式標明原收件人
         : eq.subject ?? '',
-      text: eq.body ?? '',
+      text: bodyText,
+      html: bodyHtml,
     });
   } catch (e: any) {
     // check 成功先標 sent（修「假 sent」bug）
