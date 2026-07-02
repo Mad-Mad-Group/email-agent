@@ -260,6 +260,7 @@ async function doReplyCheck(_p, db) {
         return { checked: leads.length, note: 'IMAP 未配（要 SMTP_USER/SMTP_PASS）' };
     }
     const byEmail = new Map(leads.map((l) => [String(l.email).toLowerCase(), l]));
+    log(`[ReplyCheck] 待查 leads: ${leads.length}, emails: [${[...byEmail.keys()].join(', ')}]`);
     const client = new imapflow_1.ImapFlow({
         host: process.env.IMAP_HOST || 'imap.gmail.com',
         port: Number(process.env.IMAP_PORT || 993),
@@ -279,6 +280,7 @@ async function doReplyCheck(_p, db) {
                 const parsed = await (0, mailparser_1.simpleParser)(msg.source);
                 const from = (parsed.from?.value?.[0]?.address || '').toLowerCase();
                 const subject = parsed.subject || '';
+                log(`[ReplyCheck] #${scanned} from=${from} subject="${subject.slice(0, 80)}"`);
                 // 測試(SEND_OVERRIDE)模式：回覆 subject 仲帶住「[TEST→realcompany@x.com]」標記
                 // → 由 subject 解返真 lead（因為回覆嘅寄件人係測試地址，對唔返 lead.email）。
                 // 正式模式：直接用寄件人地址 = lead.email 對返。
@@ -286,8 +288,25 @@ async function doReplyCheck(_p, db) {
                 let lead = tag ? byEmail.get(tag[1].toLowerCase()) : undefined;
                 if (!lead)
                     lead = byEmail.get(from);
-                if (!lead)
+                // Fallback：測試模式下 from === SMTP_USER，用 subject 去 email_queue 反查 lead
+                if (!lead && from === (user || '').toLowerCase()) {
+                    const cleanSubject = subject.replace(/^\s*(re|回覆|回复)\s*[:：]\s*/i, '').trim();
+                    if (cleanSubject) {
+                        const eq = await db.collection('email_queue').findOne({ subject: cleanSubject, status: 'sent' }, { projection: { lead_id: 1 } });
+                        if (eq?.lead_id) {
+                            // lead_id 可能係 string，用 lead_id 欄位去 leads 搵
+                            const foundLead = leads.find((l) => l.lead_id === eq.lead_id || String(l._id) === String(eq.lead_id));
+                            if (foundLead) {
+                                lead = foundLead;
+                                log(`[ReplyCheck]   → fallback: 由 email_queue subject 反查到 lead=${foundLead.company_name || foundLead.email}`);
+                            }
+                        }
+                    }
+                }
+                if (!lead) {
+                    log(`[ReplyCheck]   → skip: 對唔上任何 lead (tag=${tag?.[1] || 'none'})`);
                     continue;
+                }
                 // 只當「似回覆」先計，避免誤中 newsletter / 無關信：
                 // 有測試標記、或 In-Reply-To/References header、或 subject 有 Re:/回覆。
                 const refs = parsed.references;
@@ -295,8 +314,11 @@ async function doReplyCheck(_p, db) {
                     !!parsed.inReplyTo ||
                     (Array.isArray(refs) ? refs.length > 0 : !!refs) ||
                     /^\s*(re|回覆|回复)\s*[:：]/i.test(subject);
-                if (!isReply)
+                if (!isReply) {
+                    log(`[ReplyCheck]   → skip: lead matched 但唔似回覆`);
                     continue;
+                }
+                log(`[ReplyCheck]   → ✓ matched lead=${lead.company_name || lead.email}`);
                 matched.push({ lead, subject, text: parsed.text || '' });
                 byEmail.delete(String(lead.email).toLowerCase()); // 一個 lead 只收一次
             }
@@ -779,7 +801,7 @@ async function doSend(p, db) {
     });
     // 收件人：SEND_OVERRIDE 有設（測試安全）→ 一律寄去嗰度；冇設 → lead.email（真發）。
     // creds（SMTP_USER/PASS）同收件人全部由跑 worker 嗰位喺 .env 設，唔 hardcode 落 code。
-    const override = process.env.SEND_OVERRIDE;
+    const override = process.env.SEND_OVERRIDE || process.env.TEST_RECIPIENT_EMAIL;
     const to = override || lead.email;
     if (!to)
         return { sent: false, note: '冇收件人（lead 冇 email，又冇 SEND_OVERRIDE）' };
