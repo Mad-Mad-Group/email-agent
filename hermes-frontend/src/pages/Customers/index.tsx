@@ -344,14 +344,14 @@ const Customers: React.FC = () => {
                     <td>{c.address}</td>
                     <td>
                       <ActionBtn $color="#c9a055" title={t('customers.favorite')}>&#9733;</ActionBtn>
-                      <ActionBtn $color="#7fb5ba" title={t('customers.settings')}>&#9881;</ActionBtn>
-                      <ActionBtn $color="#c4735c" title={t('customers.delete')}>&#128465;</ActionBtn>
+                      <ActionBtn $color="#6890c2" title={t('customers.settings')}>&#9881;</ActionBtn>
+                      <ActionBtn $color="#c78787" title={t('customers.delete')}>&#128465;</ActionBtn>
                     </td>
                   </TRow>
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: 24, color: '#969ba0' }}>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: 24, color: '#94a3b8' }}>
                       {t('customers.noMatch')}
                     </td>
                   </tr>

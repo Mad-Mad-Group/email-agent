@@ -1,5 +1,6 @@
 import { createGlobalStyle } from 'styled-components';
 
+// CSS 变量（让组件用 var() 也能拿到主品牌色）
 export const GlobalStyles = createGlobalStyle`
   *, *::before, *::after {
     margin: 0;
@@ -8,11 +9,26 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   :root {
-    --primary: #5699a3;
+    /* 主品牌色 — Logo 蓝 */
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --primary-light: #dbeafe;
+
+    /* 渐变 */
+    --gradient-primary: #2563eb;
+    --gradient-green: #16a34a;
+    --gradient-gold: #d97706;
+    --gradient-danger: #dc2626;
+
+    /* 状态色 */
+    --success: #16a34a;
+    --warning: #d97706;
+    --danger:  #dc2626;
+    --info:    #2563eb;
   }
 
   html {
-    font-size: 14px;
+    font-size: 15px;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }

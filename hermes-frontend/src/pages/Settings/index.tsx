@@ -36,9 +36,10 @@ const PageSub = styled.small`
 /* ── Card ── */
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  background: #ffffff;
+  border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
 `;
 
 const CardHeader = styled.div`
@@ -102,9 +103,17 @@ const FeedbackText = styled.span`
 const PrimaryBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.lg}px;
   border: none; border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ theme }) => theme.colors.blue}; color: #fff;
+  background: #2563eb;
+  color: #fff;
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-  &:hover { opacity: 0.85; }
+  box-shadow: 0 1px 2px rgba(15,23,42,0.08);
+  transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: #3b82f6;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.1);
+  }
+  &:active:not(:disabled) { transform: translateY(0); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 

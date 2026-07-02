@@ -90,7 +90,7 @@ const ScoreBadge = styled.span<{ score: number }>`
   font-weight: 600;
   color: #fff;
   background: ${({ score }) =>
-    score >= 80 ? '#22c55e' : score >= 50 ? '#f59e0b' : '#ef4444'};
+    score >= 80 ? '#22c55e' : score >= 50 ? '#c19862' : '#c47474'};
 `;
 
 const TableSection = styled.div`

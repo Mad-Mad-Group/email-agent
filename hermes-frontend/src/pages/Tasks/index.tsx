@@ -87,21 +87,21 @@ function getParamsSummary(task: TaskItem): string {
 interface ColumnCfg { key: string; label: string; bg: string; }
 
 const COLUMNS: ColumnCfg[] = [
-  { key: 'pending',    label: 'Pending',    bg: '#7fb5ba' },
-  { key: 'processing', label: 'Processing', bg: '#d4c8c0' },
-  { key: 'completed',  label: 'Completed',  bg: '#5699a3' },
-  { key: 'failed',     label: 'Failed',     bg: '#d4bbb5' },
+  { key: 'pending',    label: 'Pending',    bg: '#3b82f6' },
+  { key: 'processing', label: 'Processing', bg: '#d97706' },
+  { key: 'completed',  label: 'Completed',  bg: '#16a34a' },
+  { key: 'failed',     label: 'Failed',     bg: '#dc2626' },
 ];
 
 /* ── Skill color palette ── */
 
 const SKILL_COLORS: Record<string, string> = {
-  S1: '#7fb5ba', S2: '#d4c8c0', S3: '#5699a3', S4: '#4a6fa5',
-  scrape: '#7fb5ba', email: '#d4c8c0', analyze: '#5699a3',
+  S1: '#3b82f6', S2: '#d97706', S3: '#2563eb', S4: '#16a34a',
+  scrape: '#3b82f6', email: '#d97706', analyze: '#2563eb',
 };
 function skillColor(id: string): string {
   if (SKILL_COLORS[id]) return SKILL_COLORS[id];
-  const p = ['#7fb5ba', '#d4c8c0', '#5699a3', '#4a6fa5', '#d4bbb5', '#8b929a'];
+  const p = ['#3b82f6', '#d97706', '#2563eb', '#1d4ed8', '#dc2626', '#94a3b8'];
   let h = 0;
   for (let i = 0; i < id.length; i++) h = id.charCodeAt(i) + ((h << 5) - h);
   return p[Math.abs(h) % p.length];
@@ -109,7 +109,7 @@ function skillColor(id: string): string {
 
 /* ── Avatar ── */
 
-const AV_PALETTE = ['#7fb5ba', '#d4c8c0', '#5699a3', '#d4bbb5', '#4a6fa5', '#8b929a'];
+const AV_PALETTE = ['#bfdbfe', '#c4b5fd', '#a5f3fc', '#bbf7d0'];
 function avColor(s: string): string {
   let h = 0;
   for (let i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h);
@@ -168,15 +168,21 @@ const SearchWrap = styled.div`
 `;
 
 const SearchInput = styled.input`
-  padding: 7px 12px 7px 34px;
+  padding: 8px 12px 8px 34px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
   background: ${({ theme }) => theme.colors.surface};
   font-size: 0.8125rem; font-family: ${({ theme }) => theme.fonts.primary};
   color: ${({ theme }) => theme.colors.textPrimary};
   width: 220px; outline: none;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  transition: border-color 0.15s, box-shadow 0.15s;
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.blue};
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12), 0 1px 2px rgba(15,23,42,0.04);
+  }
   ${media.mobile} { width: 100%; }
 `;
 
@@ -204,8 +210,9 @@ const Col = styled.div`
   min-width: 0;
   display: flex; flex-direction: column;
   border-radius: ${({ theme }) => theme.radii.card}px;
-  background: ${({ theme }) => theme.colors.surfaceMuted};
-  box-shadow: ${({ theme }) => theme.shadows.card};
+  background: #f7f7f4;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
   overflow: hidden;
   ${media.mobile} {
     border-radius: 0;
@@ -216,10 +223,11 @@ const Col = styled.div`
 
 const ColHead = styled.div<{ $bg: string; $collapsed?: boolean }>`
   padding: 12px ${({ theme }) => theme.spacing.md}px;
-  background: ${({ $bg }) => $bg};
-  color: #fff;
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ $bg }) => $bg};
   font-size: 0.875rem; font-weight: 600;
   display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 2px solid ${({ $bg }) => $bg};
   ${media.mobile} {
     cursor: pointer;
     position: sticky;
@@ -242,8 +250,9 @@ const ColChevron = styled.span<{ $open: boolean }>`
 `;
 
 const ColCount = styled.span`
-  font-size: 0.75rem; font-weight: 400; opacity: 0.85;
-  background: rgba(255,255,255,0.25);
+  font-size: 0.75rem; font-weight: 600;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  color: inherit;
   padding: 2px 8px; border-radius: 99px;
 `;
 
@@ -270,13 +279,18 @@ const ColBody = styled.div<{ $collapsed?: boolean }>`
 /* ── Card ── */
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  background: #ffffff;
+  border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.tile}px;
   padding: 12px ${({ theme }) => theme.spacing.md}px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
-  transition: box-shadow 0.15s, transform 0.12s;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  transition: box-shadow 0.15s, transform 0.12s, border-color 0.15s;
   cursor: default;
-  &:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.1); transform: translateY(-1px); }
+  &:hover {
+    box-shadow: 0 4px 12px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.04);
+    transform: translateY(-1px);
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+  }
 `;
 
 const CardTitle = styled.div`
@@ -307,19 +321,24 @@ const CardMeta = styled.div`
 const Avatar = styled.span<{ $c: string }>`
   display: inline-flex; align-items: center; justify-content: center;
   width: 22px; height: 22px; border-radius: 50%;
-  background: ${({ $c }) => $c}; color: #fff;
-  font-size: 0.5625rem; font-weight: 700;
+  background: ${({ $c }) => $c};
+  color: #334155; font-size: 0.5625rem; font-weight: 700;
+  box-shadow: none;
 `;
 
 const Pill = styled.span<{ $c: string }>`
   display: inline-block; padding: 1px 8px;
   border-radius: 99px; font-size: 0.625rem; font-weight: 600;
-  background: ${({ $c }) => $c}22; color: ${({ $c }) => $c};
+  background: ${({ $c }) => $c}0d;
+  color: ${({ $c }) => $c};
+  border: 1px solid ${({ $c }) => $c}33;
 `;
 
 const PriorityDot = styled.span<{ $c: string }>`
-  display: inline-block; width: 6px; height: 6px;
-  border-radius: 50%; background: ${({ $c }) => $c};
+  display: inline-block; width: 8px; height: 8px;
+  border-radius: 50%;
+  background: ${({ $c }) => $c};
+  box-shadow: none;
 `;
 
 const CardDate = styled.span`
@@ -359,10 +378,10 @@ function fmtDate(iso: string): string {
 
 function priorityColor(p: string): string {
   switch (p) {
-    case 'high': case 'urgent': return '#d4bbb5';
-    case 'normal': return '#d4c8c0';
-    case 'low': return '#5699a3';
-    default: return '#969ba0';
+    case 'high': case 'urgent': return '#dc2626';
+    case 'normal': return '#d97706';
+    case 'low': return '#2563eb';
+    default: return '#94a3b8';
   }
 }
 
@@ -589,19 +608,14 @@ const WfList = styled.ul`
   &::before {
     content: ''; position: absolute; left: 61px;
     top: 18px; bottom: 18px; width: 2px;
-    background: linear-gradient(
-      180deg,
-      ${({ theme }) => theme.colors.green} 0%,
-      ${({ theme }) => theme.colors.blue} 50%,
-      ${({ theme }) => theme.colors.border} 100%
-    );
+    background: ${({ theme }) => theme.colors.blue};
     border-radius: 1px;
   }
 `;
 
 const pulseGlow = keyframes`
-  0%, 100% { box-shadow: 0 0 0 0 rgba(86,153,163,0.4); }
-  50%      { box-shadow: 0 0 0 6px rgba(86,153,163,0); }
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
 `;
 
 const WfItem = styled.li<{ $s: 'done'|'active'|'pending' }>`
@@ -687,7 +701,7 @@ const ProgTrack = styled.div`
 
 const ProgFill = styled.div<{ $pct: number }>`
   height: 100%; width: ${({ $pct }) => $pct}%;
-  background: linear-gradient(90deg, ${({ theme }) => theme.colors.green}, ${({ theme }) => theme.colors.blue});
+  background: ${({ theme }) => theme.colors.blue};
   border-radius: 3px; transition: width 0.4s ease;
 `;
 

@@ -33,3 +33,4 @@ coverage/
 cms/worker/agent.ts
 cms/server/.env.example
 cms/.DS_Store
+AGENTS.md

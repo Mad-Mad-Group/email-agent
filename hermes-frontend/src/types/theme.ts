@@ -17,6 +17,7 @@ export interface HermesTheme {
     amber: string;
     red: string;
     blue: string;
+    accent: string;
   };
   status: {
     new: StatusColor;

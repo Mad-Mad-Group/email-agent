@@ -12,6 +12,14 @@ import { media } from '../../styles/media';
    CMS Search — LUNO-style UI
    ══════════════════════════════════════ */
 
+/* ── Avatar helper ── */
+const avatarPalette = ['#bfdbfe', '#c4b5fd', '#a5f3fc', '#bbf7d0'];
+function hashAvatarColor(name: string): string {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return avatarPalette[Math.abs(h) % avatarPalette.length];
+}
+
 /* ── Layout primitives ── */
 
 const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
@@ -63,14 +71,20 @@ const Label = styled.label`
 `;
 
 const Input = styled.input`
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
+  padding: 9px ${({ theme }) => theme.spacing.md}px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.8125rem; outline: none;
   color: ${({ theme }) => theme.colors.textPrimary};
   background: ${({ theme }) => theme.colors.surface};
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  transition: border-color 0.15s, box-shadow 0.15s;
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.blue};
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12), 0 1px 2px rgba(15,23,42,0.04);
+  }
 `;
 
 const BtnRow = styled.div`
@@ -81,10 +95,18 @@ const BtnRow = styled.div`
 const PrimaryBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border: none; border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ theme }) => theme.colors.blue}; color: #fff;
+  background: #2563eb;
+  color: #fff;
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
   white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
-  &:hover { opacity: 0.85; }
+  box-shadow: 0 1px 2px rgba(15,23,42,0.08);
+  transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    background: #3b82f6;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.1);
+  }
+  &:active:not(:disabled) { transform: translateY(0); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
   ${media.mobile} { width: 100%; justify-content: center; }
 `;
@@ -108,13 +130,17 @@ const StatusBanner = styled.div<{ $type: 'success' | 'error' | 'loading' }>`
   border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.8125rem; font-weight: 500;
   background: ${({ $type, theme }) =>
-    $type === 'success' ? `${theme.colors.green}22`
-    : $type === 'error' ? `${theme.colors.red}22`
-    : `${theme.colors.blue}22`};
+    $type === 'success' ? `${theme.colors.green}0d`
+    : $type === 'error' ? `${theme.colors.red}0d`
+    : `${theme.colors.blue}0d`};
   color: ${({ $type, theme }) =>
     $type === 'success' ? theme.colors.green
     : $type === 'error' ? theme.colors.red
     : theme.colors.blue};
+  border: 1px solid ${({ $type, theme }) =>
+    $type === 'success' ? `${theme.colors.green}33`
+    : $type === 'error' ? `${theme.colors.red}33`
+    : `${theme.colors.blue}33`};
 `;
 
 const TableWrap = styled.div`overflow-x: auto;`;
@@ -128,13 +154,19 @@ const Table = styled.table`
   th {
     font-weight: 600; text-transform: uppercase; font-size: 0.6875rem;
     color: ${({ theme }) => theme.colors.textTertiary};
-    border-bottom: 2px solid ${({ theme }) => theme.colors.border};
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   }
 `;
 
 const TRow = styled.tr<{ $even?: boolean }>`
-  background: ${({ $even, theme }) => $even ? theme.colors.surfaceMuted : theme.colors.surface};
-  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  background: ${({ $even, theme }) => $even
+    ? theme.colors.surfaceMuted
+    : theme.colors.surface};
+  transition: background 0.15s;
+  &:hover {
+    background: ${({ theme }) => theme.colors.canvas};
+  }
   td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
   cursor: pointer;
 `;
@@ -174,12 +206,12 @@ const ResultCard = styled.div`
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.surface};
+  background: #ffffff;
   cursor: pointer;
   transition: all 0.15s;
   &:hover {
-    border-color: #5699a3;
-    box-shadow: 0 2px 8px rgba(86,153,163,0.1);
+    border-color: #2563eb;
+    box-shadow: 0 4px 12px rgba(37,99,235,0.12), 0 2px 4px rgba(15,23,42,0.04);
     transform: translateY(-1px);
   }
 `;
@@ -188,7 +220,7 @@ const RcAvatar = styled.div<{ $color: string }>`
   width: 36px; height: 36px;
   border-radius: 8px;
   background: ${({ $color }) => $color};
-  color: #fff;
+  color: #334155;
   display: flex; align-items: center; justify-content: center;
   font-size: 0.8125rem; font-weight: 700;
   flex-shrink: 0;
@@ -223,7 +255,7 @@ const RcMeta = styled.div`
 `;
 
 const RcPhone = styled.span`
-  font-size: 0.75rem; color: #5699a3; font-weight: 500;
+  font-size: 0.75rem; color: #2563eb; font-weight: 500;
 `;
 
 const RcStatusBadge = styled.span<{ $status: string }>`
@@ -236,15 +268,15 @@ const RcStatusBadge = styled.span<{ $status: string }>`
   letter-spacing: 0.03em;
   flex-shrink: 0;
   background: ${({ $status }) =>
-    $status === 'qualified' ? '#5699a322' :
-    $status === 'contacted' ? '#d4c8c022' :
-    $status === 'rejected' ? '#d4bbb522' :
-    '#7fb5ba22'};
+    $status === 'qualified' ? '#2563eb22' :
+    $status === 'contacted' ? '#d9770622' :
+    $status === 'rejected' ? '#dc262622' :
+    '#3b82f622'};
   color: ${({ $status }) =>
-    $status === 'qualified' ? '#5699a3' :
-    $status === 'contacted' ? '#a89490' :
-    $status === 'rejected' ? '#c44' :
-    '#7fb5ba'};
+    $status === 'qualified' ? '#2563eb' :
+    $status === 'contacted' ? '#94a3b8' :
+    $status === 'rejected' ? '#dc2626' :
+    '#3b82f6'};
 `;
 
 const RcActions = styled.div`
@@ -262,8 +294,8 @@ const RcSmallBtn = styled.button`
   cursor: pointer;
   white-space: nowrap;
   &:hover {
-    border-color: #5699a3;
-    color: #5699a3;
+    border-color: #2563eb;
+    color: #2563eb;
   }
 `;
 
@@ -315,14 +347,14 @@ const FilterToggle = styled.button<{ $active: boolean }>`
   gap: 5px;
   padding: 4px 12px;
   border-radius: 99px;
-  border: 1px solid ${({ $active }) => $active ? '#5699a3' : 'transparent'};
-  background: ${({ $active }) => $active ? '#5699a322' : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#5699a3' : theme.colors.textSecondary};
+  border: 1px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
+  background: ${({ $active }) => $active ? '#2563eb22' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textSecondary};
   font-size: 0.6875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
-  &:hover { border-color: #5699a3; color: #5699a3; }
+  &:hover { border-color: #2563eb; color: #2563eb; }
 `;
 
 const FilterDivider = styled.span`
@@ -352,7 +384,7 @@ const RatingSlider = styled.input`
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #5699a3;
+    background: #2563eb;
     cursor: pointer;
   }
 `;
@@ -363,14 +395,14 @@ const SourceChip = styled.button<{ $active: boolean }>`
   gap: 4px;
   padding: 3px 10px;
   border-radius: 99px;
-  border: 1px solid ${({ $active }) => $active ? '#5699a3' : 'transparent'};
-  background: ${({ $active }) => $active ? '#5699a322' : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#5699a3' : theme.colors.textSecondary};
+  border: 1px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
+  background: ${({ $active }) => $active ? '#2563eb22' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textSecondary};
   font-size: 0.625rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
-  &:hover { border-color: #5699a3; }
+  &:hover { border-color: #2563eb; }
 `;
 
 /* ── Contact info icons on card ── */
@@ -387,7 +419,7 @@ const ContactIcon = styled.span<{ $has: boolean }>`
   align-items: center;
   gap: 3px;
   font-size: 0.625rem;
-  color: ${({ $has }) => $has ? '#5699a3' : '#ccc'};
+  color: ${({ $has }) => $has ? '#2563eb' : '#cbd5e1'};
   svg { opacity: ${({ $has }) => $has ? 1 : 0.4}; }
 `;
 
@@ -473,8 +505,8 @@ const DpTypeBadge = styled.span`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  background: #5699a322;
-  color: #5699a3;
+  background: #2563eb22;
+  color: #2563eb;
 `;
 
 const DpCloseBtn = styled.button`
@@ -623,7 +655,7 @@ const BrowserChrome = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid #cbd5e1;
 `;
 
 const BrowserDots = styled.div`
@@ -640,11 +672,11 @@ const BrowserDots = styled.div`
 const BrowserAddressBar = styled.div`
   flex: 1;
   background: #fff;
-  border: 1px solid #ddd;
+  border: 1px solid #cbd5e1;
   border-radius: 4px;
   padding: 3px 8px;
   font-size: 10px;
-  color: #666;
+  color: #94a3b8;
   font-family: 'JetBrains Mono', monospace;
   white-space: nowrap;
   overflow: hidden;
@@ -662,8 +694,8 @@ const BrowserTab = styled.div<{ $active?: boolean }>`
   padding: 4px 12px;
   font-size: 9px;
   border-radius: 4px 4px 0 0;
-  background: ${({ $active }) => $active ? '#f0f0f0' : '#ddd'};
-  color: ${({ $active }) => $active ? '#333' : '#888'};
+  background: ${({ $active }) => $active ? '#f0f0f0' : '#cbd5e1'};
+  color: ${({ $active }) => $active ? '#1e293b' : '#94a3b8'};
   font-weight: ${({ $active }) => $active ? 600 : 400};
   max-width: 120px;
   white-space: nowrap;
@@ -694,7 +726,7 @@ const ScanOverlay = styled.div`
   left: 0;
   right: 0;
   height: 2px;
-  background: linear-gradient(90deg, transparent, rgba(86,153,163,0.4), transparent);
+  background: rgba(37,99,235,0.15);
   animation: ${scanLine} 3s ease-in-out infinite;
   z-index: 2;
   pointer-events: none;
@@ -714,7 +746,7 @@ const MockSearchBar = styled.div`
   gap: 6px;
   padding: 5px 8px;
   background: #f8f8f8;
-  border: 1px solid #ddd;
+  border: 1px solid #cbd5e1;
   border-radius: 20px;
   margin-bottom: 4px;
 `;
@@ -726,7 +758,7 @@ const MockSearchIcon = styled.span`
 
 const MockSearchText = styled.span`
   font-size: 10px;
-  color: #333;
+  color: #1e293b;
   font-weight: 500;
 `;
 
@@ -735,8 +767,8 @@ const MockResult = styled.div<{ $highlighted?: boolean }>`
   border-radius: 4px;
   border-left: 2px solid transparent;
   ${({ $highlighted }) => $highlighted && css`
-    background: rgba(86,153,163,0.08);
-    border-left-color: #5699a3;
+    background: rgba(37,99,235,0.08);
+    border-left-color: #2563eb;
   `}
 `;
 
@@ -748,13 +780,13 @@ const MockResultName = styled.div`
 
 const MockResultMeta = styled.div`
   font-size: 9px;
-  color: #666;
+  color: #94a3b8;
   margin-top: 1px;
 `;
 
 const MockResultSnippet = styled.div`
   font-size: 9px;
-  color: #444;
+  color: #475569;
   margin-top: 2px;
 `;
 
@@ -791,7 +823,7 @@ const AgentDot = styled.span`
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #10b981;
+  background: #16a34a;
   animation: ${pulseAgent} 1.5s ease-in-out infinite;
 `;
 
@@ -809,7 +841,7 @@ const LogTime = styled.span`
 `;
 
 const LogUrl = styled.span`
-  color: #5699a3;
+  color: #2563eb;
 `;
 
 /* ── Pipeline Progress ── */
@@ -832,7 +864,7 @@ const ProgressBarOuter = styled.div`
 const ProgressBarInner = styled.div<{ $percent: number }>`
   height: 100%;
   width: ${({ $percent }) => $percent}%;
-  background: #5699a3;
+  background: #2563eb;
   border-radius: 4px;
   transition: width 0.4s ease;
 `;
@@ -864,7 +896,7 @@ const PipelineLogLine = styled.div<{ $level?: string }>`
   line-height: 1.6;
   color: ${({ $level, theme }) =>
     $level === 'error' ? theme.colors.red
-    : $level === 'warn' ? '#f59e0b'
+    : $level === 'warn' ? '#d97706'
     : theme.colors.textSecondary};
 `;
 
@@ -874,7 +906,7 @@ const PipelineLogTime = styled.span`
 `;
 
 const PipelineLogStage = styled.span`
-  color: #5699a3;
+  color: #2563eb;
   font-weight: 600;
   margin-right: 6px;
 `;
@@ -934,10 +966,10 @@ function renderResults(data: unknown, onRowClick?: (row: Record<string, unknown>
 /* ── Detail panel helpers ── */
 
 const TYPE_COLORS: Record<string, string> = {
-  business: '#5699a3',
-  person: '#7fb5ba',
-  place: '#d4c8c0',
-  default: '#5699a3',
+  business: '#2563eb',
+  person: '#3b82f6',
+  place: '#d97706',
+  default: '#2563eb',
 };
 
 function getResultTitle(row: Record<string, unknown>): string {
@@ -966,9 +998,9 @@ function getResultPreview(row: Record<string, unknown>): string {
 }
 
 const MOCK_RELATED = [
-  { title: 'Similar result in nearby area', type: 'location', color: '#5699a3' },
-  { title: 'Related business listing', type: 'business', color: '#7fb5ba' },
-  { title: 'Matching industry entry', type: 'industry', color: '#d4c8c0' },
+  { title: 'Similar result in nearby area', type: 'location', color: '#2563eb' },
+  { title: 'Related business listing', type: 'business', color: '#3b82f6' },
+  { title: 'Matching industry entry', type: 'industry', color: '#d97706' },
 ];
 
 /* ── Mock search results (displayed by default) ── */
@@ -990,14 +1022,14 @@ interface MockLead {
 }
 
 const MOCK_SEARCH_RESULTS: MockLead[] = [
-  { name: '宏達水電行', phone: '02-2720-1234', address: '台北市信義區松仁路100號', rating: 4.5, reviews: 128, source: 'Google Maps', status: 'new', color: '#5699a3', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'info@hongda.com.tw', website: 'hongda.com.tw' },
-  { name: '永豐水電工程', phone: '02-2705-5678', address: '台北市大安區復興南路200號', rating: 4.2, reviews: 85, source: 'Google Maps', status: 'new', color: '#7fb5ba', hasEmail: false, hasPhone: true, hasWebsite: false },
-  { name: '大同水電維修', phone: '02-2562-9012', address: '台北市中山區南京東路50號', rating: 4.8, reviews: 203, source: 'Google Maps', status: 'contacted', color: '#d4c8c0', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'service@datong-water.tw', website: 'datong-water.tw' },
-  { name: '建成水電服務', phone: '02-2302-3456', address: '台北市萬華區西園路88號', rating: 3.9, reviews: 42, source: 'LinkedIn', status: 'new', color: '#4a6fa5', hasEmail: true, hasPhone: true, hasWebsite: false, email: 'jiancheng.plumb@gmail.com' },
-  { name: '信義水電急修', phone: '02-2579-7890', address: '台北市松山區八德路300號', rating: 4.6, reviews: 156, source: 'Google Maps', status: 'qualified', color: '#5699a3', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'contact@xinyi-fix.com', website: 'xinyi-fix.com' },
-  { name: '台北水電到府', phone: '02-2771-2345', address: '台北市大安區忠孝東路四段120號', rating: 4.1, reviews: 67, source: 'LinkedIn', status: 'new', color: '#d4bbb5', hasEmail: false, hasPhone: true, hasWebsite: true, website: 'taipei-plumber.tw' },
-  { name: '全能水電工程行', phone: '02-2391-6789', address: '台北市中正區重慶南路一段80號', rating: 4.4, reviews: 112, source: 'Google Maps', status: 'new', color: '#7fb5ba', hasEmail: true, hasPhone: true, hasWebsite: false, email: 'allpower@gmail.com' },
-  { name: '北投水電材料行', phone: '02-2893-0123', address: '台北市北投區中央南路一段45號', rating: 3.7, reviews: 31, source: '104人力銀行', status: 'rejected', color: '#8b929a', hasEmail: false, hasPhone: true, hasWebsite: false },
+  { name: '宏達水電行', phone: '02-2720-1234', address: '台北市信義區松仁路100號', rating: 4.5, reviews: 128, source: 'Google Maps', status: 'new', color: '#2563eb', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'info@hongda.com.tw', website: 'hongda.com.tw' },
+  { name: '永豐水電工程', phone: '02-2705-5678', address: '台北市大安區復興南路200號', rating: 4.2, reviews: 85, source: 'Google Maps', status: 'new', color: '#3b82f6', hasEmail: false, hasPhone: true, hasWebsite: false },
+  { name: '大同水電維修', phone: '02-2562-9012', address: '台北市中山區南京東路50號', rating: 4.8, reviews: 203, source: 'Google Maps', status: 'contacted', color: '#d97706', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'service@datong-water.tw', website: 'datong-water.tw' },
+  { name: '建成水電服務', phone: '02-2302-3456', address: '台北市萬華區西園路88號', rating: 3.9, reviews: 42, source: 'LinkedIn', status: 'new', color: '#1d4ed8', hasEmail: true, hasPhone: true, hasWebsite: false, email: 'jiancheng.plumb@gmail.com' },
+  { name: '信義水電急修', phone: '02-2579-7890', address: '台北市松山區八德路300號', rating: 4.6, reviews: 156, source: 'Google Maps', status: 'qualified', color: '#2563eb', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'contact@xinyi-fix.com', website: 'xinyi-fix.com' },
+  { name: '台北水電到府', phone: '02-2771-2345', address: '台北市大安區忠孝東路四段120號', rating: 4.1, reviews: 67, source: 'LinkedIn', status: 'new', color: '#dc2626', hasEmail: false, hasPhone: true, hasWebsite: true, website: 'taipei-plumber.tw' },
+  { name: '全能水電工程行', phone: '02-2391-6789', address: '台北市中正區重慶南路一段80號', rating: 4.4, reviews: 112, source: 'Google Maps', status: 'new', color: '#3b82f6', hasEmail: true, hasPhone: true, hasWebsite: false, email: 'allpower@gmail.com' },
+  { name: '北投水電材料行', phone: '02-2893-0123', address: '台北市北投區中央南路一段45號', rating: 3.7, reviews: 31, source: '104人力銀行', status: 'rejected', color: '#94a3b8', hasEmail: false, hasPhone: true, hasWebsite: false },
 ];
 
 const STATUS_LABELS: Record<string, string> = {
@@ -1155,7 +1187,7 @@ const SearchPage: React.FC = () => {
             reviews: 0,
             source: lead.source || 'Hermes',
             status: lead.status || 'new',
-            color: '#5699a3',
+            color: '#2563eb',
             hasEmail: !!(lead.email),
             hasPhone: !!(lead.phone),
             hasWebsite: !!(lead.website),
@@ -1202,7 +1234,7 @@ const SearchPage: React.FC = () => {
             reviews: 0,
             source: lead.source || 'Hermes',
             status: lead.status || 'new',
-            color: '#5699a3',
+            color: '#2563eb',
             hasEmail: !!(lead.email),
             hasPhone: !!(lead.phone),
             hasWebsite: !!(lead.website),
@@ -1431,7 +1463,7 @@ const SearchPage: React.FC = () => {
               <CardBody>
                 {/* ── Compact single-row filter ── */}
                 <FilterBar>
-                  <FilterLabel style={{ fontWeight: 600, color: '#5699a3' }}>{filteredResults.length} 筆結果</FilterLabel>
+                  <FilterLabel style={{ fontWeight: 600, color: '#2563eb' }}>{filteredResults.length} 筆結果</FilterLabel>
                   <FilterDivider />
                   <FilterToggle $active={filterEmail} onClick={() => setFilterEmail(p => !p)}>
                     Email({filteredResults.filter(r => r.hasEmail).length})
@@ -1458,7 +1490,7 @@ const SearchPage: React.FC = () => {
                     <EmptyState>沒有符合篩選條件的結果</EmptyState>
                   ) : filteredResults.map((lead, i) => (
                     <ResultCard key={i} onClick={() => setSelectedResult(lead as unknown as Record<string, unknown>)}>
-                      <RcAvatar $color={lead.color}>{lead.name.charAt(0)}</RcAvatar>
+                      <RcAvatar $color={hashAvatarColor(lead.name)}>{lead.name.charAt(0)}</RcAvatar>
                       <RcBody>
                         <RcTopRow>
                           <RcName>{lead.name}</RcName>
