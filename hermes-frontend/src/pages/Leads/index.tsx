@@ -138,77 +138,24 @@ const PageSub = styled.p`
   font-size: 0.8125rem;
 `;
 
-/* ── KPI Cards Row ── */
+/* ── Header Card (title + buttons + stats in one box) ── */
 
-const KpiRow = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: ${({ theme }) => theme.spacing.md}px;
-  ${media.tabletDown} { grid-template-columns: repeat(2, 1fr); }
-  ${media.mobile} { grid-template-columns: 1fr; }
-`;
-
-const KpiCard = styled.div`
-  background: #ffffff;
+const HeaderCard = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
-  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+`;
+
+const HeaderTop = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.md}px;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(15,23,42,0.07);
-  }
-`;
-
-const KpiIconWrap = styled.div<{ $bg: string; $fg: string }>`
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: ${({ $bg }) => $bg};
-  color: ${({ $fg }) => $fg};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(15,23,42,0.06);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  svg { width: 22px; height: 22px; }
-`;
-
-const KpiText = styled.div`
-  display: flex;
-  flex-direction: column;
-`;
-
-const KpiValue = styled.span`
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1.2;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const KpiLabel = styled.span`
-  font-size: 0.6875rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: ${({ theme }) => theme.colors.textTertiary};
-`;
-
-/* ── Profile Header Card ── */
-
-const ProfileCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
-  padding: ${({ theme }) => theme.spacing.lg}px;
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.lg}px;
+  flex-wrap: wrap;
   ${media.mobile} { flex-direction: column; text-align: center; }
 `;
 
@@ -221,37 +168,87 @@ const ProfileInfo = styled.div`
 
 const ProfileTitle = styled.h2`
   margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.blue};
+  text-shadow: 0 1px 3px rgba(37,99,235,0.12);
+
+  .count-number {
+    font-size: 1.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #2563eb, #7c3aed);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
 `;
 
-const ProfileSub = styled.span`
-  font-size: 0.8125rem;
+const HeaderDivider = styled.hr`
+  border: none;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  margin: 0;
+`;
+
+const StatsStrip = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0;
+  ${media.mobile} { flex-wrap: wrap; gap: 8px; }
+`;
+
+const StatItem = styled.div<{ $color: string }>`
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0 20px;
+  border-right: 1px solid ${({ theme }) => theme.colors.border};
+  &:first-child { padding-left: 0; }
+  &:last-child { border-right: none; }
+  ${media.mobile} { border-right: none; padding: 0 12px; }
+`;
+
+const StatNumber = styled.span<{ $color: string }>`
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: ${({ $color }) => $color};
+`;
+
+const StatLabel = styled.span`
+  font-size: 0.75rem;
+  font-weight: 500;
   color: ${({ theme }) => theme.colors.textTertiary};
+  white-space: nowrap;
 `;
 
 const AddBtn = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
+  padding: 7px 16px;
   border: none;
-  border-radius: ${({ theme }) => theme.radii.control}px;
-  background: #2563eb;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(15,23,42,0.08);
-  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: 0 1px 3px rgba(37,99,235,0.2);
+  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
   &:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(15,23,42,0.1);
-    background: #3b82f6;
+    box-shadow: 0 3px 10px rgba(37,99,235,0.25);
+    opacity: 0.95;
   }
-  &:active { transform: translateY(0); box-shadow: 0 1px 2px rgba(15,23,42,0.06); }
+  &:active { transform: translateY(0); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+`;
+
+const AddBtnGreen = styled(AddBtn)`
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  box-shadow: 0 1px 3px rgba(22,163,74,0.2);
+  &:hover {
+    box-shadow: 0 3px 10px rgba(22,163,74,0.25);
+  }
 `;
 
 /* ── Tabs Row ── */
@@ -259,44 +256,42 @@ const AddBtn = styled.button`
 const TabsRow = styled.div`
   display: flex;
   align-items: stretch;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   gap: 0;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  background: ${({ theme }) => theme.colors.surface};
-  border-radius: ${({ theme }) => theme.radii.card}px ${({ theme }) => theme.radii.card}px 0 0;
+  overflow: hidden;
 `;
 
-const TabItem = styled.button<{ $active?: boolean }>`
+const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
   flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 14px ${({ theme }) => theme.spacing.lg}px;
-  background: ${({ $active }) => $active
-    ? 'transparent'
-    : 'transparent'};
+  background: transparent;
   border: none;
-  border-bottom: 2px solid ${({ $active, theme }) => $active ? theme.colors.blue : 'transparent'};
+  border-bottom: 2px solid ${({ $active, $color }) => $active ? ($color || '#2563eb') : 'transparent'};
   margin-bottom: -1px;
   font-size: 0.8125rem;
   font-weight: ${({ $active }) => $active ? 700 : 500};
-  color: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.textSecondary};
+  color: ${({ $active, $color, theme }) => $active ? ($color || '#2563eb') : theme.colors.textSecondary};
   cursor: pointer;
   white-space: nowrap;
   position: relative;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  transition: color 0.15s, border-color 0.15s;
+  svg { flex-shrink: 0; }
   &:hover {
-    color: ${({ theme }) => theme.colors.blue};
+    color: ${({ $color }) => $color || '#2563eb'};
   }
 `;
 
-const TabCount = styled.span<{ $active?: boolean }>`
+const TabCount = styled.span<{ $active?: boolean; $color?: string }>`
   display: inline-block;
   margin-left: 6px;
   padding: 1px 7px;
   border-radius: 10px;
   font-size: 0.6875rem;
   font-weight: 600;
-  background: ${({ $active, theme }) => $active
-    ? '#2563eb'
+  background: ${({ $active, $color, theme }) => $active
+    ? ($color || '#2563eb')
     : theme.colors.surfaceMuted};
   color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textTertiary};
 `;
@@ -305,15 +300,18 @@ const SubPillRow = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px ${({ theme }) => theme.spacing.lg}px;
-  background: ${({ theme }) => theme.colors.surface};
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  padding: 8px 0;
+  flex-wrap: wrap;
 `;
 
 const SubPill = styled.button<{ $active?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 0.75rem;
+  svg { flex-shrink: 0; }
   font-weight: ${({ $active }) => ($active ? 600 : 400)};
   border: 1px solid ${({ $active, theme }) => ($active ? theme.colors.blue : theme.colors.border)};
   background: ${({ $active }) => ($active ? '#eff6ff' : 'transparent')};
@@ -323,22 +321,13 @@ const SubPill = styled.button<{ $active?: boolean }>`
   &:hover { border-color: ${({ theme }) => theme.colors.blue}; }
 `;
 
-/* ── Search Bar ── */
-
-const SearchBar = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.sm}px;
-  padding: 10px ${({ theme }) => theme.spacing.lg}px;
-  background: ${({ theme }) => theme.colors.surface};
-  ${media.mobile} { flex-direction: column; }
-`;
+/* ── Search Bar (inline in SubPillRow) ── */
 
 const SearchWrap = styled.div`
-  flex: 1;
   position: relative;
-  min-width: 240px;
-  ${media.mobile} { min-width: 0; width: 100%; }
+  width: 240px;
+  margin-left: auto;
+  ${media.mobile} { width: 100%; margin-left: 0; }
 `;
 
 const SearchIcon = styled.span`
@@ -390,7 +379,8 @@ const TableWrap = styled.div`
 
 const Table = styled.table`
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.8125rem;
   min-width: 960px;
   th, td {
@@ -401,11 +391,11 @@ const Table = styled.table`
   th {
     font-weight: 600;
     text-transform: uppercase;
-    font-size: 0.6875rem;
+    font-size: 0.8125rem;
     letter-spacing: 0.03em;
-    color: ${({ theme }) => theme.colors.textTertiary};
-    background: #f7f7f4;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+    color: ${({ theme }) => theme.colors.blue};
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+    border-bottom: 2px solid ${({ theme }) => theme.colors.border};
     user-select: none;
     cursor: default;
   }
@@ -413,20 +403,19 @@ const Table = styled.table`
     min-width: 640px;
     font-size: 0.75rem;
     th, td { padding: 8px ${({ theme }) => theme.spacing.sm}px; }
-    th { font-size: 0.625rem; }
+    th { font-size: 0.7rem; }
   }
 `;
 
 const TRow = styled.tr<{ $even?: boolean }>`
-  background: ${({ $even, theme }) => $even
-    ? '#f7f7f4'
-    : theme.colors.surface};
-  transition: background 0.15s, box-shadow 0.15s;
+  background: ${({ theme }) => theme.colors.surface};
+  transition: background 0.15s;
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceMuted};
-    box-shadow: 0 1px 4px rgba(15,23,42,0.06);
   }
-  td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
+  td {
+    border-bottom: 1px solid rgba(226,232,240,0.5);
+  }
   &:last-child td { border-bottom: none; }
 `;
 
@@ -1123,14 +1112,34 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
 interface SubTab {
   key: string;
   label: string;
+  icon: string;
 }
 interface TabDef {
   key: string;
   label: string;
   color: string;
+  icon: string;
   subs: SubTab[];
   filter: (l: Lead, sub: string) => boolean;
 }
+
+/* ── Tab / Sub-pill icon SVG paths (16×16 viewBox) ── */
+const TAB_ICONS: Record<string, string> = {
+  preparing: 'M4 2h8a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1zm1 3h6M5 7h6M5 9h4',
+  awaiting: 'M8 1a7 7 0 100 14A7 7 0 008 1zm0 3v4l2.5 1.5',
+  replied: 'M1 3h14v10H1V3zm0 0l7 5 7-5',
+};
+const SUB_ICONS: Record<string, string> = {
+  '': 'M2 2h12v12H2V2zm2 3h8M4 7h8M4 9h5',
+  new: 'M8 1l2 3h3l-1 3 2 2-3 1-1 3-2-2-2 2-1-3-3-1 2-2-1-3h3z',
+  draft: 'M12.146 1.146a.5.5 0 01.708 0l2 2a.5.5 0 010 .708l-9.5 9.5a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168l9.5-9.5z',
+  no_followup: 'M8 1a7 7 0 100 14A7 7 0 008 1zm3 4L7 9.5 5 7.5',
+  has_followup: 'M8 1a7 7 0 100 14A7 7 0 008 1zm-2 4l2 2 4-4',
+  interested: 'M8 2l1.5 3.5L13 6l-2.5 2.5.5 3.5L8 10.5 5 12l.5-3.5L3 6l3.5-.5z',
+  meeting: 'M2 3h12v10H2V3zm0 3h12M5 1v3M11 1v3',
+  question: 'M8 1a7 7 0 100 14A7 7 0 008 1zM6.5 5.5a1.5 1.5 0 013 0c0 1-1.5 1.25-1.5 2.5M8 11h.01',
+  not_interested: 'M8 1a7 7 0 100 14A7 7 0 008 1zM5.5 5.5l5 5M10.5 5.5l-5 5',
+};
 
 /* ══════════════════════════════════════
    Component
@@ -1148,12 +1157,13 @@ const Leads: React.FC = () => {
   const TABS: TabDef[] = [
     {
       key: 'preparing',
-      label: '準備中',
+      label: t('leads.tabPreparing'),
       color: '#2563eb',
+      icon: 'preparing',
       subs: [
-        { key: '', label: '全部' },
-        { key: 'new', label: '未處理' },
-        { key: 'draft', label: '草稿待審' },
+        { key: '', label: t('leads.subAll'), icon: '' },
+        { key: 'new', label: t('leads.subNew'), icon: 'new' },
+        { key: 'draft', label: t('leads.subDraft'), icon: 'draft' },
       ],
       filter: (l, sub) => {
         if (!isNew(l) && l.status !== 'pending') return false;
@@ -1164,12 +1174,13 @@ const Leads: React.FC = () => {
     },
     {
       key: 'awaiting',
-      label: '等待回覆',
+      label: t('leads.tabAwaiting'),
       color: '#d97706',
+      icon: 'awaiting',
       subs: [
-        { key: '', label: '全部' },
-        { key: 'no_followup', label: '待跟進' },
-        { key: 'has_followup', label: '已跟進' },
+        { key: '', label: t('leads.subAll'), icon: '' },
+        { key: 'no_followup', label: t('leads.subNoFollowup'), icon: 'no_followup' },
+        { key: 'has_followup', label: t('leads.subHasFollowup'), icon: 'has_followup' },
       ],
       filter: (l, sub) => {
         if (l.status !== 'contacted') return false;
@@ -1181,14 +1192,15 @@ const Leads: React.FC = () => {
     },
     {
       key: 'replied',
-      label: '已回覆',
+      label: t('leads.tabReplied'),
       color: '#16a34a',
+      icon: 'replied',
       subs: [
-        { key: '', label: '全部' },
-        { key: 'interested', label: '有興趣' },
-        { key: 'meeting', label: '約會議' },
-        { key: 'question', label: '問問題' },
-        { key: 'not_interested', label: '冇興趣' },
+        { key: '', label: t('leads.subAll'), icon: '' },
+        { key: 'interested', label: t('leads.subInterested'), icon: 'interested' },
+        { key: 'meeting', label: t('leads.subMeeting'), icon: 'meeting' },
+        { key: 'question', label: t('leads.subQuestion'), icon: 'question' },
+        { key: 'not_interested', label: t('leads.subNotInterested'), icon: 'not_interested' },
       ],
       filter: (l, sub) => {
         if (l.status !== 'contacted') return false;
@@ -1338,100 +1350,82 @@ const Leads: React.FC = () => {
 
   return (
     <Page>
-      {/* KPI Cards — 同 tab 對應 */}
-      <KpiRow>
-        <KpiCard>
-          <KpiIconWrap $bg="#dbeafe" $fg="#3b82f6">
-            <IconUsers />
-          </KpiIconWrap>
-          <KpiText>
-            <KpiValue>{stats.total}</KpiValue>
-            <KpiLabel>{t('leads.totalLeads')}</KpiLabel>
-          </KpiText>
-        </KpiCard>
-        <KpiCard>
-          <KpiIconWrap $bg="#dbeafe" $fg="#2563eb">
-            <IconSparkle />
-          </KpiIconWrap>
-          <KpiText>
-            <KpiValue>{tabCounts.preparing || 0}</KpiValue>
-            <KpiLabel>準備中</KpiLabel>
-          </KpiText>
-        </KpiCard>
-        <KpiCard>
-          <KpiIconWrap $bg="#fef3c7" $fg="#d97706">
-            <IconClock />
-          </KpiIconWrap>
-          <KpiText>
-            <KpiValue>{tabCounts.awaiting || 0}</KpiValue>
-            <KpiLabel>等待回覆</KpiLabel>
-          </KpiText>
-        </KpiCard>
-        <KpiCard>
-          <KpiIconWrap $bg="#dcfce7" $fg="#16a34a">
-            <IconCheckCircle />
-          </KpiIconWrap>
-          <KpiText>
-            <KpiValue>{tabCounts.replied || 0}</KpiValue>
-            <KpiLabel>已回覆</KpiLabel>
-          </KpiText>
-        </KpiCard>
-      </KpiRow>
+      {/* Header Card */}
+      <HeaderCard>
+        <HeaderTop>
+          <ProfileInfo>
+            <ProfileTitle>
+              {t('leads.totalInSystem', { count: '__N__' }).split('__N__').map((part, i, arr) =>
+                i < arr.length - 1 ? (
+                  <React.Fragment key={i}>{part}<span className="count-number">{stats.total}</span></React.Fragment>
+                ) : part
+              )}
+            </ProfileTitle>
+          </ProfileInfo>
+          <AddBtn onClick={handleCheckReplies} disabled={replyChecking}>
+            {replyChecking ? t('leads.checking') : t('leads.checkReplies')}
+          </AddBtn>
+          {replyCheckMsg && <span style={{ fontSize: '0.75rem', color: replyCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{replyCheckMsg}</span>}
+          <AddBtn onClick={handleCheckFollowups} disabled={followupChecking}>
+            {followupChecking ? t('leads.checking') : t('leads.checkFollowups')}
+          </AddBtn>
+          {followupCheckMsg && <span style={{ fontSize: '0.75rem', color: followupCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{followupCheckMsg}</span>}
+          <AddBtnGreen onClick={() => setShowAdd(true)}>
+            <IconPlus />
+            {t('leads.addLead')}
+          </AddBtnGreen>
+        </HeaderTop>
+        <HeaderDivider />
+        <StatsStrip>
+          <StatItem $color="#4f46e5">
+            <StatNumber $color="#4f46e5">{tabCounts.preparing || 0}</StatNumber>
+            <StatLabel>{t('leads.tabPreparing')}</StatLabel>
+          </StatItem>
+          <StatItem $color="#d97706">
+            <StatNumber $color="#d97706">{tabCounts.awaiting || 0}</StatNumber>
+            <StatLabel>{t('leads.tabAwaiting')}</StatLabel>
+          </StatItem>
+          <StatItem $color="#16a34a">
+            <StatNumber $color="#16a34a">{tabCounts.replied || 0}</StatNumber>
+            <StatLabel>{t('leads.tabReplied')}</StatLabel>
+          </StatItem>
+        </StatsStrip>
+      </HeaderCard>
 
-      {/* Profile Header Card */}
-      <ProfileCard>
-        <IconLeadScraper />
-        <ProfileInfo>
-          <ProfileTitle>{t('leads.totalInSystem', { count: stats.total })}</ProfileTitle>
-        </ProfileInfo>
-        <AddBtn onClick={handleCheckReplies} disabled={replyChecking} style={{ background: '#8b5cf6' }}>
-          {replyChecking ? '檢查中…' : '檢查回覆'}
-        </AddBtn>
-        {replyCheckMsg && <span style={{ fontSize: '0.75rem', color: replyCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{replyCheckMsg}</span>}
-        <AddBtn onClick={handleCheckFollowups} disabled={followupChecking} style={{ background: '#d97706' }}>
-          {followupChecking ? '檢查中…' : '檢查跟進'}
-        </AddBtn>
-        {followupCheckMsg && <span style={{ fontSize: '0.75rem', color: followupCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{followupCheckMsg}</span>}
-        <AddBtn onClick={() => setShowAdd(true)}>
-          <IconPlus />
-          {t('leads.addLead')}
-        </AddBtn>
-      </ProfileCard>
-
-      {/* Tabs + Search + Table Card */}
-      <div>
-        <TabsRow>
+      {/* Tabs */}
+      <TabsRow>
           {TABS.map(tab => (
             <TabItem
               key={tab.key}
               $active={activeTab === tab.key}
+              $color={tab.color}
               onClick={() => handleTabClick(tab.key)}
-              style={activeTab === tab.key ? { borderBottomColor: tab.color, color: tab.color } : undefined}
             >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+                <path d={TAB_ICONS[tab.icon] || ''} />
+              </svg>
               {tab.label}
-              <TabCount $active={activeTab === tab.key} style={activeTab === tab.key ? { background: tab.color } : undefined}>
+              <TabCount $active={activeTab === tab.key} $color={tab.color}>
                 {tabCounts[tab.key] || 0}
               </TabCount>
             </TabItem>
           ))}
         </TabsRow>
 
-        {curTab.subs.length > 1 && (
-          <SubPillRow>
-            {curTab.subs.map(sub => (
-              <SubPill
-                key={sub.key}
-                $active={activeSub === sub.key}
-                onClick={() => handleSubClick(sub.key)}
-              >
-                {sub.label}
-                <span style={{ marginLeft: 4, opacity: 0.7 }}>{subCounts[sub.key] ?? 0}</span>
-              </SubPill>
-            ))}
-          </SubPillRow>
-        )}
-
-        <SearchBar>
+        <SubPillRow>
+          {curTab.subs.length > 1 && curTab.subs.map(sub => (
+            <SubPill
+              key={sub.key}
+              $active={activeSub === sub.key}
+              onClick={() => handleSubClick(sub.key)}
+            >
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+                <path d={SUB_ICONS[sub.icon] || SUB_ICONS[''] || ''} />
+              </svg>
+              {sub.label}
+              <span style={{ marginLeft: 2, opacity: 0.7 }}>{subCounts[sub.key] ?? 0}</span>
+            </SubPill>
+          ))}
           <SearchWrap>
             <SearchIcon><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></SearchIcon>
             <SearchInput
@@ -1440,9 +1434,9 @@ const Leads: React.FC = () => {
               onChange={e => { setSearch(e.target.value); setPage(1); }}
             />
           </SearchWrap>
-        </SearchBar>
+        </SubPillRow>
 
-        <Card style={{ borderRadius: '0 0 8px 8px' }}>
+        <Card>
           <TableWrap>
             <Table>
               <thead>
@@ -1451,7 +1445,7 @@ const Leads: React.FC = () => {
                   <th>{t('leads.name')} <IconSortArrow /></th>
                   <th>{t('leads.email')}</th>
                   <th>{t('leads.phone')}</th>
-                  <th>回覆</th>
+                  <th>{t('leads.reply')}</th>
                   <th>{t('leads.importedAt')}</th>
                   <th>{t('leads.action')}</th>
                 </tr>
@@ -1555,7 +1549,6 @@ const Leads: React.FC = () => {
             </PaginationRow>
           )}
         </Card>
-      </div>
 
       {/* Add Lead Modal */}
       {showAdd && (
