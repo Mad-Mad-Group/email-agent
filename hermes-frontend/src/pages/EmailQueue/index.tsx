@@ -1275,7 +1275,7 @@ const EmailQueue: React.FC = () => {
           <DetailSenderRow>
             <AvatarCircle $bg={avatarColor}>{initial}</AvatarCircle>
             <DetailSenderInfo>
-              <DetailSenderName>{t('emailQueue.to_email')} {displayName}</DetailSenderName>
+              <DetailSenderName>{displayName}</DetailSenderName>
               {item.to_email && <DetailSenderEmail>&lt;{item.to_email}&gt;</DetailSenderEmail>}
             </DetailSenderInfo>
             <DetailDateRight>
@@ -1284,6 +1284,8 @@ const EmailQueue: React.FC = () => {
           </DetailSenderRow>
 
           <DetailMeta>
+            <span>寄件人: {import.meta.env.VITE_SMTP_FROM || '—'}</span>
+            <span>收件人: {item.to_email || import.meta.env.VITE_TEST_RECIPIENT || '—'}</span>
             <span>
               {t('emailQueue.status')} <StatusBadge $status={status}>{status}</StatusBadge>
             </span>
@@ -1313,7 +1315,8 @@ const EmailQueue: React.FC = () => {
           </ModalHeader>
           <ModalBody>
             <ModalMeta>
-              <span>{t('emailQueue.to_email')} {item.to_email || '—'}</span>
+              <span>寄件人: {import.meta.env.VITE_SMTP_FROM || '—'}</span>
+              <span>收件人: {item.to_email || import.meta.env.VITE_TEST_RECIPIENT || '—'}</span>
               <span>
                 {t('emailQueue.status')} <StatusBadge $status={status}>{status}</StatusBadge>
               </span>
