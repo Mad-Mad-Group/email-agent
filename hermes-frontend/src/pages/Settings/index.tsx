@@ -103,15 +103,15 @@ const FeedbackText = styled.span`
 const PrimaryBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.lg}px;
   border: none; border-radius: ${({ theme }) => theme.radii.control}px;
-  background: linear-gradient(135deg, #6890c2 0%, #567ebb 50%, #4367a3 100%);
+  background: #2563eb;
   color: #fff;
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-  box-shadow: 0 1px 2px rgba(37,99,235,0.2), 0 2px 4px rgba(37,99,235,0.08), inset 0 1px 0 rgba(255,255,255,0.15);
+  box-shadow: 0 1px 2px rgba(15,23,42,0.08);
   transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
   &:hover:not(:disabled) {
     transform: translateY(-1px);
-    background: linear-gradient(135deg, #829ecf 0%, #6890c2 50%, #567ebb 100%);
-    box-shadow: 0 4px 12px rgba(37,99,235,0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+    background: #3b82f6;
+    box-shadow: 0 2px 8px rgba(15,23,42,0.1);
   }
   &:active:not(:disabled) { transform: translateY(0); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
