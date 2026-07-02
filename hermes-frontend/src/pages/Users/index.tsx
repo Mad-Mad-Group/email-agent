@@ -144,7 +144,7 @@ const TabCount = styled.span<{ $active?: boolean }>`
   background: ${({ $active, theme }) => $active
     ? '#2563eb'
     : theme.colors.surfaceMuted};
-  color: ${({ $active }) => $active ? '#fff' : theme.colors.textTertiary};
+  color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textTertiary};
 `;
 
 /* ── Table ── */
