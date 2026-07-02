@@ -604,10 +604,6 @@ async function doSend(p: any, db: Db) {
     .findOne({ lead_id: lead.lead_id, status: 'pending' });
   if (!eq) return { sent: false, note: '冇待發 email' };
 
-  // ⚠️ 測試安全閥：所有 email 一律改寄去呢個地址，唔會寄俾真公司。
-  //    上 production 真發時，改 SEND_OVERRIDE 做 "" 或者攞走呢句就用返 lead.email。
-  const TEST_RECIPIENT = process.env.SEND_OVERRIDE || 'angusmomoli@gmail.com';
-
   // 未開真發 → 只標 approved，唔寄
   if (process.env.ENABLE_REAL_SEND !== 'true') {
     await db
@@ -629,11 +625,18 @@ async function doSend(p: any, db: Db) {
     secure: Number(process.env.SMTP_PORT) === 465,
     auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
   });
+  // 收件人：SEND_OVERRIDE 有設（測試安全）→ 一律寄去嗰度；冇設 → lead.email（真發）。
+  // creds（SMTP_USER/PASS）同收件人全部由跑 worker 嗰位喺 .env 設，唔 hardcode 落 code。
+  const override = process.env.SEND_OVERRIDE;
+  const to = override || lead.email;
+  if (!to) return { sent: false, note: '冇收件人（lead 冇 email，又冇 SEND_OVERRIDE）' };
   try {
     await transporter.sendMail({
       from: process.env.SMTP_FROM || process.env.SMTP_USER,
-      to: TEST_RECIPIENT, // ← set死測試收件人，唔用 lead.email
-      subject: `[TEST→${lead.email || '?'}] ${eq.subject ?? ''}`, // 標明原本收件人
+      to,
+      subject: override
+        ? `[TEST→${lead.email || '?'}] ${eq.subject ?? ''}` // 測試模式標明原收件人
+        : eq.subject ?? '',
       text: eq.body ?? '',
     });
   } catch (e: any) {
@@ -652,7 +655,7 @@ async function doSend(p: any, db: Db) {
   await db
     .collection('leads')
     .updateOne({ _id }, { $set: { status: 'contacted', _email_sent: true } });
-  return { sent: true, to: TEST_RECIPIENT };
+  return { sent: true, to };
 }
 
 // ───────── main loop ─────────
