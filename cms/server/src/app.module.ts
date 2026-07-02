@@ -17,6 +17,7 @@ import { AiAnalysisModule } from './ai/ai-analysis.module';
 import { EmailQueueModule } from './email-queue/email-queue.module';
 import { HermesModule } from './hermes/hermes.module';
 import { JobsModule } from './jobs/jobs.module';
+import { CalendarModule } from './calendar/calendar.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -48,6 +49,7 @@ import { AppController } from './app.controller';
     EmailQueueModule,
     HermesModule,
     JobsModule,
+    CalendarModule,
   ],
   controllers: [AppController],
 })

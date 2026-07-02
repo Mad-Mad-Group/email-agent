@@ -891,6 +891,30 @@ const NEXT_STATUS: Record<string, string> = {
   pending: 'contacted',
 };
 
+const REPLY_CATEGORY_LABEL: Record<string, { text: string; bg: string; fg: string }> = {
+  interested:     { text: '有興趣',   bg: '#dcfce7', fg: '#16a34a' },
+  not_interested: { text: '冇興趣',   bg: '#fee2e2', fg: '#dc2626' },
+  meeting:        { text: '約時間',   bg: '#dbeafe', fg: '#2563eb' },
+  auto_reply:     { text: '自動回覆', bg: '#f3f4f6', fg: '#6b7280' },
+  question:       { text: '有問題',   bg: '#fef3c7', fg: '#d97706' },
+};
+
+const ReplyBadge = styled.span<{ $bg: string; $fg: string }>`
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background: ${({ $bg }) => $bg};
+  color: ${({ $fg }) => $fg};
+  white-space: nowrap;
+`;
+
+const NoReplyText = styled.span`
+  font-size: 0.6875rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
 /* ── Tabs config (labels moved inside component for i18n) ── */
 
 interface TabDef {
@@ -1107,6 +1131,7 @@ const Leads: React.FC = () => {
                   <th>{t('leads.email')}</th>
                   <th>{t('leads.phone')}</th>
                   <th>{t('leads.industry')}</th>
+                  <th>回覆</th>
                   <th>{t('leads.importedAt')}</th>
                   <th>{t('leads.action')}</th>
                 </tr>
@@ -1114,7 +1139,7 @@ const Leads: React.FC = () => {
               <tbody>
                 {error ? (
                   <tr>
-                    <EmptyCell colSpan={8}>
+                    <EmptyCell colSpan={9}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
                         <strong style={{ color: '#dc2626' }}>{t('common.error')}</strong>
                         <span style={{ color: '#7f8c8d', fontSize: 13 }}>
@@ -1139,9 +1164,9 @@ const Leads: React.FC = () => {
                     </EmptyCell>
                   </tr>
                 ) : isLoading ? (
-                  <tr><EmptyCell colSpan={8}>{t('leads.loading')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={9}>{t('leads.loading')}</EmptyCell></tr>
                 ) : leads.length === 0 ? (
-                  <tr><EmptyCell colSpan={8}>{t('leads.noLeads')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={9}>{t('leads.noLeads')}</EmptyCell></tr>
                 ) : (
                   leads.map((lead, i) => {
                     const name = lead.company_name || 'Unknown';
@@ -1169,6 +1194,12 @@ const Leads: React.FC = () => {
                             ))}
                             {(!lead.industry_tags || lead.industry_tags.length === 0) && '—'}
                           </TagList>
+                        </td>
+                        <td>
+                          {lead._replied ? (() => {
+                            const cat = REPLY_CATEGORY_LABEL[lead._reply_category || ''] || { text: lead._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
+                            return <ReplyBadge $bg={cat.bg} $fg={cat.fg}>{cat.text}</ReplyBadge>;
+                          })() : <NoReplyText>—</NoReplyText>}
                         </td>
                         <td>{lead._imported_at ? new Date(lead._imported_at).toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</td>
                         <td>
@@ -1341,6 +1372,42 @@ const Leads: React.FC = () => {
                 </>
               )}
 
+              {/* Reply Info */}
+              {selectedLead._replied && (() => {
+                const cat = REPLY_CATEGORY_LABEL[selectedLead._reply_category || ''] || { text: selectedLead._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
+                return (
+                  <>
+                    <DpSectionTitle>回覆資訊</DpSectionTitle>
+                    <DpGrid>
+                      <DpField>
+                        <DpFieldLabel>回覆分類</DpFieldLabel>
+                        <DpFieldValue><ReplyBadge $bg={cat.bg} $fg={cat.fg}>{cat.text}</ReplyBadge></DpFieldValue>
+                      </DpField>
+                      <DpField>
+                        <DpFieldLabel>情緒</DpFieldLabel>
+                        <DpFieldValue>{selectedLead._reply_sentiment || '—'}</DpFieldValue>
+                      </DpField>
+                      <DpField style={{ gridColumn: '1 / -1' }}>
+                        <DpFieldLabel>摘要</DpFieldLabel>
+                        <DpFieldValue>{selectedLead._reply_summary || '—'}</DpFieldValue>
+                      </DpField>
+                      <DpField style={{ gridColumn: '1 / -1' }}>
+                        <DpFieldLabel>建議下一步</DpFieldLabel>
+                        <DpFieldValue>{selectedLead._reply_next_step || '—'}</DpFieldValue>
+                      </DpField>
+                      <DpField>
+                        <DpFieldLabel>回覆方式</DpFieldLabel>
+                        <DpFieldValue>{selectedLead._reply_via || '—'}</DpFieldValue>
+                      </DpField>
+                      <DpField>
+                        <DpFieldLabel>回覆時間</DpFieldLabel>
+                        <DpFieldValue>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString('zh-HK') : '—'}</DpFieldValue>
+                      </DpField>
+                    </DpGrid>
+                  </>
+                );
+              })()}
+
               {/* Timeline */}
               <DpSectionTitle>Lead Journey</DpSectionTitle>
               <DpTimeline>
@@ -1356,6 +1423,11 @@ const Leads: React.FC = () => {
                 {(selectedLead.status === 'contacted') && (
                   <DpTimelineItem $active>
                     Contacted
+                  </DpTimelineItem>
+                )}
+                {selectedLead._replied && (
+                  <DpTimelineItem $active>
+                    收到回覆 — {REPLY_CATEGORY_LABEL[selectedLead._reply_category || '']?.text || selectedLead._reply_category || '已回覆'}
                   </DpTimelineItem>
                 )}
               </DpTimeline>

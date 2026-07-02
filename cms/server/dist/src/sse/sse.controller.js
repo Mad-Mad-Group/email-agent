@@ -8,6 +8,9 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.SseController = void 0;
 const openapi = require("@nestjs/swagger");
@@ -20,6 +23,11 @@ let SseController = class SseController {
     constructor(sse) {
         this.sse = sse;
     }
+    notify(body) {
+        const event = body.type;
+        this.sse.emit(event, body.data);
+        return { ok: true };
+    }
     events() {
         const hello = (0, rxjs_1.of)({ type: 'ping', data: { ts: Date.now(), msg: 'connected' } });
         const heartbeat = (0, rxjs_1.interval)(15_000).pipe((0, rxjs_1.map)(() => ({ type: 'ping', data: { ts: Date.now() } })));
@@ -27,6 +35,14 @@ let SseController = class SseController {
     }
 };
 exports.SseController = SseController;
+__decorate([
+    (0, common_1.Post)('sse/notify'),
+    openapi.ApiResponse({ status: 201 }),
+    __param(0, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], SseController.prototype, "notify", null);
 __decorate([
     (0, common_1.Sse)('events'),
     openapi.ApiResponse({ status: 200, type: Object }),

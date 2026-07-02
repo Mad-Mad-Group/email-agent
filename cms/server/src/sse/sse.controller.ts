@@ -1,12 +1,20 @@
-import { Controller, MessageEvent, Sse } from '@nestjs/common';
+import { Body, Controller, MessageEvent, Post, Sse } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { Observable, interval, map, merge, of } from 'rxjs';
-import { SseService } from './sse.service';
+import { SseService, SseEvent } from './sse.service';
 
 @ApiTags('SSE 即時事件')
 @Controller()
 export class SseController {
   constructor(private readonly sse: SseService) {}
+
+  /** Worker 用呢個 endpoint 推 SSE 事件俾前端 */
+  @Post('sse/notify')
+  notify(@Body() body: { type: string; data: any }) {
+    const event = body.type as SseEvent;
+    this.sse.emit(event, body.data);
+    return { ok: true };
+  }
 
   /**
    * GET /api/events —— SSE 串流。

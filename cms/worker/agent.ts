@@ -315,6 +315,43 @@ async function doReplyCheck(_p: any, db: Db) {
         },
       },
     );
+
+    // meeting 回覆 → 自動建行事曆事件（預設下星期一 10:00）
+    if (a.category === 'meeting') {
+      const nextMon = new Date();
+      nextMon.setDate(nextMon.getDate() + ((8 - nextMon.getDay()) % 7 || 7));
+      nextMon.setHours(10, 0, 0, 0);
+      const endTime = new Date(nextMon.getTime() + 60 * 60 * 1000); // 1 小時
+      await db.collection('calendar_events').insertOne({
+        event_id: randomBytes(8).toString('hex'),
+        title: `會議：${m.lead.company_name || m.lead.email}`,
+        description: a.summary,
+        start: nextMon,
+        end: endTime,
+        all_day: false,
+        type: 'meeting',
+        lead_id: m.lead.lead_id,
+        company_name: m.lead.company_name,
+        color: '#567ebb',
+        created_at: nowIso(),
+      });
+      log(`  → 已建立會議事件：${m.lead.company_name}`);
+    }
+
+    // 通知 NestJS SSE（經 API）
+    try {
+      await api('/sse/notify', 'POST', {
+        type: 'lead_update',
+        data: {
+          id: m.lead._id.toString(),
+          action: 'replied',
+          status: a.category,
+          company_name: m.lead.company_name,
+          summary: a.summary,
+        },
+      });
+    } catch { /* SSE 通知失敗唔影響主流程 */ }
+
     updated++;
   }
   return { checked: leads.length, scanned, replies: updated, via };
