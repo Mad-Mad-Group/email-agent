@@ -94,12 +94,15 @@ const CalDayHeader = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
-const CalCell = styled.div<{ $today?: boolean; $other?: boolean }>`
+const CalCell = styled.div<{ $today?: boolean; $other?: boolean; $selected?: boolean }>`
   min-height: 90px; padding: 4px 6px; font-size: 0.75rem;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   border-right: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ $today, theme }) => $today ? '#fffde7' : theme.colors.surface};
+  background: ${({ $today, $selected, theme }) => $selected ? '#e0eef9' : $today ? '#fffde7' : theme.colors.surface};
   color: ${({ $other, theme }) => $other ? theme.colors.textTertiary : theme.colors.textPrimary};
+  cursor: pointer;
+  transition: background 0.12s;
+  &:hover { background: ${({ $selected }) => $selected ? '#d0e4f5' : '#f0f7ff'}; }
   &:nth-child(7n) { border-right: none; }
   ${media.mobile} {
     min-height: 60px;
@@ -140,6 +143,55 @@ const EventDot = styled.div`
   ${media.mobile} {
     font-size: 0.55rem;
   }
+`;
+
+/* ── Day Detail Panel ── */
+
+const DayDetailWrap = styled(Card)`
+  padding: 20px 24px;
+`;
+
+const DayDetailHeader = styled.div`
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+`;
+
+const DayDetailTitle = styled.h3`
+  margin: 0; font-size: 1rem; font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const DayDetailClose = styled.button`
+  background: none; border: none; font-size: 1.2rem; cursor: pointer;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+`;
+
+const DayEventList = styled.div`
+  display: flex; flex-direction: column; gap: 10px;
+`;
+
+const DayEventItem = styled.div<{ $color?: string }>`
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 16px; border-radius: 8px;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  border-left: 4px solid ${({ $color }) => $color || '#567ebb'};
+  transition: transform 0.1s;
+  &:hover { transform: translateX(2px); }
+`;
+
+const DayEventTime = styled.span`
+  font-size: 0.8125rem; font-weight: 600; color: ${({ theme }) => theme.colors.textSecondary};
+  min-width: 50px; flex-shrink: 0;
+`;
+
+const DayEventTitle = styled.span`
+  font-size: 0.875rem; font-weight: 500; color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const DayEmptyText = styled.div`
+  text-align: center; padding: 24px 0;
+  font-size: 0.875rem; color: ${({ theme }) => theme.colors.textTertiary};
 `;
 
 /* ── Data ── */
@@ -194,6 +246,7 @@ const Calendar: React.FC = () => {
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [apiEvents, setApiEvents] = useState<CalEvent[]>([]);
+  const [selectedDay, setSelectedDay] = useState<number | null>(null);
 
   // Fetch calendar events from API
   useEffect(() => {
@@ -236,14 +289,16 @@ const Calendar: React.FC = () => {
   }
 
   const prev = () => {
+    setSelectedDay(null);
     if (month === 0) { setYear(year - 1); setMonth(11); }
     else setMonth(month - 1);
   };
   const next = () => {
+    setSelectedDay(null);
     if (month === 11) { setYear(year + 1); setMonth(0); }
     else setMonth(month + 1);
   };
-  const goToday = () => { setYear(today.getFullYear()); setMonth(today.getMonth()); };
+  const goToday = () => { setSelectedDay(null); setYear(today.getFullYear()); setMonth(today.getMonth()); };
 
   const isCurrentMonth = month === today.getMonth() && year === today.getFullYear();
 
@@ -301,7 +356,13 @@ const Calendar: React.FC = () => {
           {cells.map((cell, i) => {
             const events = getEvents(cell.day, cell.current);
             return (
-              <CalCell key={i} $today={cell.today} $other={!cell.current}>
+              <CalCell
+                key={i}
+                $today={cell.today}
+                $other={!cell.current}
+                $selected={cell.current && cell.day === selectedDay}
+                onClick={() => cell.current && setSelectedDay(cell.day === selectedDay ? null : cell.day)}
+              >
                 <CellDay $today={cell.today}>{cell.day}</CellDay>
                 {events.map((ev, j) => (
                   ev.type === 'block'
@@ -313,6 +374,31 @@ const Calendar: React.FC = () => {
           })}
         </CalGrid>
       </CalendarWrap>
+
+      {/* Day Detail */}
+      {selectedDay !== null && (() => {
+        const dayEvents = EVENTS.filter(e => e.day === selectedDay);
+        return (
+          <DayDetailWrap>
+            <DayDetailHeader>
+              <DayDetailTitle>{MONTHS[month]} {selectedDay}, {year} 日程</DayDetailTitle>
+              <DayDetailClose onClick={() => setSelectedDay(null)}>&times;</DayDetailClose>
+            </DayDetailHeader>
+            {dayEvents.length > 0 ? (
+              <DayEventList>
+                {dayEvents.map((ev, i) => (
+                  <DayEventItem key={i} $color={ev.color}>
+                    <DayEventTime>{ev.time || '全日'}</DayEventTime>
+                    <DayEventTitle>{ev.title}</DayEventTitle>
+                  </DayEventItem>
+                ))}
+              </DayEventList>
+            ) : (
+              <DayEmptyText>當日冇日程</DayEmptyText>
+            )}
+          </DayDetailWrap>
+        );
+      })()}
 
       {/* Footer */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', fontSize: '0.75rem', color: '#94a3b8' }}>
