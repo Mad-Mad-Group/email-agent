@@ -157,9 +157,8 @@ const KpiCard = styled.div`
   gap: ${({ theme }) => theme.spacing.md}px;
   transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 16px rgba(15,23,42,0.08), 0 2px 4px rgba(15,23,42,0.04);
-    border-color: ${({ theme }) => theme.colors.borderStrong};
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(15,23,42,0.07);
   }
 `;
 
@@ -306,30 +305,49 @@ const SearchBar = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm}px;
-  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
+  padding: 10px ${({ theme }) => theme.spacing.lg}px;
   background: ${({ theme }) => theme.colors.surface};
   ${media.mobile} { flex-direction: column; }
 `;
 
-const SearchInput = styled.input`
+const SearchWrap = styled.div`
   flex: 1;
-  padding: 9px ${({ theme }) => theme.spacing.md}px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.control}px;
-  font-size: 0.875rem;
-  outline: none;
+  position: relative;
   min-width: 240px;
+  ${media.mobile} { min-width: 0; width: 100%; }
+`;
+
+const SearchIcon = styled.span`
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: ${({ theme }) => theme.colors.textTertiary};
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+`;
+
+const SearchInput = styled.input`
+  width: 100%;
+  padding: 8px 12px 8px 36px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  outline: none;
   color: ${({ theme }) => theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.surface};
-  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
   &:focus {
+    background: ${({ theme }) => theme.colors.surface};
     border-color: ${({ theme }) => theme.colors.blue};
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.12), 0 1px 2px rgba(15,23,42,0.04);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
   }
-  &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
-  ${media.mobile} { min-width: 0; width: 100%; }
+  &:hover:not(:focus) {
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+    background: ${({ theme }) => theme.colors.surface};
+  }
 `;
 
 /* ── Table ── */
@@ -379,9 +397,10 @@ const TRow = styled.tr<{ $even?: boolean }>`
   background: ${({ $even, theme }) => $even
     ? '#f7f7f4'
     : theme.colors.surface};
-  transition: background 0.15s ease;
+  transition: background 0.15s, box-shadow 0.15s;
   &:hover {
-    background: #f7f7f4;
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+    box-shadow: 0 1px 4px rgba(15,23,42,0.06);
   }
   td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
   &:last-child td { border-bottom: none; }
@@ -872,6 +891,30 @@ const NEXT_STATUS: Record<string, string> = {
   pending: 'contacted',
 };
 
+const REPLY_CATEGORY_LABEL: Record<string, { text: string; bg: string; fg: string }> = {
+  interested:     { text: '有興趣',   bg: '#dcfce7', fg: '#16a34a' },
+  not_interested: { text: '冇興趣',   bg: '#fee2e2', fg: '#dc2626' },
+  meeting:        { text: '約時間',   bg: '#dbeafe', fg: '#2563eb' },
+  auto_reply:     { text: '自動回覆', bg: '#f3f4f6', fg: '#6b7280' },
+  question:       { text: '有問題',   bg: '#fef3c7', fg: '#d97706' },
+};
+
+const ReplyBadge = styled.span<{ $bg: string; $fg: string }>`
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background: ${({ $bg }) => $bg};
+  color: ${({ $fg }) => $fg};
+  white-space: nowrap;
+`;
+
+const NoReplyText = styled.span`
+  font-size: 0.6875rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
 /* ── Tabs config (labels moved inside component for i18n) ── */
 
 interface TabDef {
@@ -1068,11 +1111,14 @@ const Leads: React.FC = () => {
         </TabsRow>
 
         <SearchBar>
-          <SearchInput
-            placeholder={t('leads.searchPlaceholder')}
-            value={search}
-            onChange={e => { setSearch(e.target.value); setPage(1); }}
-          />
+          <SearchWrap>
+            <SearchIcon><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></SearchIcon>
+            <SearchInput
+              placeholder={t('leads.searchPlaceholder')}
+              value={search}
+              onChange={e => { setSearch(e.target.value); setPage(1); }}
+            />
+          </SearchWrap>
         </SearchBar>
 
         <Card style={{ borderRadius: '0 0 8px 8px' }}>
@@ -1085,6 +1131,7 @@ const Leads: React.FC = () => {
                   <th>{t('leads.email')}</th>
                   <th>{t('leads.phone')}</th>
                   <th>{t('leads.industry')}</th>
+                  <th>回覆</th>
                   <th>{t('leads.importedAt')}</th>
                   <th>{t('leads.action')}</th>
                 </tr>
@@ -1092,7 +1139,7 @@ const Leads: React.FC = () => {
               <tbody>
                 {error ? (
                   <tr>
-                    <EmptyCell colSpan={8}>
+                    <EmptyCell colSpan={9}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
                         <strong style={{ color: '#dc2626' }}>{t('common.error')}</strong>
                         <span style={{ color: '#7f8c8d', fontSize: 13 }}>
@@ -1117,9 +1164,9 @@ const Leads: React.FC = () => {
                     </EmptyCell>
                   </tr>
                 ) : isLoading ? (
-                  <tr><EmptyCell colSpan={8}>{t('leads.loading')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={9}>{t('leads.loading')}</EmptyCell></tr>
                 ) : leads.length === 0 ? (
-                  <tr><EmptyCell colSpan={8}>{t('leads.noLeads')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={9}>{t('leads.noLeads')}</EmptyCell></tr>
                 ) : (
                   leads.map((lead, i) => {
                     const name = lead.company_name || 'Unknown';
@@ -1147,6 +1194,12 @@ const Leads: React.FC = () => {
                             ))}
                             {(!lead.industry_tags || lead.industry_tags.length === 0) && '—'}
                           </TagList>
+                        </td>
+                        <td>
+                          {lead._replied ? (() => {
+                            const cat = REPLY_CATEGORY_LABEL[lead._reply_category || ''] || { text: lead._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
+                            return <ReplyBadge $bg={cat.bg} $fg={cat.fg}>{cat.text}</ReplyBadge>;
+                          })() : <NoReplyText>—</NoReplyText>}
                         </td>
                         <td>{lead._imported_at ? new Date(lead._imported_at).toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</td>
                         <td>
@@ -1319,6 +1372,42 @@ const Leads: React.FC = () => {
                 </>
               )}
 
+              {/* Reply Info */}
+              {selectedLead._replied && (() => {
+                const cat = REPLY_CATEGORY_LABEL[selectedLead._reply_category || ''] || { text: selectedLead._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
+                return (
+                  <>
+                    <DpSectionTitle>回覆資訊</DpSectionTitle>
+                    <DpGrid>
+                      <DpField>
+                        <DpFieldLabel>回覆分類</DpFieldLabel>
+                        <DpFieldValue><ReplyBadge $bg={cat.bg} $fg={cat.fg}>{cat.text}</ReplyBadge></DpFieldValue>
+                      </DpField>
+                      <DpField>
+                        <DpFieldLabel>情緒</DpFieldLabel>
+                        <DpFieldValue>{selectedLead._reply_sentiment || '—'}</DpFieldValue>
+                      </DpField>
+                      <DpField style={{ gridColumn: '1 / -1' }}>
+                        <DpFieldLabel>摘要</DpFieldLabel>
+                        <DpFieldValue>{selectedLead._reply_summary || '—'}</DpFieldValue>
+                      </DpField>
+                      <DpField style={{ gridColumn: '1 / -1' }}>
+                        <DpFieldLabel>建議下一步</DpFieldLabel>
+                        <DpFieldValue>{selectedLead._reply_next_step || '—'}</DpFieldValue>
+                      </DpField>
+                      <DpField>
+                        <DpFieldLabel>回覆方式</DpFieldLabel>
+                        <DpFieldValue>{selectedLead._reply_via || '—'}</DpFieldValue>
+                      </DpField>
+                      <DpField>
+                        <DpFieldLabel>回覆時間</DpFieldLabel>
+                        <DpFieldValue>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString('zh-HK') : '—'}</DpFieldValue>
+                      </DpField>
+                    </DpGrid>
+                  </>
+                );
+              })()}
+
               {/* Timeline */}
               <DpSectionTitle>Lead Journey</DpSectionTitle>
               <DpTimeline>
@@ -1334,6 +1423,11 @@ const Leads: React.FC = () => {
                 {(selectedLead.status === 'contacted') && (
                   <DpTimelineItem $active>
                     Contacted
+                  </DpTimelineItem>
+                )}
+                {selectedLead._replied && (
+                  <DpTimelineItem $active>
+                    收到回覆 — {REPLY_CATEGORY_LABEL[selectedLead._reply_category || '']?.text || selectedLead._reply_category || '已回覆'}
                   </DpTimelineItem>
                 )}
               </DpTimeline>

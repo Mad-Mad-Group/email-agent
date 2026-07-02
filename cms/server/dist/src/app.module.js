@@ -26,6 +26,7 @@ const ai_analysis_module_1 = require("./ai/ai-analysis.module");
 const email_queue_module_1 = require("./email-queue/email-queue.module");
 const hermes_module_1 = require("./hermes/hermes.module");
 const jobs_module_1 = require("./jobs/jobs.module");
+const calendar_module_1 = require("./calendar/calendar.module");
 const app_controller_1 = require("./app.controller");
 let AppModule = class AppModule {
 };
@@ -51,6 +52,7 @@ exports.AppModule = AppModule = __decorate([
             email_queue_module_1.EmailQueueModule,
             hermes_module_1.HermesModule,
             jobs_module_1.JobsModule,
+            calendar_module_1.CalendarModule,
         ],
         controllers: [app_controller_1.AppController],
     })

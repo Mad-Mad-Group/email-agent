@@ -163,9 +163,10 @@ const TRow = styled.tr<{ $even?: boolean }>`
   background: ${({ $even, theme }) => $even
     ? theme.colors.surfaceMuted
     : theme.colors.surface};
-  transition: background 0.15s;
+  transition: background 0.15s, box-shadow 0.15s;
   &:hover {
-    background: ${({ theme }) => theme.colors.canvas};
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+    box-shadow: 0 1px 4px rgba(15,23,42,0.06);
   }
   td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
   cursor: pointer;
@@ -210,8 +211,7 @@ const ResultCard = styled.div`
   cursor: pointer;
   transition: all 0.15s;
   &:hover {
-    border-color: #2563eb;
-    box-shadow: 0 4px 12px rgba(37,99,235,0.12), 0 2px 4px rgba(15,23,42,0.04);
+    box-shadow: 0 2px 8px rgba(15,23,42,0.07);
     transform: translateY(-1px);
   }
 `;

@@ -179,8 +179,8 @@ const IconBtn = styled.button`
   }
 `;
 
-/* Language icon button with tiny label overlay */
-const LangBtn = styled.button`
+/* Language toggle button — globe icon + small badge, cycles on click */
+const LangToggle = styled.button`
   position: relative;
   display: flex;
   align-items: center;
@@ -193,68 +193,30 @@ const LangBtn = styled.button`
   cursor: pointer;
   color: ${({ theme }) => theme.colors.textSecondary};
   transition: all 0.15s;
+  user-select: none;
 
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceMuted};
     color: ${({ theme }) => theme.colors.textPrimary};
   }
+  &:active {
+    transform: scale(0.96);
+  }
 `;
 
-const LangLabel = styled.span`
+const LangBadge = styled.span`
   position: absolute;
-  bottom: -2px;
+  bottom: -1px;
   right: -4px;
-  font-size: 0.5625rem;
+  font-size: 0.5rem;
   font-weight: 700;
   line-height: 1;
-  color: #fff;
-  background: var(--primary, #567ebb);
   padding: 1px 3px;
   border-radius: 3px;
-  pointer-events: none;
-`;
-
-const LangDropdown = styled.ul`
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  list-style: none;
-  margin: 0;
-  padding: 4px 0;
-  min-width: 120px;
   background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  z-index: 100;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-4px);
-  transition: opacity 0.15s ease, transform 0.15s ease, visibility 0.15s;
-`;
-
-const LangOption = styled.li<{ $active?: boolean }>`
-  padding: 8px 14px;
-  font-size: 0.8125rem;
-  cursor: pointer;
-  color: ${({ theme, $active }) => $active ? 'var(--primary, #567ebb)' : theme.colors.textSecondary};
-  font-weight: ${({ $active }) => ($active ? 600 : 400)};
-  transition: all 0.15s;
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.surfaceMuted};
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
-`;
-
-const LangBtnWrap = styled.div`
-  position: relative;
-
-  &:hover ${LangDropdown} {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-  }
+  color: ${({ theme }) => theme.colors.textPrimary};
+  box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.border};
+  pointer-events: none;
 `;
 
 /* Theme toggle (sun ↔ moon) */
@@ -342,7 +304,12 @@ const NotifBellIcon = () => (
 export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, onToggleSidebar, sidebarCollapsed }) => {
   const { t, i18n } = useTranslation();
   const { mode, toggle: toggleTheme } = useThemeMode();
-  const currentLang = LANGUAGES.find((l) => l.code === i18n.language)?.label ?? 'EN';
+  const currentIdx = LANGUAGES.findIndex((l) => l.code === i18n.language);
+  const currentLang = LANGUAGES[currentIdx >= 0 ? currentIdx : 0].label;
+  const cycleLang = () => {
+    const nextIdx = (currentIdx + 1) % LANGUAGES.length;
+    i18n.changeLanguage(LANGUAGES[nextIdx].code);
+  };
 
   return (
     <Wrapper>
@@ -365,23 +332,10 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
         <ThemeToggle onClick={toggleTheme} title={mode === 'light' ? 'Dark mode' : 'Light mode'}>
           {mode === 'light' ? <MoonIcon /> : <SunIcon />}
         </ThemeToggle>
-        <LangBtnWrap>
-          <LangBtn title={t('topbar.language')}>
-            <GlobeIcon />
-            <LangLabel>{currentLang}</LangLabel>
-          </LangBtn>
-          <LangDropdown>
-            {LANGUAGES.map((lang) => (
-              <LangOption
-                key={lang.code}
-                $active={i18n.language === lang.code}
-                onClick={() => i18n.changeLanguage(lang.code)}
-              >
-                {lang.label}
-              </LangOption>
-            ))}
-          </LangDropdown>
-        </LangBtnWrap>
+        <LangToggle onClick={cycleLang} title={t('topbar.language')}>
+          <GlobeIcon />
+          <LangBadge>{currentLang}</LangBadge>
+        </LangToggle>
         <IconBtn title={t('topbar.notifications')}><NotifBellIcon /></IconBtn>
         <UserAvatar>MM</UserAvatar>
         {actionLabel && onAction && (

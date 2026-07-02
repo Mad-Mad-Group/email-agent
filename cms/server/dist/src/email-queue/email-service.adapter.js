@@ -21,7 +21,8 @@ let EmailServiceAdapter = EmailServiceAdapter_1 = class EmailServiceAdapter {
     }
     async send(mail) {
         try {
-            await this.emailService.sendMail(mail.to, mail.subject, mail.body);
+            const html = `<div style="white-space:pre-wrap;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;line-height:1.6;font-size:14px;color:#1a1a1a">${mail.body}</div>`;
+            await this.emailService.sendMail(mail.to, mail.subject, html);
             return { ok: true };
         }
         catch (e) {

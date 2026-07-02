@@ -166,6 +166,61 @@ function classifyReply(subject: string, body: string): string {
 }
 
 /**
+ * 用 Hermes(LLM) 分析一封回覆：分類 + 真摘要 + 語氣 + 下一步建議。
+ * Hermes 掛咗 / parse 唔到 → fallback keyword（classifyReply），確保唔會漏。
+ */
+function analyzeReply(
+  subject: string,
+  body: string,
+  lead: any,
+): {
+  category: string;
+  summary: string;
+  sentiment: string;
+  next_step: string;
+  via: string;
+} {
+  const allowed = ['interested', 'not_interested', 'meeting', 'auto_reply', 'question'];
+  const clip = (body || '').slice(0, 4000); // 保護 prompt 長度
+  const prompt = `你係 B2B 業務助手。下面係潛在客戶「${lead.company_name || lead.email}」對我哋 outreach email 嘅回覆。
+淨係根據回覆內容分析，唔好靠估、唔好自己編料。
+
+回覆主題：${subject}
+回覆內容：
+${clip}
+
+回一個 JSON object（ENTIRE reply 只可以係呢個 object）：
+{
+  "category": "interested | not_interested | meeting | auto_reply | question",
+  "summary": "一兩句繁體中文：對方實際講咩、乜嘢語氣",
+  "sentiment": "positive | neutral | negative",
+  "next_step": "一句：建議我哋下一步（例如 約時間 / 報價 / 跟進 / 放棄）"
+}
+category 定義：interested=有興趣想了解；meeting=想開會/約時間；not_interested=明確拒絕或退訂；auto_reply=自動回覆/放假；question=其他或有疑問。內容唔清楚就填 "question"。`;
+  try {
+    const c = hermesJson(prompt, { timeout: 120_000 });
+    return {
+      category: allowed.includes(c.category) ? c.category : classifyReply(subject, body),
+      summary: String(c.summary || subject).slice(0, 300),
+      sentiment: ['positive', 'neutral', 'negative'].includes(c.sentiment)
+        ? c.sentiment
+        : 'neutral',
+      next_step: String(c.next_step || '').slice(0, 200),
+      via: 'hermes',
+    };
+  } catch {
+    // Hermes 唔得 → keyword fallback，唔會漏咗封回覆
+    return {
+      category: classifyReply(subject, body),
+      summary: subject.slice(0, 120),
+      sentiment: 'neutral',
+      next_step: '',
+      via: 'keyword-fallback',
+    };
+  }
+}
+
+/**
  * 定時回覆檢查（inbound 閉環）：直接連 IMAP 讀 inbox → 對返已聯絡 lead
  * → 分類 → 寫返 lead 的 _reply_* 欄。
  * ⚠️ 用返 SMTP 同一組 creds（Gmail App Password 同時支援 SMTP 發 + IMAP 讀）。
@@ -194,8 +249,8 @@ async function doReplyCheck(_p: any, db: Db) {
     logger: false,
   });
 
+  const matched: Array<{ lead: any; subject: string; text: string }> = [];
   let scanned = 0;
-  let updated = 0;
   try {
     await client.connect();
     const lock = await client.getMailboxLock('INBOX');
@@ -205,22 +260,25 @@ async function doReplyCheck(_p: any, db: Db) {
         scanned++;
         const parsed = await simpleParser(msg.source as Buffer);
         const from = (parsed.from?.value?.[0]?.address || '').toLowerCase();
-        const lead = byEmail.get(from);
+        const subject = parsed.subject || '';
+        // 測試(SEND_OVERRIDE)模式：回覆 subject 仲帶住「[TEST→realcompany@x.com]」標記
+        // → 由 subject 解返真 lead（因為回覆嘅寄件人係測試地址，對唔返 lead.email）。
+        // 正式模式：直接用寄件人地址 = lead.email 對返。
+        const tag = subject.match(/\[TEST→([^\]\s]+)\]/i);
+        let lead = tag ? byEmail.get(tag[1].toLowerCase()) : undefined;
+        if (!lead) lead = byEmail.get(from);
         if (!lead) continue;
-        const category = classifyReply(parsed.subject || '', parsed.text || '');
-        await db.collection('leads').updateOne(
-          { _id: lead._id },
-          {
-            $set: {
-              _replied: true,
-              _reply_category: category,
-              _reply_summary: (parsed.subject || '').slice(0, 120),
-              _reply_at: nowIso(),
-            },
-          },
-        );
-        byEmail.delete(from); // 一個 lead 只更新一次
-        updated++;
+        // 只當「似回覆」先計，避免誤中 newsletter / 無關信：
+        // 有測試標記、或 In-Reply-To/References header、或 subject 有 Re:/回覆。
+        const refs = parsed.references;
+        const isReply =
+          !!tag ||
+          !!parsed.inReplyTo ||
+          (Array.isArray(refs) ? refs.length > 0 : !!refs) ||
+          /^\s*(re|回覆|回复)\s*[:：]/i.test(subject);
+        if (!isReply) continue;
+        matched.push({ lead, subject, text: parsed.text || '' });
+        byEmail.delete(String(lead.email).toLowerCase()); // 一個 lead 只收一次
       }
     } finally {
       lock.release();
@@ -228,8 +286,75 @@ async function doReplyCheck(_p: any, db: Db) {
     await client.logout();
   } catch (e: any) {
     return { checked: leads.length, replies: 0, note: 'IMAP 讀取失敗：' + (e?.message ?? e) };
+  } finally {
+    // 確保任何情況都收返個 connection（logout 過 / 未連上都無所謂）
+    try {
+      await client.close();
+    } catch {
+      /* ignore */
+    }
   }
-  return { checked: leads.length, scanned, replies: updated };
+
+  // IMAP 已閂，先至逐封叫 Hermes 分析（LLM 慢，唔應該連住 inbox 一路等）。
+  let updated = 0;
+  const via: Record<string, number> = {};
+  for (const m of matched) {
+    const a = analyzeReply(m.subject, m.text, m.lead);
+    via[a.via] = (via[a.via] || 0) + 1;
+    await db.collection('leads').updateOne(
+      { _id: m.lead._id },
+      {
+        $set: {
+          _replied: true,
+          _reply_category: a.category,
+          _reply_summary: a.summary,
+          _reply_sentiment: a.sentiment,
+          _reply_next_step: a.next_step,
+          _reply_via: a.via,
+          _reply_at: nowIso(),
+        },
+      },
+    );
+
+    // meeting 回覆 → 自動建行事曆事件（預設下星期一 10:00）
+    if (a.category === 'meeting') {
+      const nextMon = new Date();
+      nextMon.setDate(nextMon.getDate() + ((8 - nextMon.getDay()) % 7 || 7));
+      nextMon.setHours(10, 0, 0, 0);
+      const endTime = new Date(nextMon.getTime() + 60 * 60 * 1000); // 1 小時
+      await db.collection('calendar_events').insertOne({
+        event_id: randomBytes(8).toString('hex'),
+        title: `會議：${m.lead.company_name || m.lead.email}`,
+        description: a.summary,
+        start: nextMon,
+        end: endTime,
+        all_day: false,
+        type: 'meeting',
+        lead_id: m.lead.lead_id,
+        company_name: m.lead.company_name,
+        color: '#567ebb',
+        created_at: nowIso(),
+      });
+      log(`  → 已建立會議事件：${m.lead.company_name}`);
+    }
+
+    // 通知 NestJS SSE（經 API）
+    try {
+      await api('/sse/notify', 'POST', {
+        type: 'lead_update',
+        data: {
+          id: m.lead._id.toString(),
+          action: 'replied',
+          status: a.category,
+          company_name: m.lead.company_name,
+          summary: a.summary,
+        },
+      });
+    } catch { /* SSE 通知失敗唔影響主流程 */ }
+
+    updated++;
+  }
+  return { checked: leads.length, scanned, replies: updated, via };
 }
 
 /** S1 搜尋 → 叫 Hermes 開 stealth browser 搵 Google Maps，回真公司 */
@@ -629,7 +754,10 @@ async function doSend(p: any, db: Db) {
   if (!lead) throw new Error('lead 唔存在');
   const eq = await db
     .collection('email_queue')
-    .findOne({ lead_id: lead.lead_id, status: 'pending' });
+    .findOne(
+      { lead_id: lead.lead_id, status: 'pending' },
+      { sort: { created_at: -1 } }, // 有多封草稿時攞最新嗰封
+    );
   if (!eq) return { sent: false, note: '冇待發 email' };
 
   // 未開真發 → 只標 approved，唔寄

@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * Person C — AI Agent worker（執行側）
@@ -16,6 +49,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongodb_1 = require("mongodb");
 const crypto_1 = require("crypto");
 const child_process_1 = require("child_process");
+const nodemailer = __importStar(require("nodemailer"));
+const imapflow_1 = require("imapflow");
+const mailparser_1 = require("mailparser");
 const brand_1 = require("./brand");
 /**
  * 叫 Hermes agent 做嘢（佢有 MiniMax + stealth browser + skills）。
@@ -146,54 +182,197 @@ async function handle(task, db) {
         return doSend(p, db);
     return { note: `no handler for ${skill}` };
 }
+/** 簡單分類回覆（keyword heuristic，參考舊 reply_analyzer；快、唔使 LLM）*/
+function classifyReply(subject, body) {
+    const t = `${subject} ${body}`.toLowerCase();
+    if (/(out of office|auto-?reply|automatic reply|放假|自動回覆|不在)/.test(t))
+        return 'auto_reply';
+    if (/(not interested|no thank|unsubscribe|remove me|唔需要|唔感興趣|冇興趣|拒絕)/.test(t))
+        return 'not_interested';
+    if (/(meeting|zoom|call|schedule|available|開會|會議|時間|傾下|約|見面)/.test(t))
+        return 'meeting';
+    if (/(interested|tell me more|sounds good|有興趣|想了解|報價|quote|詳情)/.test(t))
+        return 'interested';
+    return 'question';
+}
 /**
- * 定時回覆檢查（inbound 閉環）：揾已聯絡未回覆嘅 lead → 叫 Hermes 查 inbox
- * → 分類回覆 → 寫返 lead 的 _reply_* 欄。
- * ⚠️ 要 Hermes 有 email 存取（~/.hermes/.env 配 EMAIL_/IMAP，或 Gmail）先真查到；
- *    未配 → graceful 回 0，唔 crash。
+ * 用 Hermes(LLM) 分析一封回覆：分類 + 真摘要 + 語氣 + 下一步建議。
+ * Hermes 掛咗 / parse 唔到 → fallback keyword（classifyReply），確保唔會漏。
+ */
+function analyzeReply(subject, body, lead) {
+    const allowed = ['interested', 'not_interested', 'meeting', 'auto_reply', 'question'];
+    const clip = (body || '').slice(0, 4000); // 保護 prompt 長度
+    const prompt = `你係 B2B 業務助手。下面係潛在客戶「${lead.company_name || lead.email}」對我哋 outreach email 嘅回覆。
+淨係根據回覆內容分析，唔好靠估、唔好自己編料。
+
+回覆主題：${subject}
+回覆內容：
+${clip}
+
+回一個 JSON object（ENTIRE reply 只可以係呢個 object）：
+{
+  "category": "interested | not_interested | meeting | auto_reply | question",
+  "summary": "一兩句繁體中文：對方實際講咩、乜嘢語氣",
+  "sentiment": "positive | neutral | negative",
+  "next_step": "一句：建議我哋下一步（例如 約時間 / 報價 / 跟進 / 放棄）"
+}
+category 定義：interested=有興趣想了解；meeting=想開會/約時間；not_interested=明確拒絕或退訂；auto_reply=自動回覆/放假；question=其他或有疑問。內容唔清楚就填 "question"。`;
+    try {
+        const c = hermesJson(prompt, { timeout: 120000 });
+        return {
+            category: allowed.includes(c.category) ? c.category : classifyReply(subject, body),
+            summary: String(c.summary || subject).slice(0, 300),
+            sentiment: ['positive', 'neutral', 'negative'].includes(c.sentiment)
+                ? c.sentiment
+                : 'neutral',
+            next_step: String(c.next_step || '').slice(0, 200),
+            via: 'hermes',
+        };
+    }
+    catch {
+        // Hermes 唔得 → keyword fallback，唔會漏咗封回覆
+        return {
+            category: classifyReply(subject, body),
+            summary: subject.slice(0, 120),
+            sentiment: 'neutral',
+            next_step: '',
+            via: 'keyword-fallback',
+        };
+    }
+}
+/**
+ * 定時回覆檢查（inbound 閉環）：直接連 IMAP 讀 inbox → 對返已聯絡 lead
+ * → 分類 → 寫返 lead 的 _reply_* 欄。
+ * ⚠️ 用返 SMTP 同一組 creds（Gmail App Password 同時支援 SMTP 發 + IMAP 讀）。
+ *    未配 SMTP_USER/PASS → graceful 回 0，唔 crash。
  */
 async function doReplyCheck(_p, db) {
-    // 已聯絡、有 email、未記錄過回覆嘅（batch 20）
     const leads = await db
         .collection('leads')
-        .find({
-        status: 'contacted',
-        email: { $nin: ['', null] },
-        _replied: { $ne: true },
-    })
-        .limit(20)
+        .find({ status: 'contacted', email: { $nin: ['', null] }, _replied: { $ne: true } })
+        .limit(100)
         .toArray();
     if (!leads.length)
         return { checked: 0, note: '冇待查回覆嘅 lead' };
-    const senders = leads.map((l) => l.email).join(', ');
-    const prompt = `Check the agency email inbox for NEW replies from any of these senders: ${senders}.
-For each reply found, classify it. Use empty array if none found OR if you have no inbox access — do NOT invent replies.
-Output ONLY a JSON array:
-[{"from":"sender email","category":"interested|meeting|question|not_interested|auto_reply","summary":"一句撮要","next_action":"建議下一步"}]`;
-    let replies = [];
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+    if (!user || !pass) {
+        return { checked: leads.length, note: 'IMAP 未配（要 SMTP_USER/SMTP_PASS）' };
+    }
+    const byEmail = new Map(leads.map((l) => [String(l.email).toLowerCase(), l]));
+    const client = new imapflow_1.ImapFlow({
+        host: process.env.IMAP_HOST || 'imap.gmail.com',
+        port: Number(process.env.IMAP_PORT || 993),
+        secure: true,
+        auth: { user, pass },
+        logger: false,
+    });
+    const matched = [];
+    let scanned = 0;
     try {
-        replies = hermesJson(prompt, { array: true, timeout: 180000 });
+        await client.connect();
+        const lock = await client.getMailboxLock('INBOX');
+        try {
+            const since = new Date(Date.now() - 14 * 864e5); // 近 14 日
+            for await (const msg of client.fetch({ since }, { source: true })) {
+                scanned++;
+                const parsed = await (0, mailparser_1.simpleParser)(msg.source);
+                const from = (parsed.from?.value?.[0]?.address || '').toLowerCase();
+                const subject = parsed.subject || '';
+                // 測試(SEND_OVERRIDE)模式：回覆 subject 仲帶住「[TEST→realcompany@x.com]」標記
+                // → 由 subject 解返真 lead（因為回覆嘅寄件人係測試地址，對唔返 lead.email）。
+                // 正式模式：直接用寄件人地址 = lead.email 對返。
+                const tag = subject.match(/\[TEST→([^\]\s]+)\]/i);
+                let lead = tag ? byEmail.get(tag[1].toLowerCase()) : undefined;
+                if (!lead)
+                    lead = byEmail.get(from);
+                if (!lead)
+                    continue;
+                // 只當「似回覆」先計，避免誤中 newsletter / 無關信：
+                // 有測試標記、或 In-Reply-To/References header、或 subject 有 Re:/回覆。
+                const refs = parsed.references;
+                const isReply = !!tag ||
+                    !!parsed.inReplyTo ||
+                    (Array.isArray(refs) ? refs.length > 0 : !!refs) ||
+                    /^\s*(re|回覆|回复)\s*[:：]/i.test(subject);
+                if (!isReply)
+                    continue;
+                matched.push({ lead, subject, text: parsed.text || '' });
+                byEmail.delete(String(lead.email).toLowerCase()); // 一個 lead 只收一次
+            }
+        }
+        finally {
+            lock.release();
+        }
+        await client.logout();
     }
-    catch {
-        return { checked: leads.length, replies: 0, note: 'inbox 查唔到（未配 email 存取？）' };
+    catch (e) {
+        return { checked: leads.length, replies: 0, note: 'IMAP 讀取失敗：' + (e?.message ?? e) };
     }
+    finally {
+        // 確保任何情況都收返個 connection（logout 過 / 未連上都無所謂）
+        try {
+            await client.close();
+        }
+        catch {
+            /* ignore */
+        }
+    }
+    // IMAP 已閂，先至逐封叫 Hermes 分析（LLM 慢，唔應該連住 inbox 一路等）。
     let updated = 0;
-    for (const r of replies) {
-        const lead = leads.find((l) => l.email === r?.from);
-        if (!lead)
-            continue;
-        await db.collection('leads').updateOne({ _id: lead._id }, {
+    const via = {};
+    for (const m of matched) {
+        const a = analyzeReply(m.subject, m.text, m.lead);
+        via[a.via] = (via[a.via] || 0) + 1;
+        await db.collection('leads').updateOne({ _id: m.lead._id }, {
             $set: {
                 _replied: true,
-                _reply_category: r.category,
-                _reply_summary: r.summary,
-                _reply_next_action: r.next_action,
+                _reply_category: a.category,
+                _reply_summary: a.summary,
+                _reply_sentiment: a.sentiment,
+                _reply_next_step: a.next_step,
+                _reply_via: a.via,
                 _reply_at: nowIso(),
             },
         });
+        // meeting 回覆 → 自動建行事曆事件（預設下星期一 10:00）
+        if (a.category === 'meeting') {
+            const nextMon = new Date();
+            nextMon.setDate(nextMon.getDate() + ((8 - nextMon.getDay()) % 7 || 7));
+            nextMon.setHours(10, 0, 0, 0);
+            const endTime = new Date(nextMon.getTime() + 60 * 60 * 1000); // 1 小時
+            await db.collection('calendar_events').insertOne({
+                event_id: (0, crypto_1.randomBytes)(8).toString('hex'),
+                title: `會議：${m.lead.company_name || m.lead.email}`,
+                description: a.summary,
+                start: nextMon,
+                end: endTime,
+                all_day: false,
+                type: 'meeting',
+                lead_id: m.lead.lead_id,
+                company_name: m.lead.company_name,
+                color: '#567ebb',
+                created_at: nowIso(),
+            });
+            log(`  → 已建立會議事件：${m.lead.company_name}`);
+        }
+        // 通知 NestJS SSE（經 API）
+        try {
+            await api('/sse/notify', 'POST', {
+                type: 'lead_update',
+                data: {
+                    id: m.lead._id.toString(),
+                    action: 'replied',
+                    status: a.category,
+                    company_name: m.lead.company_name,
+                    summary: a.summary,
+                },
+            });
+        }
+        catch { /* SSE 通知失敗唔影響主流程 */ }
         updated++;
     }
-    return { checked: leads.length, replies: replies.length, updated };
+    return { checked: leads.length, scanned, replies: updated, via };
 }
 /** S1 搜尋 → 叫 Hermes 開 stealth browser 搵 Google Maps，回真公司 */
 async function doSearch(p, db) {
@@ -578,30 +757,72 @@ async function doSend(p, db) {
         throw new Error('lead 唔存在');
     const eq = await db
         .collection('email_queue')
-        .findOne({ lead_id: lead.lead_id, status: 'pending' });
-    if (process.env.ENABLE_REAL_SEND === 'true' && lead.email && eq) {
-        callHermes(`Send an email using your email tool.
-To: ${lead.email}
-Subject: ${eq.subject}
-Body:
-${eq.body}
-Reply DONE when sent.`);
+        .findOne({ lead_id: lead.lead_id, status: 'pending' }, { sort: { created_at: -1 } });
+    if (!eq)
+        return { sent: false, note: '冇待發 email' };
+    // 未開真發 → 只標 approved，唔寄
+    if (process.env.ENABLE_REAL_SEND !== 'true') {
         await db
             .collection('email_queue')
-            .updateOne({ _id: eq._id }, { $set: { status: 'sent', sent_at: nowIso() } });
+            .updateMany({ lead_id: lead.lead_id, status: 'pending' }, { $set: { status: 'approved' } });
+        return { sent: false, note: 'real send 停用（ENABLE_REAL_SEND=true 先發）' };
+    }
+    // 真發：經 SMTP（nodemailer），一律寄去 TEST_RECIPIENT
+    if (!process.env.SMTP_HOST) {
+        return { sent: false, note: 'SMTP 未配（.env 填 SMTP_HOST/USER/PASS）' };
+    }
+    const transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST,
+        port: Number(process.env.SMTP_PORT || 587),
+        secure: Number(process.env.SMTP_PORT) === 465,
+        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    });
+    // 收件人：SEND_OVERRIDE 有設（測試安全）→ 一律寄去嗰度；冇設 → lead.email（真發）。
+    // creds（SMTP_USER/PASS）同收件人全部由跑 worker 嗰位喺 .env 設，唔 hardcode 落 code。
+    const override = process.env.SEND_OVERRIDE;
+    const to = override || lead.email;
+    if (!to)
+        return { sent: false, note: '冇收件人（lead 冇 email，又冇 SEND_OVERRIDE）' };
+    // frontend 係用 pre-wrap + dangerouslySetInnerHTML render body（tag 當 HTML、換行照留）。
+    // 寄件要對齊：html 用同一個 pre-wrap 包住原 body（render 結果同 frontend 一模一樣），
+    // text 出一份 strip tag 但保留換行嘅純文字做 fallback（唔用 htmlToText，佢會併走換行）。
+    const bodyRaw = eq.body ?? '';
+    const bodyText = bodyRaw
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/(p|div|h[1-6]|li|tr)>/gi, '\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    const bodyHtml = `<div style="white-space:pre-wrap;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;line-height:1.6;font-size:14px;color:#1a1a1a">${bodyRaw}</div>`;
+    try {
+        await transporter.sendMail({
+            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            to,
+            subject: override
+                ? `[TEST→${lead.email || '?'}] ${eq.subject ?? ''}` // 測試模式標明原收件人
+                : eq.subject ?? '',
+            text: bodyText,
+            html: bodyHtml,
+        });
+    }
+    catch (e) {
+        // check 成功先標 sent（修「假 sent」bug）
         await db
-            .collection('leads')
-            .updateOne({ _id }, { $set: { status: 'contacted', _email_sent: true } });
-        return { sent: true, real: true };
+            .collection('email_queue')
+            .updateOne({ _id: eq._id }, { $set: { status: 'failed', error: { send_error: e?.message ?? String(e) } } });
+        return { sent: false, error: e?.message ?? String(e) };
     }
     await db
         .collection('email_queue')
-        .updateMany({ lead_id: lead.lead_id, status: 'pending' }, { $set: { status: 'approved' } });
-    return {
-        sent: false,
-        real: false,
-        note: 'real send 已停用（set ENABLE_REAL_SEND=true 先會真發 email）',
-    };
+        .updateOne({ _id: eq._id }, { $set: { status: 'sent', sent_at: nowIso() } });
+    await db
+        .collection('leads')
+        .updateOne({ _id }, { $set: { status: 'contacted', _email_sent: true } });
+    return { sent: true, to };
 }
 // ───────── main loop ─────────
 /** 登入重試（B API 一時連唔到都唔好死，backoff 重試）*/

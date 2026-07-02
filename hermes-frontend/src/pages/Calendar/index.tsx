@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { media } from '../../styles/media';
+import client from '../../api/client';
 
 /* ══════════════════════════════════════
    LUNO Calendar Page — 1:1 replica
@@ -152,7 +153,7 @@ interface CalEvent {
   span?: number;
 }
 
-const EVENTS: CalEvent[] = [
+const FALLBACK_EVENTS: CalEvent[] = [
   { day: 1, title: 'All Day Event', type: 'block', color: '#567ebb' },
   { day: 7, title: 'Long Event', type: 'block', color: '#567ebb', span: 3 },
   { day: 9, title: 'Repeating Event', time: '4p', type: 'dot' },
@@ -169,11 +170,46 @@ const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
+/** 將 API event 轉成 CalEvent */
+function apiToCalEvents(apiEvents: any[]): CalEvent[] {
+  return apiEvents.map((e) => {
+    const d = new Date(e.start);
+    const day = d.getDate();
+    const h = d.getHours();
+    const m = d.getMinutes();
+    const time = e.all_day ? undefined : `${h > 12 ? h - 12 : h || 12}${m ? ':' + String(m).padStart(2, '0') : ''}${h >= 12 ? 'p' : 'a'}`;
+    return {
+      day,
+      title: e.title || 'Event',
+      time,
+      type: e.all_day ? 'block' as const : 'dot' as const,
+      color: e.color || '#567ebb',
+    };
+  });
+}
+
 const Calendar: React.FC = () => {
   const { t } = useTranslation();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
+  const [apiEvents, setApiEvents] = useState<CalEvent[]>([]);
+
+  // Fetch calendar events from API
+  useEffect(() => {
+    client.get('/calendar', { params: { month: month + 1, year } })
+      .then((res) => {
+        const items = (res.data as any)?.data ?? res.data ?? [];
+        if (Array.isArray(items) && items.length > 0) {
+          setApiEvents(apiToCalEvents(items));
+        } else {
+          setApiEvents([]);
+        }
+      })
+      .catch(() => setApiEvents([]));
+  }, [month, year]);
+
+  const EVENTS = apiEvents.length > 0 ? apiEvents : FALLBACK_EVENTS;
 
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);

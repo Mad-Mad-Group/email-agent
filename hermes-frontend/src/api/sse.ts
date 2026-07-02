@@ -22,8 +22,23 @@ function buildNotificationContent(event: SSEEvent): { title: string; body: strin
 
   switch (event.type) {
     case 'lead_update': {
-      const name = (payload?.name as string) || 'A lead';
+      const name = (payload?.company_name as string) || (payload?.name as string) || 'A lead';
+      const action = (payload?.action as string) || '';
       const status = (payload?.status as string) || 'updated';
+      const summary = (payload?.summary as string) || '';
+      if (action === 'replied') {
+        const categoryLabels: Record<string, string> = {
+          interested: '有興趣',
+          not_interested: '冇興趣',
+          meeting: '想約時間',
+          auto_reply: '自動回覆',
+          question: '有問題',
+        };
+        return {
+          title: `📩 收到回覆：${name}`,
+          body: `${categoryLabels[status] || status}${summary ? ' — ' + summary : ''}`,
+        };
+      }
       return { title: 'Lead Update', body: `${name} — ${status}` };
     }
     case 'email_sent': {
