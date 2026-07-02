@@ -131,6 +131,32 @@ const MAX_IDLE = Number(process.env.WORKER_MAX_IDLE || 0); // 0 = 永遠
 let token = '';
 const log = (...a) => console.log(`[agent ${AGENT_ID}]`, ...a);
 const nowIso = () => new Date().toISOString();
+/**
+ * 將 lead 嘅真實公司資料組成一段 context，畀 LLM 參考。
+ * 避免 AI 冇資料亂作公司背景。
+ */
+function buildLeadContext(lead) {
+    const parts = [];
+    if (lead.company_name)
+        parts.push(`公司名稱：${lead.company_name}`);
+    if (lead.industry_tags?.length)
+        parts.push(`行業：${lead.industry_tags.join('、')}`);
+    if (lead.website)
+        parts.push(`官網：${lead.website}`);
+    if (lead.website_description)
+        parts.push(`公司簡介：${lead.website_description}`);
+    if (lead._scraped_services?.length)
+        parts.push(`對方服務/產品：${lead._scraped_services.join('、')}`);
+    if (lead._scraped_text) {
+        const excerpt = lead._scraped_text.slice(0, 2000);
+        parts.push(`官網內容節錄：\n${excerpt}`);
+    }
+    if (lead.address)
+        parts.push(`地址：${lead.address}`);
+    return parts.length
+        ? `\n【對方公司資料 — 只可引用以下事實，唔好自行虛構】\n${parts.join('\n')}\n`
+        : '';
+}
 async function login() {
     const r = await fetch(`${API}/auth/login`, {
         method: 'POST',
@@ -253,7 +279,7 @@ category 定義：interested=有興趣想了解；meeting=想開會/約時間；
  * 只對「有得傾」嘅分類回覆；auto_reply / not_interested 唔生成。
  */
 const REPLY_DRAFT_CATS = ['meeting', 'interested', 'question'];
-async function maybeDraftReply(lead, analysis, db) {
+async function maybeDraftReply(lead, analysis, replyText, db) {
     if (!REPLY_DRAFT_CATS.includes(analysis.category))
         return false;
     // 攞返原本封 outreach 個 subject 做 "Re:"，令回覆睇落同一 thread
@@ -264,17 +290,32 @@ async function maybeDraftReply(lead, analysis, db) {
         .limit(1)
         .toArray();
     const origSubject = orig[0]?.subject || '';
+    // 按回覆分類用唔同寫法指引
+    let categoryGuide = '';
+    if (analysis.category === 'meeting') {
+        categoryGuide = `寫法：確認 / 敲定會議時間，簡述議程，可提線上連結或到訪安排。`;
+    }
+    else if (analysis.category === 'interested') {
+        categoryGuide = `寫法：多謝對方嘅興趣，然後主動提議 2-3 個具體時段（例如「下星期二/三下午 2-4 點」）約一個 15-20 分鐘嘅線上 call 或到訪會面。語氣友善、唔好施壓。唔好堆砌產品資料。`;
+    }
+    else if (analysis.category === 'question') {
+        categoryGuide = `寫法：直接、誠實答返對方嘅問題（見下方原文）。唔確定就照講唔確定，唔好亂作。答完之後自然地提議約個 call 傾多啲。
+
+對方原文（節錄）：
+${(replyText || '').slice(0, 2000)}`;
+    }
+    const leadCtx = buildLeadContext(lead);
     const prompt = `你係 ${brand_1.BRAND_NAME} 嘅業務。潛在客戶「${lead.company_name || lead.email}」啱啱回覆咗我哋嘅 outreach email。
 請寫一封得體、簡短嘅跟進回覆（繁體中文，港式英文夾雜 OK）。淨係根據下面資料，唔好作事實、唔好過度承諾。
 
+${brand_1.BRAND_CONTEXT_BLOCK}
+${leadCtx}
 對方回覆分類：${analysis.category}
 對方回覆摘要：${analysis.summary}
 建議下一步：${analysis.next_step}
 
-寫法：
-- meeting：確認 / 敲定會議時間，簡述議程，可提線上連結或到訪安排。
-- interested：多謝興趣，補充最貼題嘅重點或下一步（提議通話 / 發資料），唔好堆砌。
-- question：直接、誠實答返對方條問題；唔確定就照講唔確定。
+${categoryGuide}
+
 結尾用返簽名：
 ${brand_1.BRAND_SIGNATURE}
 
@@ -298,17 +339,22 @@ ${brand_1.BRAND_SIGNATURE}
             body: c.body,
             status: 'pending',
             _via: 'hermes',
-            _type: 'reply', // 回應對方回覆（對比 outreach / followup）
+            _type: 'reply',
             _reply_category: analysis.category,
             created_at: nowIso(),
         });
+        const leadUpdate = { _reply_drafted: true };
+        // interested 但冇明確時間 → 標記待約時間
+        if (analysis.category === 'interested') {
+            leadUpdate._pending_meeting = true;
+        }
         await db
             .collection('leads')
-            .updateOne({ _id: lead._id }, { $set: { _reply_drafted: true } });
+            .updateOne({ _id: lead._id }, { $set: leadUpdate });
         return true;
     }
     catch {
-        return false; // Hermes 掛咗就唔生成，唔阻礙 reply-check
+        return false;
     }
 }
 /**
@@ -448,6 +494,8 @@ async function doReplyCheck(_p, db) {
                 color: '#567ebb',
                 created_at: nowIso(),
             });
+            // 有明確時間 → 清除待約時間標記
+            await db.collection('leads').updateOne({ _id: m.lead._id }, { $set: { _pending_meeting: false } });
             log(`  → 已建立會議事件：${m.lead.company_name}`);
         }
         // not_interested → 自動派 reoutreach draft（換策略再嘗試，最多 1 次）
@@ -480,7 +528,7 @@ async function doReplyCheck(_p, db) {
         catch { /* SSE 通知失敗唔影響主流程 */ }
         updated++;
         // 自動：一收到回覆即刻叫 Hermes 按內容生成「回應草稿」→ 入 Email Queue（等人 tick 完先發）
-        if (await maybeDraftReply(m.lead, a, db))
+        if (await maybeDraftReply(m.lead, a, m.text, db))
             replyDrafts++;
     }
     return { checked: leads.length, scanned, replies: updated, reply_drafts: replyDrafts, via };
@@ -826,13 +874,16 @@ async function doDraft(p, db) {
     const lead = await db.collection('leads').findOne({ _id });
     if (!lead)
         throw new Error('lead 唔存在');
+    const leadCtx = buildLeadContext(lead);
     const prompt = `Write a short, warm B2B outreach email in 繁體中文 (港式英文夾雜 OK) from ${brand_1.BRAND_NAME} (${brand_1.BRAND_TAGLINE})
 — a Hong Kong digital agency — to the company「${lead.company_name}」.
 
 ${brand_1.BRAND_CONTEXT_BLOCK}
-
+${leadCtx}
 Collaboration angle: ${lead._collab_primary || ''} — ${lead._collab_pitch || ''}.
 ${brand_1.BRAND_TONE_GUIDE}
+
+重要：只可以引用上面提供嘅公司資料。如果資料唔夠，寧願寫得籠統啲，都唔好虛構對方嘅業務細節。
 
 Output ONLY JSON with subject + body. Body MUST end with this signature block:
 
@@ -914,13 +965,16 @@ async function doFollowupDraft(p, db) {
     if (!lead)
         throw new Error('lead 唔存在');
     const count = (lead._followup_count || 0) + 1;
+    const leadCtx = buildLeadContext(lead);
     const prompt = `Write a SHORT follow-up email (#${count}) in 繁體中文 (港式英文夾雜 OK) from ${brand_1.BRAND_NAME} (${brand_1.BRAND_TAGLINE})
 to「${lead.company_name}」. We previously reached out but got no reply.
 
 ${brand_1.BRAND_CONTEXT_BLOCK}
-
+${leadCtx}
 Previous pitch angle: ${lead._collab_primary || ''} — ${lead._collab_pitch || ''}.
 ${brand_1.BRAND_TONE_GUIDE}
+
+重要：只可以引用上面提供嘅公司資料，唔好虛構對方嘅業務細節。
 
 This is follow-up #${count}. Keep it SHORTER and more casual than the first email.
 ${count === 1 ? 'Gently check if they saw the previous email. Offer a quick 15-min call.' : 'Final follow-up — very brief, friendly, no pressure. Mention you won\'t follow up again.'}
@@ -955,11 +1009,12 @@ async function doReoutreachDraft(p, db) {
     const lead = await db.collection('leads').findOne({ _id });
     if (!lead)
         throw new Error('lead 唔存在');
+    const leadCtx = buildLeadContext(lead);
     const prompt = `Write a B2B outreach email in 繁體中文 (港式英文夾雜 OK) from ${brand_1.BRAND_NAME} (${brand_1.BRAND_TAGLINE})
 to「${lead.company_name}」. They previously replied saying they're NOT interested.
 
 ${brand_1.BRAND_CONTEXT_BLOCK}
-
+${leadCtx}
 Previous angle was: ${lead._collab_primary || ''} — ${lead._collab_pitch || ''}
 Their reply summary: ${lead._reply_summary || 'declined / not interested'}
 
@@ -967,6 +1022,8 @@ Now try a COMPLETELY DIFFERENT angle and value proposition.
 Focus on a different service area or pain point they might have.
 Be respectful of their previous decline — acknowledge it briefly.
 ${brand_1.BRAND_TONE_GUIDE}
+
+重要：只可以引用上面提供嘅公司資料，唔好虛構對方嘅業務細節。
 
 Output ONLY JSON with subject + body. Body MUST end with this signature block:
 

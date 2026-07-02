@@ -180,7 +180,12 @@ const IconBtn = styled.button`
   }
 `;
 
-/* Language toggle button — globe icon + small badge, cycles on click */
+/* Language dropdown — hover to open */
+const LangWrap = styled.div`
+  position: relative;
+  &:hover > div { opacity: 1; visibility: visible; transform: translateY(0); }
+`;
+
 const LangToggle = styled.button`
   position: relative;
   display: flex;
@@ -200,9 +205,6 @@ const LangToggle = styled.button`
     background: ${({ theme }) => theme.colors.surfaceMuted};
     color: ${({ theme }) => theme.colors.textPrimary};
   }
-  &:active {
-    transform: scale(0.96);
-  }
 `;
 
 const LangBadge = styled.span`
@@ -218,6 +220,39 @@ const LangBadge = styled.span`
   color: ${({ theme }) => theme.colors.textPrimary};
   box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.border};
   pointer-events: none;
+`;
+
+const LangDropdown = styled.div`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  padding: 4px 0;
+  min-width: 100px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: all 0.15s;
+  z-index: 100;
+`;
+
+const LangOption = styled.button<{ $active?: boolean }>`
+  display: block;
+  width: 100%;
+  padding: 8px 14px;
+  border: none;
+  background: ${({ $active }) => ($active ? '#eff6ff' : 'transparent')};
+  color: ${({ $active, theme }) => ($active ? theme.colors.blue : theme.colors.textPrimary)};
+  font-size: 0.8125rem;
+  font-weight: ${({ $active }) => ($active ? 600 : 400)};
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.1s;
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
 `;
 
 /* Theme toggle (sun ↔ moon) */
@@ -307,10 +342,6 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
   const { mode, toggle: toggleTheme } = useThemeMode();
   const currentIdx = LANGUAGES.findIndex((l) => l.code === i18n.language);
   const currentLang = LANGUAGES[currentIdx >= 0 ? currentIdx : 0].label;
-  const cycleLang = () => {
-    const nextIdx = (currentIdx + 1) % LANGUAGES.length;
-    i18n.changeLanguage(LANGUAGES[nextIdx].code);
-  };
 
   return (
     <Wrapper>
@@ -333,10 +364,23 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
         <ThemeToggle onClick={toggleTheme} title={mode === 'light' ? 'Dark mode' : 'Light mode'}>
           {mode === 'light' ? <MoonIcon /> : <SunIcon />}
         </ThemeToggle>
-        <LangToggle onClick={cycleLang} title={t('topbar.language')}>
-          <GlobeIcon />
-          <LangBadge>{currentLang}</LangBadge>
-        </LangToggle>
+        <LangWrap>
+          <LangToggle title={t('topbar.language')}>
+            <GlobeIcon />
+            <LangBadge>{currentLang}</LangBadge>
+          </LangToggle>
+          <LangDropdown>
+            {LANGUAGES.map((lang) => (
+              <LangOption
+                key={lang.code}
+                $active={i18n.language === lang.code}
+                onClick={() => i18n.changeLanguage(lang.code)}
+              >
+                {lang.label}
+              </LangOption>
+            ))}
+          </LangDropdown>
+        </LangWrap>
         <IconBtn title={t('topbar.notifications')}><NotifBellIcon /></IconBtn>
         <UserAvatar>MM</UserAvatar>
         {actionLabel && onAction && (

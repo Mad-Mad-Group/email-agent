@@ -309,35 +309,6 @@ const Calendar: React.FC = () => {
 
   return (
     <Page>
-      {/* Toolbar */}
-      <div>
-        <Breadcrumb>
-          <li><a href="#">{t('common.home')}</a></li>
-          <li><a href="#">{t('nav.applications')}</a></li>
-          <li>{t('nav.calendar')}</li>
-        </Breadcrumb>
-        <ToolbarRow>
-          <div>
-            <PageTitle>{t('dashboard.welcomeBack', { name: 'Allie' })}</PageTitle>
-            <PageSub>{t('dashboard.newMessages', { msgCount: 12, notifCount: 7 })}</PageSub>
-          </div>
-          <StatsRow>
-            <StatItem>
-              <StatValue>8.18K <StatChange $up>1.3%</StatChange></StatValue>
-              <StatLabel>{t('calendar.income')}</StatLabel>
-            </StatItem>
-            <StatItem>
-              <StatValue>1.11K <StatChange $up>4.1%</StatChange></StatValue>
-              <StatLabel>{t('calendar.expense')}</StatLabel>
-            </StatItem>
-            <StatItem>
-              <StatValue>3.66K <StatChange $up={false}>7.5%</StatChange></StatValue>
-              <StatLabel>{t('calendar.revenue')}</StatLabel>
-            </StatItem>
-          </StatsRow>
-        </ToolbarRow>
-      </div>
-
       {/* Calendar */}
       <CalendarWrap>
         <CalHeader>

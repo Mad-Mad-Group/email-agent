@@ -34,6 +34,9 @@ export interface Lead {
   _reply_next_step?: string;
   _reply_via?: string;
   _reply_at?: string;
+  _pending_meeting?: boolean;
+  _followup_count?: number;
+  _has_email_draft?: boolean;
 }
 
 export interface LeadListParams {

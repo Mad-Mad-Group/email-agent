@@ -569,51 +569,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
           <MLink to="/dashboard"><IconHome /><span>{t('nav.myDashboard')}</span></MLink>
         </li>
         <li>
-          <MLinkButton $active={openMenus.applications || location.pathname.startsWith('/app-')} onClick={() => toggle('applications')}>
-            <IconApps /><span>{t('nav.applications')}</span>
-            <ArrowIcon $open={openMenus.applications}><IconArrow /></ArrowIcon>
-          </MLinkButton>
-          <SubMenu $open={openMenus.applications}>
-            <li><SubLink to="/app-calendar">{t('nav.calendar')}</SubLink></li>
-            <li><SubLink to="/app-calendar-tui">{t('nav.tuiCalendar')}</SubLink></li>
-            <li><SubLink to="/app-email">{t('nav.emailApp')}</SubLink></li>
-            <li><SubLink to="/app-chat">{t('nav.chatApp')}</SubLink></li>
-            <li><SubLink to="/app-campaigns">{t('nav.campaigns')}</SubLink></li>
-            <li><SubLink to="/app-social">{t('nav.socialApp')}</SubLink></li>
-            <li><SubLink to="/app-file-manager">{t('nav.fileManager')}</SubLink></li>
-            <li><SubLink to="/app-todo">{t('nav.todoApp')}</SubLink></li>
-            <li><SubLink to="/app-contacts">{t('nav.contacts')}</SubLink></li>
-            <li><SubLink to="/app-tasks">{t('nav.tasks')}</SubLink></li>
-            <li><SubLink to="/app-kanban">{t('nav.kanbanBoard')}</SubLink></li>
-            <li><SubLink to="/app-blog">{t('nav.blog')}</SubLink></li>
-          </SubMenu>
-        </li>
-        <li>
-          <MLinkButton $active={openMenus.account} onClick={() => toggle('account')}>
-            <IconAccount /><span>{t('nav.account')}</span>
-            <ArrowIcon $open={openMenus.account}><IconArrow /></ArrowIcon>
-          </MLinkButton>
-          <SubMenu $open={openMenus.account}>
-            <li><SubLink to="/account-settings">{t('nav.accountSettings')}</SubLink></li>
-            <li><SubLink to="/account-invoices">{t('nav.invoiceList')}</SubLink></li>
-            <li><SubLink to="/account-create-invoice">{t('nav.createInvoices')}</SubLink></li>
-            <li><SubLink to="/account-billing">{t('nav.billing')}</SubLink></li>
-          </SubMenu>
-        </li>
-        <li>
-          <MLink to="/transactions"><IconTransactions /><span>{t('nav.transactions')}</span></MLink>
-        </li>
-        <li>
-          <MLink to="/portfolio"><IconPortfolio /><span>{t('nav.portfolio')}</span></MLink>
-        </li>
-        <li>
-          <MLink to="/coin-details"><IconCoin /><span>{t('nav.coinDetails')}</span></MLink>
-        </li>
-        <li>
-          <MLink to="/market-capital"><IconMarket /><span>{t('nav.marketCapital')}</span></MLink>
-        </li>
-        <li>
-          <MLink to="/bank-accounts"><IconBankAccounts /><span>{t('nav.bankAccounts')}</span></MLink>
+          <MLink to="/app-calendar"><IconSchedule /><span>{t('nav.calendar')}</span></MLink>
         </li>
       </MenuList>
 
@@ -623,47 +579,12 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
           <DividerLabel>{t('nav.cms')}</DividerLabel>
           <DividerSmall>{t('nav.cmsDesc')}</DividerSmall>
         </Divider>
-        <li><MLink to="/cms-leads"><IconLeads /><span>{t('nav.leadPool')}</span></MLink></li>
         <li><MLink to="/cms-search"><IconSearch /><span>{t('nav.leadSearch')}</span></MLink></li>
-        <li><MLink to="/cms-email-queue"><IconEmailQueue /><span>{t('nav.outbox')}</span></MLink></li>
+        <li><MLink to="/cms-leads"><IconLeads /><span>{t('nav.leadPool')}</span></MLink></li>
         <li><MLink to="/cms-tasks"><IconTasks /><span>{t('nav.workflows')}</span></MLink></li>
         <li><MLink to="/cms-agents"><IconAgent /><span>{t('nav.agents')}</span></MLink></li>
         <li><MLink to="/cms-users"><IconUsers /><span>{t('nav.team')}</span></MLink></li>
         <li><MLink to="/cms-settings"><IconSettings /><span>{t('nav.settings')}</span></MLink></li>
-      </MenuList>
-
-      {/* RESOURCES section */}
-      <MenuList>
-        <Divider>
-          <DividerLabel>{t('nav.resources')}</DividerLabel>
-          <DividerSmall>{t('nav.resourcesDesc')}</DividerSmall>
-        </Divider>
-        <li>
-          <MLinkButton $active={openMenus.auth} onClick={() => toggle('auth')}>
-            <IconShield /><span>{t('nav.authentication')}</span>
-            <ArrowIcon $open={openMenus.auth}><IconArrow /></ArrowIcon>
-          </MLinkButton>
-          <SubMenu $open={openMenus.auth}>
-            <li><SubLink to="/auth-404">{t('nav.auth404')}</SubLink></li>
-            <li><SubLink to="/auth-403">{t('nav.auth403')}</SubLink></li>
-            <li><SubLink to="/auth-500">{t('nav.auth500')}</SubLink></li>
-            <li><SubLink to="/auth-signin">{t('nav.signIn')}</SubLink></li>
-            <li><SubLink to="/auth-signup">{t('nav.signUp')}</SubLink></li>
-            <li><SubLink to="/auth-password-reset">{t('nav.passwordReset')}</SubLink></li>
-            <li><SubLink to="/auth-two-step">{t('nav.twoStepAuth')}</SubLink></li>
-            <li><SubLink to="/auth-lockscreen">{t('nav.lockscreen')}</SubLink></li>
-            <li><SubLink to="/auth-maintenance">{t('nav.maintenance')}</SubLink></li>
-          </SubMenu>
-        </li>
-        <li>
-          <MLink to="/docs"><IconDocs /><span>{t('nav.documentation')}</span></MLink>
-        </li>
-        <li>
-          <MLink to="/changelog">
-            <IconChangelog /><span>{t('nav.changelog')}</span>
-            <Badge>v1.2.7</Badge>
-          </MLink>
-        </li>
       </MenuList>
       </ScrollArea>
 

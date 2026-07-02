@@ -2,9 +2,10 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useEmailQueue, useApproveEmail, useSendEmail } from '../../api/hooks';
+import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail } from '../../api/hooks';
 import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
+import client from '../../api/client';
 import { media } from '../../styles/media';
 
 /* ══════════════════════════════════════
@@ -298,6 +299,28 @@ const TabCount = styled.span<{ $active?: boolean }>`
     ? '#2563eb'
     : theme.colors.surfaceMuted};
   color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textTertiary};
+`;
+
+const SubPillRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px ${({ theme }) => theme.spacing.lg}px;
+  background: ${({ theme }) => theme.colors.surface};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const SubPill = styled.button<{ $active?: boolean }>`
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: ${({ $active }) => ($active ? 600 : 400)};
+  border: 1px solid ${({ $active, theme }) => ($active ? theme.colors.blue : theme.colors.border)};
+  background: ${({ $active }) => ($active ? '#eff6ff' : 'transparent')};
+  color: ${({ $active, theme }) => ($active ? theme.colors.blue : theme.colors.textSecondary)};
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover { border-color: ${({ theme }) => theme.colors.blue}; }
 `;
 
 /* ── Search Bar ── */
@@ -745,6 +768,7 @@ const DpHeaderInfo = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 4px;
 `;
 
@@ -893,11 +917,22 @@ const NEXT_STATUS: Record<string, string> = {
 };
 
 const REPLY_CATEGORY_LABEL: Record<string, { text: string; bg: string; fg: string }> = {
-  interested:     { text: '有興趣',   bg: '#dcfce7', fg: '#16a34a' },
-  not_interested: { text: '冇興趣',   bg: '#fee2e2', fg: '#dc2626' },
-  meeting:        { text: '約時間',   bg: '#dbeafe', fg: '#2563eb' },
-  auto_reply:     { text: '自動回覆', bg: '#f3f4f6', fg: '#6b7280' },
-  question:       { text: '有問題',   bg: '#fef3c7', fg: '#d97706' },
+  interested:      { text: '有興趣',       bg: '#dcfce7', fg: '#16a34a' },
+  interested_pending: { text: '有興趣 · 待約時間', bg: '#fef3c7', fg: '#b45309' },
+  not_interested:  { text: '冇興趣',       bg: '#fee2e2', fg: '#dc2626' },
+  meeting:         { text: '約時間',       bg: '#dbeafe', fg: '#2563eb' },
+  auto_reply:      { text: '自動回覆',     bg: '#f3f4f6', fg: '#6b7280' },
+  question:        { text: '有問題',       bg: '#fef3c7', fg: '#d97706' },
+};
+
+/** 根據 lead 狀態決定顯示邊個 reply badge */
+const getReplyBadge = (lead: Lead) => {
+  if (!lead._replied) return null;
+  // interested + 仲未約到時間
+  if (lead._reply_category === 'interested' && lead._pending_meeting) {
+    return REPLY_CATEGORY_LABEL.interested_pending;
+  }
+  return REPLY_CATEGORY_LABEL[lead._reply_category || ''] || { text: lead._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
 };
 
 const ReplyBadge = styled.span<{ $bg: string; $fg: string }>`
@@ -916,126 +951,167 @@ const NoReplyText = styled.span`
   color: ${({ theme }) => theme.colors.textTertiary};
 `;
 
-/* ── Reply / follow-up draft（撳開 lead 就睇到，data 由 email_queue 嚟）── */
-const DraftBox = styled.div`
+/* ── Lead Emails section（撳開 lead 就睇到所有相關 email） ── */
+
+const EMAIL_TYPE_LABEL: Record<string, { text: string; bg: string; fg: string }> = {
+  reply:      { text: '回應',   bg: '#dcfce7', fg: '#15803d' },
+  followup:   { text: '跟進',   bg: '#fef3c7', fg: '#b45309' },
+  reoutreach: { text: '再開發', bg: '#e0e7ff', fg: '#4338ca' },
+};
+
+const EMAIL_STATUS_COLOR: Record<string, { bg: string; fg: string }> = {
+  pending:  { bg: '#fef3c7', fg: '#d97706' },
+  approved: { bg: '#dcfce7', fg: '#16a34a' },
+  sent:     { bg: '#dbeafe', fg: '#2563eb' },
+  rejected: { bg: '#fee2e2', fg: '#dc2626' },
+  failed:   { bg: '#f3f4f6', fg: '#475569' },
+};
+
+const EmailCard = styled.div<{ $expanded?: boolean }>`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
-  padding: ${({ theme }) => theme.spacing.md}px;
   margin-bottom: ${({ theme }) => theme.spacing.sm}px;
   background: ${({ theme }) => theme.colors.surfaceMuted};
+  overflow: hidden;
 `;
-const DraftHead = styled.div`
+const EmailCardHead = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
+  padding: 10px ${({ theme }) => theme.spacing.md}px;
+  cursor: pointer;
+  &:hover { background: ${({ theme }) => theme.colors.surface}; }
 `;
-const DraftSubject = styled.span`
+const EmailCardSubject = styled.span`
   font-weight: 600;
   font-size: 0.8125rem;
   color: ${({ theme }) => theme.colors.textPrimary};
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
-const DraftBodyText = styled.div`
+const EmailCardDate = styled.span`
+  font-size: 0.6875rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  white-space: nowrap;
+`;
+const EmailCardBody = styled.div`
+  padding: 0 ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.md}px;
+`;
+const EmailBodyContent = styled.div`
   white-space: pre-wrap;
   font-size: 0.8125rem;
   line-height: 1.6;
   color: ${({ theme }) => theme.colors.textSecondary};
   max-height: 260px;
   overflow-y: auto;
+  padding: ${({ theme }) => theme.spacing.sm}px;
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: ${({ theme }) => theme.radii.control}px;
 `;
-const DraftMeta = styled.div`
+const EmailCardMeta = styled.div`
   margin-top: 6px;
   font-size: 0.6875rem;
   color: ${({ theme }) => theme.colors.textTertiary};
 `;
-const DraftActions = styled.div`
+const EmailCardActions = styled.div`
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  gap: 8px;
   margin-top: 10px;
 `;
-const DraftCheckLabel = styled.label`
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.75rem;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  cursor: pointer;
-  user-select: none;
-`;
-const DraftSendBtn = styled.button`
+const EmailActionBtn = styled.button<{ $bg: string; $fg: string }>`
   padding: 5px 14px;
   border: none;
-  border-radius: ${({ theme }) => theme.radii.control}px;
+  border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: #fff;
-  background: ${({ theme }) => theme.colors.blue};
+  color: ${({ $fg }) => $fg};
+  background: ${({ $bg }) => $bg};
   cursor: pointer;
-  &:disabled {
-    opacity: 0.45;
-    cursor: not-allowed;
-  }
+  transition: opacity 0.15s;
+  &:hover:not(:disabled) { opacity: 0.85; }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
 `;
 
-const DRAFT_TYPE_LABEL: Record<string, { text: string; bg: string; fg: string }> = {
-  reply: { text: '回應', bg: '#dcfce7', fg: '#15803d' },
-  followup: { text: '跟進', bg: '#fef3c7', fg: '#b45309' },
-};
-
-/** 撳開 lead 時，show 佢喺 email_queue 嘅待發送草稿（回應 / 跟進 / 開發信），
- *  剔「已檢視」→ 一鍵批准並發送（send 前會自動 approve）。 */
-const LeadReplyDraft: React.FC<{ companyName: string }> = ({ companyName }) => {
-  const { data } = useEmailQueue({ search: companyName, status: 'pending' });
+const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ companyName, leadId }) => {
+  const { data } = useEmailQueue({ search: companyName });
   const approve = useApproveEmail();
+  const reject = useRejectEmail();
   const send = useSendEmail();
-  const [checked, setChecked] = useState<Record<string, boolean>>({});
-  const drafts = ((data?.data as EmailItem[]) || [])
-    .filter((e) => (e.company_name || '') === companyName)
-    .sort((a, b) => (b._type === 'reply' ? 1 : 0) - (a._type === 'reply' ? 1 : 0));
-  if (!drafts.length) return null;
-  const busy = approve.isPending || send.isPending;
-  const handleSend = (d: EmailItem) => {
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+
+  const emails = ((data?.data as EmailItem[]) || [])
+    .filter((e) => (e.lead_id === leadId) || (e.company_name || '') === companyName)
+    .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+
+  if (!emails.length) return null;
+
+  const busy = approve.isPending || reject.isPending || send.isPending;
+
+  const handleApproveAndSend = (d: EmailItem) => {
     if (d.status === 'approved') send.mutate(d._id);
     else approve.mutate(d._id, { onSuccess: () => send.mutate(d._id) });
   };
+
+  const handleReject = (id: string) => {
+    const reason = window.prompt('拒絕原因（可空）') || undefined;
+    reject.mutate({ id, reason });
+  };
+
   return (
     <>
-      <DpSectionTitle>待發送草稿</DpSectionTitle>
-      {drafts.map((d) => {
-        const tag = d._type ? DRAFT_TYPE_LABEL[d._type] : null;
+      <DpSectionTitle>郵件記錄 ({emails.length})</DpSectionTitle>
+      {emails.map((d) => {
+        const typeTag = d._type ? EMAIL_TYPE_LABEL[d._type] : null;
+        const statusColor = EMAIL_STATUS_COLOR[d.status || 'pending'] || EMAIL_STATUS_COLOR.pending;
+        const isOpen = !!expanded[d._id];
+
         return (
-          <DraftBox key={d._id}>
-            <DraftHead>
-              {tag && (
-                <ReplyBadge $bg={tag.bg} $fg={tag.fg}>
-                  {tag.text}
-                </ReplyBadge>
-              )}
-              <DraftSubject>{d.subject || '(冇標題)'}</DraftSubject>
-            </DraftHead>
-            <DraftBodyText>{d.body || '—'}</DraftBodyText>
-            <DraftMeta>寄往 {d.to_email || '—'}</DraftMeta>
-            <DraftActions>
-              <DraftCheckLabel>
-                <input
-                  type="checkbox"
-                  checked={!!checked[d._id]}
-                  onChange={(e) =>
-                    setChecked((s) => ({ ...s, [d._id]: e.target.checked }))
-                  }
-                />
-                我已檢視，批准發送
-              </DraftCheckLabel>
-              <DraftSendBtn
-                disabled={!checked[d._id] || busy}
-                onClick={() => handleSend(d)}
-              >
-                {busy ? '發送中…' : '發送'}
-              </DraftSendBtn>
-            </DraftActions>
-          </DraftBox>
+          <EmailCard key={d._id}>
+            <EmailCardHead onClick={() => setExpanded((s) => ({ ...s, [d._id]: !s[d._id] }))}>
+              {typeTag && <ReplyBadge $bg={typeTag.bg} $fg={typeTag.fg}>{typeTag.text}</ReplyBadge>}
+              <ReplyBadge $bg={statusColor.bg} $fg={statusColor.fg}>{d.status || 'pending'}</ReplyBadge>
+              <EmailCardSubject>{d.subject || '(冇標題)'}</EmailCardSubject>
+              <EmailCardDate>
+                {d.created_at ? new Date(d.created_at).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : ''}
+              </EmailCardDate>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{isOpen ? '▲' : '▼'}</span>
+            </EmailCardHead>
+
+            {isOpen && (
+              <EmailCardBody>
+                <EmailBodyContent dangerouslySetInnerHTML={{ __html: d.body || '—' }} />
+                <EmailCardMeta>寄往 {d.to_email || '—'}</EmailCardMeta>
+
+                <EmailCardActions>
+                  {d.status === 'pending' && (
+                    <>
+                      <EmailActionBtn $bg="#2563eb" $fg="#fff" disabled={busy} onClick={() => handleApproveAndSend(d)}>
+                        {busy ? '處理中…' : '批准並發送'}
+                      </EmailActionBtn>
+                      <EmailActionBtn $bg="#dc2626" $fg="#fff" disabled={busy} onClick={() => handleReject(d._id)}>
+                        拒絕
+                      </EmailActionBtn>
+                    </>
+                  )}
+                  {d.status === 'approved' && (
+                    <EmailActionBtn $bg="#3b82f6" $fg="#fff" disabled={busy} onClick={() => send.mutate(d._id)}>
+                      {busy ? '處理中…' : '發送'}
+                    </EmailActionBtn>
+                  )}
+                  {d.status === 'sent' && (
+                    <span style={{ fontSize: '0.75rem', color: '#16a34a' }}>✓ 已發送 {d.sent_at ? new Date(d.sent_at).toLocaleString('zh-HK') : ''}</span>
+                  )}
+                  {d.status === 'rejected' && (
+                    <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>✗ 已拒絕</span>
+                  )}
+                </EmailCardActions>
+              </EmailCardBody>
+            )}
+          </EmailCard>
         );
       })}
     </>
@@ -1044,9 +1120,16 @@ const LeadReplyDraft: React.FC<{ companyName: string }> = ({ companyName }) => {
 
 /* ── Tabs config (labels moved inside component for i18n) ── */
 
+interface SubTab {
+  key: string;
+  label: string;
+}
 interface TabDef {
   key: string;
   label: string;
+  color: string;
+  subs: SubTab[];
+  filter: (l: Lead, sub: string) => boolean;
 }
 
 /* ══════════════════════════════════════
@@ -1060,11 +1143,63 @@ const LIMIT = 10;
 const Leads: React.FC = () => {
   const { t } = useTranslation();
 
+  const isNew = (l: Lead) => l.status === 'new' || l.status === null || l.status === undefined;
+
   const TABS: TabDef[] = [
-    { key: '', label: t('leads.allLeads') },
-    { key: 'new', label: t('leads.new') },
-    { key: 'pending', label: t('leads.pending') },
-    { key: 'contacted', label: t('leads.contacted') },
+    {
+      key: 'preparing',
+      label: '準備中',
+      color: '#2563eb',
+      subs: [
+        { key: '', label: '全部' },
+        { key: 'new', label: '未處理' },
+        { key: 'draft', label: '草稿待審' },
+      ],
+      filter: (l, sub) => {
+        if (!isNew(l) && l.status !== 'pending') return false;
+        if (sub === 'new') return isNew(l);
+        if (sub === 'draft') return l.status === 'pending';
+        return true;
+      },
+    },
+    {
+      key: 'awaiting',
+      label: '等待回覆',
+      color: '#d97706',
+      subs: [
+        { key: '', label: '全部' },
+        { key: 'no_followup', label: '待跟進' },
+        { key: 'has_followup', label: '已跟進' },
+      ],
+      filter: (l, sub) => {
+        if (l.status !== 'contacted') return false;
+        if (l._replied) return false;
+        if (sub === 'no_followup') return !l._followup_count;
+        if (sub === 'has_followup') return (l._followup_count || 0) > 0;
+        return true;
+      },
+    },
+    {
+      key: 'replied',
+      label: '已回覆',
+      color: '#16a34a',
+      subs: [
+        { key: '', label: '全部' },
+        { key: 'interested', label: '有興趣' },
+        { key: 'meeting', label: '約會議' },
+        { key: 'question', label: '問問題' },
+        { key: 'not_interested', label: '冇興趣' },
+      ],
+      filter: (l, sub) => {
+        if (l.status !== 'contacted') return false;
+        if (!l._replied) return false;
+        if (sub === 'interested') return l._reply_category === 'interested';
+        if (sub === 'meeting') return l._reply_category === 'meeting';
+        if (sub === 'question') return l._reply_category === 'question';
+        if (sub === 'not_interested') return l._reply_category === 'not_interested';
+        return true;
+      },
+    },
   ];
 
   const STATUS_LABEL: Record<string, string> = {
@@ -1074,7 +1209,8 @@ const Leads: React.FC = () => {
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [activeTab, setActiveTab] = useState('preparing');
+  const [activeSub, setActiveSub] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [form, setForm] = useState({
@@ -1084,6 +1220,34 @@ const Leads: React.FC = () => {
     website: '',
     address: '',
   });
+  const [replyChecking, setReplyChecking] = useState(false);
+  const [replyCheckMsg, setReplyCheckMsg] = useState('');
+  const [followupChecking, setFollowupChecking] = useState(false);
+  const [followupCheckMsg, setFollowupCheckMsg] = useState('');
+
+  const handleCheckReplies = async () => {
+    setReplyChecking(true); setReplyCheckMsg('');
+    try {
+      await client.post('/jobs/check-replies/run');
+      setReplyCheckMsg('已派發檢查回覆任務');
+      setTimeout(() => setReplyCheckMsg(''), 4000);
+    } catch (err: any) {
+      setReplyCheckMsg('觸發失敗: ' + (err?.message || '未知錯誤'));
+      setTimeout(() => setReplyCheckMsg(''), 5000);
+    } finally { setReplyChecking(false); }
+  };
+
+  const handleCheckFollowups = async () => {
+    setFollowupChecking(true); setFollowupCheckMsg('');
+    try {
+      await client.post('/jobs/check-followups/run');
+      setFollowupCheckMsg('已派發檢查跟進任務');
+      setTimeout(() => setFollowupCheckMsg(''), 4000);
+    } catch (err: any) {
+      setFollowupCheckMsg('觸發失敗: ' + (err?.message || '未知錯誤'));
+      setTimeout(() => setFollowupCheckMsg(''), 5000);
+    } finally { setFollowupChecking(false); }
+  };
 
   // 攞可攞到嘅全部 leads（backend DTO 限 limit ≤ 100）。
   // status/search filtering client side 做。
@@ -1107,35 +1271,37 @@ const Leads: React.FC = () => {
                (l.phone || '').toLowerCase().includes(q);
       })
     : allLeads;
-  const statusFiltered = statusFilter
-    ? searchFiltered.filter(l =>
-        // 「新進」tab (key='new') 要 cover backend 寫嘅 null/undefined（同 KPI 一致，
-        // 否則 KPI counter 顯示到數字但 filter 出 0 條）
-        statusFilter === 'new'
-          ? l.status === 'new' || l.status === null || l.status === undefined
-          : l.status === statusFilter,
-      )
-    : searchFiltered;
+  const curTab = TABS.find(t => t.key === activeTab) || TABS[0];
+  const tabFiltered = searchFiltered.filter(l => curTab.filter(l, activeSub));
 
   // Client-side pagination
-  const total = statusFiltered.length;
+  const total = tabFiltered.length;
   const totalPages = Math.ceil(total / LIMIT);
-  const leads = statusFiltered.slice((page - 1) * LIMIT, page * LIMIT);
+  const leads = tabFiltered.slice((page - 1) * LIMIT, page * LIMIT);
 
-  // KPI 用全量數據計（唔受 filter 影響）
-  // Backend convention: `status = null` 表示 NEW (see leads.service.ts findAll，
-  // lead.schema.ts comment line 16) — KPI counter 要 cover 呢個 case，
-  // 否則會永遠顯示 0。
-  const stats = useMemo(() => {
-    const isNew = (l: Lead) =>
-      l.status === 'new' || l.status === null || l.status === undefined;
-    return {
-      total: allLeads.length,
-      new: allLeads.filter(isNew).length,
-      pending: allLeads.filter(l => l.status === 'pending').length,
-      contacted: allLeads.filter(l => l.status === 'contacted').length,
-    };
+  // 每個 tab 嘅 count（用全量數據計，唔受 search 影響）
+  const tabCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const tab of TABS) {
+      counts[tab.key] = allLeads.filter(l => tab.filter(l, '')).length;
+    }
+    return counts;
   }, [allLeads]);
+
+  // Sub-tab counts（受主 tab 影響）
+  const subCounts = useMemo(() => {
+    const mainFiltered = allLeads.filter(l => curTab.filter(l, ''));
+    const counts: Record<string, number> = {};
+    for (const sub of curTab.subs) {
+      counts[sub.key] = sub.key === ''
+        ? mainFiltered.length
+        : mainFiltered.filter(l => curTab.filter(l, sub.key)).length;
+    }
+    return counts;
+  }, [allLeads, curTab]);
+
+  // 保留 stats.total 畀 KPI header
+  const stats = useMemo(() => ({ total: allLeads.length }), [allLeads]);
 
   const handleDelete = (id: string) => {
     if (window.confirm(t('leads.confirmDelete'))) {
@@ -1148,7 +1314,13 @@ const Leads: React.FC = () => {
   };
 
   const handleTabClick = (key: string) => {
-    setStatusFilter(key);
+    setActiveTab(key);
+    setActiveSub('');
+    setPage(1);
+  };
+
+  const handleSubClick = (key: string) => {
+    setActiveSub(key);
     setPage(1);
   };
 
@@ -1166,7 +1338,7 @@ const Leads: React.FC = () => {
 
   return (
     <Page>
-      {/* KPI Cards */}
+      {/* KPI Cards — 同 tab 對應 */}
       <KpiRow>
         <KpiCard>
           <KpiIconWrap $bg="#dbeafe" $fg="#3b82f6">
@@ -1182,8 +1354,8 @@ const Leads: React.FC = () => {
             <IconSparkle />
           </KpiIconWrap>
           <KpiText>
-            <KpiValue>{stats.new}</KpiValue>
-            <KpiLabel>{t('leads.newLeads')}</KpiLabel>
+            <KpiValue>{tabCounts.preparing || 0}</KpiValue>
+            <KpiLabel>準備中</KpiLabel>
           </KpiText>
         </KpiCard>
         <KpiCard>
@@ -1191,8 +1363,8 @@ const Leads: React.FC = () => {
             <IconClock />
           </KpiIconWrap>
           <KpiText>
-            <KpiValue>{stats.pending}</KpiValue>
-            <KpiLabel>{t('leads.pending')}</KpiLabel>
+            <KpiValue>{tabCounts.awaiting || 0}</KpiValue>
+            <KpiLabel>等待回覆</KpiLabel>
           </KpiText>
         </KpiCard>
         <KpiCard>
@@ -1200,8 +1372,8 @@ const Leads: React.FC = () => {
             <IconCheckCircle />
           </KpiIconWrap>
           <KpiText>
-            <KpiValue>{stats.contacted}</KpiValue>
-            <KpiLabel>{t('leads.contacted')}</KpiLabel>
+            <KpiValue>{tabCounts.replied || 0}</KpiValue>
+            <KpiLabel>已回覆</KpiLabel>
           </KpiText>
         </KpiCard>
       </KpiRow>
@@ -1212,6 +1384,14 @@ const Leads: React.FC = () => {
         <ProfileInfo>
           <ProfileTitle>{t('leads.totalInSystem', { count: stats.total })}</ProfileTitle>
         </ProfileInfo>
+        <AddBtn onClick={handleCheckReplies} disabled={replyChecking} style={{ background: '#8b5cf6' }}>
+          {replyChecking ? '檢查中…' : '檢查回覆'}
+        </AddBtn>
+        {replyCheckMsg && <span style={{ fontSize: '0.75rem', color: replyCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{replyCheckMsg}</span>}
+        <AddBtn onClick={handleCheckFollowups} disabled={followupChecking} style={{ background: '#d97706' }}>
+          {followupChecking ? '檢查中…' : '檢查跟進'}
+        </AddBtn>
+        {followupCheckMsg && <span style={{ fontSize: '0.75rem', color: followupCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{followupCheckMsg}</span>}
         <AddBtn onClick={() => setShowAdd(true)}>
           <IconPlus />
           {t('leads.addLead')}
@@ -1224,18 +1404,32 @@ const Leads: React.FC = () => {
           {TABS.map(tab => (
             <TabItem
               key={tab.key}
-              $active={statusFilter === tab.key}
+              $active={activeTab === tab.key}
               onClick={() => handleTabClick(tab.key)}
+              style={activeTab === tab.key ? { borderBottomColor: tab.color, color: tab.color } : undefined}
             >
               {tab.label}
-              <TabCount>
-                {tab.key === ''
-                  ? stats.total
-                  : stats[tab.key as keyof typeof stats] ?? 0}
+              <TabCount $active={activeTab === tab.key} style={activeTab === tab.key ? { background: tab.color } : undefined}>
+                {tabCounts[tab.key] || 0}
               </TabCount>
             </TabItem>
           ))}
         </TabsRow>
+
+        {curTab.subs.length > 1 && (
+          <SubPillRow>
+            {curTab.subs.map(sub => (
+              <SubPill
+                key={sub.key}
+                $active={activeSub === sub.key}
+                onClick={() => handleSubClick(sub.key)}
+              >
+                {sub.label}
+                <span style={{ marginLeft: 4, opacity: 0.7 }}>{subCounts[sub.key] ?? 0}</span>
+              </SubPill>
+            ))}
+          </SubPillRow>
+        )}
 
         <SearchBar>
           <SearchWrap>
@@ -1257,7 +1451,6 @@ const Leads: React.FC = () => {
                   <th>{t('leads.name')} <IconSortArrow /></th>
                   <th>{t('leads.email')}</th>
                   <th>{t('leads.phone')}</th>
-                  <th>{t('leads.industry')}</th>
                   <th>回覆</th>
                   <th>{t('leads.importedAt')}</th>
                   <th>{t('leads.action')}</th>
@@ -1266,7 +1459,7 @@ const Leads: React.FC = () => {
               <tbody>
                 {error ? (
                   <tr>
-                    <EmptyCell colSpan={9}>
+                    <EmptyCell colSpan={8}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
                         <strong style={{ color: '#dc2626' }}>{t('common.error')}</strong>
                         <span style={{ color: '#7f8c8d', fontSize: 13 }}>
@@ -1291,9 +1484,9 @@ const Leads: React.FC = () => {
                     </EmptyCell>
                   </tr>
                 ) : isLoading ? (
-                  <tr><EmptyCell colSpan={9}>{t('leads.loading')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={8}>{t('leads.loading')}</EmptyCell></tr>
                 ) : leads.length === 0 ? (
-                  <tr><EmptyCell colSpan={9}>{t('leads.noLeads')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={8}>{t('leads.noLeads')}</EmptyCell></tr>
                 ) : (
                   leads.map((lead, i) => {
                     const name = lead.company_name || 'Unknown';
@@ -1315,18 +1508,12 @@ const Leads: React.FC = () => {
                         <td>{lead.email || '—'}</td>
                         <td>{lead.phone || '—'}</td>
                         <td>
-                          <TagList>
-                            {(lead.industry_tags ?? []).slice(0, 3).map(tag => (
-                              <Tag key={tag}>{tag}</Tag>
-                            ))}
-                            {(!lead.industry_tags || lead.industry_tags.length === 0) && '—'}
-                          </TagList>
-                        </td>
-                        <td>
-                          {lead._replied ? (() => {
-                            const cat = REPLY_CATEGORY_LABEL[lead._reply_category || ''] || { text: lead._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
-                            return <ReplyBadge $bg={cat.bg} $fg={cat.fg}>{cat.text}</ReplyBadge>;
-                          })() : <NoReplyText>—</NoReplyText>}
+                          {(() => {
+                            const badge = getReplyBadge(lead);
+                            return badge
+                              ? <ReplyBadge $bg={badge.bg} $fg={badge.fg}>{badge.text}</ReplyBadge>
+                              : <NoReplyText>—</NoReplyText>;
+                          })()}
                         </td>
                         <td>{lead._imported_at ? new Date(lead._imported_at).toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</td>
                         <td>
@@ -1501,7 +1688,7 @@ const Leads: React.FC = () => {
 
               {/* Reply Info */}
               {selectedLead._replied && (() => {
-                const cat = REPLY_CATEGORY_LABEL[selectedLead._reply_category || ''] || { text: selectedLead._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
+                const cat = getReplyBadge(selectedLead) || { text: '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
                 return (
                   <>
                     <DpSectionTitle>回覆資訊</DpSectionTitle>
@@ -1536,7 +1723,7 @@ const Leads: React.FC = () => {
               })()}
 
               {selectedLead.company_name && (
-                <LeadReplyDraft companyName={selectedLead.company_name} />
+                <LeadEmails companyName={selectedLead.company_name} leadId={selectedLead._id} />
               )}
 
               {/* Timeline */}
@@ -1558,7 +1745,7 @@ const Leads: React.FC = () => {
                 )}
                 {selectedLead._replied && (
                   <DpTimelineItem $active>
-                    收到回覆 — {REPLY_CATEGORY_LABEL[selectedLead._reply_category || '']?.text || selectedLead._reply_category || '已回覆'}
+                    收到回覆 — {getReplyBadge(selectedLead)?.text || '已回覆'}
                   </DpTimelineItem>
                 )}
               </DpTimeline>
