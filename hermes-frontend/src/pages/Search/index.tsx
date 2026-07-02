@@ -52,67 +52,210 @@ const Card = styled.div`
   box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 
-const CardBody = styled.div`padding: ${({ theme }) => theme.spacing.md}px;`;
+const CardBody = styled.div`padding: 20px;`;
 
 /* ── Form ── */
 
-const Form = styled.form`
-  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: ${({ theme }) => theme.spacing.md}px;
-  ${media.tabletDown} { grid-template-columns: 1fr 1fr; }
-  ${media.mobile} { grid-template-columns: 1fr; }
+/* ── Glow animation ── */
+const glowPulse = keyframes`
+  0%, 100% { box-shadow: 0 0 8px rgba(37,99,235,0.08), 0 0 20px rgba(37,99,235,0.03); }
+  50% { box-shadow: 0 0 14px rgba(37,99,235,0.14), 0 0 32px rgba(37,99,235,0.06); }
 `;
 
-const FormGroup = styled.div`display: flex; flex-direction: column; gap: 4px;`;
-
-const Label = styled.label`
-  font-size: 0.75rem; font-weight: 600;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  text-transform: uppercase; letter-spacing: 0.04em;
+const SearchHero = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 56px 28px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #fdfdff 0%, #f9faff 50%, #fafbff 100%);
+  box-shadow: 0 1px 4px rgba(37,99,235,0.04);
+  ${media.mobile} { flex-direction: column; padding: 28px 20px; gap: 28px; }
 `;
 
-const Input = styled.input`
-  padding: 9px ${({ theme }) => theme.spacing.md}px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.control}px;
-  font-size: 0.8125rem; outline: none;
+/* A区: 左侧输入 */
+const AreaA = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex: 1;
+  min-width: 0;
+  ${media.mobile} { flex-direction: column; width: 100%; gap: 16px; }
+`;
+
+const TextFields = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  flex: 2;
+  min-width: 0;
+`;
+
+const UnderlineInput = styled.input`
+  width: 100%;
+  padding: 8px 0;
+  border: none;
+  border-bottom: 1.5px solid ${({ theme }) => theme.colors.border};
+  border-radius: 0;
+  font-size: 0.9375rem;
+  outline: none;
   color: ${({ theme }) => theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.surface};
-  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
-  transition: border-color 0.15s, box-shadow 0.15s;
+  background: radial-gradient(ellipse 60% 24px at 50% calc(100% + 2px), rgba(37,99,235,0.12) 0%, rgba(37,99,235,0.04) 50%, transparent 100%);
+  transition: border-color 0.2s, background 0.2s;
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
-  &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
   &:focus {
-    border-color: ${({ theme }) => theme.colors.blue};
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.12), 0 1px 2px rgba(15,23,42,0.04);
+    border-bottom-color: ${({ theme }) => theme.colors.blue};
+    background: radial-gradient(ellipse 70% 32px at 50% calc(100% + 2px), rgba(37,99,235,0.18) 0%, rgba(37,99,235,0.06) 50%, transparent 100%);
   }
 `;
 
-const BtnRow = styled.div`
-  display: flex; align-items: flex-end;
-  ${media.tabletDown} { grid-column: 1 / -1; }
+const FieldLabel = styled.label`
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.blue};
+  letter-spacing: 0.03em;
+  padding-left: 2px;
 `;
 
-const PrimaryBtn = styled.button`
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
-  border: none; border-radius: ${({ theme }) => theme.radii.control}px;
-  background: #2563eb;
+const FieldGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+`;
+
+/* 数字框 */
+const NumberWrap = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-shrink: 0;
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: -12px;
+    left: 26px;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(ellipse at 50% 50%, rgba(37,99,235,0.10) 0%, rgba(37,99,235,0.05) 25%, rgba(37,99,235,0.02) 45%, rgba(37,99,235,0.005) 65%, transparent 85%);
+    filter: blur(4px);
+    pointer-events: none;
+  }
+`;
+
+const NumberInput = styled.input`
+  width: 52px;
+  padding: 6px 0;
+  border: none;
+  border-radius: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-align: center;
+  outline: none;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  background: transparent;
+  -moz-appearance: textfield;
+  &::-webkit-inner-spin-button,
+  &::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  &:focus { border-bottom-color: ${({ theme }) => theme.colors.blue}; }
+`;
+
+const NumArrows = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-left: 4px;
+`;
+
+const NumArrowBtn = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 16px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.15s, background 0.15s;
+  &:hover {
+    color: ${({ theme }) => theme.colors.blue};
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+  }
+`;
+
+/* A/B 分隔 */
+const Separator = styled.div`
+  width: 1px;
+  align-self: stretch;
+  margin: 0 24px;
+  background: ${({ theme }) => theme.colors.border};
+  ${media.mobile} { display: none; }
+`;
+
+/* B区: 圆形按钮 + 星星 */
+const sparkle = keyframes`
+  0% { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+`;
+
+const BtnWrap = styled.div`
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
+
+const CircleBtn = styled.button`
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 50%, #60a5fa 100%);
   color: #fff;
-  font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-  white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
-  box-shadow: 0 1px 2px rgba(15,23,42,0.08);
-  transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 12px rgba(37,99,235,0.3), 0 0 24px rgba(59,130,246,0.2);
+  transition: transform 0.2s, box-shadow 0.2s;
+  position: relative;
+  z-index: 1;
   &:hover:not(:disabled) {
-    transform: translateY(-1px);
-    background: #3b82f6;
-    box-shadow: 0 2px 8px rgba(15,23,42,0.1);
+    transform: scale(1.08);
+    box-shadow: 0 4px 20px rgba(37,99,235,0.45), 0 0 32px rgba(59,130,246,0.3);
   }
-  &:active:not(:disabled) { transform: translateY(0); }
+  &:active:not(:disabled) { transform: scale(0.96); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
-  ${media.mobile} { width: 100%; justify-content: center; }
 `;
+
+const Sparkle = styled.span<{ $i: number }>`
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.blue};
+  opacity: 0;
+  --tx: ${({ $i }) => ['-18px','20px','6px','-14px','22px','-20px','12px','-8px'][$i % 8]};
+  --ty: ${({ $i }) => ['-22px','-16px','24px','20px','8px','-24px','-10px','22px'][$i % 8]};
+  animation: ${sparkle} ${({ $i }) => 1.2 + ($i % 4) * 0.3}s ease-out infinite;
+  animation-delay: ${({ $i }) => ($i * 0.25)}s;
+`;
+
+const SearchBtnIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+  </svg>
+);
 
 const Spinner = styled.span`
-  display: inline-block; width: 14px; height: 14px;
+  display: inline-block; width: 18px; height: 18px;
   border: 2px solid currentColor; border-top-color: transparent;
   border-radius: 50%; animation: spin 0.7s linear infinite;
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -207,6 +350,7 @@ const ResultCard = styled.div`
   padding: 12px 14px;
   border-radius: 10px;
   border: 1px solid ${({ theme }) => theme.colors.border};
+  border-left: 3px solid #3b82f6;
   background: #ffffff;
   cursor: pointer;
   transition: all 0.15s;
@@ -255,7 +399,7 @@ const RcMeta = styled.div`
 `;
 
 const RcPhone = styled.span`
-  font-size: 0.75rem; color: #2563eb; font-weight: 500;
+  font-size: 0.75rem; color: #16a34a; font-weight: 500;
 `;
 
 const RcStatusBadge = styled.span<{ $status: string }>`
@@ -303,15 +447,15 @@ const RcSmallBtn = styled.button`
 
 const InputWrap = styled.div`
   position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
   svg {
-    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
-    color: ${({ theme }) => theme.colors.textTertiary}; pointer-events: none;
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    color: ${({ theme }) => theme.colors.blue}; pointer-events: none;
   }
 `;
 
-const InputWithIcon = styled(Input)`
-  padding-left: 32px;
-`;
 
 /* ── Stats bar ── */
 
@@ -335,10 +479,15 @@ const FilterBar = styled.div`
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  margin-top: 10px;
-  padding: 10px 12px;
-  background: ${({ theme }) => theme.colors.canvas};
+  padding: 8px 12px;
+  background: #f8fafc;
   border-radius: 8px;
+  border-bottom: 2px solid transparent;
+  border-image: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899) 1;
+  border-image-slice: 1;
+  border-top: none;
+  border-left: none;
+  border-right: none;
 `;
 
 const FilterToggle = styled.button<{ $active: boolean }>`
@@ -347,7 +496,7 @@ const FilterToggle = styled.button<{ $active: boolean }>`
   gap: 5px;
   padding: 4px 12px;
   border-radius: 99px;
-  border: 1px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
+  border: 1px solid ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.border};
   background: ${({ $active }) => $active ? '#2563eb22' : 'transparent'};
   color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textSecondary};
   font-size: 0.6875rem;
@@ -389,20 +538,20 @@ const RatingSlider = styled.input`
   }
 `;
 
-const SourceChip = styled.button<{ $active: boolean }>`
+const SourceChip = styled.button<{ $active: boolean; $color?: string }>`
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 10px;
+  gap: 5px;
+  padding: 4px 12px;
   border-radius: 99px;
-  border: 1px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
-  background: ${({ $active }) => $active ? '#2563eb22' : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textSecondary};
-  font-size: 0.625rem;
+  border: 1px solid ${({ $active, $color, theme }) => $active ? ($color || '#2563eb') : theme.colors.border};
+  background: ${({ $active, $color }) => $active ? `${$color || '#2563eb'}22` : 'transparent'};
+  color: ${({ $active, $color, theme }) => $active ? ($color || '#2563eb') : theme.colors.textSecondary};
+  font-size: 0.6875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
-  &:hover { border-color: #2563eb; }
+  &:hover { border-color: ${({ $color }) => $color || '#2563eb'}; color: ${({ $color }) => $color || '#2563eb'}; }
 `;
 
 /* ── Contact info icons on card ── */
@@ -414,12 +563,12 @@ const RcContactIcons = styled.div`
   margin-top: 4px;
 `;
 
-const ContactIcon = styled.span<{ $has: boolean }>`
+const ContactIcon = styled.span<{ $has: boolean; $color?: string }>`
   display: inline-flex;
   align-items: center;
   gap: 3px;
   font-size: 0.625rem;
-  color: ${({ $has }) => $has ? '#2563eb' : '#cbd5e1'};
+  color: ${({ $has, $color }) => $has ? ($color || '#2563eb') : '#cbd5e1'};
   svg { opacity: ${({ $has }) => $has ? 1 : 0.4}; }
 `;
 
@@ -1267,7 +1416,6 @@ const SearchPage: React.FC = () => {
   const [filterEmail, setFilterEmail] = useState(false);
   const [filterPhone, setFilterPhone] = useState(false);
   const [filterWebsite, setFilterWebsite] = useState(false);
-  const [minRating, setMinRating] = useState(0);
   const [activeSources, setActiveSources] = useState<Set<string>>(new Set());
 
   /* ── Determine which result set to display ── */
@@ -1288,11 +1436,10 @@ const SearchPage: React.FC = () => {
       if (filterEmail && !lead.hasEmail) return false;
       if (filterPhone && !lead.hasPhone) return false;
       if (filterWebsite && !lead.hasWebsite) return false;
-      if (minRating > 0 && lead.rating < minRating) return false;
       if (activeSources.size > 0 && !activeSources.has(lead.source)) return false;
       return true;
     });
-  }, [displayResults, filterEmail, filterPhone, filterWebsite, minRating, activeSources]);
+  }, [displayResults, filterEmail, filterPhone, filterWebsite, activeSources]);
 
   const search = useSearch();
 
@@ -1332,60 +1479,75 @@ const SearchPage: React.FC = () => {
   return (
     <Page>
       {/* Search Form */}
-      <Card>
-        <CardBody>
-          <Form onSubmit={handleSubmit}>
-            <FormGroup>
-              <Label htmlFor="search-keyword">{t('search.keyword')}</Label>
+      <SearchHero as="form" onSubmit={handleSubmit}>
+        <AreaA>
+          <TextFields>
+            <FieldGroup>
+              <FieldLabel htmlFor="search-keyword">{t('search.keyword')}</FieldLabel>
               <InputWrap>
                 <SvgIcon d="M11 11l3 3M10 6.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0z" />
-                <InputWithIcon
+                <UnderlineInput
                   id="search-keyword"
                   type="text"
                   placeholder={t('search.keywordPlaceholder')}
                   value={keyword}
-                  onChange={e => setKeyword(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setKeyword(e.target.value)}
                   required
+                  style={{ paddingLeft: 28 }}
                 />
               </InputWrap>
-            </FormGroup>
-            <FormGroup>
-              <Label htmlFor="search-location">{t('search.location')}</Label>
+            </FieldGroup>
+            <FieldGroup>
+              <FieldLabel htmlFor="search-location">{t('search.location')}</FieldLabel>
               <InputWrap>
                 <SvgIcon d="M8 1C5.2 1 3 3.2 3 6c0 4 5 9 5 9s5-5 5-9c0-2.8-2.2-5-5-5zM8 7.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
-                <InputWithIcon
+                <UnderlineInput
                   id="search-location"
                   type="text"
                   placeholder={t('search.locationPlaceholder')}
                   value={location}
-                  onChange={e => setLocation(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocation(e.target.value)}
                   required
+                  style={{ paddingLeft: 28 }}
                 />
               </InputWrap>
-            </FormGroup>
-            <FormGroup>
-              <Label htmlFor="search-count">{t('search.targetCount')}</Label>
-              <Input
+            </FieldGroup>
+          </TextFields>
+          <FieldGroup>
+            <FieldLabel htmlFor="search-count">{t('search.targetCount')}</FieldLabel>
+            <NumberWrap>
+              <NumberInput
                 id="search-count"
                 type="number"
                 min={1}
                 max={500}
                 value={targetCount}
-                onChange={e => setTargetCount(Number(e.target.value))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTargetCount(Number(e.target.value))}
               />
-            </FormGroup>
-            <BtnRow>
-              <PrimaryBtn
-                type="submit"
-                disabled={search.isPending || !keyword.trim() || !location.trim()}
-              >
-                {search.isPending && <Spinner />}
-                {search.isPending ? t('search.searching') : t('search.startSearch')}
-              </PrimaryBtn>
-            </BtnRow>
-          </Form>
-        </CardBody>
-      </Card>
+            <NumArrows>
+              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(500, c + 1))}>
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor"><path d="M5 0l5 6H0z"/></svg>
+              </NumArrowBtn>
+              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.max(1, c - 1))}>
+                <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor"><path d="M5 6L0 0h10z"/></svg>
+              </NumArrowBtn>
+            </NumArrows>
+          </NumberWrap>
+          </FieldGroup>
+        </AreaA>
+
+        <Separator />
+
+        <BtnWrap>
+          {[0,1,2,3,4,5,6,7].map(i => <Sparkle key={i} $i={i} />)}
+          <CircleBtn
+            type="submit"
+            disabled={search.isPending || !keyword.trim() || !location.trim()}
+          >
+            {search.isPending ? <Spinner /> : <SearchBtnIcon />}
+          </CircleBtn>
+        </BtnWrap>
+      </SearchHero>
 
       {/* Split: Results left, Browser Preview right */}
       <SplitRow>
@@ -1461,33 +1623,51 @@ const SearchPage: React.FC = () => {
           {!isPipelineRunning && !(search.isPending && !campaignId) && (
             <Card>
               <CardBody>
+                {/* ── Result count ── */}
+                <FilterLabel style={{ fontWeight: 500, color: '#2563eb', marginBottom: 8, display: 'block', fontSize: '0.875rem', paddingLeft: 14 }}>
+                  {(() => {
+                    const parts = t('search.resultCount', { count: '__N__' }).split('__N__');
+                    return <>{parts[0]}<span style={{
+                      fontSize: '1.25rem',
+                      fontWeight: 800,
+                      background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
+                      WebkitBackgroundClip: 'text',
+                      WebkitTextFillColor: 'transparent',
+                      backgroundClip: 'text',
+                    }}>{filteredResults.length}</span>{parts[1]}</>;
+                  })()}
+                </FilterLabel>
                 {/* ── Compact single-row filter ── */}
                 <FilterBar>
-                  <FilterLabel style={{ fontWeight: 600, color: '#2563eb' }}>{filteredResults.length} 筆結果</FilterLabel>
-                  <FilterDivider />
                   <FilterToggle $active={filterEmail} onClick={() => setFilterEmail(p => !p)}>
-                    Email({filteredResults.filter(r => r.hasEmail).length})
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path d="M0 4a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H2a2 2 0 01-2-2V4zm2-1a1 1 0 00-1 1v.217l7 4.2 7-4.2V4a1 1 0 00-1-1H2zm13 2.383l-4.708 2.825L15 11.105V5.383zm-.034 6.876L10.93 8.572 8 10.3l-2.93-1.728L1.034 11.26A1 1 0 002 12h12a1 1 0 00.966-.74zM1 11.105l4.708-2.897L1 5.383v5.722z"/></svg>
+                    {t('search.filterEmail')}({filteredResults.filter(r => r.hasEmail).length})
                   </FilterToggle>
                   <FilterToggle $active={filterPhone} onClick={() => setFilterPhone(p => !p)}>
-                    電話({filteredResults.filter(r => r.hasPhone).length})
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path d="M3.654 1.328a.678.678 0 00-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 004.168 6.608 17.569 17.569 0 006.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 00-.063-1.015l-2.307-1.794a.678.678 0 00-.58-.122l-2.19.547a1.745 1.745 0 01-1.657-.459L5.482 8.062a1.745 1.745 0 01-.46-1.657l.548-2.19a.678.678 0 00-.122-.58L3.654 1.328z"/></svg>
+                    {t('search.filterPhone')}({filteredResults.filter(r => r.hasPhone).length})
                   </FilterToggle>
                   <FilterToggle $active={filterWebsite} onClick={() => setFilterWebsite(p => !p)}>
-                    官網({filteredResults.filter(r => r.hasWebsite).length})
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path d="M0 8a8 8 0 1116 0A8 8 0 010 8zm7.5-6.923c-.67.204-1.335.82-1.887 1.855A7.97 7.97 0 005.145 4H7.5V1.077zM4.09 4a9.267 9.267 0 01.64-1.539 6.7 6.7 0 01.597-.933A7.025 7.025 0 002.255 4H4.09zm-.582 3.5c.03-.877.138-1.718.312-2.5H1.674a6.958 6.958 0 00-.656 2.5h2.49zM4.847 5a12.5 12.5 0 00-.338 2.5H7.5V5H4.847zM8.5 5v2.5h2.99a12.495 12.495 0 00-.337-2.5H8.5zM4.51 8.5a12.5 12.5 0 00.337 2.5H7.5V8.5H4.51zm3.99 0V11h2.653c.187-.765.306-1.608.338-2.5H8.5zM5.145 12c.138.386.295.744.468 1.068.552 1.035 1.218 1.65 1.887 1.855V12H5.145zm.182 2.472a6.696 6.696 0 01-.597-.933A9.268 9.268 0 014.09 12H2.255a7.024 7.024 0 003.072 2.472zM3.82 11a13.652 13.652 0 01-.312-2.5h-2.49c.062.89.291 1.733.656 2.5H3.82zm6.853 3.472A7.024 7.024 0 0013.745 12H11.91a9.27 9.27 0 01-.64 1.539 6.688 6.688 0 01-.597.933zM8.5 12v2.923c.67-.204 1.335-.82 1.887-1.855.173-.324.33-.682.468-1.068H8.5zm3.68-1h2.146c.365-.767.594-1.61.656-2.5h-2.49a13.65 13.65 0 01-.312 2.5zm2.802-3.5a6.959 6.959 0 00-.656-2.5H12.18c.174.782.282 1.623.312 2.5h2.49zM11.27 2.461c.247.464.462.98.64 1.539h1.835a7.024 7.024 0 00-3.072-2.472c.218.284.418.598.597.933zM10.855 4a7.966 7.966 0 00-.468-1.068C9.835 1.897 9.17 1.282 8.5 1.077V4h2.355z"/></svg>
+                    {t('search.filterWebsite')}({filteredResults.filter(r => r.hasWebsite).length})
                   </FilterToggle>
                   <FilterDivider />
-                  <FilterLabel>{'★'} {'≥'} {minRating > 0 ? minRating.toFixed(1) : '不限'}</FilterLabel>
-                  <RatingSlider type="range" min={0} max={5} step={0.5} value={minRating} onChange={e => setMinRating(Number(e.target.value))} />
-                  <FilterDivider />
-                  {ALL_SOURCES.map(src => (
-                    <SourceChip key={src} $active={activeSources.has(src)} onClick={() => toggleSource(src)}>
-                      {src}
-                    </SourceChip>
-                  ))}
+                  {ALL_SOURCES.map(src => {
+                    const chipColor = src === 'Google Maps' ? '#16a34a' : src === 'LinkedIn' ? '#0a66c2' : src === '104人力銀行' ? '#e97a0a' : '#2563eb';
+                    return (
+                      <SourceChip key={src} $active={activeSources.has(src)} $color={chipColor} onClick={() => toggleSource(src)}>
+                        {src === 'Google Maps' && <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path d="M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A31.493 31.493 0 018 14.58a31.481 31.481 0 01-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0110 0c0 .862-.305 1.867-.834 2.94zM8 8a2 2 0 100-4 2 2 0 000 4z"/></svg>}
+                        {src === 'LinkedIn' && <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H2.542v7.225h2.401zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248-.822 0-1.359.54-1.359 1.248 0 .694.521 1.248 1.327 1.248h.016zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016a5.54 5.54 0 01.016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225h2.4z"/></svg>}
+                        {src === '104人力銀行' && <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.5A1.5 1.5 0 012.5 1h3A1.5 1.5 0 017 2.5V5h2V2.5A1.5 1.5 0 0110.5 1h3A1.5 1.5 0 0115 2.5v6.5h-1V9H2v.5H1V2.5zM2 8h12V2.5a.5.5 0 00-.5-.5h-3a.5.5 0 00-.5.5V6H6V2.5a.5.5 0 00-.5-.5h-3a.5.5 0 00-.5.5V8z"/><path d="M.5 10a.5.5 0 000 1H2v3.5a.5.5 0 001 0V11h10v3.5a.5.5 0 001 0V11h1.5a.5.5 0 000-1H.5z"/></svg>}
+                        {src}
+                      </SourceChip>
+                    );
+                  })}
                 </FilterBar>
 
                 <ResultCardList>
                   {filteredResults.length === 0 ? (
-                    <EmptyState>沒有符合篩選條件的結果</EmptyState>
+                    <EmptyState>{t('search.noFilterResults')}</EmptyState>
                   ) : filteredResults.map((lead, i) => (
                     <ResultCard key={i} onClick={() => setSelectedResult(lead as unknown as Record<string, unknown>)}>
                       <RcAvatar $color={hashAvatarColor(lead.name)}>{lead.name.charAt(0)}</RcAvatar>
@@ -1506,11 +1686,11 @@ const SearchPage: React.FC = () => {
                           {' '}{lead.phone}
                         </RcPhone>
                         <RcContactIcons>
-                          <ContactIcon $has={lead.hasEmail}>
+                          <ContactIcon $has={lead.hasEmail} $color="#2563eb">
                             <SvgIcon d="M2 4h12M2 4l3 8h6l3-8M5 12v2M11 12v2" size={10} />
                             {lead.hasEmail ? (lead.email || 'Email') : '無Email'}
                           </ContactIcon>
-                          <ContactIcon $has={lead.hasWebsite}>
+                          <ContactIcon $has={lead.hasWebsite} $color="#7c3aed">
                             <SvgIcon d="M2 3h12v10H2zM2 6h12" size={10} />
                             {lead.hasWebsite ? (lead.website || '官網') : '無官網'}
                           </ContactIcon>
