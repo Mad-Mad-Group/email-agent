@@ -12,6 +12,9 @@ export interface EmailItem {
   // 但 normalizeStatus() 對未知值會 fallback 去 PENDING，所以 null/undefined 都合理。
   status?: 'pending' | 'approved' | 'rejected' | 'sent' | 'failed' | null;
   error?: { rejected_reason?: string } | null;
+  // 草稿種類：'reply'=回應覆咗嘅人 / 'followup'=追未覆嘅人 / undefined=第一封 outreach
+  _type?: string;
+  _reply_category?: string;
   created_at?: string;
   sent_at?: string;
 }

@@ -2,8 +2,9 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead } from '../../api/hooks';
+import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useEmailQueue } from '../../api/hooks';
 import { Lead } from '../../api/leads';
+import { EmailItem } from '../../api/emailQueue';
 import { media } from '../../styles/media';
 
 /* ══════════════════════════════════════
@@ -915,6 +916,75 @@ const NoReplyText = styled.span`
   color: ${({ theme }) => theme.colors.textTertiary};
 `;
 
+/* ── Reply / follow-up draft（撳開 lead 就睇到，data 由 email_queue 嚟）── */
+const DraftBox = styled.div`
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  padding: ${({ theme }) => theme.spacing.md}px;
+  margin-bottom: ${({ theme }) => theme.spacing.sm}px;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+`;
+const DraftHead = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+`;
+const DraftSubject = styled.span`
+  font-weight: 600;
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+const DraftBodyText = styled.div`
+  white-space: pre-wrap;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  max-height: 260px;
+  overflow-y: auto;
+`;
+const DraftMeta = styled.div`
+  margin-top: 6px;
+  font-size: 0.6875rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
+const DRAFT_TYPE_LABEL: Record<string, { text: string; bg: string; fg: string }> = {
+  reply: { text: '回應', bg: '#dcfce7', fg: '#15803d' },
+  followup: { text: '跟進', bg: '#fef3c7', fg: '#b45309' },
+};
+
+/** 撳開 lead 時，show 佢喺 email_queue 嘅待發送草稿（回應 / 跟進 / 開發信）。 */
+const LeadReplyDraft: React.FC<{ companyName: string }> = ({ companyName }) => {
+  const { data } = useEmailQueue({ search: companyName, status: 'pending' });
+  const drafts = ((data?.data as EmailItem[]) || [])
+    .filter((e) => (e.company_name || '') === companyName)
+    .sort((a, b) => (b._type === 'reply' ? 1 : 0) - (a._type === 'reply' ? 1 : 0));
+  if (!drafts.length) return null;
+  return (
+    <>
+      <DpSectionTitle>待發送草稿</DpSectionTitle>
+      {drafts.map((d) => {
+        const tag = d._type ? DRAFT_TYPE_LABEL[d._type] : null;
+        return (
+          <DraftBox key={d._id}>
+            <DraftHead>
+              {tag && (
+                <ReplyBadge $bg={tag.bg} $fg={tag.fg}>
+                  {tag.text}
+                </ReplyBadge>
+              )}
+              <DraftSubject>{d.subject || '(冇標題)'}</DraftSubject>
+            </DraftHead>
+            <DraftBodyText>{d.body || '—'}</DraftBodyText>
+            <DraftMeta>寄往 {d.to_email || '—'} · 去 Email Queue approve → send</DraftMeta>
+          </DraftBox>
+        );
+      })}
+    </>
+  );
+};
+
 /* ── Tabs config (labels moved inside component for i18n) ── */
 
 interface TabDef {
@@ -1407,6 +1477,10 @@ const Leads: React.FC = () => {
                   </>
                 );
               })()}
+
+              {selectedLead.company_name && (
+                <LeadReplyDraft companyName={selectedLead.company_name} />
+              )}
 
               {/* Timeline */}
               <DpSectionTitle>Lead Journey</DpSectionTitle>
