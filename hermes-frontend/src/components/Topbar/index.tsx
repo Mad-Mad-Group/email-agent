@@ -112,9 +112,10 @@ const BrandLink = styled.a`
   gap: 6px;
   text-decoration: none;
   color: ${({ theme }) => theme.colors.textPrimary};
-  font-weight: 700;
-  font-size: 1.1rem;
-  letter-spacing: 0.5px;
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-weight: 400;
+  font-size: 1.35rem;
+  letter-spacing: 1.5px;
   white-space: nowrap;
 `;
 

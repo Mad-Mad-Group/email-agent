@@ -261,15 +261,13 @@ const TitleRow = styled.div`
 
 const SidebarTitle = styled.h4`
   margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-size: 1.35rem;
+  font-weight: 400;
+  letter-spacing: 1.5px;
   color: ${({ theme }) => theme.colors.textPrimary};
   flex: 1;
   ${collapsedHide}
-`;
-
-const SmTxt = styled.span`
-  font-size: 1.1rem;
 `;
 
 const ProjectSelect = styled.div`
@@ -360,8 +358,8 @@ const MLink = styled(NavLink)`
   gap: 8px;
   padding: 8px 12px;
   border-radius: 8px;
-  font-size: 0.8125rem;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 0.875rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
   text-decoration: none;
   transition: all 0.15s ease;
 
@@ -388,8 +386,8 @@ const MLinkButton = styled.button<{ $active?: boolean }>`
   gap: 8px;
   padding: 8px 12px;
   border-radius: 8px;
-  font-size: 0.8125rem;
-  color: ${({ theme, $active }) => $active ? 'var(--primary, #2563eb)' : theme.colors.textSecondary};
+  font-size: 0.875rem;
+  color: ${({ theme, $active }) => $active ? 'var(--primary, #2563eb)' : theme.colors.textPrimary};
   font-weight: ${({ $active }) => $active ? 600 : 400};
   text-decoration: none;
   transition: all 0.15s ease;
@@ -400,7 +398,6 @@ const MLinkButton = styled.button<{ $active?: boolean }>`
   text-align: left;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.textPrimary};
     background: ${({ theme }) => theme.colors.surfaceMuted};
   }
 
@@ -433,8 +430,8 @@ const SubMenu = styled.ul<{ $open: boolean }>`
 const SubLink = styled(NavLink)`
   display: block;
   padding: 6px 12px 6px 38px;
-  font-size: 0.8125rem;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 0.875rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
   text-decoration: none;
   transition: color 0.15s;
 
@@ -558,7 +555,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
       {/* Title */}
       <TitleRow>
         <SidebarTitle>
-          <SmTxt>M</SmTxt>AD MAD CMS
+          MAD MAD CMS
         </SidebarTitle>
       </TitleRow>
 
