@@ -257,7 +257,8 @@ const TabsRow = styled.div`
   display: flex;
   align-items: stretch;
   gap: 0;
-  overflow: hidden;
+  padding: 0 24px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
@@ -300,8 +301,9 @@ const SubPillRow = styled.div`
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 0;
+  padding: 10px 24px;
   flex-wrap: wrap;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const SubPill = styled.button<{ $active?: boolean }>`
@@ -1392,8 +1394,9 @@ const Leads: React.FC = () => {
         </StatsStrip>
       </HeaderCard>
 
-      {/* Tabs */}
-      <TabsRow>
+        <Card>
+        {/* Tabs */}
+        <TabsRow>
           {TABS.map(tab => (
             <TabItem
               key={tab.key}
@@ -1435,8 +1438,6 @@ const Leads: React.FC = () => {
             />
           </SearchWrap>
         </SubPillRow>
-
-        <Card>
           <TableWrap>
             <Table>
               <thead>
