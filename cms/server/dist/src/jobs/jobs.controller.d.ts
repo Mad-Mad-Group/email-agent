@@ -9,4 +9,10 @@ export declare class JobsController {
     } | {
         task_id: string;
     }>;
+    toggleDemoMode(): {
+        demoMode: boolean;
+    };
+    getDemoMode(): {
+        demoMode: boolean;
+    };
 }

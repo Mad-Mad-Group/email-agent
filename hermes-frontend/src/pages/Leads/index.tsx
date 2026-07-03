@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
@@ -1238,6 +1238,26 @@ const Leads: React.FC = () => {
   const [replyCheckMsg, setReplyCheckMsg] = useState('');
   const [followupChecking, setFollowupChecking] = useState(false);
   const [followupCheckMsg, setFollowupCheckMsg] = useState('');
+  const [demoMode, setDemoMode] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  // 載入 demo mode 狀態
+  useEffect(() => {
+    client.get('/jobs/demo-mode').then(r => {
+      const on = (r.data as any)?.demoMode ?? (r.data as any)?.data?.demoMode ?? false;
+      setDemoMode(on);
+    }).catch(() => {});
+  }, []);
+
+  const handleToggleDemo = async () => {
+    setDemoLoading(true);
+    try {
+      const r = await client.post('/jobs/demo-mode');
+      const on = (r.data as any)?.demoMode ?? (r.data as any)?.data?.demoMode ?? false;
+      setDemoMode(on);
+    } catch {}
+    setDemoLoading(false);
+  };
 
   const handleCheckReplies = async () => {
     setReplyChecking(true); setReplyCheckMsg('');
@@ -1372,6 +1392,13 @@ const Leads: React.FC = () => {
             {followupChecking ? t('leads.checking') : t('leads.checkFollowups')}
           </AddBtn>
           {followupCheckMsg && <span style={{ fontSize: '0.75rem', color: followupCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{followupCheckMsg}</span>}
+          <AddBtn
+            onClick={handleToggleDemo}
+            disabled={demoLoading}
+            style={demoMode ? { background: '#dc2626', color: '#fff', border: 'none' } : {}}
+          >
+            {demoMode ? '⏱ Demo ON (10s)' : '⏱ Demo 模式'}
+          </AddBtn>
           <AddBtnGreen onClick={() => setShowAdd(true)}>
             <IconPlus />
             {t('leads.addLead')}

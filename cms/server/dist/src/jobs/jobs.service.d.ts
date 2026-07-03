@@ -11,6 +11,12 @@ export declare class JobsService {
     requeueOldPending(): Promise<{
         refreshed: number;
     }>;
+    private _demoMode;
+    private _demoTimer;
+    get demoMode(): boolean;
+    toggleDemoMode(): {
+        demoMode: boolean;
+    };
     checkReplies(): Promise<{
         task_id: string;
     }>;

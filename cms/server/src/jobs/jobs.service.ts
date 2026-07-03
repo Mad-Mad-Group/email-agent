@@ -40,6 +40,26 @@ export class JobsService {
     });
   }
 
+  /* ── Demo Mode：10s 自動 check replies ── */
+  private _demoMode = false;
+  private _demoTimer: ReturnType<typeof setInterval> | null = null;
+
+  get demoMode() { return this._demoMode; }
+
+  toggleDemoMode(): { demoMode: boolean } {
+    this._demoMode = !this._demoMode;
+    if (this._demoMode) {
+      this.logger.log('[demo] 開啟 Demo 模式 — 每 10 秒 check replies');
+      this._demoTimer = setInterval(() => {
+        this.checkReplies().catch(() => {});
+      }, 10_000);
+    } else {
+      this.logger.log('[demo] 關閉 Demo 模式 — 恢復 30 分鐘 cron');
+      if (this._demoTimer) { clearInterval(this._demoTimer); this._demoTimer = null; }
+    }
+    return { demoMode: this._demoMode };
+  }
+
   /** 每 30 分鐘：派一個 S4 reply-check task 俾 agent 查回覆 */
   @Cron(CronExpression.EVERY_30_MINUTES)
   async checkReplies(): Promise<{ task_id: string }> {
