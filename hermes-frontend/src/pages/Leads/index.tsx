@@ -791,15 +791,15 @@ const DpPanel = styled.div`
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 1201;
-  width: 520px;
-  max-width: 95vw;
-  max-height: 90vh;
+  width: 92vw;
+  max-width: 960px;
+  height: 92vh;
   overflow-y: auto;
   background: ${({ theme }) => theme.colors.surface};
   border-radius: 14px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
   animation: ${dpFadeIn} 0.2s ease-out;
-  ${media.mobile} { width: 95%; }
+  ${media.mobile} { width: 96vw; height: 96vh; border-radius: 8px; }
 `;
 
 const DpHeader = styled.div`
@@ -845,8 +845,9 @@ const DpBody = styled.div`
 
 const DpGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 14px;
+  ${media.tabletDown} { grid-template-columns: 1fr 1fr; }
   ${media.mobile} { grid-template-columns: 1fr; }
 `;
 
@@ -1137,7 +1138,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
             <EmailCardHead onClick={() => setExpanded((s) => ({ ...s, [d._id]: !s[d._id] }))}>
               {typeTag && <ReplyBadge $bg={typeTag.bg} $fg={typeTag.fg}>{typeTag.text}</ReplyBadge>}
               <ReplyBadge $bg={statusColor.bg} $fg={statusColor.fg}>{d.status || 'pending'}</ReplyBadge>
-              <EmailCardSubject>{d.subject || '(冇標題)'}</EmailCardSubject>
+              <EmailCardSubject>{(d as any)._summary || d.subject || '(冇標題)'}</EmailCardSubject>
               <EmailCardDate>
                 {d.created_at ? new Date(d.created_at).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : ''}
               </EmailCardDate>
