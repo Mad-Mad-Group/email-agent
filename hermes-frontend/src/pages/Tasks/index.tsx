@@ -143,21 +143,22 @@ function skillIcon(id: string): React.ReactNode | null {
   return SKILL_CFG[id]?.icon || null;
 }
 
-/* ── Agent visual config (color + icon) ── */
-const AGENT_CFG: Record<string, { color: string; icon: React.ReactNode }> = {
-  'Worker-1': { color: '#dbeafe', icon: <><rect x="2" y="6" width="20" height="12" rx="2" /><path d="M12 12h.01" /></> },   // cpu = bot
-  'Worker-2': { color: '#e0e7ff', icon: <><rect x="2" y="6" width="20" height="12" rx="2" /><path d="M12 12h.01" /></> },
-  'Worker-3': { color: '#d1fae5', icon: <><rect x="2" y="6" width="20" height="12" rx="2" /><path d="M12 12h.01" /></> },
-  'Agent-A':  { color: '#fef3c7', icon: <><circle cx="12" cy="8" r="4" /><path d="M20 21a8 8 0 0 0-16 0" /></> },           // user = agent
-  'Agent-B':  { color: '#fce7f3', icon: <><circle cx="12" cy="8" r="4" /><path d="M20 21a8 8 0 0 0-16 0" /></> },
-  'Agent-C':  { color: '#e0e7ff', icon: <><circle cx="12" cy="8" r="4" /><path d="M20 21a8 8 0 0 0-16 0" /></> },
+/* ── Agent visual config (DiceBear avatar URL) ── */
+/* ── Agent visual config (local LUNO avatars) ── */
+const AGENT_AVATAR: Record<string, string> = {
+  'Worker-1': '/avatars/avatar2.jpg',
+  'Worker-2': '/avatars/avatar9.jpg',
+  'Worker-3': '/avatars/avatar6.jpg',
+  'Agent-A':  '/avatars/avatar1.jpg',
+  'Agent-B':  '/avatars/avatar4.jpg',
+  'Agent-C':  '/avatars/avatar7.jpg',
 };
-function agentColor(id: string): string {
-  return AGENT_CFG[id]?.color || '#f1f5f9';
+const AGENT_BG = '#f0eef6';   // uniform light lavender to match LUNO style
+function agentColor(_id: string): string {
+  return AGENT_BG;
 }
-function agentIcon(id: string): React.ReactNode {
-  // Default: gear icon for system/unknown
-  return AGENT_CFG[id]?.icon || <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8.92a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83" /></>;
+function agentAvatarUrl(id: string): string {
+  return AGENT_AVATAR[id] || '/avatars/avatar3.jpg';
 }
 
 /* ── Safely extract tasks array from API response ── */
@@ -340,21 +341,46 @@ const Card = styled.div`
   background: #ffffff;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.tile}px;
-  padding: 14px ${({ theme }) => theme.spacing.md}px 12px;
+  padding: 12px ${({ theme }) => theme.spacing.md}px;
   box-shadow: 0 1px 2px rgba(15,23,42,0.04);
   transition: box-shadow 0.15s, transform 0.12s, border-color 0.15s;
   cursor: default;
-  min-height: 120px;
   display: flex; flex-direction: column;
-  gap: 6px; position: relative;
+  gap: 8px; position: relative;
   &:hover {
     box-shadow: 0 2px 8px rgba(15,23,42,0.07);
     transform: translateY(-1px);
   }
 `;
 
+/* Row 1: avatar + title ... priority dot */
 const CardTopRow = styled.div`
-  display: flex; align-items: center; gap: 6px;
+  display: flex; align-items: flex-start; gap: 8px;
+  padding-right: 28px; /* room for priority dot */
+  padding-top: 2px;
+`;
+
+const AvatarWrap = styled.div`
+  display: flex; flex-direction: column; align-items: center;
+  flex-shrink: 0; position: relative; width: 40px;
+`;
+
+const AgentAvatar = styled.span<{ $bg: string }>`
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  background: ${({ $bg }) => $bg};
+  overflow: hidden;
+  img { width: 100%; height: 100%; object-fit: cover; }
+`;
+
+const AvatarName = styled.span`
+  position: relative; margin-top: -10px; z-index: 1;
+  background: #fff; border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 5px; padding: 1px 6px;
+  font-size: 0.625rem; font-weight: 700; color: ${({ theme }) => theme.colors.blue};
+  white-space: nowrap; max-width: 64px; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.5; text-align: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
 `;
 
 const CardTitle = styled.div`
@@ -364,9 +390,18 @@ const CardTitle = styled.div`
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 `;
 
+const PriorityDot = styled.span<{ $c: string }>`
+  position: absolute; top: 12px; right: 12px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: ${({ $c }) => $c};
+  color: #fff; font-size: 0.5rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+`;
+
+/* Row 2: description + skill tag */
 const CardDescRow = styled.div`
   display: flex; align-items: flex-start; gap: 6px;
-  flex: 1;
+  padding-left: 48px; /* aligned under title (avatar wrap 40 + gap 8) */
 `;
 
 const CardDesc = styled.p`
@@ -377,35 +412,20 @@ const CardDesc = styled.p`
   -webkit-box-orient: vertical; overflow: hidden;
 `;
 
-const CardFooter = styled.div`
-  display: flex; align-items: center;
-  justify-content: flex-end;
-`;
-
-const AgentTag = styled.span<{ $bg: string }>`
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 10px; border-radius: 99px;
-  background: ${({ $bg }) => $bg};
-  color: #334155; font-size: 0.6875rem; font-weight: 600;
+const SkillPill = styled.span<{ $c: string }>`
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 99px; font-size: 0.625rem; font-weight: 600;
+  background: ${({ $c }) => $c}12;
+  color: ${({ $c }) => $c};
   white-space: nowrap; flex-shrink: 0; margin-top: 2px;
   svg { flex-shrink: 0; }
 `;
 
-const SkillPill = styled.span<{ $c: string }>`
-  display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 10px; border-radius: 99px; font-size: 0.6875rem; font-weight: 600;
-  background: ${({ $c }) => $c}12;
-  color: ${({ $c }) => $c};
-  white-space: nowrap; flex-shrink: 0;
-  svg { flex-shrink: 0; }
-`;
-
-const PriorityBadge = styled.span<{ $c: string }>`
-  position: absolute; top: 10px; right: 10px;
-  padding: 2px 10px; border-radius: 99px;
-  font-size: 0.625rem; font-weight: 700;
-  background: ${({ $c }) => $c};
-  color: #fff;
+/* Row 3: date */
+const CardFooter = styled.div`
+  display: flex; align-items: center;
+  justify-content: flex-end;
+  padding-left: 48px;
 `;
 
 const CardDate = styled.span`
@@ -922,16 +942,23 @@ const Tasks: React.FC = () => {
 
                     return (
                       <Card key={task._id} onClick={() => setSelectedTask(task)} style={{ cursor: 'pointer' }}>
-                        <PriorityBadge $c={priorityColor(priority)}>{t(`tasks.priority.${priority}`, { defaultValue: priority })}</PriorityBadge>
+                        <PriorityDot $c={priorityColor(priority)} title={t(`tasks.priority.${priority}`, { defaultValue: priority })}>
+                          {t(`tasks.priority.${priority}`, { defaultValue: priority })}
+                        </PriorityDot>
                         <CardTopRow>
-                          {skill && <SkillPill $c={skillColor(skill)}><I size={11}>{skillIcon(skill)}</I>{t(`tasks.skills.${skill}`, { defaultValue: skill })}</SkillPill>}
+                          <AvatarWrap>
+                            <AgentAvatar $bg={agentColor(assignee)}>
+                              <img src={agentAvatarUrl(assignee)} alt={assignee} />
+                            </AgentAvatar>
+                            <AvatarName>{t(`tasks.agents.${assignee}`, { defaultValue: assignee })}</AvatarName>
+                          </AvatarWrap>
                           <CardTitle>{title}</CardTitle>
                         </CardTopRow>
                         <CardDescRow>
-                          <AgentTag $bg={agentColor(assignee)}><I size={10}>{agentIcon(assignee)}</I>{t(`tasks.agents.${assignee}`, { defaultValue: assignee })}</AgentTag>
                           <CardDesc>
                             {status === 'failed' ? <ErrText>{desc}</ErrText> : desc}
                           </CardDesc>
+                          {skill && <SkillPill $c={skillColor(skill)}><I size={10}>{skillIcon(skill)}</I>{t(`tasks.skills.${skill}`, { defaultValue: skill })}</SkillPill>}
                         </CardDescRow>
                         <CardFooter>
                           <CardDate>{fmtDate(created)}</CardDate>
