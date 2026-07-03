@@ -28,21 +28,24 @@ const ColumnHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const ColumnTitle = styled.h3`
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
   margin: 0;
 `;
 
 const ColumnCount = styled.span`
   background: ${({ theme }) => theme.colors.blue};
   color: ${({ theme }) => theme.colors.surface};
-  font-size: 11px;
-  padding: 2px 8px;
+  font-size: 12px;
+  padding: 3px 10px;
   border-radius: 12px;
+  font-weight: 600;
 `;
 
 const LeadCard = styled.div`

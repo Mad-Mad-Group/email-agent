@@ -180,15 +180,12 @@ const ProfileTitle = styled.h2`
   margin: 0;
   font-size: 1.15rem;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.blue};
-  text-shadow: 0 1px 3px rgba(37,99,235,0.12);
+  color: ${({ theme }) => theme.colors.textPrimary};
 
   .count-number {
     font-size: 1.5rem;
     font-weight: 800;
-    background: linear-gradient(135deg, #2563eb, #7c3aed);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    color: #2563eb;
   }
 `;
 
@@ -267,7 +264,6 @@ const TabsRow = styled.div`
   display: flex;
   align-items: stretch;
   gap: 0;
-  border-bottom: 2px solid ${({ theme }) => theme.colors.border};
 `;
 
 const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
@@ -275,11 +271,11 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 14px 24px;
+  padding: 10px 24px;
   background: transparent;
   border: none;
-  border-bottom: 2px solid ${({ $active, $color }) => $active ? ($color || '#2563eb') : 'transparent'};
-  margin-bottom: -1px;
+  border-top: 2px solid ${({ $active, $color }) => $active ? ($color || '#2563eb') : 'transparent'};
+  margin-top: -1px;
   cursor: pointer;
   white-space: nowrap;
   position: relative;
@@ -290,13 +286,13 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
 `;
 
 const TabNumber = styled.span<{ $color: string }>`
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   font-weight: 700;
   color: ${({ $color }) => $color};
 `;
 
 const TabLabel = styled.span<{ $active?: boolean }>`
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: ${({ $active }) => $active ? 600 : 500};
   color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textTertiary};
 `;
@@ -327,7 +323,19 @@ const SubPillIndicator = styled.div<{ $left: number; $width: number }>`
   z-index: 0;
 `;
 
-const SubPill = styled.button<{ $active?: boolean }>`
+const SUB_COLORS: Record<string, string> = {
+  '': '#334155',
+  new: '#f59e0b',
+  draft: '#f59e0b',
+  no_followup: '#ef4444',
+  has_followup: '#10b981',
+  interested: '#10b981',
+  meeting: '#10b981',
+  question: '#334155',
+  not_interested: '#ef4444',
+};
+
+const SubPill = styled.button<{ $active?: boolean; $color?: string }>`
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -337,7 +345,7 @@ const SubPill = styled.button<{ $active?: boolean }>`
   font-size: 0.8125rem;
   font-weight: ${({ $active }) => ($active ? 600 : 400)};
   background: transparent;
-  color: ${({ $active }) => ($active ? '#2563eb' : 'inherit')};
+  color: ${({ $active, $color }) => ($active ? ($color || '#2563eb') : 'inherit')};
   cursor: pointer;
   transition: color 0.15s;
   position: relative;
@@ -1503,8 +1511,12 @@ const Leads: React.FC = () => {
               key={sub.key}
               ref={el => { if (el) subPillRefs.current.set(sub.key, el); }}
               $active={activeSub === sub.key}
+              $color={SUB_COLORS[sub.key] || '#2563eb'}
               onClick={() => handleSubClick(sub.key)}
             >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                <path d={SUB_ICONS[sub.icon] || SUB_ICONS[''] || ''} />
+              </svg>
               {sub.label}
               <span style={{ opacity: 0.5 }}>{subCounts[sub.key] ?? 0}</span>
             </SubPill>
