@@ -283,7 +283,7 @@ ${clip}
   "next_step": "一句：建議我哋下一步（例如 約時間 / 報價 / 跟進 / 放棄）",
   "proposed_time": "ISO 8601 格式（如 2026-07-10T14:30:00+08:00）；冇提及具體時間就填空字串 \"\""
 }
-category 定義：interested=有興趣想了解；meeting=想開會/約時間；not_interested=明確拒絕或退訂；auto_reply=自動回覆/放假；question=其他或有疑問。內容唔清楚就填 "question"。
+category 定義：interested=明確有興趣並有實質內容（想了解某方面／提出需求／想要資料或報價）；meeting=想開會或約時間；not_interested=明確拒絕或退訂；auto_reply=自動回覆／放假／測試訊息無實質內容；question=未明確表態或有疑問（包括只係一句「有興趣」但冇任何具體內容、或其他唔清楚嘅回覆）。內容唔清楚或未明確表態就填 "question"。
 proposed_time：如果對方提到了具體日期/時間（如「下週三下午兩點」「7月10號 2:30pm」），轉成 ISO 8601；冇提就留空。`;
   try {
     const c = hermesJson(prompt, { timeout: 120_000 });
@@ -342,7 +342,10 @@ async function maybeDraftReply(
 先多謝對方嘅興趣、簡短回應佢感興趣嘅點，然後主動補充 1-2 個最相關嘅重點或案例，並邀請對方講多啲需求或想了解邊方面。
 ⚠️ 唔好喺呢階段主動提議具體會議時段或要求對方畀時間。如要行動呼籲，最多輕輕講「如想深入了解，我哋可以安排一個簡短通話，或者先 send 份資料俾你」，唔好指定時間、唔好施壓。`;
   } else if (analysis.category === 'question') {
-    categoryGuide = `寫法：直接、誠實答返對方嘅問題（見下方原文）。唔確定就照講唔確定，唔好亂作。答完之後自然地提議約個 call 傾多啲。
+    categoryGuide = `寫法：對方回覆未算明確表態（可能只係一句「有興趣」、或提出疑問）。
+- 若有具體問題：直接、誠實答返（見下方原文）；唔確定就照講唔確定，唔好亂作。
+- 若只係含糊表示有興趣、冇講需求：多謝對方，簡短補充 1-2 個最相關嘅重點或方向，並邀請對方講多啲關注邊方面。
+⚠️ 呢個階段唔好要求對方畀具體會議時間；最多輕輕提可安排簡短通話或先 send 資料，唔好指定時間、唔好施壓。
 
 對方原文（節錄）：
 ${(replyText || '').slice(0, 2000)}`;
@@ -390,10 +393,7 @@ ${BRAND_SIGNATURE}
       created_at: nowIso(),
     });
     const leadUpdate: any = { _reply_drafted: true };
-    // interested 但冇明確時間 → 標記待約時間
-    if (analysis.category === 'interested') {
-      leadUpdate._pending_meeting = true;
-    }
+    // 唔再自動標「待約時間」：對方冇明確要求約，就唔應該當佢待約時間（避免跳步）。
     await db
       .collection('leads')
       .updateOne({ _id: lead._id }, { $set: leadUpdate });
