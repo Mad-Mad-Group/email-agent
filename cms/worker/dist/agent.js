@@ -64,14 +64,96 @@ function callHermes(prompt, timeoutMs = 240000) {
         maxBuffer: 16 * 1024 * 1024,
     });
 }
-/** 由 Hermes output 抽第一個 JSON object */
+/**
+ * 修復 LLM 常見 JSON 問題：
+ * - smart/curly quotes → straight quotes
+ * - unescaped newlines/tabs inside strings
+ * - trailing commas before } or ]
+ * - control characters
+ * - BOM
+ */
+function sanitizeLlmJson(raw) {
+    let s = raw;
+    // BOM
+    s = s.replace(/^﻿/, '');
+    // smart quotes → straight
+    s = s.replace(/[“”„‟″‶]/g, '"');
+    s = s.replace(/[‘’‚‛′‵]/g, "'");
+    // fix unescaped newlines/tabs inside JSON string values
+    // strategy: walk char-by-char inside strings and escape raw control chars
+    let result = '';
+    let inStr = false;
+    let escaped = false;
+    for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (escaped) {
+            result += c;
+            escaped = false;
+            continue;
+        }
+        if (c === '\\') {
+            result += c;
+            escaped = true;
+            continue;
+        }
+        if (c === '"') {
+            result += c;
+            inStr = !inStr;
+            continue;
+        }
+        if (inStr) {
+            if (c === '\n') {
+                result += '\\n';
+                continue;
+            }
+            if (c === '\r') {
+                result += '\\r';
+                continue;
+            }
+            if (c === '\t') {
+                result += '\\t';
+                continue;
+            }
+            // other control chars (0x00-0x1F)
+            const code = c.charCodeAt(0);
+            if (code < 0x20) {
+                result += '\\u' + code.toString(16).padStart(4, '0');
+                continue;
+            }
+        }
+        result += c;
+    }
+    s = result;
+    // trailing commas: ,} or ,]
+    s = s.replace(/,\s*([\]}])/g, '$1');
+    return s;
+}
+/** 由 Hermes output 抽第一個 JSON object（含容錯） */
 function extractJson(s) {
     const m = s.match(/\{[\s\S]*\}/);
     if (!m)
         throw new Error('Hermes 冇回 JSON: ' + s.slice(0, 200));
-    return JSON.parse(m[0]);
+    // 先試原版
+    try {
+        return JSON.parse(m[0]);
+    }
+    catch { /* 落去修復 */ }
+    // 修復後再試
+    try {
+        return JSON.parse(sanitizeLlmJson(m[0]));
+    }
+    catch { /* 落去 fallback */ }
+    // 最後手段：搵最內層嘅 balanced {}
+    const inner = s.match(/\{[^{}]*\}/);
+    if (inner) {
+        try {
+            return JSON.parse(sanitizeLlmJson(inner[0]));
+        }
+        catch { /* 放棄 */ }
+    }
+    throw new Error('Hermes JSON parse 失敗 (已嘗試修復): ' + s.slice(0, 300));
 }
-/** 由 Hermes output 抽 JSON array（支援截斷修復） */
+/** 由 Hermes output 抽 JSON array（支援截斷修復 + 容錯） */
 function extractJsonArray(s) {
     // 先試完整 match
     const m = s.match(/\[[\s\S]*\]/);
@@ -79,7 +161,11 @@ function extractJsonArray(s) {
         try {
             return JSON.parse(m[0]);
         }
-        catch { /* 落去修復 */ }
+        catch { /* 試修復 */ }
+        try {
+            return JSON.parse(sanitizeLlmJson(m[0]));
+        }
+        catch { /* 落去截斷修復 */ }
     }
     // 搵開頭 [ 但冇結尾 ]（截斷）→ 修復
     const start = s.indexOf('[');
@@ -99,9 +185,12 @@ function extractJsonArray(s) {
     try {
         return JSON.parse(raw);
     }
-    catch {
-        throw new Error('Hermes JSON 截斷修復失敗: ' + s.slice(0, 300));
+    catch { /* 試修復 */ }
+    try {
+        return JSON.parse(sanitizeLlmJson(raw));
     }
+    catch { /* 放棄 */ }
+    throw new Error('Hermes JSON array 截斷修復失敗: ' + s.slice(0, 300));
 }
 /**
  * 叫 Hermes 並攞 JSON。parse 唔到（佢「講」而唔係回 JSON）就再叫一次強硬版。
@@ -228,6 +317,15 @@ function classifyReply(subject, body) {
     return 'question';
 }
 /**
+ * 預設會議時間：下星期一 10:00（本地時間）
+ */
+function getDefaultMeetingTime() {
+    const d = new Date();
+    d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
+    d.setHours(10, 0, 0, 0);
+    return d;
+}
+/**
  * 用 Hermes(LLM) 分析一封回覆：分類 + 真摘要 + 語氣 + 下一步建議。
  * Hermes 掛咗 / parse 唔到 → fallback keyword（classifyReply），確保唔會漏。
  */
@@ -246,9 +344,11 @@ ${clip}
   "category": "interested | not_interested | meeting | auto_reply | question",
   "summary": "一兩句繁體中文：對方實際講咩、乜嘢語氣",
   "sentiment": "positive | neutral | negative",
-  "next_step": "一句：建議我哋下一步（例如 約時間 / 報價 / 跟進 / 放棄）"
+  "next_step": "一句：建議我哋下一步（例如 約時間 / 報價 / 跟進 / 放棄）",
+  "proposed_time": "ISO 8601 格式（如 2026-07-10T14:30:00+08:00）；冇提及具體時間就填空字串 \"\""
 }
-category 定義：interested=有興趣想了解；meeting=想開會/約時間；not_interested=明確拒絕或退訂；auto_reply=自動回覆/放假；question=其他或有疑問。內容唔清楚就填 "question"。`;
+category 定義：interested=明確有興趣並有實質內容（想了解某方面／提出需求／想要資料或報價）；meeting=想開會或約時間；not_interested=明確拒絕或退訂；auto_reply=自動回覆／放假／測試訊息無實質內容；question=未明確表態或有疑問（包括只係一句「有興趣」但冇任何具體內容、或其他唔清楚嘅回覆）。內容唔清楚或未明確表態就填 "question"。
+proposed_time：如果對方提到了具體日期/時間（如「下週三下午兩點」「7月10號 2:30pm」），轉成 ISO 8601；冇提就留空。`;
     try {
         const c = hermesJson(prompt, { timeout: 120000 });
         return {
@@ -258,6 +358,7 @@ category 定義：interested=有興趣想了解；meeting=想開會/約時間；
                 ? c.sentiment
                 : 'neutral',
             next_step: String(c.next_step || '').slice(0, 200),
+            proposed_time: String(c.proposed_time || ''),
             via: 'hermes',
         };
     }
@@ -268,6 +369,7 @@ category 定義：interested=有興趣想了解；meeting=想開會/約時間；
             summary: subject.slice(0, 120),
             sentiment: 'neutral',
             next_step: '',
+            proposed_time: '',
             via: 'keyword-fallback',
         };
     }
@@ -301,7 +403,10 @@ async function maybeDraftReply(lead, analysis, replyText, db) {
 ⚠️ 唔好喺呢階段主動提議具體會議時段或要求對方畀時間。如要行動呼籲，最多輕輕講「如想深入了解，我哋可以安排一個簡短通話，或者先 send 份資料俾你」，唔好指定時間、唔好施壓。`;
     }
     else if (analysis.category === 'question') {
-        categoryGuide = `寫法：直接、誠實答返對方嘅問題（見下方原文）。唔確定就照講唔確定，唔好亂作。答完之後自然地提議約個 call 傾多啲。
+        categoryGuide = `寫法：對方回覆未算明確表態（可能只係一句「有興趣」、或提出疑問）。
+- 若有具體問題：直接、誠實答返（見下方原文）；唔確定就照講唔確定，唔好亂作。
+- 若只係含糊表示有興趣、冇講需求：多謝對方，簡短補充 1-2 個最相關嘅重點或方向，並邀請對方講多啲關注邊方面。
+⚠️ 呢個階段唔好要求對方畀具體會議時間；最多輕輕提可安排簡短通話或先 send 資料，唔好指定時間、唔好施壓。
 
 對方原文（節錄）：
 ${(replyText || '').slice(0, 2000)}`;
@@ -348,10 +453,7 @@ ${brand_1.BRAND_SIGNATURE}
             created_at: nowIso(),
         });
         const leadUpdate = { _reply_drafted: true };
-        // interested 但冇明確時間 → 標記待約時間
-        if (analysis.category === 'interested') {
-            leadUpdate._pending_meeting = true;
-        }
+        // 唔再自動標「待約時間」：對方冇明確要求約，就唔應該當佢待約時間（避免跳步）。
         await db
             .collection('leads')
             .updateOne({ _id: lead._id }, { $set: leadUpdate });
@@ -479,17 +581,22 @@ async function doReplyCheck(_p, db) {
                 _reply_at: nowIso(),
             },
         });
-        // meeting 回覆 → 自動建行事曆事件（預設下星期一 10:00）
+        // meeting 回覆 → 自動建行事曆事件（用回覆中提及的時間，否則預設下星期一 10:00）
         if (a.category === 'meeting') {
-            const nextMon = new Date();
-            nextMon.setDate(nextMon.getDate() + ((8 - nextMon.getDay()) % 7 || 7));
-            nextMon.setHours(10, 0, 0, 0);
-            const endTime = new Date(nextMon.getTime() + 60 * 60 * 1000); // 1 小時
+            let meetingStart;
+            if (a.proposed_time) {
+                const parsed = new Date(a.proposed_time);
+                meetingStart = isNaN(parsed.getTime()) ? getDefaultMeetingTime() : parsed;
+            }
+            else {
+                meetingStart = getDefaultMeetingTime();
+            }
+            const endTime = new Date(meetingStart.getTime() + 60 * 60 * 1000); // 1 小時
             await db.collection('calendar_events').insertOne({
                 event_id: (0, crypto_1.randomBytes)(8).toString('hex'),
                 title: `會議：${m.lead.company_name || m.lead.email}`,
                 description: a.summary,
-                start: nextMon,
+                start: meetingStart,
                 end: endTime,
                 all_day: false,
                 type: 'meeting',
@@ -500,7 +607,7 @@ async function doReplyCheck(_p, db) {
             });
             // 有明確時間 → 清除待約時間標記
             await db.collection('leads').updateOne({ _id: m.lead._id }, { $set: { _pending_meeting: false } });
-            log(`  → 已建立會議事件：${m.lead.company_name}`);
+            log(`  → 已建立會議事件：${m.lead.company_name} @ ${meetingStart.toISOString()}`);
         }
         // not_interested → 自動派 reoutreach draft（換策略再嘗試，最多 1 次）
         if (a.category === 'not_interested' && !m.lead._reoutreach_done) {

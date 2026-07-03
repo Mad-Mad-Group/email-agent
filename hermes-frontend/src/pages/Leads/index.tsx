@@ -968,7 +968,8 @@ const REPLY_CATEGORY_LABEL: Record<string, { text: string; bg: string; fg: strin
   not_interested:  { text: '冇興趣',       bg: '#fee2e2', fg: '#dc2626' },
   meeting:         { text: '約時間',       bg: '#dbeafe', fg: '#2563eb' },
   auto_reply:      { text: '自動回覆',     bg: '#f3f4f6', fg: '#6b7280' },
-  question:        { text: '有問題',       bg: '#fef3c7', fg: '#d97706' },
+  // 未明確表態（其他 / 有疑問 / 內容唔清楚）→ 顯示「處理中」
+  question:        { text: '處理中',       bg: '#e0e7ff', fg: '#4338ca' },
 };
 
 /** 根據 lead 狀態決定顯示邊個 reply badge */
@@ -978,7 +979,8 @@ const getReplyBadge = (lead: Lead) => {
     if (lead._reply_category === 'interested' && lead._pending_meeting) {
       return REPLY_CATEGORY_LABEL.interested_pending;
     }
-    return REPLY_CATEGORY_LABEL[lead._reply_category || ''] || { text: lead._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
+    // 未明確表態 / 未知分類 → 一律當「處理中」
+    return REPLY_CATEGORY_LABEL[lead._reply_category || ''] || { text: '處理中', bg: '#e0e7ff', fg: '#4338ca' };
   }
   // 未回覆 → 根據進度顯示
   if (lead.status === 'contacted') {
@@ -987,6 +989,10 @@ const getReplyBadge = (lead: Lead) => {
       : { text: '等回覆', bg: '#e0e7ff', fg: '#6366f1' };
   }
   if (lead.status === 'pending') {
+    return { text: '草稿待審', bg: '#fef3c7', fg: '#b45309' };
+  }
+  // 已有草稿寫咗（但未 send / status 仲係 null）→ 唔算「未處理」，係「草稿待審」
+  if (lead._has_email_draft) {
     return { text: '草稿待審', bg: '#fef3c7', fg: '#b45309' };
   }
   return { text: '未處理', bg: '#f3f4f6', fg: '#9ca3af' };
