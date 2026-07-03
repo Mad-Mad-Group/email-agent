@@ -520,6 +520,33 @@ const EmptyCell = styled.td`
   font-size: 0.875rem;
 `;
 
+/* ── Date Group Header ── */
+
+const GroupRow = styled.tr`
+  td {
+    padding: 10px 16px 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: ${({ theme }) => theme.colors.textTertiary};
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  }
+`;
+
+const getDateGroup = (dateStr?: string): string => {
+  if (!dateStr) return '更早前';
+  const d = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 864e5);
+  const itemDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (itemDate.getTime() >= today.getTime()) return '今日';
+  if (itemDate.getTime() >= yesterday.getTime()) return '昨日';
+  return '更早前';
+};
+
 /* ── Pagination ── */
 
 const PaginationRow = styled.div`
@@ -918,12 +945,23 @@ const REPLY_CATEGORY_LABEL: Record<string, { text: string; bg: string; fg: strin
 
 /** 根據 lead 狀態決定顯示邊個 reply badge */
 const getReplyBadge = (lead: Lead) => {
-  if (!lead._replied) return null;
-  // interested + 仲未約到時間
-  if (lead._reply_category === 'interested' && lead._pending_meeting) {
-    return REPLY_CATEGORY_LABEL.interested_pending;
+  // 已回覆 → 顯示回覆分類
+  if (lead._replied) {
+    if (lead._reply_category === 'interested' && lead._pending_meeting) {
+      return REPLY_CATEGORY_LABEL.interested_pending;
+    }
+    return REPLY_CATEGORY_LABEL[lead._reply_category || ''] || { text: lead._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
   }
-  return REPLY_CATEGORY_LABEL[lead._reply_category || ''] || { text: lead._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
+  // 未回覆 → 根據進度顯示
+  if (lead.status === 'contacted') {
+    return lead._has_email_draft
+      ? { text: '草稿待審', bg: '#fef3c7', fg: '#b45309' }
+      : { text: '等回覆', bg: '#e0e7ff', fg: '#6366f1' };
+  }
+  if (lead.status === 'pending') {
+    return { text: '草稿待審', bg: '#fef3c7', fg: '#b45309' };
+  }
+  return { text: '未處理', bg: '#f3f4f6', fg: '#9ca3af' };
 };
 
 const ReplyBadge = styled.span<{ $bg: string; $fg: string }>`
@@ -1471,8 +1509,6 @@ const Leads: React.FC = () => {
                 <tr>
                   <th>{t('leads.status')}</th>
                   <th>{t('leads.name')} <IconSortArrow /></th>
-                  <th>{t('leads.email')}</th>
-                  <th>{t('leads.phone')}</th>
                   <th>{t('leads.reply')}</th>
                   <th>{t('leads.importedAt')}</th>
                   <th>{t('leads.action')}</th>
@@ -1481,7 +1517,7 @@ const Leads: React.FC = () => {
               <tbody>
                 {error ? (
                   <tr>
-                    <EmptyCell colSpan={8}>
+                    <EmptyCell colSpan={6}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
                         <strong style={{ color: '#dc2626' }}>{t('common.error')}</strong>
                         <span style={{ color: '#7f8c8d', fontSize: 13 }}>
@@ -1506,15 +1542,24 @@ const Leads: React.FC = () => {
                     </EmptyCell>
                   </tr>
                 ) : isLoading ? (
-                  <tr><EmptyCell colSpan={8}>{t('leads.loading')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={6}>{t('leads.loading')}</EmptyCell></tr>
                 ) : leads.length === 0 ? (
-                  <tr><EmptyCell colSpan={8}>{t('leads.noLeads')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={6}>{t('leads.noLeads')}</EmptyCell></tr>
                 ) : (
-                  leads.map((lead, i) => {
-                    const name = lead.company_name || 'Unknown';
-                    const color = hashColor(name);
-                    return (
-                      <TRow key={lead._id} $even={i % 2 === 1} style={{ cursor: 'pointer' }} onClick={() => setSelectedLead(lead)}>
+                  (() => {
+                    let lastGroup = '';
+                    return leads.map((lead, i) => {
+                      const name = lead.company_name || 'Unknown';
+                      const color = hashColor(name);
+                      const group = getDateGroup(lead._imported_at);
+                      const showHeader = group !== lastGroup;
+                      if (showHeader) lastGroup = group;
+                      return (
+                        <React.Fragment key={lead._id}>
+                          {showHeader && (
+                            <GroupRow><td colSpan={6}>{group}</td></GroupRow>
+                          )}
+                          <TRow $even={i % 2 === 1} style={{ cursor: 'pointer' }} onClick={() => setSelectedLead(lead)}>
                         <td>
                           <StatusBadge $status={lead.status ?? 'new'}>{lead.status ?? 'new'}</StatusBadge>
                         </td>
@@ -1527,14 +1572,10 @@ const Leads: React.FC = () => {
                             </NameText>
                           </NameCell>
                         </td>
-                        <td>{lead.email || '—'}</td>
-                        <td>{lead.phone || '—'}</td>
                         <td>
                           {(() => {
                             const badge = getReplyBadge(lead);
-                            return badge
-                              ? <ReplyBadge $bg={badge.bg} $fg={badge.fg}>{badge.text}</ReplyBadge>
-                              : <NoReplyText>—</NoReplyText>;
+                            return <ReplyBadge $bg={badge.bg} $fg={badge.fg}>{badge.text}</ReplyBadge>;
                           })()}
                         </td>
                         <td>{lead._imported_at ? new Date(lead._imported_at).toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</td>
@@ -1560,8 +1601,10 @@ const Leads: React.FC = () => {
                           </ActionBtn>
                         </td>
                       </TRow>
-                    );
-                  })
+                        </React.Fragment>
+                      );
+                    });
+                  })()
                 )}
               </tbody>
             </Table>
