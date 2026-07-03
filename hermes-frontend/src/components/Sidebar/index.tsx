@@ -309,11 +309,11 @@ const MenuList = styled.ul`
   list-style: none;
   margin: 4px 6px 4px 8px;
   padding: 0;
-  border: 1px dashed ${({ theme }) => theme.colors.border};
+  border: 1.5px dashed ${({ theme }) => theme.colors.borderStrong};
   border-radius: 8px;
 
   & > li + li {
-    border-top: 1px dashed ${({ theme }) => theme.colors.border};
+    border-top: 1.5px dashed ${({ theme }) => theme.colors.borderStrong};
   }
 
   [data-collapsed="true"] & {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
@@ -267,7 +267,7 @@ const TabsRow = styled.div`
   display: flex;
   align-items: stretch;
   gap: 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  border-bottom: 2px solid ${({ theme }) => theme.colors.border};
 `;
 
 const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
@@ -304,27 +304,44 @@ const TabLabel = styled.span<{ $active?: boolean }>`
 const SubPillRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   padding: 10px 24px;
   flex-wrap: wrap;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  position: relative;
+`;
+
+const SubPillIndicator = styled.div<{ $left: number; $width: number }>`
+  position: absolute;
+  height: 32px;
+  border-radius: 999px;
+  background: rgba(219, 234, 254, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(191, 219, 254, 0.4);
+  box-shadow: 0 1px 4px rgba(37, 99, 235, 0.06);
+  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1), width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  left: ${({ $left }) => $left}px;
+  width: ${({ $width }) => $width}px;
+  pointer-events: none;
+  z-index: 0;
 `;
 
 const SubPill = styled.button<{ $active?: boolean }>`
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  svg { flex-shrink: 0; }
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.8125rem;
   font-weight: ${({ $active }) => ($active ? 600 : 400)};
-  border: 1px solid ${({ $active, theme }) => ($active ? theme.colors.blue : theme.colors.border)};
-  background: ${({ $active }) => ($active ? '#eff6ff' : 'transparent')};
-  color: ${({ $active, theme }) => ($active ? theme.colors.blue : theme.colors.textSecondary)};
+  background: transparent;
+  color: ${({ $active }) => ($active ? '#2563eb' : 'inherit')};
   cursor: pointer;
-  transition: all 0.15s;
-  &:hover { border-color: ${({ theme }) => theme.colors.blue}; }
+  transition: color 0.15s;
+  position: relative;
+  z-index: 1;
 `;
 
 /* ── Search Bar (inline in SubPillRow) ── */
@@ -1266,6 +1283,20 @@ const Leads: React.FC = () => {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('preparing');
   const [activeSub, setActiveSub] = useState('');
+  const subPillRowRef = useRef<HTMLDivElement>(null);
+  const subPillRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const [pillIndicator, setPillIndicator] = useState({ left: 0, width: 0 });
+
+  useLayoutEffect(() => {
+    const el = subPillRefs.current.get(activeSub);
+    const row = subPillRowRef.current;
+    if (el && row) {
+      const rowRect = row.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
+      setPillIndicator({ left: elRect.left - rowRect.left, width: elRect.width });
+    }
+  }, [activeSub, activeTab]);
+
   const [showAdd, setShowAdd] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [form, setForm] = useState({
@@ -1465,18 +1496,17 @@ const Leads: React.FC = () => {
           ))}
         </TabsRow>
 
-        <SubPillRow>
+        <SubPillRow ref={subPillRowRef}>
+          {curTab.subs.length > 1 && <SubPillIndicator $left={pillIndicator.left} $width={pillIndicator.width} />}
           {curTab.subs.length > 1 && curTab.subs.map(sub => (
             <SubPill
               key={sub.key}
+              ref={el => { if (el) subPillRefs.current.set(sub.key, el); }}
               $active={activeSub === sub.key}
               onClick={() => handleSubClick(sub.key)}
             >
-              <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-                <path d={SUB_ICONS[sub.icon] || SUB_ICONS[''] || ''} />
-              </svg>
               {sub.label}
-              <span style={{ marginLeft: 2, opacity: 0.7 }}>{subCounts[sub.key] ?? 0}</span>
+              <span style={{ opacity: 0.5 }}>{subCounts[sub.key] ?? 0}</span>
             </SubPill>
           ))}
           <SearchWrap>
