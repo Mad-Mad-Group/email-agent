@@ -64,14 +64,96 @@ function callHermes(prompt, timeoutMs = 240000) {
         maxBuffer: 16 * 1024 * 1024,
     });
 }
-/** 由 Hermes output 抽第一個 JSON object */
+/**
+ * 修復 LLM 常見 JSON 問題：
+ * - smart/curly quotes → straight quotes
+ * - unescaped newlines/tabs inside strings
+ * - trailing commas before } or ]
+ * - control characters
+ * - BOM
+ */
+function sanitizeLlmJson(raw) {
+    let s = raw;
+    // BOM
+    s = s.replace(/^﻿/, '');
+    // smart quotes → straight
+    s = s.replace(/[“”„‟″‶]/g, '"');
+    s = s.replace(/[‘’‚‛′‵]/g, "'");
+    // fix unescaped newlines/tabs inside JSON string values
+    // strategy: walk char-by-char inside strings and escape raw control chars
+    let result = '';
+    let inStr = false;
+    let escaped = false;
+    for (let i = 0; i < s.length; i++) {
+        const c = s[i];
+        if (escaped) {
+            result += c;
+            escaped = false;
+            continue;
+        }
+        if (c === '\\') {
+            result += c;
+            escaped = true;
+            continue;
+        }
+        if (c === '"') {
+            result += c;
+            inStr = !inStr;
+            continue;
+        }
+        if (inStr) {
+            if (c === '\n') {
+                result += '\\n';
+                continue;
+            }
+            if (c === '\r') {
+                result += '\\r';
+                continue;
+            }
+            if (c === '\t') {
+                result += '\\t';
+                continue;
+            }
+            // other control chars (0x00-0x1F)
+            const code = c.charCodeAt(0);
+            if (code < 0x20) {
+                result += '\\u' + code.toString(16).padStart(4, '0');
+                continue;
+            }
+        }
+        result += c;
+    }
+    s = result;
+    // trailing commas: ,} or ,]
+    s = s.replace(/,\s*([\]}])/g, '$1');
+    return s;
+}
+/** 由 Hermes output 抽第一個 JSON object（含容錯） */
 function extractJson(s) {
     const m = s.match(/\{[\s\S]*\}/);
     if (!m)
         throw new Error('Hermes 冇回 JSON: ' + s.slice(0, 200));
-    return JSON.parse(m[0]);
+    // 先試原版
+    try {
+        return JSON.parse(m[0]);
+    }
+    catch { /* 落去修復 */ }
+    // 修復後再試
+    try {
+        return JSON.parse(sanitizeLlmJson(m[0]));
+    }
+    catch { /* 落去 fallback */ }
+    // 最後手段：搵最內層嘅 balanced {}
+    const inner = s.match(/\{[^{}]*\}/);
+    if (inner) {
+        try {
+            return JSON.parse(sanitizeLlmJson(inner[0]));
+        }
+        catch { /* 放棄 */ }
+    }
+    throw new Error('Hermes JSON parse 失敗 (已嘗試修復): ' + s.slice(0, 300));
 }
-/** 由 Hermes output 抽 JSON array（支援截斷修復） */
+/** 由 Hermes output 抽 JSON array（支援截斷修復 + 容錯） */
 function extractJsonArray(s) {
     // 先試完整 match
     const m = s.match(/\[[\s\S]*\]/);
@@ -79,7 +161,11 @@ function extractJsonArray(s) {
         try {
             return JSON.parse(m[0]);
         }
-        catch { /* 落去修復 */ }
+        catch { /* 試修復 */ }
+        try {
+            return JSON.parse(sanitizeLlmJson(m[0]));
+        }
+        catch { /* 落去截斷修復 */ }
     }
     // 搵開頭 [ 但冇結尾 ]（截斷）→ 修復
     const start = s.indexOf('[');
@@ -99,9 +185,12 @@ function extractJsonArray(s) {
     try {
         return JSON.parse(raw);
     }
-    catch {
-        throw new Error('Hermes JSON 截斷修復失敗: ' + s.slice(0, 300));
+    catch { /* 試修復 */ }
+    try {
+        return JSON.parse(sanitizeLlmJson(raw));
     }
+    catch { /* 放棄 */ }
+    throw new Error('Hermes JSON array 截斷修復失敗: ' + s.slice(0, 300));
 }
 /**
  * 叫 Hermes 並攞 JSON。parse 唔到（佢「講」而唔係回 JSON）就再叫一次強硬版。
