@@ -360,6 +360,10 @@ const en = {
     resultFalse: 'No',
     batchUnit: '',
     steps: 'steps',
+    sortPriority: 'Sort: Priority',
+    sortNewest: 'Sort: Newest',
+    sortOldest: 'Sort: Oldest',
+    sortSkill: 'Sort: Skill',
   },
   users: {
     teamOverview: 'Team Overview',

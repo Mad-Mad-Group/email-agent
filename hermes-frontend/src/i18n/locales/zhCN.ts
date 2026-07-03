@@ -360,6 +360,10 @@ const zhCN = {
     resultFalse: '否',
     batchUnit: '笔',
     steps: '步骤',
+    sortPriority: '排序：优先级',
+    sortNewest: '排序：最新',
+    sortOldest: '排序：最旧',
+    sortSkill: '排序：技能',
   },
   users: {
     teamOverview: '团队总览',

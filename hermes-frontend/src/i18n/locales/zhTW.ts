@@ -360,6 +360,10 @@ const zhTW = {
     resultFalse: '否',
     batchUnit: '筆',
     steps: '步驟',
+    sortPriority: '排序：優先級',
+    sortNewest: '排序：最新',
+    sortOldest: '排序：最舊',
+    sortSkill: '排序：技能',
   },
   users: {
     teamOverview: '團隊總覽',

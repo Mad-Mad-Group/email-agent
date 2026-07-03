@@ -62,40 +62,51 @@ function getErrorMessage(task: TaskItem): string {
 /* i18n-aware helpers — accept t function */
 type TFunc = (key: string, opts?: Record<string, unknown>) => string;
 
-function getResultSummary(task: TaskItem, t: TFunc): string {
+function getResultSummary(task: TaskItem, t: TFunc): React.ReactNode | string {
   const r = task.result ?? getField(task, 'result');
   if (!r) return '';
   if (typeof r === 'string') return r;
   if (typeof r === 'object' && r !== null) {
     const keys = Object.keys(r);
-    return keys.slice(0, 2).map(k => {
+    const parts = keys.slice(0, 3).map((k, i) => {
       const label = t(`tasks.results.${k}`, { defaultValue: k });
       const v = (r as Record<string, unknown>)[k];
-      const vs = v === true ? t('tasks.resultTrue') : v === false ? t('tasks.resultFalse') : String(v).slice(0, 30);
-      return `${label}: ${vs}`;
-    }).join(' · ');
+      let valNode: React.ReactNode;
+      if (v === true) {
+        valNode = <span style={{ color: '#16a34a' }}>✓</span>;
+      } else if (v === false) {
+        valNode = <span style={{ color: '#94a3b8' }}>✗</span>;
+      } else if (typeof v === 'number') {
+        valNode = <span style={{ color: '#2563eb', fontWeight: 700 }}>{v}</span>;
+      } else {
+        valNode = <span>{String(v).slice(0, 25)}</span>;
+      }
+      return <span key={k}>{i > 0 && ' · '}{label}: {valNode}</span>;
+    });
+    return <>{parts}</>;
   }
   return '';
 }
 
-function friendlyParam(key: string, val: unknown, t: TFunc): string {
+function friendlyParamNode(key: string, val: unknown, t: TFunc): React.ReactNode {
   const label = t(`tasks.params.${key}`, { defaultValue: key });
+  if (typeof val === 'number') {
+    const unit = t('tasks.batchUnit');
+    return <>{label}: <span style={{ color: '#2563eb', fontWeight: 700 }}>{val}</span>{unit ? ` ${unit}` : ''}</>;
+  }
   let s = typeof val === 'string' ? val : JSON.stringify(val);
-  // Translate known values
   const translated = t(`tasks.paramValues.${s}`, { defaultValue: '' });
   if (translated) s = translated;
-  const unit = t('tasks.batchUnit');
-  if (typeof val === 'number') s = unit ? `${val} ${unit}` : `${val}`;
   if (s.length > 30) s = s.slice(0, 30) + '…';
-  return `${label}: ${s}`;
+  return <>{label}: {s}</>;
 }
-function getParamsSummary(task: TaskItem, t: TFunc): string {
+function getParamsSummary(task: TaskItem, t: TFunc): React.ReactNode {
   const p = getField(task, 'params') ?? task.payload;
   if (!p || typeof p !== 'object') return '';
   const obj = p as Record<string, unknown>;
   const keys = Object.keys(obj);
   if (keys.length === 0) return '';
-  return keys.slice(0, 2).map(k => friendlyParam(k, obj[k], t)).join(' · ');
+  return <>{keys.slice(0, 2).map((k, i) => <span key={k}>{i > 0 && ' · '}{friendlyParamNode(k, obj[k], t)}</span>)}</>;
 }
 
 /* ── Column config ── */
@@ -176,7 +187,7 @@ const Breadcrumb = styled.ol`
 `;
 
 const Toolbar = styled.div`
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center;
   flex-wrap: wrap; gap: 12px;
 `;
 
@@ -195,6 +206,24 @@ const SearchWrap = styled.div`
   position: relative; display: flex; align-items: center;
   color: ${({ theme }) => theme.colors.textTertiary};
   svg { position: absolute; left: 10px; pointer-events: none; }
+`;
+
+const SortSelect = styled.select`
+  padding: 8px 28px 8px 12px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  background: ${({ theme }) => theme.colors.surface};
+  font-size: 0.8125rem; font-family: ${({ theme }) => theme.fonts.primary};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  outline: none; cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color 0.15s;
+  &:hover { border-color: ${({ theme }) => theme.colors.borderStrong}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.blue}; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
 `;
 
 const SearchInput = styled.input`
@@ -311,63 +340,72 @@ const Card = styled.div`
   background: #ffffff;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.tile}px;
-  padding: 12px ${({ theme }) => theme.spacing.md}px;
+  padding: 14px ${({ theme }) => theme.spacing.md}px 12px;
   box-shadow: 0 1px 2px rgba(15,23,42,0.04);
   transition: box-shadow 0.15s, transform 0.12s, border-color 0.15s;
   cursor: default;
+  min-height: 120px;
+  display: flex; flex-direction: column;
+  gap: 6px; position: relative;
   &:hover {
     box-shadow: 0 2px 8px rgba(15,23,42,0.07);
     transform: translateY(-1px);
   }
 `;
 
+const CardTopRow = styled.div`
+  display: flex; align-items: center; gap: 6px;
+`;
+
 const CardTitle = styled.div`
   font-size: 0.875rem; font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
-  margin-bottom: 4px;
+  line-height: 1.4; flex: 1; min-width: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 `;
 
+const CardDescRow = styled.div`
+  display: flex; align-items: flex-start; gap: 6px;
+  flex: 1;
+`;
+
 const CardDesc = styled.p`
-  margin: 0 0 ${({ theme }) => theme.spacing.sm}px;
+  margin: 0;
   font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textSecondary};
-  line-height: 1.4;
+  line-height: 1.5; flex: 1; min-width: 0;
   display: -webkit-box; -webkit-line-clamp: 2;
   -webkit-box-orient: vertical; overflow: hidden;
 `;
 
 const CardFooter = styled.div`
   display: flex; align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-`;
-
-const CardMeta = styled.div`
-  display: flex; align-items: center; gap: 6px;
+  justify-content: flex-end;
 `;
 
 const AgentTag = styled.span<{ $bg: string }>`
   display: inline-flex; align-items: center; gap: 4px;
   padding: 2px 10px; border-radius: 99px;
   background: ${({ $bg }) => $bg};
-  color: #334155; font-size: 0.75rem; font-weight: 600;
-  white-space: nowrap;
+  color: #334155; font-size: 0.6875rem; font-weight: 600;
+  white-space: nowrap; flex-shrink: 0; margin-top: 2px;
   svg { flex-shrink: 0; }
 `;
 
 const SkillPill = styled.span<{ $c: string }>`
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 2px 10px; border-radius: 99px; font-size: 0.75rem; font-weight: 600;
+  padding: 2px 10px; border-radius: 99px; font-size: 0.6875rem; font-weight: 600;
   background: ${({ $c }) => $c}12;
   color: ${({ $c }) => $c};
+  white-space: nowrap; flex-shrink: 0;
   svg { flex-shrink: 0; }
 `;
 
-const PriorityPill = styled.span<{ $c: string }>`
-  display: inline-block; padding: 2px 10px;
-  border-radius: 99px; font-size: 0.75rem; font-weight: 600;
-  background: ${({ theme }) => theme.colors.surfaceMuted};
-  color: ${({ $c }) => $c};
+const PriorityBadge = styled.span<{ $c: string }>`
+  position: absolute; top: 10px; right: 10px;
+  padding: 2px 10px; border-radius: 99px;
+  font-size: 0.625rem; font-weight: 700;
+  background: ${({ $c }) => $c};
+  color: #fff;
 `;
 
 const CardDate = styled.span`
@@ -402,7 +440,13 @@ const Footer = styled.footer`
 function fmtDate(iso: string): string {
   if (!iso) return '';
   const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const month = d.toLocaleString('en-US', { month: 'short' });
+  const day = d.getDate();
+  let h = d.getHours();
+  const min = d.getMinutes().toString().padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${month} ${day}, ${h}:${min}${ampm}`;
 }
 
 function priorityColor(p: string): string {
@@ -741,9 +785,29 @@ const ProgPct = styled.span`
 
 /* ═══════════ Component ═══════════ */
 
+type SortKey = 'priority' | 'newest' | 'oldest' | 'skill';
+const PRIORITY_WEIGHT: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
+
+function sortTasks(arr: TaskItem[], key: SortKey): TaskItem[] {
+  const sorted = [...arr];
+  switch (key) {
+    case 'priority':
+      return sorted.sort((a, b) => (PRIORITY_WEIGHT[getPriority(a)] ?? 9) - (PRIORITY_WEIGHT[getPriority(b)] ?? 9));
+    case 'newest':
+      return sorted.sort((a, b) => new Date(getCreatedAt(b)).getTime() - new Date(getCreatedAt(a)).getTime());
+    case 'oldest':
+      return sorted.sort((a, b) => new Date(getCreatedAt(a)).getTime() - new Date(getCreatedAt(b)).getTime());
+    case 'skill':
+      return sorted.sort((a, b) => getSkill(a).localeCompare(getSkill(b)));
+    default:
+      return sorted;
+  }
+}
+
 const Tasks: React.FC = () => {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<SortKey>('priority');
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
   const [collapsedCols, setCollapsedCols] = useState<Set<string>>(() => {
     // On mobile, default collapse all except 'pending'
@@ -787,8 +851,12 @@ const Tasks: React.FC = () => {
       if (m[s]) m[s].push(t);
       else m['pending'].push(t);
     }
+    // Apply sort to each column
+    for (const key of Object.keys(m)) {
+      m[key] = sortTasks(m[key], sortBy);
+    }
     return m;
-  }, [filtered]);
+  }, [filtered, sortBy]);
 
   return (
     <Page>
@@ -805,6 +873,12 @@ const Tasks: React.FC = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
         </SearchWrap>
+        <SortSelect value={sortBy} onChange={(e) => setSortBy(e.target.value as SortKey)}>
+          <option value="priority">{t('tasks.sortPriority')}</option>
+          <option value="newest">{t('tasks.sortNewest')}</option>
+          <option value="oldest">{t('tasks.sortOldest')}</option>
+          <option value="skill">{t('tasks.sortSkill')}</option>
+        </SortSelect>
       </Toolbar>
 
       <Board>
@@ -840,7 +914,7 @@ const Tasks: React.FC = () => {
                     const agentId = getStr(task, 'assigned_agent_id');
 
                     // Description: show error for failed, result for completed, params otherwise
-                    let desc = paramStr || t('tasks.noDetails');
+                    let desc: React.ReactNode = paramStr || t('tasks.noDetails');
                     if (status === 'failed' && errMsg) desc = errMsg;
                     else if (status === 'completed' && resultStr) desc = resultStr;
 
@@ -848,16 +922,18 @@ const Tasks: React.FC = () => {
 
                     return (
                       <Card key={task._id} onClick={() => setSelectedTask(task)} style={{ cursor: 'pointer' }}>
-                        <CardTitle>{title}</CardTitle>
-                        <CardDesc>
-                          {status === 'failed' ? <ErrText>{desc}</ErrText> : desc}
-                        </CardDesc>
+                        <PriorityBadge $c={priorityColor(priority)}>{t(`tasks.priority.${priority}`, { defaultValue: priority })}</PriorityBadge>
+                        <CardTopRow>
+                          {skill && <SkillPill $c={skillColor(skill)}><I size={11}>{skillIcon(skill)}</I>{t(`tasks.skills.${skill}`, { defaultValue: skill })}</SkillPill>}
+                          <CardTitle>{title}</CardTitle>
+                        </CardTopRow>
+                        <CardDescRow>
+                          <AgentTag $bg={agentColor(assignee)}><I size={10}>{agentIcon(assignee)}</I>{t(`tasks.agents.${assignee}`, { defaultValue: assignee })}</AgentTag>
+                          <CardDesc>
+                            {status === 'failed' ? <ErrText>{desc}</ErrText> : desc}
+                          </CardDesc>
+                        </CardDescRow>
                         <CardFooter>
-                          <CardMeta>
-                            <AgentTag $bg={agentColor(assignee)}><I size={12}>{agentIcon(assignee)}</I>{t(`tasks.agents.${assignee}`, { defaultValue: assignee })}</AgentTag>
-                            {skill && <SkillPill $c={skillColor(skill)}><I size={12}>{skillIcon(skill)}</I>{t(`tasks.skills.${skill}`, { defaultValue: skill })}</SkillPill>}
-                            <PriorityPill $c={priorityColor(priority)}>{t(`tasks.priority.${priority}`, { defaultValue: priority })}</PriorityPill>
-                          </CardMeta>
                           <CardDate>{fmtDate(created)}</CardDate>
                         </CardFooter>
                       </Card>
