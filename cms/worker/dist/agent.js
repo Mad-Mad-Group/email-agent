@@ -540,14 +540,22 @@ async function doReplyCheck(_p, db) {
 /** S1 搜尋 → 叫 Hermes 開 stealth browser 搵 Google Maps，回真公司 */
 async function doSearch(p, db) {
     const n = Math.min(Number(p.target_count) || 3, 10);
-    // 用最快嘅工具（web search API 好過駕駛 Maps UI），單次 call 避免 double timeout
+    // ⚠️ curl 式 web search 會俾 captcha 擋（Google/Bing/DDG）→ 一定要用 Hermes 個 stealth
+    // browser（Browserbase/Camofox，繞 captcha）。搵唔到就回 []，唔好作、唔好回文字。
     const prompt = `Find up to ${n} real "${p.keyword}" businesses in ${p.location}.
-Use the fastest method available (web search tool preferred; browser only if needed).
-For each: name, address, phone, website. Use "" for unknown. Be quick.
+
+HOW TO SEARCH (important):
+- You have a STEALTH browser that bypasses captchas — USE IT (open Google/Bing/Maps search results or a business directory and read the listings).
+- Do NOT rely on plain curl/HTTP requests to search engines; they get captcha-blocked from this environment and WILL fail.
+- Keep it quick: read search-result listings rather than heavily driving map UIs.
+
+For each business: name, address, phone, website. Use "" for unknown fields.
+Do NOT fabricate or guess — only real, verifiable businesses you actually found.
+If after genuinely searching you find none, reply with an empty array: []
 
 Reply with ONLY a raw JSON array — start with [ end with ]. No commentary.
 [{"name":"","address":"","phone":"","website":""}]`;
-    const arr = extractJsonArray(callHermes(prompt, 420000));
+    const arr = hermesJson(prompt, { array: true, timeout: 420000 });
     const ids = [];
     for (const r of arr.slice(0, n)) {
         if (!r?.name)
