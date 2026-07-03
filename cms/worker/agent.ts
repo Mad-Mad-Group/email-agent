@@ -285,7 +285,7 @@ ${(replyText || '').slice(0, 2000)}`;
 
   const leadCtx = buildLeadContext(lead);
   const prompt = `你係 ${BRAND_NAME} 嘅業務。潛在客戶「${lead.company_name || lead.email}」啱啱回覆咗我哋嘅 outreach email。
-請寫一封得體、簡短的跟進回覆（繁體中文書面語 / 正式商業書面語；避免粵語口語詞如唔/冇/嘅/喺/呢，用不/沒有/的/在/這；避免 emoji；英文專業名詞可保留）。只根據下面資料，不要作事實、不要過度承諾。
+請寫一封得體、簡短的跟進回覆。語言用正式英文或繁體中文書面語皆可，按對方情況揀（英文中學／國際機構用英文亦可）；但若用中文則必須書面語，不可粵語口語（用不/沒有/的/在/這，不用唔/冇/嘅/喺/呢）；正文避免 emoji。只根據下面資料，不要作事實、不要過度承諾。
 
 ${BRAND_CONTEXT_BLOCK}
 ${leadCtx}
@@ -879,7 +879,7 @@ async function doDraft(p: any, db: Db) {
   const lead = await db.collection('leads').findOne({ _id });
   if (!lead) throw new Error('lead 唔存在');
   const leadCtx = buildLeadContext(lead);
-  const prompt = `Write a short, warm B2B outreach email in formal written 繁體中文 (書面語 / 正式商業書面語；避免粵語口語詞如唔/冇/嘅/喺/呢，用不/沒有/的/在/這；避免 emoji；英文專業名詞可保留) from ${BRAND_NAME} (${BRAND_TAGLINE})
+  const prompt = `Write a short, warm B2B outreach email in professional English OR formal written 繁體中文 書面語 (pick whichever best fits the lead — English-medium / international leads → English is fine; but if you write in Chinese it MUST be 書面語, NOT Cantonese colloquial: 用不/沒有/的/在/這，不用唔/冇/嘅/喺/呢; avoid emoji in the body) from ${BRAND_NAME} (${BRAND_TAGLINE})
 — a Hong Kong digital agency — to the company「${lead.company_name}」.
 
 ${BRAND_CONTEXT_BLOCK}
@@ -975,7 +975,7 @@ async function doFollowupDraft(p: any, db: Db) {
   if (!lead) throw new Error('lead 唔存在');
   const count = (lead._followup_count || 0) + 1;
   const leadCtx = buildLeadContext(lead);
-  const prompt = `Write a SHORT follow-up email (#${count}) in formal written 繁體中文 (書面語 / 正式商業書面語；避免粵語口語詞如唔/冇/嘅/喺/呢，用不/沒有/的/在/這；避免 emoji；英文專業名詞可保留) from ${BRAND_NAME} (${BRAND_TAGLINE})
+  const prompt = `Write a SHORT follow-up email (#${count}) in professional English OR formal written 繁體中文 書面語 (pick whichever best fits the lead — English-medium / international leads → English is fine; but if you write in Chinese it MUST be 書面語, NOT Cantonese colloquial: 用不/沒有/的/在/這，不用唔/冇/嘅/喺/呢; avoid emoji in the body) from ${BRAND_NAME} (${BRAND_TAGLINE})
 to「${lead.company_name}」. We previously reached out but got no reply.
 
 ${BRAND_CONTEXT_BLOCK}
@@ -1022,7 +1022,7 @@ async function doReoutreachDraft(p: any, db: Db) {
   const lead = await db.collection('leads').findOne({ _id });
   if (!lead) throw new Error('lead 唔存在');
   const leadCtx = buildLeadContext(lead);
-  const prompt = `Write a B2B outreach email in formal written 繁體中文 (書面語 / 正式商業書面語；避免粵語口語詞如唔/冇/嘅/喺/呢，用不/沒有/的/在/這；避免 emoji；英文專業名詞可保留) from ${BRAND_NAME} (${BRAND_TAGLINE})
+  const prompt = `Write a B2B outreach email in professional English OR formal written 繁體中文 書面語 (pick whichever best fits the lead — English-medium / international leads → English is fine; but if you write in Chinese it MUST be 書面語, NOT Cantonese colloquial: 用不/沒有/的/在/這，不用唔/冇/嘅/喺/呢; avoid emoji in the body) from ${BRAND_NAME} (${BRAND_TAGLINE})
 to「${lead.company_name}」. They previously replied saying they're NOT interested.
 
 ${BRAND_CONTEXT_BLOCK}
