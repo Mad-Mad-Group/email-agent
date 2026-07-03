@@ -991,6 +991,10 @@ const getReplyBadge = (lead: Lead) => {
   if (lead.status === 'pending') {
     return { text: '草稿待審', bg: '#fef3c7', fg: '#b45309' };
   }
+  // 已有草稿寫咗（但未 send / status 仲係 null）→ 唔算「未處理」，係「草稿待審」
+  if (lead._has_email_draft) {
+    return { text: '草稿待審', bg: '#fef3c7', fg: '#b45309' };
+  }
   return { text: '未處理', bg: '#f3f4f6', fg: '#9ca3af' };
 };
 
