@@ -38,11 +38,12 @@ const GREETINGS = [
 
 const Greeting = styled.p`
   margin: 0 0 28px;
-  font-size: 2rem;
+  font-size: clamp(1.25rem, 4vw, 2rem);
   font-weight: 300;
   color: ${({ theme }) => theme.colors.textPrimary};
   text-align: center;
   letter-spacing: 0.01em;
+  padding: 0 24px;
 `;
 
 /* ── Glow wrapper ── */
@@ -62,7 +63,8 @@ const floatDot = keyframes`
 const GlowWrap = styled.div`
   position: relative;
   max-width: 760px;
-  width: 100%;
+  width: calc(100% - 48px);
+  ${media.mobile} { width: calc(100% - 32px); }
 
   /* soft halo behind the bar */
   &::before {
@@ -162,6 +164,7 @@ const BarInput = styled.input`
   border: none; outline: none;
   padding: 18px 0 18px 28px;
   font-size: 1.05rem;
+  ${media.mobile} { padding: 14px 0 14px 18px; font-size: 0.9375rem; }
   background: transparent;
   color: ${({ theme }) => theme.colors.textPrimary};
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
