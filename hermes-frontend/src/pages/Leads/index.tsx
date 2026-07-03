@@ -1578,7 +1578,11 @@ const Leads: React.FC = () => {
                             return <ReplyBadge $bg={badge.bg} $fg={badge.fg}>{badge.text}</ReplyBadge>;
                           })()}
                         </td>
-                        <td>{lead._imported_at ? new Date(lead._imported_at).toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</td>
+                        <td>{(() => {
+                          const g = getDateGroup(lead._imported_at);
+                          if (g === '今日' || g === '昨日') return g;
+                          return lead._imported_at ? new Date(lead._imported_at).toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—';
+                        })()}</td>
                         <td>
                           {lead.status && lead.status !== 'contacted' && NEXT_STATUS[lead.status] && (
                             <ActionBtn
