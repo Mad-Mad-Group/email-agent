@@ -317,6 +317,15 @@ function classifyReply(subject, body) {
     return 'question';
 }
 /**
+ * 預設會議時間：下星期一 10:00（本地時間）
+ */
+function getDefaultMeetingTime() {
+    const d = new Date();
+    d.setDate(d.getDate() + ((8 - d.getDay()) % 7 || 7));
+    d.setHours(10, 0, 0, 0);
+    return d;
+}
+/**
  * 用 Hermes(LLM) 分析一封回覆：分類 + 真摘要 + 語氣 + 下一步建議。
  * Hermes 掛咗 / parse 唔到 → fallback keyword（classifyReply），確保唔會漏。
  */
@@ -335,9 +344,11 @@ ${clip}
   "category": "interested | not_interested | meeting | auto_reply | question",
   "summary": "一兩句繁體中文：對方實際講咩、乜嘢語氣",
   "sentiment": "positive | neutral | negative",
-  "next_step": "一句：建議我哋下一步（例如 約時間 / 報價 / 跟進 / 放棄）"
+  "next_step": "一句：建議我哋下一步（例如 約時間 / 報價 / 跟進 / 放棄）",
+  "proposed_time": "ISO 8601 格式（如 2026-07-10T14:30:00+08:00）；冇提及具體時間就填空字串 \"\""
 }
-category 定義：interested=有興趣想了解；meeting=想開會/約時間；not_interested=明確拒絕或退訂；auto_reply=自動回覆/放假；question=其他或有疑問。內容唔清楚就填 "question"。`;
+category 定義：interested=有興趣想了解；meeting=想開會/約時間；not_interested=明確拒絕或退訂；auto_reply=自動回覆/放假；question=其他或有疑問。內容唔清楚就填 "question"。
+proposed_time：如果對方提到了具體日期/時間（如「下週三下午兩點」「7月10號 2:30pm」），轉成 ISO 8601；冇提就留空。`;
     try {
         const c = hermesJson(prompt, { timeout: 120000 });
         return {
@@ -347,6 +358,7 @@ category 定義：interested=有興趣想了解；meeting=想開會/約時間；
                 ? c.sentiment
                 : 'neutral',
             next_step: String(c.next_step || '').slice(0, 200),
+            proposed_time: String(c.proposed_time || ''),
             via: 'hermes',
         };
     }
@@ -357,6 +369,7 @@ category 定義：interested=有興趣想了解；meeting=想開會/約時間；
             summary: subject.slice(0, 120),
             sentiment: 'neutral',
             next_step: '',
+            proposed_time: '',
             via: 'keyword-fallback',
         };
     }
@@ -568,17 +581,22 @@ async function doReplyCheck(_p, db) {
                 _reply_at: nowIso(),
             },
         });
-        // meeting 回覆 → 自動建行事曆事件（預設下星期一 10:00）
+        // meeting 回覆 → 自動建行事曆事件（用回覆中提及的時間，否則預設下星期一 10:00）
         if (a.category === 'meeting') {
-            const nextMon = new Date();
-            nextMon.setDate(nextMon.getDate() + ((8 - nextMon.getDay()) % 7 || 7));
-            nextMon.setHours(10, 0, 0, 0);
-            const endTime = new Date(nextMon.getTime() + 60 * 60 * 1000); // 1 小時
+            let meetingStart;
+            if (a.proposed_time) {
+                const parsed = new Date(a.proposed_time);
+                meetingStart = isNaN(parsed.getTime()) ? getDefaultMeetingTime() : parsed;
+            }
+            else {
+                meetingStart = getDefaultMeetingTime();
+            }
+            const endTime = new Date(meetingStart.getTime() + 60 * 60 * 1000); // 1 小時
             await db.collection('calendar_events').insertOne({
                 event_id: (0, crypto_1.randomBytes)(8).toString('hex'),
                 title: `會議：${m.lead.company_name || m.lead.email}`,
                 description: a.summary,
-                start: nextMon,
+                start: meetingStart,
                 end: endTime,
                 all_day: false,
                 type: 'meeting',
@@ -589,7 +607,7 @@ async function doReplyCheck(_p, db) {
             });
             // 有明確時間 → 清除待約時間標記
             await db.collection('leads').updateOne({ _id: m.lead._id }, { $set: { _pending_meeting: false } });
-            log(`  → 已建立會議事件：${m.lead.company_name}`);
+            log(`  → 已建立會議事件：${m.lead.company_name} @ ${meetingStart.toISOString()}`);
         }
         // not_interested → 自動派 reoutreach draft（換策略再嘗試，最多 1 次）
         if (a.category === 'not_interested' && !m.lead._reoutreach_done) {

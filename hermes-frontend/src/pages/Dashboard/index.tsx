@@ -239,31 +239,36 @@ const Dashboard: React.FC = () => {
   const { data: leadsData, isLoading: leadsLoading } = useLeads({ page: 1, limit: 100 });
   const { data: emailData, isLoading: emailsLoading } = useEmailQueue({ page: 1, limit: 100 });
 
-  // Fetch calendar events for current + next month
+  // Fetch calendar events for current + next month (auto-refresh every 60s)
   const [calEvents, setCalEvents] = useState<UpcomingEvent[]>([]);
   useEffect(() => {
-    const now = new Date();
-    const m1 = now.getMonth() + 1;
-    const y1 = now.getFullYear();
-    const m2 = m1 === 12 ? 1 : m1 + 1;
-    const y2 = m1 === 12 ? y1 + 1 : y1;
-    Promise.all([
-      client.get('/calendar', { params: { month: m1, year: y1 } }).catch(() => ({ data: [] })),
-      client.get('/calendar', { params: { month: m2, year: y2 } }).catch(() => ({ data: [] })),
-    ]).then(([r1, r2]) => {
-      const parse = (r: any) => {
-        const items = r.data?.data ?? r.data ?? [];
-        return Array.isArray(items) ? items : [];
-      };
-      const all = [...parse(r1), ...parse(r2)] as UpcomingEvent[];
-      // Filter to upcoming events (today or later)
-      const todayStr = new Date().toISOString().slice(0, 10);
-      const upcoming = all
-        .filter(e => e.start && e.start.slice(0, 10) >= todayStr)
-        .sort((a, b) => a.start.localeCompare(b.start))
-        .slice(0, 8);
-      setCalEvents(upcoming);
-    });
+    const fetchEvents = () => {
+      const now = new Date();
+      const m1 = now.getMonth() + 1;
+      const y1 = now.getFullYear();
+      const m2 = m1 === 12 ? 1 : m1 + 1;
+      const y2 = m1 === 12 ? y1 + 1 : y1;
+      Promise.all([
+        client.get('/calendar', { params: { month: m1, year: y1 } }).catch(() => ({ data: [] })),
+        client.get('/calendar', { params: { month: m2, year: y2 } }).catch(() => ({ data: [] })),
+      ]).then(([r1, r2]) => {
+        const parse = (r: any) => {
+          const items = r.data?.data ?? r.data ?? [];
+          return Array.isArray(items) ? items : [];
+        };
+        const all = [...parse(r1), ...parse(r2)] as UpcomingEvent[];
+        // Filter to upcoming events — hide events whose start time has already passed
+        const nowIso = new Date().toISOString();
+        const upcoming = all
+          .filter(e => e.start && (e.all_day ? e.start.slice(0, 10) >= nowIso.slice(0, 10) : e.start >= nowIso))
+          .sort((a, b) => a.start.localeCompare(b.start))
+          .slice(0, 8);
+        setCalEvents(upcoming);
+      });
+    };
+    fetchEvents();
+    const timer = setInterval(fetchEvents, 60_000); // 每 60 秒刷新
+    return () => clearInterval(timer);
   }, []);
 
   const allLeads: Lead[] = leadsData?.data || [];
