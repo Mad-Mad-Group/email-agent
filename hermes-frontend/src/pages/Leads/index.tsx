@@ -356,7 +356,7 @@ const SubPill = styled.button<{ $active?: boolean; $color?: string }>`
 
 const SearchWrap = styled.div`
   position: relative;
-  width: 240px;
+  width: 360px;
   margin-left: auto;
   ${media.mobile} { width: 100%; margin-left: 0; }
 `;
@@ -374,14 +374,14 @@ const SearchIcon = styled.span`
 
 const SearchInput = styled.input`
   width: 100%;
-  padding: 8px 12px 8px 36px;
+  padding: 8px 16px 8px 36px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
+  border-radius: 999px;
   font-size: 0.8125rem;
   outline: none;
   color: ${({ theme }) => theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.surfaceMuted};
-  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
   &:focus {
     background: ${({ theme }) => theme.colors.surface};
