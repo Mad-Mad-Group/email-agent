@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
@@ -140,12 +140,15 @@ const PageSub = styled.p`
 
 /* ── Header Card (title + buttons + stats in one box) ── */
 
-const HeaderSection = styled.div`
+const HeaderCard = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  box-shadow: 0 1px 3px rgba(15,23,42,0.06);
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const HeaderTop = styled.div`
@@ -254,6 +257,7 @@ const TabsRow = styled.div`
   display: flex;
   align-items: stretch;
   gap: 0;
+  padding: 0 24px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
@@ -262,30 +266,35 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 14px 24px;
+  padding: 14px ${({ theme }) => theme.spacing.lg}px;
   background: transparent;
   border: none;
   border-bottom: 2px solid ${({ $active, $color }) => $active ? ($color || '#2563eb') : 'transparent'};
   margin-bottom: -1px;
+  font-size: 0.8125rem;
+  font-weight: ${({ $active }) => $active ? 700 : 500};
+  color: ${({ $active, $color, theme }) => $active ? ($color || '#2563eb') : theme.colors.textSecondary};
   cursor: pointer;
   white-space: nowrap;
   position: relative;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
-  svg { flex-shrink: 0; opacity: ${({ $active }) => $active ? 1 : 0.5}; }
-  color: ${({ $active, theme }) => $active ? 'inherit' : theme.colors.textTertiary};
-  &:hover { background: rgba(0,0,0,0.02); }
+  transition: color 0.15s, border-color 0.15s;
+  svg { flex-shrink: 0; }
+  &:hover {
+    color: ${({ $color }) => $color || '#2563eb'};
+  }
 `;
 
-const TabNumber = styled.span<{ $color: string }>`
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: ${({ $color }) => $color};
-`;
-
-const TabLabel = styled.span<{ $active?: boolean }>`
-  font-size: 0.8125rem;
-  font-weight: ${({ $active }) => $active ? 600 : 500};
-  color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textTertiary};
+const TabCount = styled.span<{ $active?: boolean; $color?: string }>`
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 10px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  background: ${({ $active, $color, theme }) => $active
+    ? ($color || '#2563eb')
+    : theme.colors.surfaceMuted};
+  color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textTertiary};
 `;
 
 const SubPillRow = styled.div`
@@ -372,42 +381,44 @@ const TableWrap = styled.div`
 
 const Table = styled.table`
   width: 100%;
-  border-collapse: collapse;
+  border-collapse: separate;
+  border-spacing: 0;
   font-size: 0.8125rem;
   min-width: 960px;
   th, td {
-    padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
+    padding: 12px ${({ theme }) => theme.spacing.md}px;
     text-align: left;
     white-space: nowrap;
   }
   th {
     font-weight: 600;
     text-transform: uppercase;
-    font-size: 0.6875rem;
-    color: ${({ theme }) => theme.colors.textTertiary};
-    background: #f7f7f4;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+    font-size: 0.8125rem;
+    letter-spacing: 0.03em;
+    color: ${({ theme }) => theme.colors.blue};
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+    border-bottom: 2px solid ${({ theme }) => theme.colors.border};
     user-select: none;
     cursor: default;
   }
   ${media.mobile} {
     min-width: 640px;
     font-size: 0.75rem;
-    th, td { padding: ${({ theme }) => theme.spacing.xs}px ${({ theme }) => theme.spacing.sm}px; }
-    th { font-size: 0.625rem; }
+    th, td { padding: 8px ${({ theme }) => theme.spacing.sm}px; }
+    th { font-size: 0.7rem; }
   }
 `;
 
 const TRow = styled.tr<{ $even?: boolean }>`
-  background: ${({ $even }) => $even ? '#f7f7f4' : '#fff'};
+  background: ${({ theme }) => theme.colors.surface};
   transition: background 0.15s;
-  cursor: pointer;
   &:hover {
-    background: #eff6ff;
+    background: ${({ theme }) => theme.colors.surfaceMuted};
   }
   td {
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+    border-bottom: 1px solid rgba(226,232,240,0.5);
   }
+  &:last-child td { border-bottom: none; }
 `;
 
 const NameCell = styled.div`
@@ -508,6 +519,33 @@ const EmptyCell = styled.td`
   color: ${({ theme }) => theme.colors.textTertiary};
   font-size: 0.875rem;
 `;
+
+/* ── Date Group Header ── */
+
+const GroupRow = styled.tr`
+  td {
+    padding: 10px 16px 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: ${({ theme }) => theme.colors.textTertiary};
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  }
+`;
+
+const getDateGroup = (dateStr?: string): string => {
+  if (!dateStr) return '更早前';
+  const d = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 864e5);
+  const itemDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (itemDate.getTime() >= today.getTime()) return '今日';
+  if (itemDate.getTime() >= yesterday.getTime()) return '昨日';
+  return '更早前';
+};
 
 /* ── Pagination ── */
 
@@ -907,12 +945,23 @@ const REPLY_CATEGORY_LABEL: Record<string, { text: string; bg: string; fg: strin
 
 /** 根據 lead 狀態決定顯示邊個 reply badge */
 const getReplyBadge = (lead: Lead) => {
-  if (!lead._replied) return null;
-  // interested + 仲未約到時間
-  if (lead._reply_category === 'interested' && lead._pending_meeting) {
-    return REPLY_CATEGORY_LABEL.interested_pending;
+  // 已回覆 → 顯示回覆分類
+  if (lead._replied) {
+    if (lead._reply_category === 'interested' && lead._pending_meeting) {
+      return REPLY_CATEGORY_LABEL.interested_pending;
+    }
+    return REPLY_CATEGORY_LABEL[lead._reply_category || ''] || { text: lead._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
   }
-  return REPLY_CATEGORY_LABEL[lead._reply_category || ''] || { text: lead._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
+  // 未回覆 → 根據進度顯示
+  if (lead.status === 'contacted') {
+    return lead._has_email_draft
+      ? { text: '草稿待審', bg: '#fef3c7', fg: '#b45309' }
+      : { text: '等回覆', bg: '#e0e7ff', fg: '#6366f1' };
+  }
+  if (lead.status === 'pending') {
+    return { text: '草稿待審', bg: '#fef3c7', fg: '#b45309' };
+  }
+  return { text: '未處理', bg: '#f3f4f6', fg: '#9ca3af' };
 };
 
 const ReplyBadge = styled.span<{ $bg: string; $fg: string }>`
@@ -1227,6 +1276,26 @@ const Leads: React.FC = () => {
   const [replyCheckMsg, setReplyCheckMsg] = useState('');
   const [followupChecking, setFollowupChecking] = useState(false);
   const [followupCheckMsg, setFollowupCheckMsg] = useState('');
+  const [demoMode, setDemoMode] = useState(false);
+  const [demoLoading, setDemoLoading] = useState(false);
+
+  // 載入 demo mode 狀態
+  useEffect(() => {
+    client.get('/jobs/demo-mode').then(r => {
+      const on = (r.data as any)?.demoMode ?? (r.data as any)?.data?.demoMode ?? false;
+      setDemoMode(on);
+    }).catch(() => {});
+  }, []);
+
+  const handleToggleDemo = async () => {
+    setDemoLoading(true);
+    try {
+      const r = await client.post('/jobs/demo-mode');
+      const on = (r.data as any)?.demoMode ?? (r.data as any)?.data?.demoMode ?? false;
+      setDemoMode(on);
+    } catch {}
+    setDemoLoading(false);
+  };
 
   const handleCheckReplies = async () => {
     setReplyChecking(true); setReplyCheckMsg('');
@@ -1341,32 +1410,56 @@ const Leads: React.FC = () => {
 
   return (
     <Page>
+      {/* Header Card */}
+      <HeaderCard>
+        <HeaderTop>
+          <ProfileInfo>
+            <ProfileTitle>
+              {t('leads.totalInSystem', { count: '__N__' }).split('__N__').map((part, i, arr) =>
+                i < arr.length - 1 ? (
+                  <React.Fragment key={i}>{part}<span className="count-number">{stats.total}</span></React.Fragment>
+                ) : part
+              )}
+            </ProfileTitle>
+          </ProfileInfo>
+          <AddBtn onClick={handleCheckReplies} disabled={replyChecking}>
+            {replyChecking ? t('leads.checking') : t('leads.checkReplies')}
+          </AddBtn>
+          {replyCheckMsg && <span style={{ fontSize: '0.75rem', color: replyCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{replyCheckMsg}</span>}
+          <AddBtn onClick={handleCheckFollowups} disabled={followupChecking}>
+            {followupChecking ? t('leads.checking') : t('leads.checkFollowups')}
+          </AddBtn>
+          {followupCheckMsg && <span style={{ fontSize: '0.75rem', color: followupCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{followupCheckMsg}</span>}
+          <AddBtn
+            onClick={handleToggleDemo}
+            disabled={demoLoading}
+            style={demoMode ? { background: '#dc2626', color: '#fff', border: 'none' } : {}}
+          >
+            {demoMode ? '⏱ Demo ON (10s)' : '⏱ Demo 模式'}
+          </AddBtn>
+          <AddBtnGreen onClick={() => setShowAdd(true)}>
+            <IconPlus />
+            {t('leads.addLead')}
+          </AddBtnGreen>
+        </HeaderTop>
+        <HeaderDivider />
+        <StatsStrip>
+          <StatItem $color="#4f46e5">
+            <StatNumber $color="#4f46e5">{tabCounts.preparing || 0}</StatNumber>
+            <StatLabel>{t('leads.tabPreparing')}</StatLabel>
+          </StatItem>
+          <StatItem $color="#d97706">
+            <StatNumber $color="#d97706">{tabCounts.awaiting || 0}</StatNumber>
+            <StatLabel>{t('leads.tabAwaiting')}</StatLabel>
+          </StatItem>
+          <StatItem $color="#16a34a">
+            <StatNumber $color="#16a34a">{tabCounts.replied || 0}</StatNumber>
+            <StatLabel>{t('leads.tabReplied')}</StatLabel>
+          </StatItem>
+        </StatsStrip>
+      </HeaderCard>
+
         <Card>
-        <HeaderSection>
-          <HeaderTop>
-            <ProfileInfo>
-              <ProfileTitle>
-                {t('leads.totalInSystem', { count: '__N__' }).split('__N__').map((part, i, arr) =>
-                  i < arr.length - 1 ? (
-                    <React.Fragment key={i}>{part}<span className="count-number">{stats.total}</span></React.Fragment>
-                  ) : part
-                )}
-              </ProfileTitle>
-            </ProfileInfo>
-            <AddBtn onClick={handleCheckReplies} disabled={replyChecking}>
-              {replyChecking ? t('leads.checking') : t('leads.checkReplies')}
-            </AddBtn>
-            {replyCheckMsg && <span style={{ fontSize: '0.75rem', color: replyCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{replyCheckMsg}</span>}
-            <AddBtn onClick={handleCheckFollowups} disabled={followupChecking}>
-              {followupChecking ? t('leads.checking') : t('leads.checkFollowups')}
-            </AddBtn>
-            {followupCheckMsg && <span style={{ fontSize: '0.75rem', color: followupCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{followupCheckMsg}</span>}
-            <AddBtnGreen onClick={() => setShowAdd(true)}>
-              <IconPlus />
-              {t('leads.addLead')}
-            </AddBtnGreen>
-          </HeaderTop>
-        </HeaderSection>
         {/* Tabs */}
         <TabsRow>
           {TABS.map(tab => (
@@ -1376,11 +1469,13 @@ const Leads: React.FC = () => {
               $color={tab.color}
               onClick={() => handleTabClick(tab.key)}
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke={tab.color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
                 <path d={TAB_ICONS[tab.icon] || ''} />
               </svg>
-              <TabNumber $color={tab.color}>{tabCounts[tab.key] || 0}</TabNumber>
-              <TabLabel $active={activeTab === tab.key}>{tab.label}</TabLabel>
+              {tab.label}
+              <TabCount $active={activeTab === tab.key} $color={tab.color}>
+                {tabCounts[tab.key] || 0}
+              </TabCount>
             </TabItem>
           ))}
         </TabsRow>
@@ -1414,8 +1509,6 @@ const Leads: React.FC = () => {
                 <tr>
                   <th>{t('leads.status')}</th>
                   <th>{t('leads.name')} <IconSortArrow /></th>
-                  <th>{t('leads.email')}</th>
-                  <th>{t('leads.phone')}</th>
                   <th>{t('leads.reply')}</th>
                   <th>{t('leads.importedAt')}</th>
                   <th>{t('leads.action')}</th>
@@ -1424,7 +1517,7 @@ const Leads: React.FC = () => {
               <tbody>
                 {error ? (
                   <tr>
-                    <EmptyCell colSpan={8}>
+                    <EmptyCell colSpan={6}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
                         <strong style={{ color: '#dc2626' }}>{t('common.error')}</strong>
                         <span style={{ color: '#7f8c8d', fontSize: 13 }}>
@@ -1449,15 +1542,24 @@ const Leads: React.FC = () => {
                     </EmptyCell>
                   </tr>
                 ) : isLoading ? (
-                  <tr><EmptyCell colSpan={8}>{t('leads.loading')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={6}>{t('leads.loading')}</EmptyCell></tr>
                 ) : leads.length === 0 ? (
-                  <tr><EmptyCell colSpan={8}>{t('leads.noLeads')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={6}>{t('leads.noLeads')}</EmptyCell></tr>
                 ) : (
-                  leads.map((lead, i) => {
-                    const name = lead.company_name || 'Unknown';
-                    const color = hashColor(name);
-                    return (
-                      <TRow key={lead._id} $even={i % 2 === 1} style={{ cursor: 'pointer' }} onClick={() => setSelectedLead(lead)}>
+                  (() => {
+                    let lastGroup = '';
+                    return leads.map((lead, i) => {
+                      const name = lead.company_name || 'Unknown';
+                      const color = hashColor(name);
+                      const group = getDateGroup(lead._imported_at);
+                      const showHeader = group !== lastGroup;
+                      if (showHeader) lastGroup = group;
+                      return (
+                        <React.Fragment key={lead._id}>
+                          {showHeader && (
+                            <GroupRow><td colSpan={6}>{group}</td></GroupRow>
+                          )}
+                          <TRow $even={i % 2 === 1} style={{ cursor: 'pointer' }} onClick={() => setSelectedLead(lead)}>
                         <td>
                           <StatusBadge $status={lead.status ?? 'new'}>{lead.status ?? 'new'}</StatusBadge>
                         </td>
@@ -1470,14 +1572,10 @@ const Leads: React.FC = () => {
                             </NameText>
                           </NameCell>
                         </td>
-                        <td>{lead.email || '—'}</td>
-                        <td>{lead.phone || '—'}</td>
                         <td>
                           {(() => {
                             const badge = getReplyBadge(lead);
-                            return badge
-                              ? <ReplyBadge $bg={badge.bg} $fg={badge.fg}>{badge.text}</ReplyBadge>
-                              : <NoReplyText>—</NoReplyText>;
+                            return <ReplyBadge $bg={badge.bg} $fg={badge.fg}>{badge.text}</ReplyBadge>;
                           })()}
                         </td>
                         <td>{lead._imported_at ? new Date(lead._imported_at).toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—'}</td>
@@ -1503,8 +1601,10 @@ const Leads: React.FC = () => {
                           </ActionBtn>
                         </td>
                       </TRow>
-                    );
-                  })
+                        </React.Fragment>
+                      );
+                    });
+                  })()
                 )}
               </tbody>
             </Table>

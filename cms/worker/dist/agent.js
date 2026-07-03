@@ -296,7 +296,9 @@ async function maybeDraftReply(lead, analysis, replyText, db) {
         categoryGuide = `寫法：確認 / 敲定會議時間，簡述議程，可提線上連結或到訪安排。`;
     }
     else if (analysis.category === 'interested') {
-        categoryGuide = `寫法：多謝對方嘅興趣，然後主動提議 2-3 個具體時段（例如「下星期二/三下午 2-4 點」）約一個 15-20 分鐘嘅線上 call 或到訪會面。語氣友善、唔好施壓。唔好堆砌產品資料。`;
+        categoryGuide = `寫法：對方而家係「有興趣、想了解多啲」呢個階段，重點係解答同提供資訊，唔好跳步逼約時間。
+先多謝對方嘅興趣、簡短回應佢感興趣嘅點，然後主動補充 1-2 個最相關嘅重點或案例，並邀請對方講多啲需求或想了解邊方面。
+⚠️ 唔好喺呢階段主動提議具體會議時段或要求對方畀時間。如要行動呼籲，最多輕輕講「如想深入了解，我哋可以安排一個簡短通話，或者先 send 份資料俾你」，唔好指定時間、唔好施壓。`;
     }
     else if (analysis.category === 'question') {
         categoryGuide = `寫法：直接、誠實答返對方嘅問題（見下方原文）。唔確定就照講唔確定，唔好亂作。答完之後自然地提議約個 call 傾多啲。
@@ -306,13 +308,15 @@ ${(replyText || '').slice(0, 2000)}`;
     }
     const leadCtx = buildLeadContext(lead);
     const prompt = `你係 ${brand_1.BRAND_NAME} 嘅業務。潛在客戶「${lead.company_name || lead.email}」啱啱回覆咗我哋嘅 outreach email。
-請寫一封得體、簡短嘅跟進回覆（繁體中文，港式英文夾雜 OK）。淨係根據下面資料，唔好作事實、唔好過度承諾。
+請寫一封得體、簡短的跟進回覆（繁體中文書面語 / 正式商業書面語；避免粵語口語詞如唔/冇/嘅/喺/呢，用不/沒有/的/在/這；避免 emoji；英文專業名詞可保留）。只根據下面資料，不要作事實、不要過度承諾。
 
 ${brand_1.BRAND_CONTEXT_BLOCK}
 ${leadCtx}
 對方回覆分類：${analysis.category}
 對方回覆摘要：${analysis.summary}
-建議下一步：${analysis.next_step}
+建議下一步（只作參考，唔好硬跟）：${analysis.next_step}
+
+⚠️ 最重要原則 —— 配合對方所處階段，唔好跳步：對方去到邊一步，你就配合嗰一步；唔好因為「建議下一步」寫咗約時間，就喺對方仲未想見面時要求佢畀時間。
 
 ${categoryGuide}
 
@@ -875,7 +879,7 @@ async function doDraft(p, db) {
     if (!lead)
         throw new Error('lead 唔存在');
     const leadCtx = buildLeadContext(lead);
-    const prompt = `Write a short, warm B2B outreach email in 繁體中文 (港式英文夾雜 OK) from ${brand_1.BRAND_NAME} (${brand_1.BRAND_TAGLINE})
+    const prompt = `Write a short, warm B2B outreach email in formal written 繁體中文 (書面語 / 正式商業書面語；避免粵語口語詞如唔/冇/嘅/喺/呢，用不/沒有/的/在/這；避免 emoji；英文專業名詞可保留) from ${brand_1.BRAND_NAME} (${brand_1.BRAND_TAGLINE})
 — a Hong Kong digital agency — to the company「${lead.company_name}」.
 
 ${brand_1.BRAND_CONTEXT_BLOCK}
@@ -966,7 +970,7 @@ async function doFollowupDraft(p, db) {
         throw new Error('lead 唔存在');
     const count = (lead._followup_count || 0) + 1;
     const leadCtx = buildLeadContext(lead);
-    const prompt = `Write a SHORT follow-up email (#${count}) in 繁體中文 (港式英文夾雜 OK) from ${brand_1.BRAND_NAME} (${brand_1.BRAND_TAGLINE})
+    const prompt = `Write a SHORT follow-up email (#${count}) in formal written 繁體中文 (書面語 / 正式商業書面語；避免粵語口語詞如唔/冇/嘅/喺/呢，用不/沒有/的/在/這；避免 emoji；英文專業名詞可保留) from ${brand_1.BRAND_NAME} (${brand_1.BRAND_TAGLINE})
 to「${lead.company_name}」. We previously reached out but got no reply.
 
 ${brand_1.BRAND_CONTEXT_BLOCK}
@@ -1010,7 +1014,7 @@ async function doReoutreachDraft(p, db) {
     if (!lead)
         throw new Error('lead 唔存在');
     const leadCtx = buildLeadContext(lead);
-    const prompt = `Write a B2B outreach email in 繁體中文 (港式英文夾雜 OK) from ${brand_1.BRAND_NAME} (${brand_1.BRAND_TAGLINE})
+    const prompt = `Write a B2B outreach email in formal written 繁體中文 (書面語 / 正式商業書面語；避免粵語口語詞如唔/冇/嘅/喺/呢，用不/沒有/的/在/這；避免 emoji；英文專業名詞可保留) from ${brand_1.BRAND_NAME} (${brand_1.BRAND_TAGLINE})
 to「${lead.company_name}」. They previously replied saying they're NOT interested.
 
 ${brand_1.BRAND_CONTEXT_BLOCK}

@@ -29,6 +29,12 @@ let JobsController = class JobsController {
     async run(name) {
         return this.jobs.run(name);
     }
+    toggleDemoMode() {
+        return this.jobs.toggleDemoMode();
+    }
+    getDemoMode() {
+        return { demoMode: this.jobs.demoMode };
+    }
 };
 exports.JobsController = JobsController;
 __decorate([
@@ -41,6 +47,23 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], JobsController.prototype, "run", null);
+__decorate([
+    (0, common_1.Post)('demo-mode'),
+    (0, common_1.HttpCode)(200),
+    (0, permission_decorator_1.Permission)('jobs.run'),
+    openapi.ApiResponse({ status: 200 }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], JobsController.prototype, "toggleDemoMode", null);
+__decorate([
+    (0, common_1.Get)('demo-mode'),
+    (0, permission_decorator_1.Permission)('jobs.run'),
+    openapi.ApiResponse({ status: 200 }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", void 0)
+], JobsController.prototype, "getDemoMode", null);
 exports.JobsController = JobsController = __decorate([
     (0, swagger_1.ApiTags)('Jobs 排程任務'),
     (0, swagger_1.ApiBearerAuth)(),
