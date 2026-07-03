@@ -22,7 +22,89 @@ function hashAvatarColor(name: string): string {
 
 /* ── Layout primitives ── */
 
-const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
+const Page = styled.div`
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: calc(100vh - 64px); gap: ${({ theme }) => theme.spacing.md}px;
+  padding-bottom: 22vh;
+`;
+
+const GREETINGS = [
+  'Find your next client',
+  'Let AI discover opportunities',
+  'Search, filter, close the deal',
+  'Your next lead starts here',
+  'Who are you looking for today?',
+];
+
+const Greeting = styled.p`
+  margin: 0 0 28px;
+  font-size: 2rem;
+  font-weight: 300;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  text-align: center;
+  letter-spacing: 0.01em;
+`;
+
+/* ── Glow wrapper ── */
+const haloPulse = keyframes`
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.12); }
+`;
+
+const floatDot = keyframes`
+  0%   { transform: translate(0, 0)   scale(1);   opacity: 0.7; }
+  25%  { transform: translate(12px, -18px) scale(1.2); opacity: 1;   }
+  50%  { transform: translate(-8px, -30px) scale(0.8); opacity: 0.5; }
+  75%  { transform: translate(-16px, -10px) scale(1.1); opacity: 0.9; }
+  100% { transform: translate(0, 0)   scale(1);   opacity: 0.7; }
+`;
+
+const GlowWrap = styled.div`
+  position: relative;
+  max-width: 760px;
+  width: 100%;
+
+  /* soft halo behind the bar */
+  &::before {
+    content: '';
+    position: absolute;
+    inset: -40px -60px;
+    border-radius: 999px;
+    background: radial-gradient(ellipse at center, rgba(96,165,250,0.32) 0%, rgba(96,165,250,0.14) 40%, rgba(96,165,250,0.04) 65%, transparent 80%);
+    filter: blur(28px);
+    animation: ${haloPulse} 4s ease-in-out infinite;
+    pointer-events: none;
+    z-index: 0;
+  }
+`;
+
+/* individual floating dots — very subtle */
+const Dot = styled.span<{ $x: string; $y: string; $size: number; $delay: number; $dur: number }>`
+  position: absolute;
+  width: ${({ $size }) => $size}px;
+  height: ${({ $size }) => $size}px;
+  border-radius: 50%;
+  background: rgba(96,165,250,0.3);
+  box-shadow: 0 0 ${({ $size }) => $size * 3}px rgba(96,165,250,0.18);
+  left: ${({ $x }) => $x};
+  top: ${({ $y }) => $y};
+  animation: ${floatDot} ${({ $dur }) => $dur}s ease-in-out ${({ $delay }) => $delay}s infinite;
+  pointer-events: none;
+  z-index: 0;
+`;
+
+const DOT_CONFIG = [
+  { x: '6%',  y: '20%', size: 2.5, delay: 0,   dur: 5 },
+  { x: '94%', y: '30%', size: 2,   delay: 1.2, dur: 6 },
+  { x: '15%', y: '80%', size: 3,   delay: 0.6, dur: 4.5 },
+  { x: '88%', y: '75%', size: 2,   delay: 2,   dur: 5.5 },
+  { x: '50%', y: '2%',  size: 2.5, delay: 0.8, dur: 6.5 },
+  { x: '32%', y: '92%', size: 2,   delay: 1.5, dur: 5 },
+  { x: '72%', y: '8%',  size: 2,   delay: 0.3, dur: 4 },
+  { x: '3%',  y: '50%', size: 2.5, delay: 2.2, dur: 5.8 },
+  { x: '96%', y: '55%', size: 2,   delay: 0.9, dur: 4.8 },
+  { x: '62%', y: '88%', size: 2,   delay: 1.8, dur: 6.2 },
+];
 
 const Breadcrumb = styled.ol`
   list-style: none; margin: 0; padding: 0; display: flex; gap: ${({ theme }) => theme.spacing.sm}px;
@@ -55,6 +137,94 @@ const Card = styled.div`
 const CardBody = styled.div`padding: 20px;`;
 
 /* ── Form ── */
+
+/* ── Unified Search Bar ── */
+
+const UnifiedBar = styled.div`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  border-radius: 999px;
+  border: 1.5px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
+  box-shadow: 0 2px 12px rgba(15,23,42,0.06);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  overflow: visible; position: relative;
+  z-index: 1;
+  &:focus-within {
+    border-color: ${({ theme }) => theme.colors.blue};
+    box-shadow: 0 2px 20px rgba(37,99,235,0.12);
+  }
+`;
+
+const BarInput = styled.input`
+  flex: 1; min-width: 0;
+  border: none; outline: none;
+  padding: 18px 0 18px 28px;
+  font-size: 1.05rem;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
+`;
+
+const LocBadge = styled.button`
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 12px; margin: 0 4px;
+  border: none; border-radius: 999px;
+  background: #fef2f2; color: #b91c1c;
+  font-size: 0.6875rem; font-weight: 700;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  transition: background 0.15s;
+  &:hover { background: #fee2e2; }
+  position: relative;
+`;
+
+const LocFlag = styled.span`
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px; border-radius: 4px;
+  background: #dc2626; color: #fff;
+  font-size: 0.5rem; font-weight: 800; letter-spacing: -0.02em;
+`;
+
+const BarSearchBtn = styled.button`
+  display: flex; align-items: center; justify-content: center;
+  width: 46px; height: 46px; margin: 5px 6px 5px 0;
+  border: none; border-radius: 50%;
+  background: #2563eb; color: #fff;
+  cursor: pointer; flex-shrink: 0;
+  transition: background 0.15s, transform 0.15s;
+  &:hover:not(:disabled) { background: #1d4ed8; transform: scale(1.06); }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+`;
+
+/* Location picker dropdown */
+const LocDropdown = styled.div`
+  position: absolute; top: calc(100% + 6px); right: 50px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(15,23,42,0.12);
+  padding: 8px; z-index: 100;
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
+  min-width: 280px;
+  ${media.mobile} { grid-template-columns: repeat(2, 1fr); min-width: 220px; right: 0; }
+`;
+
+const LocOption = styled.button<{ $active?: boolean }>`
+  padding: 6px 10px; border: none;
+  border-radius: 8px; font-size: 0.75rem; font-weight: 500;
+  cursor: pointer; white-space: nowrap;
+  background: ${({ $active }) => $active ? '#fee2e2' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#dc2626' : theme.colors.textSecondary};
+  transition: background 0.12s;
+  &:hover { background: ${({ $active }) => $active ? '#fee2e2' : '#f1f5f9'}; }
+`;
+
+const HK_DISTRICTS = [
+  '全區', '中西區', '灣仔', '東區', '南區',
+  '油尖旺', '深水埗', '九龍城', '黃大仙', '觀塘',
+  '葵青', '荃灣', '屯門', '元朗', '北區', '大埔', '沙田', '西貢', '離島',
+];
 
 /* ── Glow animation ── */
 const glowPulse = keyframes`
@@ -1283,10 +1453,23 @@ const BrowserPreview: React.FC<{ keyword: string; location: string }> = ({ keywo
 
 const SearchPage: React.FC = () => {
   const { t } = useTranslation();
+  const [greeting] = useState(() => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
   const [keyword, setKeyword] = useState('');
-  const [location, setLocation] = useState('');
+  const [location, setLocation] = useState('香港');
+  const [district, setDistrict] = useState('全區');
+  const [showLocPicker, setShowLocPicker] = useState(false);
   const [targetCount, setTargetCount] = useState(20);
   const [selectedResult, setSelectedResult] = useState<Record<string, unknown> | null>(null);
+  const locRef = useRef<HTMLDivElement>(null);
+
+  /* Close location picker on outside click */
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (locRef.current && !locRef.current.contains(e.target as Node)) setShowLocPicker(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   /* ── Pipeline SSE state ── */
   const [campaignId, setCampaignId] = useState<string | null>(null);
@@ -1447,10 +1630,11 @@ const SearchPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!keyword.trim() || !location.trim()) return;
+    if (!keyword.trim()) return;
+    const fullLocation = district === '全區' ? location : `${location} ${district}`;
     const payload: SearchPayload = {
       keyword: keyword.trim(),
-      location: location.trim(),
+      location: fullLocation.trim(),
       targetCount,
     };
     // Reset pipeline state for new search
@@ -1478,318 +1662,39 @@ const SearchPage: React.FC = () => {
 
   return (
     <Page>
-      {/* Search Form */}
-      <SearchHero as="form" onSubmit={handleSubmit}>
-        <AreaA>
-          <TextFields>
-            <FieldGroup>
-              <FieldLabel htmlFor="search-keyword">{t('search.keyword')}</FieldLabel>
-              <InputWrap>
-                <SvgIcon d="M11 11l3 3M10 6.5a3.5 3.5 0 11-7 0 3.5 3.5 0 017 0z" />
-                <UnderlineInput
-                  id="search-keyword"
-                  type="text"
-                  placeholder={t('search.keywordPlaceholder')}
-                  value={keyword}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setKeyword(e.target.value)}
-                  required
-                  style={{ paddingLeft: 28 }}
-                />
-              </InputWrap>
-            </FieldGroup>
-            <FieldGroup>
-              <FieldLabel htmlFor="search-location">{t('search.location')}</FieldLabel>
-              <InputWrap>
-                <SvgIcon d="M8 1C5.2 1 3 3.2 3 6c0 4 5 9 5 9s5-5 5-9c0-2.8-2.2-5-5-5zM8 7.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
-                <UnderlineInput
-                  id="search-location"
-                  type="text"
-                  placeholder={t('search.locationPlaceholder')}
-                  value={location}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLocation(e.target.value)}
-                  required
-                  style={{ paddingLeft: 28 }}
-                />
-              </InputWrap>
-            </FieldGroup>
-          </TextFields>
-          <FieldGroup>
-            <FieldLabel htmlFor="search-count">{t('search.targetCount')}</FieldLabel>
-            <NumberWrap>
-              <NumberInput
-                id="search-count"
-                type="number"
-                min={1}
-                max={500}
-                value={targetCount}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTargetCount(Number(e.target.value))}
-              />
-            <NumArrows>
-              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(500, c + 1))}>
-                <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor"><path d="M5 0l5 6H0z"/></svg>
-              </NumArrowBtn>
-              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.max(1, c - 1))}>
-                <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor"><path d="M5 6L0 0h10z"/></svg>
-              </NumArrowBtn>
-            </NumArrows>
-          </NumberWrap>
-          </FieldGroup>
-        </AreaA>
+      <Greeting>{greeting}</Greeting>
 
-        <Separator />
-
-        <BtnWrap>
-          {[0,1,2,3,4,5,6,7].map(i => <Sparkle key={i} $i={i} />)}
-          <CircleBtn
-            type="submit"
-            disabled={search.isPending || !keyword.trim() || !location.trim()}
-          >
+      <GlowWrap>
+        {DOT_CONFIG.map((d, i) => (
+          <Dot key={i} $x={d.x} $y={d.y} $size={d.size} $delay={d.delay} $dur={d.dur} />
+        ))}
+        {/* Search Form — Unified Bar */}
+        <UnifiedBar as="form" onSubmit={handleSubmit} ref={locRef}>
+          <BarInput
+            type="text"
+            placeholder={t('search.keywordPlaceholder')}
+            value={keyword}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setKeyword(e.target.value)}
+            required
+          />
+          <LocBadge type="button" onClick={() => setShowLocPicker(p => !p)}>
+            <LocFlag>HK</LocFlag>
+            {district === '全區' ? '全區' : district}
+          </LocBadge>
+          <BarSearchBtn type="submit" disabled={search.isPending || !keyword.trim()}>
             {search.isPending ? <Spinner /> : <SearchBtnIcon />}
-          </CircleBtn>
-        </BtnWrap>
-      </SearchHero>
-
-      {/* Split: Results left, Browser Preview right */}
-      <SplitRow>
-        <ResultPane>
-          {/* ── Pipeline progress view ── */}
-          {isPipelineRunning && (
-            <Card>
-              <CardBody>
-                <StatusBanner $type="loading">
-                  <Spinner />
-                  {t('search.searchingFor')} <strong>{keyword}</strong> {t('search.searchingIn')} <strong>{location}</strong>…
-                </StatusBanner>
-                <PipelineSection>
-                  <PipelineStageLabel>
-                    <Spinner />
-                    {STAGE_LABELS[pipelineProgress?.stage || 'pipeline'] || pipelineProgress?.stage || '處理中'}
-                    {pipelineProgress && ` (${pipelineProgress.current}/${pipelineProgress.total})`}
-                  </PipelineStageLabel>
-                  <ProgressBarOuter>
-                    <ProgressBarInner $percent={pipelineProgress?.percent || 0} />
-                  </ProgressBarOuter>
-                  {pipelineLogs.length > 0 && (
-                    <PipelineLogFeed ref={pipelineLogRef}>
-                      {pipelineLogs.map((log, i) => (
-                        <PipelineLogLine key={i} $level={log.level}>
-                          <PipelineLogTime>[{log.time}]</PipelineLogTime>
-                          {log.stage && <PipelineLogStage>[{STAGE_LABELS[log.stage] || log.stage}]</PipelineLogStage>}
-                          {log.message}
-                        </PipelineLogLine>
-                      ))}
-                    </PipelineLogFeed>
-                  )}
-                </PipelineSection>
-              </CardBody>
-            </Card>
+          </BarSearchBtn>
+          {showLocPicker && (
+            <LocDropdown>
+              {HK_DISTRICTS.map(d => (
+                <LocOption key={d} $active={district === d} onClick={() => { setDistrict(d); setShowLocPicker(false); }}>
+                  {d}
+                </LocOption>
+              ))}
+            </LocDropdown>
           )}
-
-          {/* ── Mutation pending (before campaign_id returned) ── */}
-          {search.isPending && !campaignId && (
-            <Card>
-              <CardBody>
-                <StatusBanner $type="loading">
-                  <Spinner />
-                  {t('search.searchingFor')} <strong>{keyword}</strong> {t('search.searchingIn')} <strong>{location}</strong>…
-                </StatusBanner>
-              </CardBody>
-            </Card>
-          )}
-
-          {/* ── Error ── */}
-          {search.isError && !campaignId && (
-            <Card>
-              <CardBody>
-                <StatusBanner $type="error">
-                  {t('search.searchFailed')} — {search.error instanceof Error ? search.error.message : t('search.unexpectedError')}
-                </StatusBanner>
-              </CardBody>
-            </Card>
-          )}
-
-          {/* ── Pipeline complete banner ── */}
-          {pipelineComplete && (
-            <Card style={{ marginBottom: 8 }}>
-              <CardBody>
-                <StatusBanner $type="success">
-                  Pipeline 完成 — 共找到 {realResults.length} 筆潛在客戶
-                </StatusBanner>
-              </CardBody>
-            </Card>
-          )}
-
-          {/* ── Result cards (mock data before pipeline, real data after) ── */}
-          {!isPipelineRunning && !(search.isPending && !campaignId) && (
-            <Card>
-              <CardBody>
-                {/* ── Result count ── */}
-                <FilterLabel style={{ fontWeight: 500, color: '#2563eb', marginBottom: 8, display: 'block', fontSize: '0.875rem', paddingLeft: 14 }}>
-                  {(() => {
-                    const parts = t('search.resultCount', { count: '__N__' }).split('__N__');
-                    return <>{parts[0]}<span style={{
-                      fontSize: '1.25rem',
-                      fontWeight: 800,
-                      background: 'linear-gradient(135deg, #2563eb, #7c3aed)',
-                      WebkitBackgroundClip: 'text',
-                      WebkitTextFillColor: 'transparent',
-                      backgroundClip: 'text',
-                    }}>{filteredResults.length}</span>{parts[1]}</>;
-                  })()}
-                </FilterLabel>
-                {/* ── Compact single-row filter ── */}
-                <FilterBar>
-                  <FilterToggle $active={filterEmail} onClick={() => setFilterEmail(p => !p)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path d="M0 4a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H2a2 2 0 01-2-2V4zm2-1a1 1 0 00-1 1v.217l7 4.2 7-4.2V4a1 1 0 00-1-1H2zm13 2.383l-4.708 2.825L15 11.105V5.383zm-.034 6.876L10.93 8.572 8 10.3l-2.93-1.728L1.034 11.26A1 1 0 002 12h12a1 1 0 00.966-.74zM1 11.105l4.708-2.897L1 5.383v5.722z"/></svg>
-                    {t('search.filterEmail')}({filteredResults.filter(r => r.hasEmail).length})
-                  </FilterToggle>
-                  <FilterToggle $active={filterPhone} onClick={() => setFilterPhone(p => !p)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path d="M3.654 1.328a.678.678 0 00-1.015-.063L1.605 2.3c-.483.484-.661 1.169-.45 1.77a17.568 17.568 0 004.168 6.608 17.569 17.569 0 006.608 4.168c.601.211 1.286.033 1.77-.45l1.034-1.034a.678.678 0 00-.063-1.015l-2.307-1.794a.678.678 0 00-.58-.122l-2.19.547a1.745 1.745 0 01-1.657-.459L5.482 8.062a1.745 1.745 0 01-.46-1.657l.548-2.19a.678.678 0 00-.122-.58L3.654 1.328z"/></svg>
-                    {t('search.filterPhone')}({filteredResults.filter(r => r.hasPhone).length})
-                  </FilterToggle>
-                  <FilterToggle $active={filterWebsite} onClick={() => setFilterWebsite(p => !p)}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path d="M0 8a8 8 0 1116 0A8 8 0 010 8zm7.5-6.923c-.67.204-1.335.82-1.887 1.855A7.97 7.97 0 005.145 4H7.5V1.077zM4.09 4a9.267 9.267 0 01.64-1.539 6.7 6.7 0 01.597-.933A7.025 7.025 0 002.255 4H4.09zm-.582 3.5c.03-.877.138-1.718.312-2.5H1.674a6.958 6.958 0 00-.656 2.5h2.49zM4.847 5a12.5 12.5 0 00-.338 2.5H7.5V5H4.847zM8.5 5v2.5h2.99a12.495 12.495 0 00-.337-2.5H8.5zM4.51 8.5a12.5 12.5 0 00.337 2.5H7.5V8.5H4.51zm3.99 0V11h2.653c.187-.765.306-1.608.338-2.5H8.5zM5.145 12c.138.386.295.744.468 1.068.552 1.035 1.218 1.65 1.887 1.855V12H5.145zm.182 2.472a6.696 6.696 0 01-.597-.933A9.268 9.268 0 014.09 12H2.255a7.024 7.024 0 003.072 2.472zM3.82 11a13.652 13.652 0 01-.312-2.5h-2.49c.062.89.291 1.733.656 2.5H3.82zm6.853 3.472A7.024 7.024 0 0013.745 12H11.91a9.27 9.27 0 01-.64 1.539 6.688 6.688 0 01-.597.933zM8.5 12v2.923c.67-.204 1.335-.82 1.887-1.855.173-.324.33-.682.468-1.068H8.5zm3.68-1h2.146c.365-.767.594-1.61.656-2.5h-2.49a13.65 13.65 0 01-.312 2.5zm2.802-3.5a6.959 6.959 0 00-.656-2.5H12.18c.174.782.282 1.623.312 2.5h2.49zM11.27 2.461c.247.464.462.98.64 1.539h1.835a7.024 7.024 0 00-3.072-2.472c.218.284.418.598.597.933zM10.855 4a7.966 7.966 0 00-.468-1.068C9.835 1.897 9.17 1.282 8.5 1.077V4h2.355z"/></svg>
-                    {t('search.filterWebsite')}({filteredResults.filter(r => r.hasWebsite).length})
-                  </FilterToggle>
-                  <FilterDivider />
-                  {ALL_SOURCES.map(src => {
-                    const chipColor = src === 'Google Maps' ? '#16a34a' : src === 'LinkedIn' ? '#0a66c2' : src === '104人力銀行' ? '#e97a0a' : '#2563eb';
-                    return (
-                      <SourceChip key={src} $active={activeSources.has(src)} $color={chipColor} onClick={() => toggleSource(src)}>
-                        {src === 'Google Maps' && <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path d="M12.166 8.94c-.524 1.062-1.234 2.12-1.96 3.07A31.493 31.493 0 018 14.58a31.481 31.481 0 01-2.206-2.57c-.726-.95-1.436-2.008-1.96-3.07C3.304 7.867 3 6.862 3 6a5 5 0 0110 0c0 .862-.305 1.867-.834 2.94zM8 8a2 2 0 100-4 2 2 0 000 4z"/></svg>}
-                        {src === 'LinkedIn' && <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854V1.146zm4.943 12.248V6.169H2.542v7.225h2.401zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248-.822 0-1.359.54-1.359 1.248 0 .694.521 1.248 1.327 1.248h.016zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016a5.54 5.54 0 01.016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225h2.4z"/></svg>}
-                        {src === '104人力銀行' && <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="currentColor" viewBox="0 0 16 16"><path d="M1 2.5A1.5 1.5 0 012.5 1h3A1.5 1.5 0 017 2.5V5h2V2.5A1.5 1.5 0 0110.5 1h3A1.5 1.5 0 0115 2.5v6.5h-1V9H2v.5H1V2.5zM2 8h12V2.5a.5.5 0 00-.5-.5h-3a.5.5 0 00-.5.5V6H6V2.5a.5.5 0 00-.5-.5h-3a.5.5 0 00-.5.5V8z"/><path d="M.5 10a.5.5 0 000 1H2v3.5a.5.5 0 001 0V11h10v3.5a.5.5 0 001 0V11h1.5a.5.5 0 000-1H.5z"/></svg>}
-                        {src}
-                      </SourceChip>
-                    );
-                  })}
-                </FilterBar>
-
-                <ResultCardList>
-                  {filteredResults.length === 0 ? (
-                    <EmptyState>{t('search.noFilterResults')}</EmptyState>
-                  ) : filteredResults.map((lead, i) => (
-                    <ResultCard key={i} onClick={() => setSelectedResult(lead as unknown as Record<string, unknown>)}>
-                      <RcAvatar $color={hashAvatarColor(lead.name)}>{lead.name.charAt(0)}</RcAvatar>
-                      <RcBody>
-                        <RcTopRow>
-                          <RcName>{lead.name}</RcName>
-                          <RcStars>{renderStars(lead.rating)}</RcStars>
-                          <RcRatingText>{lead.rating} ({lead.reviews})</RcRatingText>
-                        </RcTopRow>
-                        <RcMeta>
-                          <SvgIcon d="M8 1C5.2 1 3 3.2 3 6c0 4 5 9 5 9s5-5 5-9c0-2.8-2.2-5-5-5z" size={11} />
-                          {lead.address}
-                        </RcMeta>
-                        <RcPhone>
-                          <SvgIcon d="M3 2h3l1.5 3L6 6.5C7 8.5 8.5 10 10.5 11l1.5-1.5 3 1.5v3c0 .6-.4 1-1 1C7.5 15 1 8.5 1 3c0-.6.4-1 1-1z" size={11} />
-                          {' '}{lead.phone}
-                        </RcPhone>
-                        <RcContactIcons>
-                          <ContactIcon $has={lead.hasEmail} $color="#2563eb">
-                            <SvgIcon d="M2 4h12M2 4l3 8h6l3-8M5 12v2M11 12v2" size={10} />
-                            {lead.hasEmail ? (lead.email || 'Email') : '無Email'}
-                          </ContactIcon>
-                          <ContactIcon $has={lead.hasWebsite} $color="#7c3aed">
-                            <SvgIcon d="M2 3h12v10H2zM2 6h12" size={10} />
-                            {lead.hasWebsite ? (lead.website || '官網') : '無官網'}
-                          </ContactIcon>
-                        </RcContactIcons>
-                      </RcBody>
-                      <RcActions>
-                        <RcStatusBadge $status={lead.status}>{STATUS_LABELS[lead.status] || lead.status}</RcStatusBadge>
-                        <RcSmallBtn onClick={e => { e.stopPropagation(); }}>+ Pipeline</RcSmallBtn>
-                      </RcActions>
-                    </ResultCard>
-                  ))}
-                </ResultCardList>
-              </CardBody>
-            </Card>
-          )}
-        </ResultPane>
-
-        <div style={{ position: 'sticky', top: 72, alignSelf: 'start' }}>
-          <BrowserPreview keyword={keyword} location={location} />
-        </div>
-      </SplitRow>
-
-      {/* Detail Panel */}
-      {selectedResult && createPortal(
-        <>
-          <DpOverlay onClick={handleCloseDetail} />
-          <DpPanel>
-            <DpHeader>
-              <DpHeaderInfo>
-                <DpTitle>{getResultTitle(selectedResult)}</DpTitle>
-                <DpTypeBadge>
-                  🔍&ensp;{getResultType(selectedResult)}
-                </DpTypeBadge>
-              </DpHeaderInfo>
-              <DpCloseBtn onClick={handleCloseDetail}>&times;</DpCloseBtn>
-            </DpHeader>
-
-            <DpBody>
-              {/* Info section — all fields */}
-              <DpSectionTitle>Details</DpSectionTitle>
-              <DpGrid>
-                {Object.entries(selectedResult).map(([key, val]) => (
-                  <DpField key={key}>
-                    <DpFieldLabel>{key.replace(/_/g, ' ')}</DpFieldLabel>
-                    <DpFieldValue>
-                      {val === null || val === undefined
-                        ? '—'
-                        : typeof val === 'object'
-                        ? JSON.stringify(val)
-                        : String(val)}
-                    </DpFieldValue>
-                  </DpField>
-                ))}
-              </DpGrid>
-
-              {/* Preview / content section */}
-              <DpSectionTitle>Preview</DpSectionTitle>
-              <DpPreviewBox>{getResultPreview(selectedResult)}</DpPreviewBox>
-
-              {/* Related items */}
-              <DpSectionTitle>Related</DpSectionTitle>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {MOCK_RELATED.map((item, i) => (
-                  <DpRelatedItem key={i}>
-                    <DpRelatedIcon style={{ background: item.color }}>
-                      {item.type.slice(0, 2).toUpperCase()}
-                    </DpRelatedIcon>
-                    <span>{item.title}</span>
-                  </DpRelatedItem>
-                ))}
-              </div>
-            </DpBody>
-
-            <DpFooter>
-              <DpActionBtn
-                onClick={() => {
-                  navigator.clipboard.writeText(JSON.stringify(selectedResult, null, 2));
-                }}
-              >
-                複製
-              </DpActionBtn>
-              <DpActionBtn $variant="primary">
-                查看原始資料
-              </DpActionBtn>
-            </DpFooter>
-          </DpPanel>
-        </>,
-        document.body
-      )}
-
-      {/* Footer */}
-      <Footer>
-        <span>{t('footer.copyrightHermes', { year: 2024 })}</span>
-        <div>
-          <a href="#">{t('footer.documentation')}</a>
-          <a href="#">{t('footer.support')}</a>
-          <a href="#">{t('footer.faqs')}</a>
-        </div>
-      </Footer>
+        </UnifiedBar>
+      </GlowWrap>
     </Page>
   );
 };
