@@ -140,15 +140,12 @@ const PageSub = styled.p`
 
 /* ── Header Card (title + buttons + stats in one box) ── */
 
-const HeaderCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: 0 1px 3px rgba(15,23,42,0.06);
+const HeaderSection = styled.div`
   padding: 20px 24px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const HeaderTop = styled.div`
@@ -257,7 +254,6 @@ const TabsRow = styled.div`
   display: flex;
   align-items: stretch;
   gap: 0;
-  padding: 0 24px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
@@ -266,35 +262,30 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 14px ${({ theme }) => theme.spacing.lg}px;
+  padding: 14px 24px;
   background: transparent;
   border: none;
   border-bottom: 2px solid ${({ $active, $color }) => $active ? ($color || '#2563eb') : 'transparent'};
   margin-bottom: -1px;
-  font-size: 0.8125rem;
-  font-weight: ${({ $active }) => $active ? 700 : 500};
-  color: ${({ $active, $color, theme }) => $active ? ($color || '#2563eb') : theme.colors.textSecondary};
   cursor: pointer;
   white-space: nowrap;
   position: relative;
-  transition: color 0.15s, border-color 0.15s;
-  svg { flex-shrink: 0; }
-  &:hover {
-    color: ${({ $color }) => $color || '#2563eb'};
-  }
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  svg { flex-shrink: 0; opacity: ${({ $active }) => $active ? 1 : 0.5}; }
+  color: ${({ $active, theme }) => $active ? 'inherit' : theme.colors.textTertiary};
+  &:hover { background: rgba(0,0,0,0.02); }
 `;
 
-const TabCount = styled.span<{ $active?: boolean; $color?: string }>`
-  display: inline-block;
-  margin-left: 6px;
-  padding: 1px 7px;
-  border-radius: 10px;
-  font-size: 0.6875rem;
-  font-weight: 600;
-  background: ${({ $active, $color, theme }) => $active
-    ? ($color || '#2563eb')
-    : theme.colors.surfaceMuted};
-  color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textTertiary};
+const TabNumber = styled.span<{ $color: string }>`
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: ${({ $color }) => $color};
+`;
+
+const TabLabel = styled.span<{ $active?: boolean }>`
+  font-size: 0.8125rem;
+  font-weight: ${({ $active }) => $active ? 600 : 500};
+  color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textTertiary};
 `;
 
 const SubPillRow = styled.div`
@@ -381,44 +372,42 @@ const TableWrap = styled.div`
 
 const Table = styled.table`
   width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
+  border-collapse: collapse;
   font-size: 0.8125rem;
   min-width: 960px;
   th, td {
-    padding: 12px ${({ theme }) => theme.spacing.md}px;
+    padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
     text-align: left;
     white-space: nowrap;
   }
   th {
     font-weight: 600;
     text-transform: uppercase;
-    font-size: 0.8125rem;
-    letter-spacing: 0.03em;
-    color: ${({ theme }) => theme.colors.blue};
-    background: ${({ theme }) => theme.colors.surfaceMuted};
-    border-bottom: 2px solid ${({ theme }) => theme.colors.border};
+    font-size: 0.6875rem;
+    color: ${({ theme }) => theme.colors.textTertiary};
+    background: #f7f7f4;
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
     user-select: none;
     cursor: default;
   }
   ${media.mobile} {
     min-width: 640px;
     font-size: 0.75rem;
-    th, td { padding: 8px ${({ theme }) => theme.spacing.sm}px; }
-    th { font-size: 0.7rem; }
+    th, td { padding: ${({ theme }) => theme.spacing.xs}px ${({ theme }) => theme.spacing.sm}px; }
+    th { font-size: 0.625rem; }
   }
 `;
 
 const TRow = styled.tr<{ $even?: boolean }>`
-  background: ${({ theme }) => theme.colors.surface};
+  background: ${({ $even }) => $even ? '#f7f7f4' : '#fff'};
   transition: background 0.15s;
+  cursor: pointer;
   &:hover {
-    background: ${({ theme }) => theme.colors.surfaceMuted};
+    background: #eff6ff;
   }
   td {
-    border-bottom: 1px solid rgba(226,232,240,0.5);
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   }
-  &:last-child td { border-bottom: none; }
 `;
 
 const NameCell = styled.div`
@@ -1352,49 +1341,32 @@ const Leads: React.FC = () => {
 
   return (
     <Page>
-      {/* Header Card */}
-      <HeaderCard>
-        <HeaderTop>
-          <ProfileInfo>
-            <ProfileTitle>
-              {t('leads.totalInSystem', { count: '__N__' }).split('__N__').map((part, i, arr) =>
-                i < arr.length - 1 ? (
-                  <React.Fragment key={i}>{part}<span className="count-number">{stats.total}</span></React.Fragment>
-                ) : part
-              )}
-            </ProfileTitle>
-          </ProfileInfo>
-          <AddBtn onClick={handleCheckReplies} disabled={replyChecking}>
-            {replyChecking ? t('leads.checking') : t('leads.checkReplies')}
-          </AddBtn>
-          {replyCheckMsg && <span style={{ fontSize: '0.75rem', color: replyCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{replyCheckMsg}</span>}
-          <AddBtn onClick={handleCheckFollowups} disabled={followupChecking}>
-            {followupChecking ? t('leads.checking') : t('leads.checkFollowups')}
-          </AddBtn>
-          {followupCheckMsg && <span style={{ fontSize: '0.75rem', color: followupCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{followupCheckMsg}</span>}
-          <AddBtnGreen onClick={() => setShowAdd(true)}>
-            <IconPlus />
-            {t('leads.addLead')}
-          </AddBtnGreen>
-        </HeaderTop>
-        <HeaderDivider />
-        <StatsStrip>
-          <StatItem $color="#4f46e5">
-            <StatNumber $color="#4f46e5">{tabCounts.preparing || 0}</StatNumber>
-            <StatLabel>{t('leads.tabPreparing')}</StatLabel>
-          </StatItem>
-          <StatItem $color="#d97706">
-            <StatNumber $color="#d97706">{tabCounts.awaiting || 0}</StatNumber>
-            <StatLabel>{t('leads.tabAwaiting')}</StatLabel>
-          </StatItem>
-          <StatItem $color="#16a34a">
-            <StatNumber $color="#16a34a">{tabCounts.replied || 0}</StatNumber>
-            <StatLabel>{t('leads.tabReplied')}</StatLabel>
-          </StatItem>
-        </StatsStrip>
-      </HeaderCard>
-
         <Card>
+        <HeaderSection>
+          <HeaderTop>
+            <ProfileInfo>
+              <ProfileTitle>
+                {t('leads.totalInSystem', { count: '__N__' }).split('__N__').map((part, i, arr) =>
+                  i < arr.length - 1 ? (
+                    <React.Fragment key={i}>{part}<span className="count-number">{stats.total}</span></React.Fragment>
+                  ) : part
+                )}
+              </ProfileTitle>
+            </ProfileInfo>
+            <AddBtn onClick={handleCheckReplies} disabled={replyChecking}>
+              {replyChecking ? t('leads.checking') : t('leads.checkReplies')}
+            </AddBtn>
+            {replyCheckMsg && <span style={{ fontSize: '0.75rem', color: replyCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{replyCheckMsg}</span>}
+            <AddBtn onClick={handleCheckFollowups} disabled={followupChecking}>
+              {followupChecking ? t('leads.checking') : t('leads.checkFollowups')}
+            </AddBtn>
+            {followupCheckMsg && <span style={{ fontSize: '0.75rem', color: followupCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{followupCheckMsg}</span>}
+            <AddBtnGreen onClick={() => setShowAdd(true)}>
+              <IconPlus />
+              {t('leads.addLead')}
+            </AddBtnGreen>
+          </HeaderTop>
+        </HeaderSection>
         {/* Tabs */}
         <TabsRow>
           {TABS.map(tab => (
@@ -1404,13 +1376,11 @@ const Leads: React.FC = () => {
               $color={tab.color}
               onClick={() => handleTabClick(tab.key)}
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke={tab.color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
                 <path d={TAB_ICONS[tab.icon] || ''} />
               </svg>
-              {tab.label}
-              <TabCount $active={activeTab === tab.key} $color={tab.color}>
-                {tabCounts[tab.key] || 0}
-              </TabCount>
+              <TabNumber $color={tab.color}>{tabCounts[tab.key] || 0}</TabNumber>
+              <TabLabel $active={activeTab === tab.key}>{tab.label}</TabLabel>
             </TabItem>
           ))}
         </TabsRow>
