@@ -329,6 +329,37 @@ const zhTW = {
     noTasks: '沒有任務',
     noDetails: '沒有詳細資訊',
     system: '系統',
+    skills: {
+      S1: '數據爬取', S2: 'AI 分析', S3: '郵件發送', S4: '摘要報告',
+      S5: '匯出', S6: 'CRM 同步',
+      scrape: '數據爬取', email: '郵件發送', analyze: 'AI 分析',
+    },
+    agents: {
+      'Worker-1': '機器人 1', 'Worker-2': '機器人 2', 'Worker-3': '機器人 3',
+      'Agent-A': '助手 A', 'Agent-B': '助手 B', 'Agent-C': '助手 C',
+    },
+    priority: { high: '高', urgent: '緊急', normal: '中', low: '低' },
+    params: {
+      keyword: '關鍵字', location: '地點', template: '模板', batch_size: '批次',
+      url: '網址', format: '格式', range: '範圍', target: '目標', pages: '頁數',
+      model: '模型', batch: '批次', crm: 'CRM', direction: '方向',
+      to: '收件人', quarter: '季度', metric: '指標', mode: '模式',
+      source: '來源', records: '筆數',
+    },
+    paramValues: {
+      this_week: '本週', bidirectional: '雙向同步', reply_check: '回覆檢查',
+      daily_digest: '每日摘要', intro_v2: '開發信模板 v2', xlsx: 'Excel 檔',
+      conversion: '轉換率', 'Series A startups': 'A 輪新創公司',
+    },
+    results: {
+      sent: '已寄出', opened: '已開信', replied: '已回覆', analyzed: '已分析',
+      score: '評分', leads_found: '發現潛客', qualified: '合格',
+      updated: '已更新', skipped: '略過',
+    },
+    resultTrue: '是',
+    resultFalse: '否',
+    batchUnit: '筆',
+    steps: '步驟',
   },
   users: {
     teamOverview: '團隊總覽',

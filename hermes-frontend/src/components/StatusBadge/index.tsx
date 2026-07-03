@@ -7,42 +7,34 @@ interface StatusBadgeProps {
   status: Status;
 }
 
-const statusColorMap: Record<string, string> = {
-  new: 'new',
-  pending: 'pending',
-  contacted: 'contacted',
-  rejected: 'rejected',
-  qualified: 'qualified',
-  draft: 'pending',
-  approved: 'contacted',
-  sent: 'new',
+/* 3-color semantic mapping: blue (neutral/progress), green (positive), red (negative) */
+const statusFgMap: Record<string, string> = {
+  new: '#2563eb',
+  pending: '#2563eb',
+  contacted: '#10b981',
+  rejected: '#ef4444',
+  qualified: '#10b981',
+  draft: '#2563eb',
+  approved: '#10b981',
+  sent: '#10b981',
 };
 
-const Pill = styled.span<{ $statusKey: string }>`
+const Pill = styled.span<{ $fg: string }>`
   display: inline-flex;
   align-items: center;
-  gap: 6px;
   padding: ${({ theme }) => theme.spacing.xs}px ${({ theme }) => theme.spacing.sm}px;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 500;
   font-family: ${({ theme }) => theme.fonts.primary};
-  background: ${({ theme, $statusKey }) => theme.status[$statusKey as keyof typeof theme.status].bg};
-  color: ${({ theme, $statusKey }) => theme.status[$statusKey as keyof typeof theme.status].fg};
-`;
-
-const Dot = styled.span<{ $statusKey: string }>`
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: ${({ theme, $statusKey }) => theme.status[$statusKey as keyof typeof theme.status].fg};
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  color: ${({ $fg }) => $fg};
 `;
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  const key = statusColorMap[status] ?? 'new';
+  const fg = statusFgMap[status] ?? '#2563eb';
   return (
-    <Pill $statusKey={key}>
-      <Dot $statusKey={key} />
+    <Pill $fg={fg}>
       {status}
     </Pill>
   );

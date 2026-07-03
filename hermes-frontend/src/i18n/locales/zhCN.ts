@@ -329,6 +329,37 @@ const zhCN = {
     noTasks: '没有任务',
     noDetails: '没有详细信息',
     system: '系统',
+    skills: {
+      S1: '数据爬取', S2: 'AI 分析', S3: '邮件发送', S4: '摘要报告',
+      S5: '导出', S6: 'CRM 同步',
+      scrape: '数据爬取', email: '邮件发送', analyze: 'AI 分析',
+    },
+    agents: {
+      'Worker-1': '机器人 1', 'Worker-2': '机器人 2', 'Worker-3': '机器人 3',
+      'Agent-A': '助手 A', 'Agent-B': '助手 B', 'Agent-C': '助手 C',
+    },
+    priority: { high: '高', urgent: '紧急', normal: '中', low: '低' },
+    params: {
+      keyword: '关键字', location: '地点', template: '模板', batch_size: '批次',
+      url: '网址', format: '格式', range: '范围', target: '目标', pages: '页数',
+      model: '模型', batch: '批次', crm: 'CRM', direction: '方向',
+      to: '收件人', quarter: '季度', metric: '指标', mode: '模式',
+      source: '来源', records: '笔数',
+    },
+    paramValues: {
+      this_week: '本周', bidirectional: '双向同步', reply_check: '回复检查',
+      daily_digest: '每日摘要', intro_v2: '开发信模板 v2', xlsx: 'Excel 文件',
+      conversion: '转换率', 'Series A startups': 'A 轮初创公司',
+    },
+    results: {
+      sent: '已寄出', opened: '已开信', replied: '已回复', analyzed: '已分析',
+      score: '评分', leads_found: '发现潜客', qualified: '合格',
+      updated: '已更新', skipped: '跳过',
+    },
+    resultTrue: '是',
+    resultFalse: '否',
+    batchUnit: '笔',
+    steps: '步骤',
   },
   users: {
     teamOverview: '团队总览',

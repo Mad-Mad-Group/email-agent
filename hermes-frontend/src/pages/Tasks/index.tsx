@@ -59,27 +59,43 @@ function getErrorMessage(task: TaskItem): string {
   }
   return JSON.stringify(e);
 }
-function getResultSummary(task: TaskItem): string {
+/* i18n-aware helpers — accept t function */
+type TFunc = (key: string, opts?: Record<string, unknown>) => string;
+
+function getResultSummary(task: TaskItem, t: TFunc): string {
   const r = task.result ?? getField(task, 'result');
   if (!r) return '';
   if (typeof r === 'string') return r;
   if (typeof r === 'object' && r !== null) {
     const keys = Object.keys(r);
-    return keys.slice(0, 2).map(k => `${k}: ${String((r as Record<string, unknown>)[k]).slice(0, 30)}`).join(', ');
+    return keys.slice(0, 2).map(k => {
+      const label = t(`tasks.results.${k}`, { defaultValue: k });
+      const v = (r as Record<string, unknown>)[k];
+      const vs = v === true ? t('tasks.resultTrue') : v === false ? t('tasks.resultFalse') : String(v).slice(0, 30);
+      return `${label}: ${vs}`;
+    }).join(' · ');
   }
   return '';
 }
-function getParamsSummary(task: TaskItem): string {
+
+function friendlyParam(key: string, val: unknown, t: TFunc): string {
+  const label = t(`tasks.params.${key}`, { defaultValue: key });
+  let s = typeof val === 'string' ? val : JSON.stringify(val);
+  // Translate known values
+  const translated = t(`tasks.paramValues.${s}`, { defaultValue: '' });
+  if (translated) s = translated;
+  const unit = t('tasks.batchUnit');
+  if (typeof val === 'number') s = unit ? `${val} ${unit}` : `${val}`;
+  if (s.length > 30) s = s.slice(0, 30) + '…';
+  return `${label}: ${s}`;
+}
+function getParamsSummary(task: TaskItem, t: TFunc): string {
   const p = getField(task, 'params') ?? task.payload;
   if (!p || typeof p !== 'object') return '';
   const obj = p as Record<string, unknown>;
   const keys = Object.keys(obj);
   if (keys.length === 0) return '';
-  return keys.slice(0, 2).map(k => {
-    const v = obj[k];
-    const s = typeof v === 'string' ? v : JSON.stringify(v);
-    return `${k}: ${s && s.length > 25 ? s.slice(0, 25) + '…' : s}`;
-  }).join(', ');
+  return keys.slice(0, 2).map(k => friendlyParam(k, obj[k], t)).join(' · ');
 }
 
 /* ── Column config ── */
@@ -93,30 +109,44 @@ const COLUMNS: ColumnCfg[] = [
   { key: 'failed',     label: 'Failed',     bg: '#dc2626' },
 ];
 
-/* ── Skill color palette ── */
+/* ── Human-readable labels ── */
 
-const SKILL_COLORS: Record<string, string> = {
-  S1: '#3b82f6', S2: '#d97706', S3: '#2563eb', S4: '#16a34a',
-  scrape: '#3b82f6', email: '#d97706', analyze: '#2563eb',
+/* ── Skill visual config (color + icon) ── */
+const SKILL_CFG: Record<string, { color: string; icon: React.ReactNode }> = {
+  S1: { color: '#2563eb', icon: <><path d="M21 12a9 9 0 1 1-6.22-8.56" /><path d="M21 3v4h-4" /></> },          // globe-refresh = scraping
+  S2: { color: '#7c3aed', icon: <><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H8" /><path d="M16 12h-2c0-3 2-4 2-6a4 4 0 0 0-4-4" /><line x1="9" y1="18" x2="15" y2="18" /><line x1="10" y1="22" x2="14" y2="22" /></> }, // lightbulb = AI
+  S3: { color: '#d97706', icon: <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></> },                                                                     // mail
+  S4: { color: '#0891b2', icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></> },  // file-text = summary
+  S5: { color: '#16a34a', icon: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></> },                                           // download = export
+  S6: { color: '#6366f1', icon: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><path d="m15 15 3 3 3-3" /><path d="m15 9 3-3 3 3" /><path d="M18 6v12" /></> },                                         // arrows = sync
 };
+// aliases
+SKILL_CFG.scrape = SKILL_CFG.S1;
+SKILL_CFG.email = SKILL_CFG.S3;
+SKILL_CFG.analyze = SKILL_CFG.S2;
+
 function skillColor(id: string): string {
-  if (SKILL_COLORS[id]) return SKILL_COLORS[id];
-  const p = ['#3b82f6', '#d97706', '#2563eb', '#1d4ed8', '#dc2626', '#94a3b8'];
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = id.charCodeAt(i) + ((h << 5) - h);
-  return p[Math.abs(h) % p.length];
+  return SKILL_CFG[id]?.color || '#64748b';
+}
+function skillIcon(id: string): React.ReactNode | null {
+  return SKILL_CFG[id]?.icon || null;
 }
 
-/* ── Avatar ── */
-
-const AV_PALETTE = ['#bfdbfe', '#c4b5fd', '#a5f3fc', '#bbf7d0'];
-function avColor(s: string): string {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h);
-  return AV_PALETTE[Math.abs(h) % AV_PALETTE.length];
+/* ── Agent visual config (color + icon) ── */
+const AGENT_CFG: Record<string, { color: string; icon: React.ReactNode }> = {
+  'Worker-1': { color: '#dbeafe', icon: <><rect x="2" y="6" width="20" height="12" rx="2" /><path d="M12 12h.01" /></> },   // cpu = bot
+  'Worker-2': { color: '#e0e7ff', icon: <><rect x="2" y="6" width="20" height="12" rx="2" /><path d="M12 12h.01" /></> },
+  'Worker-3': { color: '#d1fae5', icon: <><rect x="2" y="6" width="20" height="12" rx="2" /><path d="M12 12h.01" /></> },
+  'Agent-A':  { color: '#fef3c7', icon: <><circle cx="12" cy="8" r="4" /><path d="M20 21a8 8 0 0 0-16 0" /></> },           // user = agent
+  'Agent-B':  { color: '#fce7f3', icon: <><circle cx="12" cy="8" r="4" /><path d="M20 21a8 8 0 0 0-16 0" /></> },
+  'Agent-C':  { color: '#e0e7ff', icon: <><circle cx="12" cy="8" r="4" /><path d="M20 21a8 8 0 0 0-16 0" /></> },
+};
+function agentColor(id: string): string {
+  return AGENT_CFG[id]?.color || '#f1f5f9';
 }
-function initials(s: string): string {
-  return s.split(/[\s@_-]+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+function agentIcon(id: string): React.ReactNode {
+  // Default: gear icon for system/unknown
+  return AGENT_CFG[id]?.icon || <><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1.08-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 8.92a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83" /></>;
 }
 
 /* ── Safely extract tasks array from API response ── */
@@ -292,15 +322,15 @@ const Card = styled.div`
 `;
 
 const CardTitle = styled.div`
-  font-size: 0.8125rem; font-weight: 600;
+  font-size: 0.875rem; font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
-  margin-bottom: 2px;
+  margin-bottom: 4px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 `;
 
 const CardDesc = styled.p`
   margin: 0 0 ${({ theme }) => theme.spacing.sm}px;
-  font-size: 0.75rem; color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textSecondary};
   line-height: 1.4;
   display: -webkit-box; -webkit-line-clamp: 2;
   -webkit-box-orient: vertical; overflow: hidden;
@@ -316,31 +346,32 @@ const CardMeta = styled.div`
   display: flex; align-items: center; gap: 6px;
 `;
 
-const Avatar = styled.span<{ $c: string }>`
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: ${({ $c }) => $c};
-  color: #334155; font-size: 0.5625rem; font-weight: 700;
-  box-shadow: none;
+const AgentTag = styled.span<{ $bg: string }>`
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 10px; border-radius: 99px;
+  background: ${({ $bg }) => $bg};
+  color: #334155; font-size: 0.75rem; font-weight: 600;
+  white-space: nowrap;
+  svg { flex-shrink: 0; }
 `;
 
-const Pill = styled.span<{ $c: string }>`
-  display: inline-block; padding: 1px 8px;
-  border-radius: 99px; font-size: 0.625rem; font-weight: 600;
-  background: ${({ $c }) => $c}0d;
+const SkillPill = styled.span<{ $c: string }>`
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 2px 10px; border-radius: 99px; font-size: 0.75rem; font-weight: 600;
+  background: ${({ $c }) => $c}12;
   color: ${({ $c }) => $c};
-  border: 1px solid ${({ $c }) => $c}33;
+  svg { flex-shrink: 0; }
 `;
 
-const PriorityDot = styled.span<{ $c: string }>`
-  display: inline-block; width: 8px; height: 8px;
-  border-radius: 50%;
-  background: ${({ $c }) => $c};
-  box-shadow: none;
+const PriorityPill = styled.span<{ $c: string }>`
+  display: inline-block; padding: 2px 10px;
+  border-radius: 99px; font-size: 0.75rem; font-weight: 600;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  color: ${({ $c }) => $c};
 `;
 
 const CardDate = styled.span`
-  font-size: 0.6875rem; color: ${({ theme }) => theme.colors.textTertiary};
+  font-size: 0.75rem; color: ${({ theme }) => theme.colors.textTertiary};
 `;
 
 const ErrText = styled.span`
@@ -804,8 +835,8 @@ const Tasks: React.FC = () => {
                     const priority = getPriority(task);
                     const created = getCreatedAt(task);
                     const errMsg = getErrorMessage(task);
-                    const paramStr = getParamsSummary(task);
-                    const resultStr = getResultSummary(task);
+                    const paramStr = getParamsSummary(task, t);
+                    const resultStr = getResultSummary(task, t);
                     const agentId = getStr(task, 'assigned_agent_id');
 
                     // Description: show error for failed, result for completed, params otherwise
@@ -823,9 +854,9 @@ const Tasks: React.FC = () => {
                         </CardDesc>
                         <CardFooter>
                           <CardMeta>
-                            <Avatar $c={avColor(assignee)}>{initials(assignee)}</Avatar>
-                            {skill && <Pill $c={skillColor(skill)}>{skill}</Pill>}
-                            <PriorityDot $c={priorityColor(priority)} title={priority} />
+                            <AgentTag $bg={agentColor(assignee)}><I size={12}>{agentIcon(assignee)}</I>{t(`tasks.agents.${assignee}`, { defaultValue: assignee })}</AgentTag>
+                            {skill && <SkillPill $c={skillColor(skill)}><I size={12}>{skillIcon(skill)}</I>{t(`tasks.skills.${skill}`, { defaultValue: skill })}</SkillPill>}
+                            <PriorityPill $c={priorityColor(priority)}>{t(`tasks.priority.${priority}`, { defaultValue: priority })}</PriorityPill>
                           </CardMeta>
                           <CardDate>{fmtDate(created)}</CardDate>
                         </CardFooter>
@@ -864,9 +895,9 @@ const Tasks: React.FC = () => {
               <PanelHead>
                 <PanelHeadLeft>
                   <PanelTitle>{title}</PanelTitle>
-                  <PanelSub>{skill && `${skill} · `}{status}</PanelSub>
+                  <PanelSub>{skill && `${t(`tasks.skills.${skill}`, { defaultValue: skill })} · `}{t(`tasks.${status}`, { defaultValue: status })}</PanelSub>
                 </PanelHeadLeft>
-                <CloseBtn onClick={handleClose} title="Close">×</CloseBtn>
+                <CloseBtn onClick={handleClose} title={t('common.close')}>×</CloseBtn>
               </PanelHead>
 
               <WfBody>
@@ -885,7 +916,7 @@ const Tasks: React.FC = () => {
               </WfBody>
 
               <PanelFoot>
-                <FootStat>{doneCount} / {steps.length} steps</FootStat>
+                <FootStat>{doneCount} / {steps.length} {t('tasks.steps', { defaultValue: '步驟' })}</FootStat>
                 <ProgWrap>
                   <ProgTrack><ProgFill $pct={pct} /></ProgTrack>
                   <ProgPct>{pct}%</ProgPct>

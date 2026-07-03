@@ -329,6 +329,37 @@ const en = {
     noTasks: 'No tasks',
     noDetails: 'No details',
     system: 'System',
+    skills: {
+      S1: 'Scraping', S2: 'AI Analysis', S3: 'Email', S4: 'Summary',
+      S5: 'Export', S6: 'CRM Sync',
+      scrape: 'Scraping', email: 'Email', analyze: 'AI Analysis',
+    },
+    agents: {
+      'Worker-1': 'Bot 1', 'Worker-2': 'Bot 2', 'Worker-3': 'Bot 3',
+      'Agent-A': 'Agent A', 'Agent-B': 'Agent B', 'Agent-C': 'Agent C',
+    },
+    priority: { high: 'High', urgent: 'Urgent', normal: 'Med', low: 'Low' },
+    params: {
+      keyword: 'Keyword', location: 'Location', template: 'Template', batch_size: 'Batch',
+      url: 'URL', format: 'Format', range: 'Range', target: 'Target', pages: 'Pages',
+      model: 'Model', batch: 'Batch', crm: 'CRM', direction: 'Direction',
+      to: 'To', quarter: 'Quarter', metric: 'Metric', mode: 'Mode',
+      source: 'Source', records: 'Records',
+    },
+    paramValues: {
+      this_week: 'This week', bidirectional: 'Bidirectional', reply_check: 'Reply check',
+      daily_digest: 'Daily digest', intro_v2: 'Intro template v2', xlsx: 'Excel',
+      conversion: 'Conversion', 'Series A startups': 'Series A startups',
+    },
+    results: {
+      sent: 'Sent', opened: 'Opened', replied: 'Replied', analyzed: 'Analyzed',
+      score: 'Score', leads_found: 'Leads found', qualified: 'Qualified',
+      updated: 'Updated', skipped: 'Skipped',
+    },
+    resultTrue: 'Yes',
+    resultFalse: 'No',
+    batchUnit: '',
+    steps: 'steps',
   },
   users: {
     teamOverview: 'Team Overview',
