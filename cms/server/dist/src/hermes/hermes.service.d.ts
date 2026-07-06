@@ -17,6 +17,7 @@ export declare class HermesService implements OnModuleInit {
         first_task: string;
     }>;
     private onTaskCompleted;
+    private onTaskFailed;
     private enqueueStage;
     private finish;
     getCampaign(id: string): Promise<(import("mongoose").FlattenMaps<import("mongoose").Document<unknown, {}, Campaign, {}, {}> & Campaign & {

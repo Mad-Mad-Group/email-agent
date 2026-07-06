@@ -26,11 +26,13 @@ import {
   BRAND_TONE_GUIDE,
 } from './brand';
 
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
 /**
  * 叫 Hermes agent 做嘢（佢有 MiniMax + stealth browser + skills）。
  * --yolo = 非互動自動批准工具（開 browser 唔卡）。
  */
-function callHermes(prompt: string, timeoutMs = 240_000): string {
+function callHermes(prompt: string, timeoutMs = 120_000): string {
   return execFileSync('hermes', ['-z', prompt, '--yolo'], {
     encoding: 'utf8',
     timeout: timeoutMs,
@@ -211,8 +213,17 @@ const claim = () =>
   }).then((j) => j?.data ?? null);
 const complete = (id: string, result: unknown) =>
   api(`/tasks/${id}/complete`, 'POST', { result });
-const failTask = (id: string, error: string) =>
-  api(`/tasks/${id}/fail`, 'POST', { error });
+async function failTask(id: string, error: string, retries = 3): Promise<any> {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await api(`/tasks/${id}/fail`, 'POST', { error });
+    } catch (e: any) {
+      log(`⚠ failTask attempt ${i + 1}/${retries} failed:`, e?.message ?? e);
+      if (i < retries - 1) await sleep(2000 * (i + 1)); // 2s, 4s delay
+    }
+  }
+  throw new Error(`failTask 重試 ${retries} 次仍然失敗`);
+}
 
 // ───────── handlers（demo 引擎，逐個換真）─────────
 async function handle(task: any, db: Db): Promise<unknown> {
@@ -614,7 +625,7 @@ If after genuinely searching you find none, reply with an empty array: []
 
 Reply with ONLY a raw JSON array — start with [ end with ]. No commentary.
 [{"name":"","address":"","phone":"","website":""}]`;
-  const arr = hermesJson(prompt, { array: true, timeout: 420_000 });
+  const arr = hermesJson(prompt, { array: true, timeout: 300_000 });
   const ids: string[] = [];
   for (const r of arr.slice(0, n)) {
     if (!r?.name) continue;
@@ -1301,7 +1312,7 @@ async function main() {
   await client.close();
   log('已停止');
 }
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// sleep 已搬到頂部
 
 // 安全網：唔好俾未捕捉嘅錯誤即刻殺 process（log 完繼續）
 process.on('unhandledRejection', (e) =>

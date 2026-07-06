@@ -1,9 +1,10 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import styled, { keyframes, css } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useSearch } from '../../api/hooks';
-import { SearchPayload } from '../../api/services';
+import { SearchPayload, hermesApi } from '../../api/services';
 import { sseClient, SSEEvent } from '../../api/sse';
 import { leadsApi, Lead } from '../../api/leads';
 import { media } from '../../styles/media';
@@ -22,10 +23,12 @@ function hashAvatarColor(name: string): string {
 
 /* ── Layout primitives ── */
 
-const Page = styled.div`
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
+const Page = styled.div<{ $hasResults?: boolean }>`
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: ${({ $hasResults }) => $hasResults ? 'flex-start' : 'center'};
   min-height: calc(100vh - 64px); gap: ${({ theme }) => theme.spacing.md}px;
-  padding-bottom: 22vh;
+  padding-bottom: ${({ $hasResults }) => $hasResults ? '40px' : '22vh'};
+  ${({ $hasResults }) => $hasResults && 'padding-top: 40px;'}
 `;
 
 const GREETINGS = [
@@ -1328,6 +1331,7 @@ const MOCK_RELATED = [
 /* ── Mock search results (displayed by default) ── */
 
 interface MockLead {
+  _id?: string;
   name: string;
   phone: string;
   address: string;
@@ -1462,7 +1466,7 @@ const SearchPage: React.FC = () => {
   const [district, setDistrict] = useState('全區');
   const [showLocPicker, setShowLocPicker] = useState(false);
   const [targetCount, setTargetCount] = useState(20);
-  const [selectedResult, setSelectedResult] = useState<Record<string, unknown> | null>(null);
+  const navigate = useNavigate();
   const locRef = useRef<HTMLDivElement>(null);
 
   /* Close location picker on outside click */
@@ -1494,9 +1498,54 @@ const SearchPage: React.FC = () => {
     };
   }, []);
 
+  /* ── Helper: map Lead → MockLead ── */
+  const mapLead = (lead: Lead): MockLead => ({
+    _id: lead._id,
+    name: lead.company_name || '未知公司',
+    phone: lead.phone || '',
+    address: lead.address || '',
+    rating: lead.rating ? parseFloat(lead.rating) : 0,
+    reviews: 0,
+    source: lead.source || 'Hermes',
+    status: lead.status || 'new',
+    color: '#2563eb',
+    hasEmail: !!(lead.email),
+    hasPhone: !!(lead.phone),
+    hasWebsite: !!(lead.website),
+    email: lead.email,
+    website: lead.website,
+  });
+
+  /* ── Helper: fetch campaign leads and mark pipeline complete ── */
+  const fetchLeadsAndFinish = useCallback((cId: string) => {
+    // 先拎 campaign 嘅 lead_ids，再逐個 fetch 只屬於呢次搜尋嘅 leads
+    hermesApi.getCampaign(cId).then(res => {
+      const campaign = (res.data as any)?.data ?? res.data;
+      const leadIds: string[] = campaign?.lead_ids ?? [];
+      if (leadIds.length === 0) {
+        setRealResults([]);
+        setPipelineComplete(true);
+        return;
+      }
+      Promise.all(leadIds.map(id => leadsApi.get(id).then(r => {
+        const lead: Lead = (r.data as any)?.data ?? r.data;
+        return lead;
+      }).catch(() => null)))
+        .then(results => {
+          const mapped = results.filter(Boolean).map(l => mapLead(l as Lead));
+          setRealResults(mapped);
+          setPipelineComplete(true);
+        });
+    }).catch(err => {
+      console.error('[Search] Failed to fetch campaign leads:', err);
+      setPipelineComplete(true);
+    });
+  }, []);
+
   /* ── Listen for SSE events filtered by campaignId ── */
   useEffect(() => {
     if (!campaignId) return;
+    let done = false;
 
     const unsubLog = sseClient.onEvent('hermes_log', (event: SSEEvent) => {
       const data = event.data as { runId?: string; level?: string; stage?: string; message?: string };
@@ -1509,30 +1558,9 @@ const SearchPage: React.FC = () => {
         level: data.level || 'info',
       }]);
 
-      if (data.stage === 'complete') {
-        setPipelineComplete(true);
-        // Fetch real leads from the API
-        leadsApi.list({ page: 1, limit: 500 }).then(res => {
-          const leads: Lead[] = (res.data as any)?.data ?? (res.data as any) ?? [];
-          const mapped: MockLead[] = leads.map(lead => ({
-            name: lead.company_name || '未知公司',
-            phone: lead.phone || '',
-            address: lead.address || '',
-            rating: lead.rating ? parseFloat(lead.rating) : 0,
-            reviews: 0,
-            source: lead.source || 'Hermes',
-            status: lead.status || 'new',
-            color: '#2563eb',
-            hasEmail: !!(lead.email),
-            hasPhone: !!(lead.phone),
-            hasWebsite: !!(lead.website),
-            email: lead.email,
-            website: lead.website,
-          }));
-          setRealResults(mapped);
-        }).catch(err => {
-          console.error('[Search] Failed to fetch leads after pipeline:', err);
-        });
+      if (data.stage === 'complete' && !done) {
+        done = true;
+        fetchLeadsAndFinish(campaignId);
       }
     });
 
@@ -1547,49 +1575,36 @@ const SearchPage: React.FC = () => {
       });
     });
 
-    // ── 5-min timeout fallback ──
-    // If SSE `stage=complete` never arrives (e.g. worker died mid-pipeline),
-    // gracefully treat the run as done and fetch whatever leads are in DB.
-    // Prevents the UI from being stuck on "處理中" forever.
-    const timeoutMs = 5 * 60 * 1000;
+    // ── Poll campaign status 做 fallback ──
+    // Pipeline 可能喺 useEffect 註冊 SSE listener 之前已完成，
+    // 所以用 polling 補救：每 3 秒查一次 campaign 狀態。
+    const pollId = window.setInterval(() => {
+      if (done) return;
+      hermesApi.getCampaign(campaignId).then(res => {
+        const campaign = (res.data as any)?.data ?? res.data;
+        if (campaign?.status === 'completed' && !done) {
+          done = true;
+          fetchLeadsAndFinish(campaignId);
+        }
+      }).catch(() => { /* ignore polling errors */ });
+    }, 3000);
+
+    // ── 5-min hard timeout ──
     const timeoutId = window.setTimeout(() => {
-      setPipelineComplete((prevComplete) => {
-        if (prevComplete) return prevComplete; // already done, no-op
-        console.warn(
-          `[Search] Pipeline ${campaignId} 5 分鐘內冇收到 complete event，` +
-          `fallback fetch leads from DB`,
-        );
-        leadsApi.list({ page: 1, limit: 500 }).then(res => {
-          const leads: Lead[] = (res.data as any)?.data ?? (res.data as any) ?? [];
-          const mapped: MockLead[] = leads.map(lead => ({
-            name: lead.company_name || '未知公司',
-            phone: lead.phone || '',
-            address: lead.address || '',
-            rating: lead.rating ? parseFloat(lead.rating) : 0,
-            reviews: 0,
-            source: lead.source || 'Hermes',
-            status: lead.status || 'new',
-            color: '#2563eb',
-            hasEmail: !!(lead.email),
-            hasPhone: !!(lead.phone),
-            hasWebsite: !!(lead.website),
-            email: lead.email,
-            website: lead.website,
-          }));
-          setRealResults(mapped);
-        }).catch(err => {
-          console.error('[Search] Timeout fallback fetch failed:', err);
-        });
-        return true; // set pipelineComplete=true
-      });
-    }, timeoutMs);
+      if (!done) {
+        done = true;
+        console.warn(`[Search] Pipeline ${campaignId} timed out after 5 min`);
+        fetchLeadsAndFinish(campaignId);
+      }
+    }, 5 * 60 * 1000);
 
     return () => {
       unsubLog();
       unsubProgress();
+      window.clearInterval(pollId);
       window.clearTimeout(timeoutId);
     };
-  }, [campaignId]);
+  }, [campaignId, fetchLeadsAndFinish]);
 
   /* ── Auto-scroll pipeline log ── */
   useEffect(() => {
@@ -1629,8 +1644,6 @@ const SearchPage: React.FC = () => {
 
   const search = useSearch();
 
-  const handleCloseDetail = useCallback(() => setSelectedResult(null), []);
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!keyword.trim()) return;
@@ -1664,7 +1677,7 @@ const SearchPage: React.FC = () => {
   const isPipelineRunning = !!campaignId && !pipelineComplete;
 
   return (
-    <Page>
+    <Page $hasResults={search.isPending || isPipelineRunning || pipelineComplete || search.isError}>
       <Greeting>{greeting}</Greeting>
 
       <GlowWrap>
@@ -1684,6 +1697,19 @@ const SearchPage: React.FC = () => {
             <LocFlag>HK</LocFlag>
             {district === '全區' ? '全區' : district}
           </LocBadge>
+          <NumberWrap style={{ marginRight: 4 }}>
+            <NumberInput
+              type="number"
+              min={1}
+              max={200}
+              value={targetCount}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTargetCount(Math.max(1, Math.min(200, Number(e.target.value) || 1)))}
+            />
+            <NumArrows>
+              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(200, c + 5))}>▲</NumArrowBtn>
+              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.max(1, c - 5))}>▼</NumArrowBtn>
+            </NumArrows>
+          </NumberWrap>
           <BarSearchBtn type="submit" disabled={search.isPending || !keyword.trim()}>
             {search.isPending ? <Spinner /> : <SearchBtnIcon />}
           </BarSearchBtn>
@@ -1698,6 +1724,87 @@ const SearchPage: React.FC = () => {
           )}
         </UnifiedBar>
       </GlowWrap>
+
+      {/* ── Pipeline progress + results ── */}
+      {(search.isPending || isPipelineRunning || pipelineComplete || search.isError) && (
+        <div style={{ width: 'calc(100% - 48px)', maxWidth: 760 }}>
+          {/* Status banner */}
+          {search.isPending && (
+            <StatusBanner $type="loading"><Spinner /> 正在提交搜尋請求…</StatusBanner>
+          )}
+          {search.isError && (
+            <StatusBanner $type="error">搜尋失敗：{(search.error as any)?.message || '未知錯誤'}</StatusBanner>
+          )}
+          {isPipelineRunning && (
+            <PipelineSection>
+              <PipelineStageLabel>
+                <Spinner />
+                {pipelineProgress
+                  ? `${STAGE_LABELS[pipelineProgress.stage] || pipelineProgress.stage} (${pipelineProgress.current}/${pipelineProgress.total})`
+                  : '管道處理中…'}
+              </PipelineStageLabel>
+              {pipelineProgress && (
+                <ProgressBarOuter>
+                  <ProgressBarInner $percent={pipelineProgress.percent} />
+                </ProgressBarOuter>
+              )}
+              {pipelineLogs.length > 0 && (
+                <PipelineLogFeed ref={pipelineLogRef}>
+                  {pipelineLogs.map((log, i) => (
+                    <PipelineLogLine key={i} $level={log.level}>
+                      <PipelineLogTime>[{log.time}]</PipelineLogTime>
+                      {log.stage && <PipelineLogStage>[{STAGE_LABELS[log.stage] || log.stage}]</PipelineLogStage>}
+                      {log.message}
+                    </PipelineLogLine>
+                  ))}
+                </PipelineLogFeed>
+              )}
+            </PipelineSection>
+          )}
+
+          {/* Complete → show results */}
+          {pipelineComplete && (
+            <PipelineSection>
+              <StatusBanner $type="success">搜尋完成，共找到 {realResults.length} 筆結果</StatusBanner>
+
+              {/* Result cards */}
+              <ResultCardList>
+                {realResults.map((lead, i) => (
+                  <ResultCard key={i} onClick={() => lead._id && navigate(`/leads?detail=${lead._id}`)}>
+                    <RcAvatar $color={hashAvatarColor(lead.name)}>
+                      {lead.name.slice(0, 1)}
+                    </RcAvatar>
+                    <RcBody>
+                      <RcTopRow>
+                        <RcName>{lead.name}</RcName>
+                        {lead.rating > 0 && <RcStars>{renderStars(lead.rating)}</RcStars>}
+                        {lead.rating > 0 && <RcRatingText>{lead.rating.toFixed(1)}</RcRatingText>}
+                      </RcTopRow>
+                      <RcMeta>{lead.address || '—'}</RcMeta>
+                      <RcContactIcons>
+                        <ContactIcon $has={lead.hasEmail} $color="#2563eb">
+                          <SvgIcon d="M1 3.5h14v9H1z M1 3.5l7 5 7-5" size={12} /> {lead.hasEmail ? lead.email : ''}
+                        </ContactIcon>
+                        <ContactIcon $has={lead.hasPhone} $color="#16a34a">
+                          <SvgIcon d="M3 1.5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" size={12} /> {lead.hasPhone ? lead.phone : ''}
+                        </ContactIcon>
+                        <ContactIcon $has={lead.hasWebsite} $color="#d97706">
+                          <SvgIcon d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1z M1 8h14 M8 1c-2 2-2 5 0 7s2 5 0 7" size={12} /> {lead.hasWebsite ? lead.website : ''}
+                        </ContactIcon>
+                      </RcContactIcons>
+                    </RcBody>
+                    <RcActions>
+                      <RcStatusBadge $status={lead.status}>{STATUS_LABELS[lead.status] || lead.status}</RcStatusBadge>
+                    </RcActions>
+                  </ResultCard>
+                ))}
+                {realResults.length === 0 && <EmptyState>呢次搜尋冇搵到結果</EmptyState>}
+              </ResultCardList>
+            </PipelineSection>
+          )}
+        </div>
+      )}
+
     </Page>
   );
 };

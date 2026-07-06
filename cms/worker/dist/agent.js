@@ -428,7 +428,7 @@ ${categoryGuide}
 結尾用返簽名：
 ${brand_1.BRAND_SIGNATURE}
 
-只回一個 JSON object（ENTIRE reply 只可以係佢）：{"subject":"","body":""}`;
+只回一個 JSON object（ENTIRE reply 只可以係佢）：{"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）"}`;
     try {
         const c = hermesJson(prompt, { timeout: 120000 });
         if (!c.body)
@@ -446,6 +446,7 @@ ${brand_1.BRAND_SIGNATURE}
             to_email: lead.email,
             subject,
             body: c.body,
+            _summary: c.summary || '',
             status: 'pending',
             _via: 'hermes',
             _type: 'reply',
@@ -1004,11 +1005,11 @@ ${brand_1.BRAND_TONE_GUIDE}
 
 重要：只可以引用上面提供嘅公司資料。如果資料唔夠，寧願寫得籠統啲，都唔好虛構對方嘅業務細節。
 
-Output ONLY JSON with subject + body. Body MUST end with this signature block:
+Output ONLY JSON with subject, body, and summary. Body MUST end with this signature block:
 
 ${brand_1.BRAND_SIGNATURE}
 
-{"subject":"","body":""}`;
+{"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）"}`;
     const c = hermesJson(prompt);
     await db.collection('leads').updateOne({ _id }, { $set: { email_draft: c.body, _has_email_draft: true } });
     // 測試模式：強制寄去自己嘅 email；正式上線改返 lead.email
@@ -1020,6 +1021,7 @@ ${brand_1.BRAND_SIGNATURE}
         to_email: testRecipient || lead.email,
         subject: c.subject,
         body: c.body,
+        _summary: c.summary || '',
         status: 'pending',
         _via: 'hermes',
         created_at: nowIso(),
@@ -1098,11 +1100,11 @@ ${brand_1.BRAND_TONE_GUIDE}
 This is follow-up #${count}. Keep it SHORTER and more casual than the first email.
 ${count === 1 ? 'Gently check if they saw the previous email. Offer a quick 15-min call.' : 'Final follow-up — very brief, friendly, no pressure. Mention you won\'t follow up again.'}
 
-Output ONLY JSON with subject + body. Body MUST end with this signature block:
+Output ONLY JSON with subject, body, and summary. Body MUST end with this signature block:
 
 ${brand_1.BRAND_SIGNATURE}
 
-{"subject":"","body":""}`;
+{"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）"}`;
     const c = hermesJson(prompt);
     const testRecipient = process.env.TEST_RECIPIENT_EMAIL || '';
     await db.collection('email_queue').insertOne({
@@ -1112,6 +1114,7 @@ ${brand_1.BRAND_SIGNATURE}
         to_email: testRecipient || lead.email,
         subject: c.subject,
         body: c.body,
+        _summary: c.summary || '',
         status: 'pending',
         _via: 'hermes',
         _type: 'followup',
@@ -1144,11 +1147,11 @@ ${brand_1.BRAND_TONE_GUIDE}
 
 重要：只可以引用上面提供嘅公司資料，唔好虛構對方嘅業務細節。
 
-Output ONLY JSON with subject + body. Body MUST end with this signature block:
+Output ONLY JSON with subject, body, and summary. Body MUST end with this signature block:
 
 ${brand_1.BRAND_SIGNATURE}
 
-{"subject":"","body":""}`;
+{"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）"}`;
     const c = hermesJson(prompt);
     const testRecipient = process.env.TEST_RECIPIENT_EMAIL || '';
     await db.collection('email_queue').insertOne({
@@ -1158,6 +1161,7 @@ ${brand_1.BRAND_SIGNATURE}
         to_email: testRecipient || lead.email,
         subject: c.subject,
         body: c.body,
+        _summary: c.summary || '',
         status: 'pending',
         _via: 'hermes',
         _type: 'reoutreach',
