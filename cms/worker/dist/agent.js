@@ -53,11 +53,12 @@ const nodemailer = __importStar(require("nodemailer"));
 const imapflow_1 = require("imapflow");
 const mailparser_1 = require("mailparser");
 const brand_1 = require("./brand");
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 /**
  * 叫 Hermes agent 做嘢（佢有 MiniMax + stealth browser + skills）。
  * --yolo = 非互動自動批准工具（開 browser 唔卡）。
  */
-function callHermes(prompt, timeoutMs = 240000) {
+function callHermes(prompt, timeoutMs = 300000) {
     return (0, child_process_1.execFileSync)('hermes', ['-z', prompt, '--yolo'], {
         encoding: 'utf8',
         timeout: timeoutMs,
@@ -278,7 +279,19 @@ const claim = () => api('/tasks/claim', 'POST', {
     ...(SKILL ? { skill_id: SKILL } : {}),
 }).then((j) => j?.data ?? null);
 const complete = (id, result) => api(`/tasks/${id}/complete`, 'POST', { result });
-const failTask = (id, error) => api(`/tasks/${id}/fail`, 'POST', { error });
+async function failTask(id, error, retries = 3) {
+    for (let i = 0; i < retries; i++) {
+        try {
+            return await api(`/tasks/${id}/fail`, 'POST', { error });
+        }
+        catch (e) {
+            log(`⚠ failTask attempt ${i + 1}/${retries} failed:`, e?.message ?? e);
+            if (i < retries - 1)
+                await sleep(2000 * (i + 1)); // 2s, 4s delay
+        }
+    }
+    throw new Error(`failTask 重試 ${retries} 次仍然失敗`);
+}
 // ───────── handlers（demo 引擎，逐個換真）─────────
 async function handle(task, db) {
     const p = task.params || {};
@@ -350,7 +363,7 @@ ${clip}
 category 定義：interested=明確有興趣並有實質內容（想了解某方面／提出需求／想要資料或報價）；meeting=想開會或約時間；not_interested=明確拒絕或退訂；auto_reply=自動回覆／放假／測試訊息無實質內容；question=未明確表態或有疑問（包括只係一句「有興趣」但冇任何具體內容、或其他唔清楚嘅回覆）。內容唔清楚或未明確表態就填 "question"。
 proposed_time：如果對方提到了具體日期/時間（如「下週三下午兩點」「7月10號 2:30pm」），轉成 ISO 8601；冇提就留空。`;
     try {
-        const c = hermesJson(prompt, { timeout: 120000 });
+        const c = hermesJson(prompt, { timeout: 300000 });
         return {
             category: allowed.includes(c.category) ? c.category : classifyReply(subject, body),
             summary: String(c.summary || subject).slice(0, 300),
@@ -430,7 +443,7 @@ ${brand_1.BRAND_SIGNATURE}
 
 只回一個 JSON object（ENTIRE reply 只可以係佢）：{"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）"}`;
     try {
-        const c = hermesJson(prompt, { timeout: 120000 });
+        const c = hermesJson(prompt, { timeout: 300000 });
         if (!c.body)
             return false;
         const subject = c.subject ||
@@ -647,43 +660,89 @@ async function doReplyCheck(_p, db) {
 }
 /** S1 搜尋 → 叫 Hermes 開 stealth browser 搵 Google Maps，回真公司 */
 async function doSearch(p, db) {
-    const n = Math.min(Number(p.target_count) || 3, 10);
-    // ⚠️ curl 式 web search 會俾 captcha 擋（Google/Bing/DDG）→ 一定要用 Hermes 個 stealth
-    // browser（Browserbase/Camofox，繞 captcha）。搵唔到就回 []，唔好作、唔好回文字。
-    const prompt = `Find up to ${n} real "${p.keyword}" businesses in ${p.location}.
-
-HOW TO SEARCH (important):
-- You have a STEALTH browser that bypasses captchas — USE IT (open Google/Bing/Maps search results or a business directory and read the listings).
-- Do NOT rely on plain curl/HTTP requests to search engines; they get captcha-blocked from this environment and WILL fail.
-- Keep it quick: read search-result listings rather than heavily driving map UIs.
-
-For each business: name, address, phone, website. Use "" for unknown fields.
-Do NOT fabricate or guess — only real, verifiable businesses you actually found.
-If after genuinely searching you find none, reply with an empty array: []
-
-Reply with ONLY a raw JSON array — start with [ end with ]. No commentary.
-[{"name":"","address":"","phone":"","website":""}]`;
-    const arr = hermesJson(prompt, { array: true, timeout: 420000 });
+    const target = Math.min(Number(p.target_count) || 3, 10);
+    const MAX_ROUNDS = 3;
     const ids = [];
-    for (const r of arr.slice(0, n)) {
-        if (!r?.name)
-            continue;
-        const res = await db.collection('leads').insertOne({
-            lead_id: (0, crypto_1.randomBytes)(8).toString('hex'),
-            company_name: r.name,
-            address: r.address,
-            phone: r.phone,
-            website: r.website,
-            source: 'google_maps',
-            _via: 'hermes',
-            search_query: `${p.keyword} ${p.location}`,
-            status: null,
-            _status: 'unverified',
-            _imported_at: nowIso(),
-        });
-        ids.push(res.insertedId.toString());
+    let totalSkipped = 0;
+    const excludeNames = []; // 避免 hermes 重複返回同樣結果
+    for (let round = 1; round <= MAX_ROUNDS; round++) {
+        const still_need = target - ids.length;
+        if (still_need <= 0)
+            break;
+        log(`  [search] 第 ${round}/${MAX_ROUNDS} 輪，仲需要 ${still_need} 個新 lead`);
+        // ⚠️ curl 式 web search 會俾 captcha 擋（Google/Bing/DDG）→ 一定要用 Hermes 個 stealth
+        // browser（Browserbase/Camofox，繞 captcha）。搵唔到就回 []，唔好作、唔好回文字。
+        const excludeClause = excludeNames.length > 0
+            ? `\nEXCLUDE these businesses (already found): ${excludeNames.join(', ')}\n`
+            : '';
+        const prompt = `You are a business research assistant. Your job is to find real businesses using your browser.
+
+TASK: Find up to ${still_need} real "${p.keyword}" businesses in ${p.location}.
+${excludeClause}
+INSTRUCTIONS:
+1. Open your browser and go to Google Maps or Google Search. You have a stealth browser that handles captchas automatically — it is safe and expected to use it.
+2. Search for "${p.keyword} ${p.location}" and read the results.
+3. Extract: name, address, phone, website for each business you find.
+4. Use "" for any field you cannot find. Only include businesses that actually appeared in your search results.
+5. If you find no results, return an empty array: []
+
+RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
+[{"name":"Example School","address":"123 Main St","phone":"1234 5678","website":"https://example.com"}]`;
+        let arr;
+        try {
+            arr = hermesJson(prompt, { array: true, timeout: 300000 });
+        }
+        catch (e) {
+            log(`  [search] 第 ${round} 輪 hermes 失敗: ${e?.message ?? e}`);
+            break;
+        }
+        let newThisRound = 0;
+        for (const r of arr.slice(0, still_need)) {
+            if (!r?.name)
+                continue;
+            // 記住呢個名，下輪排除
+            excludeNames.push(r.name);
+            // ── 去重：company_name 或 website domain 已存在就跳過 ──
+            const dupQuery = [
+                { company_name: { $regex: `^${r.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } },
+            ];
+            if (r.website) {
+                const domain = extractDomain(r.website);
+                if (domain) {
+                    dupQuery.push({ website: { $regex: domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } });
+                }
+            }
+            const existing = await db.collection('leads').findOne({ $or: dupQuery });
+            if (existing) {
+                log(`  跳過重複 lead：${r.name}（已存在: ${existing.company_name}）`);
+                totalSkipped++;
+                continue;
+            }
+            const res = await db.collection('leads').insertOne({
+                lead_id: (0, crypto_1.randomBytes)(8).toString('hex'),
+                company_name: r.name,
+                address: r.address,
+                phone: r.phone,
+                website: r.website,
+                source: 'google_maps',
+                _via: 'hermes',
+                search_query: `${p.keyword} ${p.location}`,
+                status: null,
+                _status: 'unverified',
+                _imported_at: nowIso(),
+            });
+            ids.push(res.insertedId.toString());
+            newThisRound++;
+        }
+        const foundThisRound = newThisRound + totalSkipped; // hermes 返回咗幾多個（唔理重複）
+        log(`  [search] 第 ${round} 輪完成：新增 ${newThisRound}，跳過重複 ${totalSkipped}，累計 ${ids.length}/${target}`);
+        // hermes 完全搵唔到任何結果 → 冇得再搵了
+        if (arr.length === 0) {
+            log(`  [search] hermes 搵唔到任何結果，停止搜尋`);
+            break;
+        }
     }
-    return { created_leads: ids.length, lead_object_ids: ids };
+    return { created_leads: ids.length, lead_object_ids: ids, skipped: totalSkipped };
 }
 /**
  * 從 URL 抽 domain（e.g. "https://www.example.com/about" → "example.com"）
@@ -1186,12 +1245,9 @@ async function doSend(p, db) {
         .findOne({ lead_id: lead.lead_id, status: 'pending' }, { sort: { created_at: -1 } });
     if (!eq)
         return { sent: false, note: '冇待發 email' };
-    // 未開真發 → 只標 approved，唔寄
+    // 未開真發 → 保持 pending，等人手 approve
     if (process.env.ENABLE_REAL_SEND !== 'true') {
-        await db
-            .collection('email_queue')
-            .updateMany({ lead_id: lead.lead_id, status: 'pending' }, { $set: { status: 'approved' } });
-        return { sent: false, note: 'real send 停用（ENABLE_REAL_SEND=true 先發）' };
+        return { sent: false, note: 'real send 停用（ENABLE_REAL_SEND=true 先發），email 保持 pending 等人手審批' };
     }
     // 真發：經 SMTP（nodemailer），一律寄去 TEST_RECIPIENT
     if (!process.env.SMTP_HOST) {
@@ -1319,7 +1375,7 @@ async function main() {
     await client.close();
     log('已停止');
 }
-const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// sleep 已搬到頂部
 // 安全網：唔好俾未捕捉嘅錯誤即刻殺 process（log 完繼續）
 process.on('unhandledRejection', (e) => console.error('[unhandledRejection]', e));
 process.on('uncaughtException', (e) => console.error('[uncaughtException]', e));

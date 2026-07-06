@@ -126,18 +126,21 @@ export class HermesService implements OnModuleInit {
         lead_object_id: params.lead_object_id,
       });
     } else {
-      // send 完 = 一條鏈完
-      campaign.done_count += 1;
-      campaign._updated_at = new Date().toISOString();
-      await campaign.save();
+      // send 完 = 一條鏈完（用 $inc 原子操作，支援多 worker 併發）
+      const updated = await this.campaigns.findOneAndUpdate(
+        { campaign_id: campaignId, status: 'running' },
+        { $inc: { done_count: 1 }, $set: { _updated_at: new Date().toISOString() } },
+        { new: true },
+      ).exec();
+      if (!updated) return;
       this.progress(
         campaignId,
         'pipeline',
-        campaign.done_count,
-        campaign.lead_ids.length,
+        updated.done_count,
+        updated.lead_ids.length,
       );
-      if (campaign.done_count >= campaign.lead_ids.length) {
-        await this.finish(campaign, '全部 lead 完成');
+      if (updated.done_count >= updated.lead_ids.length) {
+        await this.finish(updated, '全部 lead 完成');
       }
     }
   }
@@ -169,17 +172,21 @@ export class HermesService implements OnModuleInit {
     }
 
     // per-lead stage 失敗：當呢個 lead 做完（跳過），check 是否全部 lead 都完咗
-    campaign.done_count += 1;
-    campaign._updated_at = new Date().toISOString();
-    await campaign.save();
+    // 用 $inc 原子操作，支援多 worker 併發
+    const updated = await this.campaigns.findOneAndUpdate(
+      { campaign_id: campaignId, status: 'running' },
+      { $inc: { done_count: 1 }, $set: { _updated_at: new Date().toISOString() } },
+      { new: true },
+    ).exec();
+    if (!updated) return;
     this.progress(
       campaignId,
       'pipeline',
-      campaign.done_count,
-      campaign.lead_ids.length,
+      updated.done_count,
+      updated.lead_ids.length,
     );
-    if (campaign.done_count >= campaign.lead_ids.length) {
-      await this.finish(campaign, '全部 lead 處理完畢（部分可能失敗）');
+    if (updated.done_count >= updated.lead_ids.length) {
+      await this.finish(updated, '全部 lead 處理完畢（部分可能失敗）');
     }
   }
 

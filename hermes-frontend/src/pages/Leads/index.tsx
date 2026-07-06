@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
@@ -844,16 +844,20 @@ const DpCloseBtn = styled.button`
 
 const DpBody = styled.div`
   flex: 1;
+  height: 0;
+  min-height: 0;
   display: grid;
   grid-template-columns: 340px 1fr 220px;
+  grid-template-rows: 1fr;
   gap: 0;
   overflow: hidden;
-  ${media.tabletDown} { grid-template-columns: 1fr; overflow-y: auto; }
+  ${media.tabletDown} { grid-template-columns: 1fr; grid-template-rows: auto; height: auto; overflow-y: auto; }
 `;
 
 const DpColLeft = styled.div`
   padding: 16px 18px;
   overflow-y: auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -884,6 +888,7 @@ const DpCollapsibleBody = styled.div<{ $open?: boolean }>`
 const DpColCenter = styled.div`
   padding: 16px 24px;
   overflow-y: auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -894,6 +899,7 @@ const DpColCenter = styled.div`
 const DpColRight = styled.div`
   padding: 16px 18px;
   overflow-y: auto;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -1097,7 +1103,6 @@ const EmailCard = styled.div<{ $expanded?: boolean }>`
   border-radius: ${({ theme }) => theme.radii.control}px;
   margin-bottom: 6px;
   background: ${({ theme }) => theme.colors.surfaceMuted};
-  overflow: hidden;
   max-width: 100%;
 `;
 const EmailCardHead = styled.div`
@@ -1142,6 +1147,25 @@ const EmailCardMeta = styled.div`
   margin-top: 6px;
   font-size: 0.6875rem;
   color: ${({ theme }) => theme.colors.textTertiary};
+`;
+const EmailSummary = styled.div`
+  margin: 0 ${({ theme }) => theme.spacing.md}px;
+  padding: 8px 12px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #1e40af;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+`;
+const EmailSummaryLabel = styled.span`
+  font-weight: 700;
+  color: #2563eb;
+  white-space: nowrap;
+  flex-shrink: 0;
 `;
 const EmailCardActions = styled.div`
   display: flex;
@@ -1199,11 +1223,18 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
             <EmailCardHead>
               {typeTag && <ReplyBadge $bg={typeTag.bg} $fg={typeTag.fg}>{typeTag.text}</ReplyBadge>}
               <ReplyBadge $bg={statusColor.bg} $fg={statusColor.fg}>{d.status || 'pending'}</ReplyBadge>
-              <EmailCardSubject>{(d as any)._summary || d.subject || '(冇標題)'}</EmailCardSubject>
+              {/* subject 已由 AI 摘要區塊取代 */}
               <EmailCardDate>
                 {d.created_at ? new Date(d.created_at).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : ''}
               </EmailCardDate>
             </EmailCardHead>
+
+            {(d as any)._summary && (
+              <EmailSummary>
+                <EmailSummaryLabel>AI 摘要：</EmailSummaryLabel>
+                {(d as any)._summary}
+              </EmailSummary>
+            )}
 
             <EmailCardBody>
               <EmailBodyContent dangerouslySetInnerHTML={{ __html: d.body || '—' }} />
@@ -1432,26 +1463,31 @@ const Leads: React.FC = () => {
   const allLeads: Lead[] = apiLeads;
 
   /* ── Auto-open detail panel from URL ?detail=<leadId> ── */
+  const detailHandled = useRef<string | null>(null);
   useEffect(() => {
     const detailId = searchParams.get('detail');
-    if (!detailId || allLeads.length === 0) return;
+    if (!detailId || detailHandled.current === detailId) return;
+    detailHandled.current = detailId;
+
+    // 立即清除 URL param，避免重複觸發
+    searchParams.delete('detail');
+    setSearchParams(searchParams, { replace: true });
+
+    // 優先從已載入嘅 list 搵
     const lead = allLeads.find(l => l._id === detailId);
     if (lead) {
       setSelectedLead(lead);
-      // 清除 URL param，避免刷新時重複打開
-      searchParams.delete('detail');
-      setSearchParams(searchParams, { replace: true });
-    } else {
-      // lead 可能唔喺當前頁面嘅 list 入面，直接用 API fetch
-      import('../../api/leads').then(({ leadsApi }) => {
-        leadsApi.get(detailId).then(res => {
-          const fetched = (res.data as any)?.data ?? res.data;
-          if (fetched) setSelectedLead(fetched as Lead);
-        }).catch(() => {});
-      });
-      searchParams.delete('detail');
-      setSearchParams(searchParams, { replace: true });
+      return;
     }
+    // 唔喺 list 入面（可能未載入或超出分頁），直接 API fetch
+    import('../../api/leads').then(({ leadsApi }) => {
+      leadsApi.get(detailId).then(res => {
+        const fetched = (res.data as any)?.data ?? res.data;
+        if (fetched) setSelectedLead(fetched as Lead);
+      }).catch((err) => {
+        console.error('[Leads] Failed to fetch detail lead:', err);
+      });
+    });
   }, [searchParams, allLeads, setSearchParams]);
 
   // Client-side filtering（search + status）

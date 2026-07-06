@@ -401,6 +401,9 @@ const en = {
     updating: 'Updating...',
     updated: 'Settings updated.',
     updateFailed: 'Update failed.',
+    agentIpAddress: 'Agent Device IP',
+    agentIpPlaceholder: 'e.g. 192.168.1.100',
+    agentIpHint: 'IP address of the device running the Hermes agent',
   },
   calendar: {
     today: 'today',

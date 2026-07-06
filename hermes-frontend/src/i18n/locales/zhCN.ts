@@ -401,6 +401,9 @@ const zhCN = {
     updating: '更新中...',
     updated: '设置已更新。',
     updateFailed: '更新失败。',
+    agentIpAddress: 'Agent 设备 IP',
+    agentIpPlaceholder: '例如 192.168.1.100',
+    agentIpHint: '运行 Hermes Agent 的设备 IP 地址',
   },
   calendar: {
     today: '今天',

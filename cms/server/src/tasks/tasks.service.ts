@@ -100,35 +100,50 @@ export class TasksService {
     return task;
   }
 
-  /** Hermes agent 回報完成 */
+  /** Hermes agent 回報完成（原子操作，支援多 worker 併發） */
   async complete(
     taskId: string,
     result?: Record<string, unknown>,
   ): Promise<TaskDocument> {
-    const task = await this.findByTaskId(taskId);
-    if (task.status !== TaskStatus.RUNNING) {
-      throw new BadRequestException(`Task ${taskId} 唔係 running`);
+    const task = await this.model.findOneAndUpdate(
+      { task_id: taskId, status: TaskStatus.RUNNING },
+      {
+        $set: {
+          status: TaskStatus.COMPLETED,
+          result: result ?? {},
+          _updated_at: this.nowIso(),
+        },
+      },
+      { new: true },
+    ).exec();
+    if (!task) {
+      throw new BadRequestException(`Task ${taskId} 唔係 running 或唔存在`);
     }
-    task.status = TaskStatus.COMPLETED;
-    task.result = result ?? {};
-    task._updated_at = this.nowIso();
-    await task.save();
     this.sse.emit(SseEvent.HERMES_LOG, {
       runId: task.task_id,
       level: 'info',
       stage: 'done',
       message: `${task.task_id} 完成`,
     });
-    this.events.emitCompleted(task); // → Hermes orchestrator 串下一 stage
+    this.events.emitCompleted(task);
     return task;
   }
 
   async fail(taskId: string, error?: string): Promise<TaskDocument> {
-    const task = await this.findByTaskId(taskId);
-    task.status = TaskStatus.FAILED;
-    task.error = { message: error ?? 'unknown' };
-    task._updated_at = this.nowIso();
-    await task.save();
+    const task = await this.model.findOneAndUpdate(
+      { task_id: taskId, status: TaskStatus.RUNNING },
+      {
+        $set: {
+          status: TaskStatus.FAILED,
+          error: { message: error ?? 'unknown' },
+          _updated_at: this.nowIso(),
+        },
+      },
+      { new: true },
+    ).exec();
+    if (!task) {
+      throw new BadRequestException(`Task ${taskId} 唔係 running 或唔存在`);
+    }
     this.sse.emit(SseEvent.HERMES_LOG, {
       runId: task.task_id,
       level: 'error',

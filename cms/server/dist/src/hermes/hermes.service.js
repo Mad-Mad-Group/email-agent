@@ -116,12 +116,12 @@ let HermesService = class HermesService {
             });
         }
         else {
-            campaign.done_count += 1;
-            campaign._updated_at = new Date().toISOString();
-            await campaign.save();
-            this.progress(campaignId, 'pipeline', campaign.done_count, campaign.lead_ids.length);
-            if (campaign.done_count >= campaign.lead_ids.length) {
-                await this.finish(campaign, '全部 lead 完成');
+            const updated = await this.campaigns.findOneAndUpdate({ campaign_id: campaignId, status: 'running' }, { $inc: { done_count: 1 }, $set: { _updated_at: new Date().toISOString() } }, { new: true }).exec();
+            if (!updated)
+                return;
+            this.progress(campaignId, 'pipeline', updated.done_count, updated.lead_ids.length);
+            if (updated.done_count >= updated.lead_ids.length) {
+                await this.finish(updated, '全部 lead 完成');
             }
         }
     }
@@ -147,12 +147,12 @@ let HermesService = class HermesService {
             await this.finish(campaign, `搜尋失敗：${errorMsg}`);
             return;
         }
-        campaign.done_count += 1;
-        campaign._updated_at = new Date().toISOString();
-        await campaign.save();
-        this.progress(campaignId, 'pipeline', campaign.done_count, campaign.lead_ids.length);
-        if (campaign.done_count >= campaign.lead_ids.length) {
-            await this.finish(campaign, '全部 lead 處理完畢（部分可能失敗）');
+        const updated = await this.campaigns.findOneAndUpdate({ campaign_id: campaignId, status: 'running' }, { $inc: { done_count: 1 }, $set: { _updated_at: new Date().toISOString() } }, { new: true }).exec();
+        if (!updated)
+            return;
+        this.progress(campaignId, 'pipeline', updated.done_count, updated.lead_ids.length);
+        if (updated.done_count >= updated.lead_ids.length) {
+            await this.finish(updated, '全部 lead 處理完畢（部分可能失敗）');
         }
     }
     async enqueueStage(stage, campaignId, extra = {}) {

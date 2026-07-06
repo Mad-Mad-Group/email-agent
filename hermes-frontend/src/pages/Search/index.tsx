@@ -1770,7 +1770,7 @@ const SearchPage: React.FC = () => {
               {/* Result cards */}
               <ResultCardList>
                 {realResults.map((lead, i) => (
-                  <ResultCard key={i} onClick={() => lead._id && navigate(`/leads?detail=${lead._id}`)}>
+                  <ResultCard key={i} onClick={() => lead._id && navigate(`/cms-leads?detail=${lead._id}`)}>
                     <RcAvatar $color={hashAvatarColor(lead.name)}>
                       {lead.name.slice(0, 1)}
                     </RcAvatar>
