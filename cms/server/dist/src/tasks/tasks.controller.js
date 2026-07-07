@@ -29,6 +29,9 @@ let TasksController = class TasksController {
     async list(q) {
         return this.tasks.findAll(q);
     }
+    async stats() {
+        return this.tasks.stats();
+    }
     async get(taskId) {
         return this.tasks.findByTaskId(taskId);
     }
@@ -56,6 +59,15 @@ __decorate([
     __metadata("design:paramtypes", [task_dtos_1.ListTasksQueryDto]),
     __metadata("design:returntype", Promise)
 ], TasksController.prototype, "list", null);
+__decorate([
+    (0, common_1.Get)('stats'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard, permissions_guard_1.PermissionsGuard),
+    openapi.ApiResponse({ status: 200, type: [Object] }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], TasksController.prototype, "stats", null);
 __decorate([
     (0, common_1.Get)(':taskId'),
     (0, swagger_1.ApiBearerAuth)(),

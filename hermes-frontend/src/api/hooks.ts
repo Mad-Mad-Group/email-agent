@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { leadsApi, LeadListParams } from './leads';
 import { emailQueueApi, EmailListParams } from './emailQueue';
 import { notificationsApi } from './notifications';
-import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi } from './services';
+import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi, AgentSkillStats } from './services';
 import { authApi } from './auth';
 
 /* ── Auth ── */
@@ -145,6 +145,13 @@ export const useTasks = () =>
     queryKey: ['tasks'],
     queryFn: () => tasksApi.list().then(r => r.data),
     refetchInterval: 120_000, // SSE 即時更新為主，polling 做 fallback
+  });
+
+export const useAgentStats = () =>
+  useQuery({
+    queryKey: ['tasks', 'stats'],
+    queryFn: () => tasksApi.stats().then(r => r.data as unknown as AgentSkillStats[]),
+    refetchInterval: 120_000,
   });
 
 /* ── Users ── */
