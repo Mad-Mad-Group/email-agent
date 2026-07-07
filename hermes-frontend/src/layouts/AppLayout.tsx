@@ -6,6 +6,7 @@ import { Toaster } from 'react-hot-toast';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import { media } from '../styles/media';
+import { useSseListener } from '../hooks/useSseListener';
 
 /* ── Overlay backdrop for mobile drawer ── */
 
@@ -149,6 +150,9 @@ const AppLayout: React.FC = () => {
   const titleKey = ROUTE_TITLE_KEYS[location.pathname] ?? 'nav.dashboard';
   const [mobileOpen, setMobileOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => window.innerWidth < 1024);
+
+  /* SSE 即時事件監聽 */
+  useSseListener();
 
   /* Auto-collapse on tablet when window resizes across the 1024px boundary */
   useEffect(() => {

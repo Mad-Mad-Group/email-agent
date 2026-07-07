@@ -2,6 +2,9 @@ import { MessageEvent } from '@nestjs/common';
 import { Observable } from 'rxjs';
 export declare enum SseEvent {
     LEAD_UPDATE = "lead_update",
+    EMAIL_UPDATE = "email_update",
+    NOTIFICATION = "notification",
+    TASK_UPDATE = "task_update",
     HERMES_LOG = "hermes_log",
     PIPELINE_PROGRESS = "pipeline_progress"
 }
@@ -10,6 +13,19 @@ export interface SsePayloads {
         id: string;
         action: 'created' | 'updated' | 'status_changed' | 'deleted';
         status?: string;
+    };
+    [SseEvent.EMAIL_UPDATE]: {
+        id: string;
+        action: 'created' | 'updated' | 'status_changed';
+        status?: string;
+    };
+    [SseEvent.NOTIFICATION]: {
+        title: string;
+        type?: string;
+    };
+    [SseEvent.TASK_UPDATE]: {
+        id: string;
+        action: 'created' | 'completed' | 'failed';
     };
     [SseEvent.HERMES_LOG]: {
         runId: string;

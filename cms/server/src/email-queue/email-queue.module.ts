@@ -9,6 +9,7 @@ import { EmailQueueController } from './email-queue.controller';
 import { EMAIL_SENDER } from './email-sender.interface';
 import { EmailServiceAdapter } from './email-service.adapter';
 import { LeadsModule } from '../leads/leads.module';
+import { SseModule } from '../sse/sse.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { LeadsModule } from '../leads/leads.module';
       { name: EmailQueueItem.name, schema: EmailQueueSchema },
     ]),
     LeadsModule, // 提供 LeadsService（發送後標 lead = contacted）
+    SseModule,
   ],
   controllers: [EmailQueueController],
   providers: [

@@ -15,6 +15,7 @@ const email_queue_controller_1 = require("./email-queue.controller");
 const email_sender_interface_1 = require("./email-sender.interface");
 const email_service_adapter_1 = require("./email-service.adapter");
 const leads_module_1 = require("../leads/leads.module");
+const sse_module_1 = require("../sse/sse.module");
 let EmailQueueModule = class EmailQueueModule {
 };
 exports.EmailQueueModule = EmailQueueModule;
@@ -25,6 +26,7 @@ exports.EmailQueueModule = EmailQueueModule = __decorate([
                 { name: email_queue_schema_1.EmailQueueItem.name, schema: email_queue_schema_1.EmailQueueSchema },
             ]),
             leads_module_1.LeadsModule,
+            sse_module_1.SseModule,
         ],
         controllers: [email_queue_controller_1.EmailQueueController],
         providers: [

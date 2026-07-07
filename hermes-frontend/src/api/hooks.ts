@@ -20,6 +20,7 @@ export const useLeads = (params?: LeadListParams) =>
   useQuery({
     queryKey: ['leads', params],
     queryFn: () => leadsApi.list(params).then(r => r.data),
+    refetchInterval: 120_000, // SSE 即時更新為主，polling 做 fallback
   });
 
 export const useLead = (id: string) =>
@@ -72,6 +73,7 @@ export const useEmailQueue = (params?: EmailListParams) =>
   useQuery({
     queryKey: ['emailQueue', params],
     queryFn: () => emailQueueApi.list(params).then(r => r.data),
+    refetchInterval: 120_000, // SSE 即時更新為主，polling 做 fallback
   });
 
 export const useEmailItem = (id: string) =>
@@ -142,6 +144,7 @@ export const useTasks = () =>
   useQuery({
     queryKey: ['tasks'],
     queryFn: () => tasksApi.list().then(r => r.data),
+    refetchInterval: 120_000, // SSE 即時更新為主，polling 做 fallback
   });
 
 /* ── Users ── */
@@ -186,6 +189,7 @@ export const useDashboardStats = () =>
         recentLeads: (leadsRes.data as any)?.data ?? [],
       };
     },
+    refetchInterval: 120_000, // SSE 即時更新為主，polling 做 fallback
   });
 
 export const useEmailDrafts = () => useEmailQueue();
@@ -271,14 +275,14 @@ export const useNotifications = (params?: { read?: boolean; limit?: number; page
   useQuery({
     queryKey: ['notifications', params],
     queryFn: () => notificationsApi.list(params).then(r => r.data),
-    refetchInterval: 30_000, // 30s polling
+    refetchInterval: 120_000, // SSE 即時更新為主，polling 做 fallback // 30s polling
   });
 
 export const useUnreadCount = () =>
   useQuery({
     queryKey: ['notifications', 'unread-count'],
     queryFn: () => notificationsApi.unreadCount().then(r => (r.data as any)?.unread_count ?? 0),
-    refetchInterval: 30_000,
+    refetchInterval: 120_000, // SSE 即時更新為主，polling 做 fallback
   });
 
 export const useMarkNotificationRead = () => {

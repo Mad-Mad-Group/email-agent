@@ -791,9 +791,9 @@ const Footer = styled.footer`
 
 /* ── Detail Panel ── */
 
-const dpFadeIn = keyframes`
-  from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
-  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+const dpSlideIn = keyframes`
+  from { opacity: 0; transform: translateX(40px); }
+  to   { opacity: 1; transform: translateX(0); }
 `;
 
 const DpPanel = styled.div`
@@ -806,7 +806,7 @@ const DpPanel = styled.div`
   display: flex;
   flex-direction: column;
   background: ${({ theme }) => theme.colors.surface};
-  animation: ${dpFadeIn} 0.15s ease-out;
+  animation: ${dpSlideIn} 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 `;
 
 const DpHeader = styled.div`
@@ -1467,7 +1467,7 @@ const Leads: React.FC = () => {
 
   // 攞可攞到嘅全部 leads（backend DTO 限 limit ≤ 100）。
   // status/search filtering client side 做。
-  const { data, isLoading, error, refetch } = useLeads({ page: 1, limit: 100 });
+  const { data, isLoading, error, refetch, isFetching } = useLeads({ page: 1, limit: 100 });
 
   const deleteLead = useDeleteLead();
   const changeStatus = useChangeLeadStatus();
@@ -1611,6 +1611,9 @@ const Leads: React.FC = () => {
                 style={demoMode ? { background: '#dc2626', color: '#fff', border: 'none' } : {}}
               >
                 {demoMode ? '⏱ Demo ON (10s)' : '⏱ Demo 模式'}
+              </AddBtn>
+              <AddBtn onClick={() => refetch()} disabled={isFetching} title="重新整理">
+                {isFetching ? '⟳ 刷新中…' : '⟳ 刷新'}
               </AddBtn>
               <AddBtnGreen onClick={() => setShowAdd(true)}>
                 <IconPlus />
