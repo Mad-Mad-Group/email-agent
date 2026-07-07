@@ -156,6 +156,26 @@ let token = '';
 const log = (...a: unknown[]) => console.log(`[agent ${AGENT_ID}]`, ...a);
 const nowIso = () => new Date().toISOString();
 
+/** 寫入通知記錄到 MongoDB */
+async function notify(
+  db: Db,
+  title: string,
+  opts: { message?: string; type?: 'lead' | 'email' | 'campaign' | 'task' | 'system'; ref_id?: string } = {},
+) {
+  try {
+    await db.collection('notifications').insertOne({
+      title,
+      message: opts.message,
+      type: opts.type ?? 'system',
+      ref_id: opts.ref_id,
+      read: false,
+      created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
+    });
+  } catch (e) {
+    log('⚠ notify 寫入失敗:', e);
+  }
+}
+
 /**
  * 將 lead 嘅真實公司資料組成一段 context，畀 LLM 參考。
  * 避免 AI 冇資料亂作公司背景。
@@ -699,6 +719,13 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
     }
   }
 
+  if (ids.length > 0) {
+    await notify(db, `搜尋完成：搵到 ${ids.length} 個新 lead`, {
+      message: `關鍵字「${p.keyword}」在「${p.location}」搵到 ${ids.length} 個新結果，跳過 ${totalSkipped} 個重複`,
+      type: 'lead',
+    });
+  }
+
   return { created_leads: ids.length, lead_object_ids: ids, skipped: totalSkipped };
 }
 
@@ -950,8 +977,8 @@ async function doAnalyze(p: any, db: Db) {
     via = 'hermes-llm';
     const desc = lead.website_description || '';
     const svcs = (lead._scraped_services || []).join(', ');
-    const text = (lead._scraped_text || '').slice(0, 4000);
-    const prompt = `You are a B2B research assistant representing ${BRAND_NAME} (${BRAND_TAGLINE}),
+    // 爬蟲內容量做參數：太多資料令 LLM 逾時嘅話，縮短再試
+    const buildPrompt = (chars: number) => `You are a B2B research assistant representing ${BRAND_NAME} (${BRAND_TAGLINE}),
 a Hong Kong digital agency.
 ${BRAND_CONTEXT_BLOCK}
 
@@ -960,7 +987,7 @@ Website: ${lead.website || 'N/A'}
 Company description: ${desc}
 Their services: ${svcs}
 Website content (scraped):
-${text}
+${(lead._scraped_text || '').slice(0, chars)}
 
 Based on the above information, propose a SPECIFIC collaboration angle —
 i.e. WHICH of ${BRAND_NAME}'s services (STRATEGIZE / DESIGN / CODE / MARKET, or any
@@ -968,7 +995,13 @@ of: ${BRAND_SOLUTIONS.join(' / ')}) maps best to this lead's pain points, and wh
 ${BRAND_TONE_GUIDE}
 Output ONLY one JSON object, no other text:
 {"primary":"主要合作方向","pitch":"一句 pitch (港式繁中 + EN mix OK)","reason":"理由","services":["服務1","服務2"]}`;
-    out = callHermes(prompt);
+    try {
+      out = callHermes(buildPrompt(4000), 300_000);
+    } catch {
+      // 「太多資料」逾時 → 大幅縮短爬蟲內容再試一次
+      log(`[analyze] ${lead.company_name} 分析逾時，縮短資料後重試`);
+      out = callHermes(buildPrompt(1200), 300_000);
+    }
   } else {
     // 冇爬蟲資料 → 用 Hermes 瀏覽器去睇官網
     via = 'hermes-browser';
@@ -988,7 +1021,7 @@ maps best to this lead's pain points, and why.
 ${BRAND_TONE_GUIDE}
 Output ONLY one JSON object, no other text:
 {"primary":"主要合作方向","pitch":"一句 pitch (港式繁中 + EN mix OK)","reason":"理由","services":["服務1","服務2"]}`;
-    out = callHermes(prompt);
+    out = callHermes(prompt, 360_000); // browser 導航較慢，畀多啲時間
   }
 
   const c = extractJson(out);
@@ -1056,6 +1089,11 @@ ${BRAND_SIGNATURE}
     status: 'pending',
     _via: 'hermes',
     created_at: nowIso(),
+  });
+  await notify(db, `新草稿：${lead.company_name}`, {
+    message: `主題：${c.subject}`,
+    type: 'email',
+    ref_id: lead.lead_id,
   });
   return { drafted: true, via: 'hermes', subject: c.subject };
 }
@@ -1289,6 +1327,11 @@ async function doSend(p: any, db: Db) {
   await db
     .collection('leads')
     .updateOne({ _id }, { $set: { status: 'contacted', _email_sent: true, _last_sent_at: nowIso() } });
+  await notify(db, `郵件已發送：${lead.company_name}`, {
+    message: `已發送至 ${to}`,
+    type: 'email',
+    ref_id: lead.lead_id,
+  });
   return { sent: true, to };
 }
 
@@ -1352,6 +1395,11 @@ async function main() {
       // (DB 入面個 task 仲 stay 在 running，stale-minutes cron 之後會 requeue)。
       try {
         await failTask(task.task_id, e?.message ?? String(e));
+        await notify(db, `任務失敗：${task.title || task.task_id}`, {
+          message: e?.message ?? String(e),
+          type: 'task',
+          ref_id: task.task_id,
+        });
       } catch (e2: any) {
         log(`⚠ failTask 都失敗咗 (${task.task_id}) — task 留喺 running，等 reap-stalled-tasks cron requeue:`, e2?.message ?? e2);
       }

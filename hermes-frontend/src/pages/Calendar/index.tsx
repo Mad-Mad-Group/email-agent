@@ -123,22 +123,26 @@ const CellDay = styled.div<{ $today?: boolean }>`
   `}
 `;
 
-const EventBlock = styled.div<{ $color?: string }>`
+const EventBlock = styled.div<{ $color?: string; $past?: boolean }>`
   padding: 2px 6px; margin: 1px 0; border-radius: 3px; font-size: 0.65rem;
-  background: ${({ $color }) => $color || '#567ebb'};
-  color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: ${({ $past, $color }) => $past ? '#d1d5db' : ($color || '#567ebb')};
+  color: ${({ $past }) => $past ? '#9ca3af' : '#fff'};
+  text-decoration: ${({ $past }) => $past ? 'line-through' : 'none'};
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   cursor: pointer;
   ${media.mobile} {
     font-size: 0.55rem;
   }
 `;
 
-const EventDot = styled.div`
+const EventDot = styled.div<{ $past?: boolean }>`
   display: flex; align-items: center; gap: 4px; font-size: 0.65rem;
-  color: ${({ theme }) => theme.colors.textSecondary}; padding: 1px 0;
+  color: ${({ $past }) => $past ? '#9ca3af' : 'inherit'};
+  text-decoration: ${({ $past }) => $past ? 'line-through' : 'none'};
+  padding: 1px 0;
   &::before {
     content: ''; width: 6px; height: 6px; border-radius: 50%;
-    background: ${({ theme }) => theme.colors.blue}; flex-shrink: 0;
+    background: ${({ $past }) => $past ? '#d1d5db' : 'var(--blue, #567ebb)'}; flex-shrink: 0;
   }
   ${media.mobile} {
     font-size: 0.55rem;
@@ -171,11 +175,13 @@ const DayEventList = styled.div`
   display: flex; flex-direction: column; gap: 10px;
 `;
 
-const DayEventItem = styled.div<{ $color?: string }>`
+const DayEventItem = styled.div<{ $color?: string; $past?: boolean }>`
   display: flex; align-items: flex-start; gap: 12px;
   padding: 12px 16px; border-radius: 8px;
   background: ${({ theme }) => theme.colors.surfaceMuted};
-  border-left: 4px solid ${({ $color }) => $color || '#567ebb'};
+  border-left: 4px solid ${({ $past, $color }) => $past ? '#d1d5db' : ($color || '#567ebb')};
+  opacity: ${({ $past }) => $past ? 0.6 : 1};
+  text-decoration: ${({ $past }) => $past ? 'line-through' : 'none'};
   transition: transform 0.1s;
   &:hover { transform: translateX(2px); }
 `;
@@ -203,6 +209,7 @@ interface CalEvent {
   type: 'block' | 'dot';
   color?: string;
   span?: number;
+  past?: boolean;
 }
 
 const FALLBACK_EVENTS: CalEvent[] = [
@@ -224,8 +231,10 @@ const MONTHS = ['January','February','March','April','May','June','July','August
 
 /** 將 API event 轉成 CalEvent */
 function apiToCalEvents(apiEvents: any[]): CalEvent[] {
+  const now = new Date();
   return apiEvents.map((e) => {
     const d = new Date(e.start);
+    const end = e.end ? new Date(e.end) : d;
     const day = d.getDate();
     const h = d.getHours();
     const m = d.getMinutes();
@@ -236,6 +245,7 @@ function apiToCalEvents(apiEvents: any[]): CalEvent[] {
       time,
       type: e.all_day ? 'block' as const : 'dot' as const,
       color: e.color || '#567ebb',
+      past: end < now,
     };
   });
 }
@@ -337,8 +347,8 @@ const Calendar: React.FC = () => {
                 <CellDay $today={cell.today}>{cell.day}</CellDay>
                 {events.map((ev, j) => (
                   ev.type === 'block'
-                    ? <EventBlock key={j} $color={ev.color}>{ev.title}</EventBlock>
-                    : <EventDot key={j}>{ev.time} {ev.title}</EventDot>
+                    ? <EventBlock key={j} $color={ev.color} $past={ev.past}>{ev.title}</EventBlock>
+                    : <EventDot key={j} $past={ev.past}>{ev.time} {ev.title}</EventDot>
                 ))}
               </CalCell>
             );
@@ -358,7 +368,7 @@ const Calendar: React.FC = () => {
             {dayEvents.length > 0 ? (
               <DayEventList>
                 {dayEvents.map((ev, i) => (
-                  <DayEventItem key={i} $color={ev.color}>
+                  <DayEventItem key={i} $color={ev.color} $past={ev.past}>
                     <DayEventTime>{ev.time || '全日'}</DayEventTime>
                     <DayEventTitle>{ev.title}</DayEventTitle>
                   </DayEventItem>

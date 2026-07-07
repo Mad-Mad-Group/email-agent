@@ -14,7 +14,7 @@ import { media } from '../../styles/media';
 
 /* ── Layout ── */
 
-const Page = styled.div`display: flex; flex-direction: column; gap: 20px; padding-bottom: 32px; overflow-x: hidden; min-width: 0;`;
+const Page = styled.div`display: flex; flex-direction: column; gap: 20px; padding-bottom: 32px; overflow: hidden; min-width: 0;`;
 
 const PageTitle = styled.h1`
   font-size: 1.25rem; font-weight: 700; margin: 0;
@@ -166,7 +166,7 @@ const Row = styled.div<{ $cols?: string; $gap?: number }>`
   grid-template-columns: ${({ $cols }) => $cols || 'repeat(4, 1fr)'};
   gap: ${({ $gap }) => $gap ?? 12}px;
   ${media.mobile} { grid-template-columns: 1fr; }
-  ${media.tablet} { grid-template-columns: 1fr; }
+  ${media.tablet} { grid-template-columns: repeat(2, 1fr); }
 `;
 
 const Card = styled.div`

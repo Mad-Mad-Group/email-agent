@@ -7,6 +7,8 @@ import { useThemeMode } from '../../contexts/ThemeModeContext';
 import { leadsApi, Lead } from '../../api/leads';
 import { emailQueueApi, EmailItem } from '../../api/emailQueue';
 import { tasksApi, TaskItem } from '../../api/services';
+import { useNotifications, useUnreadCount, useMarkNotificationRead, useMarkAllNotificationsRead } from '../../api/hooks';
+import { NotificationItem } from '../../api/notifications';
 
 interface TopbarProps {
   title: string;
@@ -316,6 +318,146 @@ const IconBtn = styled.button`
   }
 `;
 
+/* ── Notification Panel ── */
+
+const NotifWrapper = styled.div`
+  position: relative;
+`;
+
+const NotifBadge = styled.span`
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  line-height: 1;
+`;
+
+const NotifPanel = styled.div`
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 360px;
+  max-height: 480px;
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+
+  ${media.mobile} {
+    width: 300px;
+    right: -40px;
+  }
+`;
+
+const NotifPanelHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const NotifPanelTitle = styled.h3`
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const NotifMarkAllBtn = styled.button`
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: var(--primary, #567ebb);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+`;
+
+const NotifList = styled.div`
+  overflow-y: auto;
+  flex: 1;
+  max-height: 400px;
+`;
+
+const NotifItemRow = styled.div<{ $read?: boolean }>`
+  display: flex;
+  gap: 10px;
+  padding: 12px 16px;
+  cursor: pointer;
+  background: ${({ $read }) => $read ? 'transparent' : 'rgba(37, 99, 235, 0.04)'};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  transition: background 0.12s;
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  &:last-child { border-bottom: none; }
+`;
+
+const NotifDot = styled.div<{ $type?: string }>`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 5px;
+  flex-shrink: 0;
+  background: ${({ $type }) =>
+    $type === 'lead' ? '#16a34a' :
+    $type === 'email' ? '#2563eb' :
+    $type === 'task' ? '#dc2626' :
+    $type === 'campaign' ? '#9333ea' :
+    '#6b7280'};
+`;
+
+const NotifContent = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
+
+const NotifTitle = styled.div`
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const NotifMsg = styled.div`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const NotifTime = styled.div`
+  font-size: 0.65rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  margin-top: 3px;
+`;
+
+const NotifEmpty = styled.div`
+  padding: 40px 16px;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
 const LangWrapper = styled.div`
   position: relative;
   &:hover > div { display: flex; }
@@ -488,6 +630,38 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
 
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /* ── Notifications ── */
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const { data: unreadCount } = useUnreadCount();
+  const { data: notifData } = useNotifications({ limit: 20 });
+  const markRead = useMarkNotificationRead();
+  const markAllRead = useMarkAllNotificationsRead();
+
+  const notifications: NotificationItem[] = (notifData as any)?.data ?? [];
+  const unread = (typeof unreadCount === 'number' ? unreadCount : 0);
+
+  // 點擊外面關閉
+  useEffect(() => {
+    if (!notifOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [notifOpen]);
+
+  const formatTimeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr.replace(' ', 'T')).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return '剛剛';
+    if (mins < 60) return `${mins} 分鐘前`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours} 小時前`;
+    const days = Math.floor(hours / 24);
+    return `${days} 日前`;
+  };
 
   /* ── Language ── */
   const currentIdx = LANGUAGES.findIndex((l) => l.code === i18n.language);
@@ -731,7 +905,42 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
         <ThemeToggle onClick={toggleTheme} title={mode === 'light' ? 'Dark mode' : 'Light mode'}>
           {mode === 'light' ? <MoonIcon /> : <SunIcon />}
         </ThemeToggle>
-        <IconBtn title={t('topbar.notifications')}><NotifBellIcon /></IconBtn>
+        <NotifWrapper ref={notifRef}>
+          <IconBtn title={t('topbar.notifications')} onClick={() => setNotifOpen(v => !v)}>
+            <NotifBellIcon />
+            {unread > 0 && <NotifBadge>{unread > 99 ? '99+' : unread}</NotifBadge>}
+          </IconBtn>
+          {notifOpen && (
+            <NotifPanel>
+              <NotifPanelHeader>
+                <NotifPanelTitle>通知 {unread > 0 && `(${unread})`}</NotifPanelTitle>
+                {unread > 0 && (
+                  <NotifMarkAllBtn onClick={() => markAllRead.mutate()}>全部已讀</NotifMarkAllBtn>
+                )}
+              </NotifPanelHeader>
+              <NotifList>
+                {notifications.length === 0 ? (
+                  <NotifEmpty>暫時冇通知</NotifEmpty>
+                ) : (
+                  notifications.map((n) => (
+                    <NotifItemRow
+                      key={n._id}
+                      $read={n.read}
+                      onClick={() => { if (!n.read) markRead.mutate(n._id); }}
+                    >
+                      <NotifDot $type={n.type} />
+                      <NotifContent>
+                        <NotifTitle>{n.title}</NotifTitle>
+                        {n.message && <NotifMsg>{n.message}</NotifMsg>}
+                        <NotifTime>{formatTimeAgo(n.created_at)}</NotifTime>
+                      </NotifContent>
+                    </NotifItemRow>
+                  ))
+                )}
+              </NotifList>
+            </NotifPanel>
+          )}
+        </NotifWrapper>
         <UserAvatar>MM</UserAvatar>
         {actionLabel && onAction && (
           <ActionButton onClick={onAction}>{actionLabel}</ActionButton>
