@@ -101,14 +101,16 @@ let TasksService = class TasksService {
         return task;
     }
     async complete(taskId, result) {
-        const task = await this.findByTaskId(taskId);
-        if (task.status !== task_status_enum_1.TaskStatus.RUNNING) {
-            throw new common_1.BadRequestException(`Task ${taskId} 唔係 running`);
+        const task = await this.model.findOneAndUpdate({ task_id: taskId, status: task_status_enum_1.TaskStatus.RUNNING }, {
+            $set: {
+                status: task_status_enum_1.TaskStatus.COMPLETED,
+                result: result ?? {},
+                _updated_at: this.nowIso(),
+            },
+        }, { new: true }).exec();
+        if (!task) {
+            throw new common_1.BadRequestException(`Task ${taskId} 唔係 running 或唔存在`);
         }
-        task.status = task_status_enum_1.TaskStatus.COMPLETED;
-        task.result = result ?? {};
-        task._updated_at = this.nowIso();
-        await task.save();
         this.sse.emit(sse_service_1.SseEvent.HERMES_LOG, {
             runId: task.task_id,
             level: 'info',
@@ -119,11 +121,16 @@ let TasksService = class TasksService {
         return task;
     }
     async fail(taskId, error) {
-        const task = await this.findByTaskId(taskId);
-        task.status = task_status_enum_1.TaskStatus.FAILED;
-        task.error = { message: error ?? 'unknown' };
-        task._updated_at = this.nowIso();
-        await task.save();
+        const task = await this.model.findOneAndUpdate({ task_id: taskId, status: task_status_enum_1.TaskStatus.RUNNING }, {
+            $set: {
+                status: task_status_enum_1.TaskStatus.FAILED,
+                error: { message: error ?? 'unknown' },
+                _updated_at: this.nowIso(),
+            },
+        }, { new: true }).exec();
+        if (!task) {
+            throw new common_1.BadRequestException(`Task ${taskId} 唔係 running 或唔存在`);
+        }
         this.sse.emit(sse_service_1.SseEvent.HERMES_LOG, {
             runId: task.task_id,
             level: 'error',

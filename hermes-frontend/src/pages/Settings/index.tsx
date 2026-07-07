@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { media } from '../../styles/media';
 import { useSettings } from '../../api/hooks';
 import { settingsApi } from '../../api/services';
@@ -79,6 +80,38 @@ const SettingValue = styled.span`
   word-break: break-all;
 `;
 
+/* ── Form elements ── */
+
+const FormGroup = styled.div`
+  display: flex; flex-direction: column; gap: 6px;
+  padding: ${({ theme }) => theme.spacing.sm}px 0;
+`;
+
+const FormLabel = styled.label`
+  font-size: 0.8125rem; font-weight: 600;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+const FormHint = styled.span`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
+const FormInput = styled.input`
+  padding: 8px 12px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  font-size: 0.875rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s;
+  max-width: 360px;
+  &:focus { border-color: #2563eb; }
+  &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
+  ${media.mobile} { max-width: 100%; }
+`;
+
 /* ── States ── */
 
 const EmptyText = styled.p`
@@ -141,25 +174,49 @@ function humanKey(key: string): string {
   return key.replace(/([A-Z])/g, ' $1').replace(/_/g, ' ').trim();
 }
 
+/** Extract a value from the settings array returned by GET /settings */
+function extractSetting(data: unknown, key: string): string {
+  if (!Array.isArray(data)) return '';
+  const found = data.find((item: any) => item?.key === key);
+  return found?.value != null ? String(found.value) : '';
+}
+
+/** Build display entries excluding managed keys (those with dedicated inputs) */
+const MANAGED_KEYS = new Set(['agent_ip_address']);
+
+function toDisplayEntries(data: unknown): [string, unknown][] {
+  if (!Array.isArray(data)) return [];
+  return data
+    .filter((item: any) => item?.key && !MANAGED_KEYS.has(item.key))
+    .map((item: any) => [item.key, item.value] as [string, unknown]);
+}
+
 /* ── Component ── */
 
 const Settings: React.FC = () => {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useSettings();
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
 
-  const entries: [string, unknown][] =
-    data && typeof data === 'object' && !Array.isArray(data)
-      ? Object.entries(data as Record<string, unknown>)
-      : [];
+  // Agent IP local state
+  const [agentIp, setAgentIp] = useState('');
 
-  const handleUpdate = async () => {
-    if (busy || !data) return;
+  // Sync from server data
+  useEffect(() => {
+    if (data) setAgentIp(extractSetting(data, 'agent_ip_address'));
+  }, [data]);
+
+  const entries = toDisplayEntries(data);
+
+  const handleSave = async () => {
+    if (busy) return;
     setBusy(true);
     setFeedback(null);
     try {
-      await settingsApi.update(data);
+      await settingsApi.update({ settings: { agent_ip_address: agentIp.trim() } });
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
       setFeedback(t('settings.updated'));
     } catch {
       setFeedback(t('settings.updateFailed'));
@@ -171,34 +228,55 @@ const Settings: React.FC = () => {
 
   return (
     <Page>
-      {/* Settings Card */}
+      {/* Agent IP Card */}
       <Card>
         <CardHeader>
-          <h2>{t('settings.currentConfig')}</h2>
+          <h2>{t('settings.agentIpAddress')}</h2>
         </CardHeader>
 
         <CardBody>
-          {isLoading && <EmptyText>{t('settings.loadingSettings')}</EmptyText>}
-
-          {!isLoading && entries.length === 0 && (
-            <EmptyText>{t('settings.noSettings')}</EmptyText>
+          {isLoading ? (
+            <EmptyText>{t('settings.loadingSettings')}</EmptyText>
+          ) : (
+            <FormGroup>
+              <FormLabel htmlFor="agent-ip">{t('settings.agentIpAddress')}</FormLabel>
+              <FormInput
+                id="agent-ip"
+                type="text"
+                value={agentIp}
+                onChange={(e) => setAgentIp(e.target.value)}
+                placeholder={t('settings.agentIpPlaceholder')}
+              />
+              <FormHint>{t('settings.agentIpHint')}</FormHint>
+            </FormGroup>
           )}
-
-          {!isLoading && entries.map(([key, val]) => (
-            <SettingRow key={key}>
-              <SettingKey>{humanKey(key)}</SettingKey>
-              <SettingValue>{renderValue(val, t)}</SettingValue>
-            </SettingRow>
-          ))}
         </CardBody>
 
         <CardFooter>
           {feedback && <FeedbackText>{feedback}</FeedbackText>}
-          <PrimaryBtn onClick={handleUpdate} disabled={busy || isLoading}>
-            {busy ? t('settings.updating') : t('settings.update')}
+          <PrimaryBtn onClick={handleSave} disabled={busy || isLoading}>
+            {busy ? t('settings.updating') : t('settings.save')}
           </PrimaryBtn>
         </CardFooter>
       </Card>
+
+      {/* Other Settings Card */}
+      {entries.length > 0 && (
+        <Card>
+          <CardHeader>
+            <h2>{t('settings.currentConfig')}</h2>
+          </CardHeader>
+
+          <CardBody>
+            {entries.map(([key, val]) => (
+              <SettingRow key={key}>
+                <SettingKey>{humanKey(key)}</SettingKey>
+                <SettingValue>{renderValue(val, t)}</SettingValue>
+              </SettingRow>
+            ))}
+          </CardBody>
+        </Card>
+      )}
 
       {/* Footer */}
       <Footer>

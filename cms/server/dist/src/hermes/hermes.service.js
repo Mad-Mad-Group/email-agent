@@ -51,6 +51,9 @@ let HermesService = class HermesService {
         this.taskEvents.completed$.subscribe((task) => {
             void this.onTaskCompleted(task).catch((e) => this.log('error', task, `orchestrator error: ${e?.message ?? e}`));
         });
+        this.taskEvents.failed$.subscribe((task) => {
+            void this.onTaskFailed(task).catch((e) => this.log('error', task, `orchestrator fail-handler error: ${e?.message ?? e}`));
+        });
     }
     async run(dto) {
         const campaignId = `CAMP-${(0, crypto_1.randomBytes)(4).toString('hex')}`;
@@ -113,13 +116,43 @@ let HermesService = class HermesService {
             });
         }
         else {
-            campaign.done_count += 1;
-            campaign._updated_at = new Date().toISOString();
-            await campaign.save();
-            this.progress(campaignId, 'pipeline', campaign.done_count, campaign.lead_ids.length);
-            if (campaign.done_count >= campaign.lead_ids.length) {
-                await this.finish(campaign, '全部 lead 完成');
+            const updated = await this.campaigns.findOneAndUpdate({ campaign_id: campaignId, status: 'running' }, { $inc: { done_count: 1 }, $set: { _updated_at: new Date().toISOString() } }, { new: true }).exec();
+            if (!updated)
+                return;
+            this.progress(campaignId, 'pipeline', updated.done_count, updated.lead_ids.length);
+            if (updated.done_count >= updated.lead_ids.length) {
+                await this.finish(updated, '全部 lead 完成');
             }
+        }
+    }
+    async onTaskFailed(task) {
+        const params = (task.params ?? {});
+        const campaignId = params.campaign_id;
+        const stage = params.pipeline_stage;
+        if (!campaignId || !stage)
+            return;
+        const campaign = await this.campaigns
+            .findOne({ campaign_id: campaignId })
+            .exec();
+        if (!campaign || campaign.status !== 'running')
+            return;
+        const errorMsg = task.error || 'unknown error';
+        this.sse.emit(sse_service_1.SseEvent.HERMES_LOG, {
+            runId: campaignId,
+            level: 'error',
+            stage,
+            message: `Stage [${stage}] 失敗，跳過此 lead：${errorMsg}`,
+        });
+        if (stage === 'search') {
+            await this.finish(campaign, `搜尋失敗：${errorMsg}`);
+            return;
+        }
+        const updated = await this.campaigns.findOneAndUpdate({ campaign_id: campaignId, status: 'running' }, { $inc: { done_count: 1 }, $set: { _updated_at: new Date().toISOString() } }, { new: true }).exec();
+        if (!updated)
+            return;
+        this.progress(campaignId, 'pipeline', updated.done_count, updated.lead_ids.length);
+        if (updated.done_count >= updated.lead_ids.length) {
+            await this.finish(updated, '全部 lead 處理完畢（部分可能失敗）');
         }
     }
     async enqueueStage(stage, campaignId, extra = {}) {

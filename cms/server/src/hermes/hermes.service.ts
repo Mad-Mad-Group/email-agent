@@ -49,6 +49,12 @@ export class HermesService implements OnModuleInit {
         this.log('error', task, `orchestrator error: ${e?.message ?? e}`),
       );
     });
+    // 監聽 task 失敗 → 跳過該 lead，繼續 pipeline
+    this.taskEvents.failed$.subscribe((task) => {
+      void this.onTaskFailed(task).catch((e) =>
+        this.log('error', task, `orchestrator fail-handler error: ${e?.message ?? e}`),
+      );
+    });
   }
 
   /** 啟動一條 pipeline */
@@ -120,19 +126,67 @@ export class HermesService implements OnModuleInit {
         lead_object_id: params.lead_object_id,
       });
     } else {
-      // send 完 = 一條鏈完
-      campaign.done_count += 1;
-      campaign._updated_at = new Date().toISOString();
-      await campaign.save();
+      // send 完 = 一條鏈完（用 $inc 原子操作，支援多 worker 併發）
+      const updated = await this.campaigns.findOneAndUpdate(
+        { campaign_id: campaignId, status: 'running' },
+        { $inc: { done_count: 1 }, $set: { _updated_at: new Date().toISOString() } },
+        { new: true },
+      ).exec();
+      if (!updated) return;
       this.progress(
         campaignId,
         'pipeline',
-        campaign.done_count,
-        campaign.lead_ids.length,
+        updated.done_count,
+        updated.lead_ids.length,
       );
-      if (campaign.done_count >= campaign.lead_ids.length) {
-        await this.finish(campaign, '全部 lead 完成');
+      if (updated.done_count >= updated.lead_ids.length) {
+        await this.finish(updated, '全部 lead 完成');
       }
+    }
+  }
+
+  /** 某個 stage 失敗 → 跳過該 lead 嘅剩餘 stages，繼續其他 lead */
+  private async onTaskFailed(task: TaskDocument) {
+    const params = (task.params ?? {}) as Record<string, any>;
+    const campaignId = params.campaign_id as string | undefined;
+    const stage = params.pipeline_stage as string | undefined;
+    if (!campaignId || !stage) return;
+
+    const campaign = await this.campaigns
+      .findOne({ campaign_id: campaignId })
+      .exec();
+    if (!campaign || campaign.status !== 'running') return;
+
+    const errorMsg = (task as any).error || 'unknown error';
+    this.sse.emit(SseEvent.HERMES_LOG, {
+      runId: campaignId,
+      level: 'error',
+      stage,
+      message: `Stage [${stage}] 失敗，跳過此 lead：${errorMsg}`,
+    });
+
+    if (stage === 'search') {
+      // search 失敗 = 成條 pipeline 冇嘢做
+      await this.finish(campaign, `搜尋失敗：${errorMsg}`);
+      return;
+    }
+
+    // per-lead stage 失敗：當呢個 lead 做完（跳過），check 是否全部 lead 都完咗
+    // 用 $inc 原子操作，支援多 worker 併發
+    const updated = await this.campaigns.findOneAndUpdate(
+      { campaign_id: campaignId, status: 'running' },
+      { $inc: { done_count: 1 }, $set: { _updated_at: new Date().toISOString() } },
+      { new: true },
+    ).exec();
+    if (!updated) return;
+    this.progress(
+      campaignId,
+      'pipeline',
+      updated.done_count,
+      updated.lead_ids.length,
+    );
+    if (updated.done_count >= updated.lead_ids.length) {
+      await this.finish(updated, '全部 lead 處理完畢（部分可能失敗）');
     }
   }
 

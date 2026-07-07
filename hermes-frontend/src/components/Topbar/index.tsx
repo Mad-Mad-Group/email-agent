@@ -316,8 +316,14 @@ const IconBtn = styled.button`
   }
 `;
 
+const LangWrapper = styled.div`
+  position: relative;
+  &:hover > div { display: flex; }
+`;
+
 const LangToggle = styled.button`
   position: relative;
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -350,6 +356,38 @@ const LangBadge = styled.span`
   color: ${({ theme }) => theme.colors.textPrimary};
   box-shadow: 0 0 0 1px ${({ theme }) => theme.colors.border};
   pointer-events: none;
+`;
+
+const LangDropdown = styled.div`
+  display: none;
+  flex-direction: column;
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  padding-top: 48px;
+  min-width: 120px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  overflow: hidden;
+  z-index: 99;
+`;
+
+const LangOption = styled.button<{ $active?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: none;
+  background: ${({ $active, theme }) => $active ? theme.colors.surfaceMuted : 'none'};
+  color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textSecondary};
+  font-size: 0.8125rem;
+  font-weight: ${({ $active }) => $active ? 600 : 400};
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
 `;
 
 /* Theme toggle (sun / moon) */
@@ -451,15 +489,9 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* ── Language: click-to-cycle ── */
+  /* ── Language ── */
   const currentIdx = LANGUAGES.findIndex((l) => l.code === i18n.language);
   const currentLang = LANGUAGES[currentIdx >= 0 ? currentIdx : 0].label;
-
-  const cycleLang = useCallback(() => {
-    const idx = LANGUAGES.findIndex((l) => l.code === i18n.language);
-    const nextIdx = (idx + 1) % LANGUAGES.length;
-    i18n.changeLanguage(LANGUAGES[nextIdx].code);
-  }, [i18n]);
 
   /* ── Nav items filtered by query ── */
   const filteredNav = useMemo<SearchResult[]>(() => {
@@ -679,10 +711,23 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
       </SearchBar>
 
       <RightGroup>
-        <LangToggle title={t('topbar.language')} onClick={cycleLang}>
-          <GlobeIcon />
-          <LangBadge>{currentLang}</LangBadge>
-        </LangToggle>
+        <LangWrapper>
+          <LangToggle title={t('topbar.language')}>
+            <GlobeIcon />
+            <LangBadge>{currentLang}</LangBadge>
+          </LangToggle>
+          <LangDropdown>
+            {LANGUAGES.map((lang) => (
+              <LangOption
+                key={lang.code}
+                $active={lang.code === i18n.language}
+                onClick={() => i18n.changeLanguage(lang.code)}
+              >
+                {lang.label}
+              </LangOption>
+            ))}
+          </LangDropdown>
+        </LangWrapper>
         <ThemeToggle onClick={toggleTheme} title={mode === 'light' ? 'Dark mode' : 'Light mode'}>
           {mode === 'light' ? <MoonIcon /> : <SunIcon />}
         </ThemeToggle>

@@ -401,6 +401,9 @@ const zhTW = {
     updating: '更新中...',
     updated: '設定已更新。',
     updateFailed: '更新失敗。',
+    agentIpAddress: 'Agent 設備 IP',
+    agentIpPlaceholder: '例如 192.168.1.100',
+    agentIpHint: '執行 Hermes Agent 的設備 IP 位址',
   },
   calendar: {
     today: '今天',
