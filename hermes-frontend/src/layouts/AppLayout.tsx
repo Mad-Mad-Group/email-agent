@@ -26,13 +26,13 @@ const Overlay = styled.div<{ $open: boolean }>`
 
 const Shell = styled.div<{ $collapsed?: boolean }>`
   display: grid;
-  grid-template-columns: ${({ $collapsed }) => $collapsed ? '61px' : '225px'} minmax(0, 1fr);
+  grid-template-columns: ${({ $collapsed }) => $collapsed ? '61px' : '250px'} minmax(0, 1fr);
   min-height: 100vh;
   background: ${({ theme }) => theme.colors.canvas};
   transition: grid-template-columns 0.3s ease;
 
   ${media.tablet} {
-    grid-template-columns: ${({ $collapsed }) => $collapsed ? '61px' : '225px'} minmax(0, 1fr);
+    grid-template-columns: ${({ $collapsed }) => $collapsed ? '61px' : '250px'} minmax(0, 1fr);
   }
 
   ${media.mobile} {

@@ -189,7 +189,7 @@ const ScrollArea = styled.div`
     background: ${({ theme }) => theme.colors.canvas};
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(0,0,0,0.25);
+    background: ${({ theme }) => theme.mode === 'dark' ? '#475569' : 'rgba(0,0,0,0.25)'};
     border-radius: 3px;
   }
 
@@ -262,7 +262,7 @@ const TitleRow = styled.div`
 const SidebarTitle = styled.h4`
   margin: 0;
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.35rem;
+  font-size: 1.5rem;
   font-weight: 400;
   letter-spacing: 1.5px;
   color: ${({ theme }) => theme.colors.textPrimary};
@@ -336,7 +336,7 @@ const Divider = styled.li`
 `;
 
 const DividerLabel = styled.span`
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -358,7 +358,7 @@ const MLink = styled(NavLink)`
   gap: 8px;
   padding: 8px 12px;
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: ${({ theme }) => theme.colors.textPrimary};
   text-decoration: none;
   transition: all 0.15s ease;
@@ -386,7 +386,7 @@ const MLinkButton = styled.button<{ $active?: boolean }>`
   gap: 8px;
   padding: 8px 12px;
   border-radius: 8px;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: ${({ theme, $active }) => $active ? 'var(--primary, #2563eb)' : theme.colors.textPrimary};
   font-weight: ${({ $active }) => $active ? 600 : 400};
   text-decoration: none;
@@ -430,7 +430,7 @@ const SubMenu = styled.ul<{ $open: boolean }>`
 const SubLink = styled(NavLink)`
   display: block;
   padding: 6px 12px 6px 38px;
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   color: ${({ theme }) => theme.colors.textPrimary};
   text-decoration: none;
   transition: color 0.15s;

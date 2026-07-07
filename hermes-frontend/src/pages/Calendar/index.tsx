@@ -47,7 +47,7 @@ const StatLabel = styled.div`font-size: 0.6875rem; text-transform: uppercase; co
 
 const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 

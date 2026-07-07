@@ -73,4 +73,24 @@ export const GlobalStyles = createGlobalStyle`
     border-collapse: collapse;
     border-spacing: 0;
   }
+
+  /* ── Scrollbar — dark mode aware ── */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: ${({ theme }) => theme.mode === 'dark' ? '#475569 #1e293b' : 'rgba(0,0,0,0.2) transparent'};
+  }
+  *::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  *::-webkit-scrollbar-track {
+    background: ${({ theme }) => theme.mode === 'dark' ? '#1e293b' : 'transparent'};
+  }
+  *::-webkit-scrollbar-thumb {
+    background: ${({ theme }) => theme.mode === 'dark' ? '#475569' : 'rgba(0,0,0,0.2)'};
+    border-radius: 3px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: ${({ theme }) => theme.mode === 'dark' ? '#64748b' : 'rgba(0,0,0,0.35)'};
+  }
 `;

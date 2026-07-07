@@ -179,7 +179,7 @@ const ProfileIcon = styled.div`
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #2563eb;
+  background: ${({ theme }) => theme.colors.blue};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -205,7 +205,7 @@ const ProfileTitle = styled.h2`
   .count-number {
     font-size: 1.5rem;
     font-weight: 800;
-    color: #2563eb;
+    color: ${({ theme }) => theme.colors.blue};
   }
 `;
 
@@ -398,7 +398,7 @@ const SearchInput = styled.input`
   font-size: 0.8125rem;
   outline: none;
   color: ${({ theme }) => theme.colors.textPrimary};
-  background: #fff;
+  background: ${({ theme }) => theme.colors.surface};
   transition: border-color 0.15s, box-shadow 0.15s;
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
   &:focus {
@@ -418,7 +418,7 @@ const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+  box-shadow: ${({ theme }) => theme.shadows.card};
   overflow: hidden;
 `;
 
@@ -442,7 +442,7 @@ const Table = styled.table`
     text-transform: uppercase;
     font-size: 0.6875rem;
     color: ${({ theme }) => theme.colors.textTertiary};
-    background: #f7f7f4;
+    background: ${({ theme }) => theme.colors.canvas};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
     user-select: none;
     cursor: default;
@@ -456,11 +456,11 @@ const Table = styled.table`
 `;
 
 const TRow = styled.tr<{ $even?: boolean }>`
-  background: ${({ $even }) => $even ? '#f7f7f4' : '#fff'};
+  background: ${({ $even, theme }) => $even ? theme.colors.surfaceMuted : theme.colors.surface};
   transition: background 0.15s;
   cursor: pointer;
   &:hover {
-    background: #eff6ff;
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.04)' : '#eff6ff'};
   }
   td {
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
@@ -478,7 +478,7 @@ const Avatar = styled.div<{ $color: string }>`
   height: 34px;
   border-radius: 50%;
   background: ${({ $color }) => $color};
-  color: #334155;
+  color: ${({ theme }) => theme.colors.textPrimary};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -532,7 +532,7 @@ const Tag = styled.span`
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 0.6875rem;
-  background: #f4f5f7;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
   color: ${({ theme }) => theme.colors.textSecondary};
   border: 1px solid ${({ theme }) => theme.colors.border};
 `;
@@ -615,10 +615,10 @@ const PageBtn = styled.button<{ $active?: boolean }>`
   padding: 5px 12px;
   border: 1px solid ${({ $active, theme }) => $active ? 'transparent' : theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ $active }) => $active
-    ? '#2563eb'
-    : '#fff'};
-  color: ${({ $active }) => $active ? '#fff' : '#475569'};
+  background: ${({ $active, theme }) => $active
+    ? theme.colors.blue
+    : theme.colors.surface};
+  color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textSecondary};
   font-size: 0.75rem;
   font-weight: ${({ $active }) => $active ? 600 : 500};
   cursor: pointer;
@@ -628,7 +628,7 @@ const PageBtn = styled.button<{ $active?: boolean }>`
   transition: transform 0.15s, box-shadow 0.15s, background 0.15s;
   &:hover:not(:disabled) {
     transform: translateY(-1px);
-    ${({ $active }) => $active ? '' : 'background: #f4f5f7; border-color: #cbd5e1;'}
+    ${({ $active, theme }) => $active ? '' : `background: ${theme.colors.surfaceMuted}; border-color: ${theme.colors.borderStrong};`}
   }
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 `;
@@ -736,17 +736,17 @@ const PrimaryBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border: none;
   border-radius: ${({ theme }) => theme.radii.control}px;
-  background: #2563eb;
+  background: ${({ theme }) => theme.colors.blue};
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(15,23,42,0.08);
+  box-shadow: ${({ theme }) => theme.shadows.card};
   transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
   &:hover:not(:disabled) {
     transform: translateY(-1px);
-    background: #3b82f6;
+    opacity: 0.9;
     box-shadow: 0 2px 8px rgba(15,23,42,0.1);
   }
   &:active:not(:disabled) { transform: translateY(0); }
@@ -1152,19 +1152,19 @@ const EmailCardMeta = styled.div`
 const EmailSummary = styled.div`
   margin: 0 ${({ theme }) => theme.spacing.md}px;
   padding: 8px 12px;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
+  background: ${({ theme }) => theme.mode === 'dark' ? '#1e3a5f' : '#eff6ff'};
+  border: 1px solid ${({ theme }) => theme.mode === 'dark' ? '#2563eb40' : '#bfdbfe'};
   border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.8rem;
   line-height: 1.5;
-  color: #1e40af;
+  color: ${({ theme }) => theme.colors.blue};
   display: flex;
   align-items: flex-start;
   gap: 6px;
 `;
 const EmailSummaryLabel = styled.span`
   font-weight: 700;
-  color: #2563eb;
+  color: ${({ theme }) => theme.colors.blue};
   white-space: nowrap;
   flex-shrink: 0;
 `;

@@ -1,7 +1,7 @@
 import { HermesTheme } from '../types/theme';
 
 const shared = {
-  radii: { card: 8, tile: 8, control: 6 },
+  radii: { card: 10, tile: 10, control: 6 },
   fonts: {
     primary: "'Noto Sans TC', 'PingFang TC', 'PingFang SC', -apple-system, system-ui, 'Microsoft JhengHei', sans-serif",
     display: "'Bebas Neue', sans-serif",
@@ -13,6 +13,7 @@ const shared = {
 
 export const lightTheme: HermesTheme = {
   ...shared,
+  mode: 'light',
   colors: {
     canvas: '#f7f7f4',
     surface: '#ffffff',
@@ -40,6 +41,7 @@ export const lightTheme: HermesTheme = {
 
 export const darkTheme: HermesTheme = {
   ...shared,
+  mode: 'dark',
   colors: {
     canvas: '#0f172a',
     surface: '#1e293b',

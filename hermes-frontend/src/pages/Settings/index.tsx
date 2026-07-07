@@ -38,10 +38,10 @@ const PageSub = styled.small`
 /* ── Card ── */
 
 const Card = styled.div`
-  background: #ffffff;
+  background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+  box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 
 const CardHeader = styled.div`
@@ -104,11 +104,11 @@ const FormInput = styled.input`
   border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.875rem;
   color: ${({ theme }) => theme.colors.textPrimary};
-  background: #fff;
+  background: ${({ theme }) => theme.colors.surface};
   outline: none;
   transition: border-color 0.2s;
   max-width: 360px;
-  &:focus { border-color: #2563eb; }
+  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
   ${media.mobile} { max-width: 100%; }
 `;
@@ -137,15 +137,14 @@ const FeedbackText = styled.span`
 const PrimaryBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.lg}px;
   border: none; border-radius: ${({ theme }) => theme.radii.control}px;
-  background: #2563eb;
+  background: ${({ theme }) => theme.colors.blue};
   color: #fff;
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-  box-shadow: 0 1px 2px rgba(15,23,42,0.08);
-  transition: transform 0.15s, box-shadow 0.2s, background 0.2s;
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
   &:hover:not(:disabled) {
     transform: translateY(-1px);
-    background: #3b82f6;
-    box-shadow: 0 2px 8px rgba(15,23,42,0.1);
+    opacity: 0.9;
   }
   &:active:not(:disabled) { transform: translateY(0); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }

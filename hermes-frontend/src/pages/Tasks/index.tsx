@@ -153,7 +153,7 @@ const AGENT_AVATAR: Record<string, string> = {
   'Agent-B':  '/avatars/avatar4.jpg',
   'Agent-C':  '/avatars/avatar7.jpg',
 };
-const AGENT_BG = '#f0eef6';   // uniform light lavender to match LUNO style
+const AGENT_BG = '#f0eef6';   // light lavender fallback (overridden by theme in AgentAvatar)
 function agentColor(_id: string): string {
   return AGENT_BG;
 }
@@ -270,9 +270,9 @@ const Col = styled.div`
   min-width: 0;
   display: flex; flex-direction: column;
   border-radius: ${({ theme }) => theme.radii.card}px;
-  background: #f7f7f4;
+  background: ${({ theme }) => theme.colors.canvas};
   border: 1px solid ${({ theme }) => theme.colors.border};
-  box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+  box-shadow: ${({ theme }) => theme.shadows.card};
   overflow: hidden;
   ${media.mobile} {
     border-radius: 0;
@@ -338,11 +338,11 @@ const ColBody = styled.div<{ $collapsed?: boolean }>`
 /* ── Card ── */
 
 const Card = styled.div`
-  background: #ffffff;
+  background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.tile}px;
   padding: 12px ${({ theme }) => theme.spacing.md}px;
-  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  box-shadow: ${({ theme }) => theme.shadows.card};
   transition: box-shadow 0.15s, transform 0.12s, border-color 0.15s;
   cursor: default;
   display: flex; flex-direction: column;
@@ -375,7 +375,7 @@ const AgentAvatar = styled.span<{ $bg: string }>`
 
 const AvatarName = styled.span`
   position: relative; margin-top: -10px; z-index: 1;
-  background: #fff; border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface}; border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 5px; padding: 1px 6px;
   font-size: 0.625rem; font-weight: 700; color: ${({ theme }) => theme.colors.blue};
   white-space: nowrap; max-width: 64px; overflow: hidden; text-overflow: ellipsis;
@@ -747,7 +747,7 @@ const WfDot = styled.div<{ $s: 'done'|'active'|'pending' }>`
     &::after {
       content: ''; position: absolute; left: 3px; top: 1px;
       width: 4px; height: 7px;
-      border: solid #fff; border-width: 0 2px 2px 0;
+      border: solid ${({ theme }: any) => theme.colors.surface}; border-width: 0 2px 2px 0;
       transform: rotate(45deg);
     }
   `}

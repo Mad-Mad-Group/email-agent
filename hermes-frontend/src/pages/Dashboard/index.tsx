@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useLeads, useEmailQueue } from '../../api/hooks';
 import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
@@ -209,6 +209,7 @@ const KpiIcon = styled.div<{ $bg: string; $fg: string }>`
   width: 46px; height: 46px; border-radius: 50%;
   background: ${({ $bg }) => $bg};
   color: ${({ $fg }) => $fg};
+  border: 1.5px solid ${({ $fg }) => $fg}30;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 `;
@@ -234,7 +235,7 @@ const ActionItem = styled.div`
   &:last-child { border-bottom: none; }
   transition: background 0.15s;
   margin: 0 -20px; padding-left: 20px; padding-right: 20px;
-  &:hover { background: rgba(0,0,0,0.015); }
+  &:hover { background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.015)'}; }
 `;
 const ActionDot = styled.div<{ $color: string }>`
   width: 10px; height: 10px; border-radius: 50%;
@@ -289,7 +290,7 @@ const BarChartTooltip = styled.div<{ $x: number; $y: number; $visible: boolean }
 
 const BarChartWrap = styled.div`position: relative;`;
 
-const BarChart: React.FC<{ bars: BarData[] }> = ({ bars }) => {
+const BarChart: React.FC<{ bars: BarData[]; dark?: boolean }> = ({ bars, dark }) => {
   const [hover, setHover] = useState<{ idx: number; x: number; y: number } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -340,8 +341,8 @@ const BarChart: React.FC<{ bars: BarData[] }> = ({ bars }) => {
           const x = pl + (tick / maxVal) * chartW;
           return (
             <g key={`tick${i}`}>
-              <line x1={x} y1={pt} x2={x} y2={pt + chartH} stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray={i === 0 ? undefined : '3,3'} />
-              <text x={x} y={pt + chartH + 14} textAnchor="middle" fill="#94a3b8" fontSize="8" fontWeight="400">{tick}</text>
+              <line x1={x} y1={pt} x2={x} y2={pt + chartH} stroke={dark ? '#334155' : '#e2e8f0'} strokeWidth="0.5" strokeDasharray={i === 0 ? undefined : '3,3'} />
+              <text x={x} y={pt + chartH + 14} textAnchor="middle" fill={dark ? '#64748b' : '#94a3b8'} fontSize="8" fontWeight="400">{tick}</text>
             </g>
           );
         })}
@@ -357,11 +358,11 @@ const BarChart: React.FC<{ bars: BarData[] }> = ({ bars }) => {
               {/* hover hit area */}
               <rect x={0} y={pt + gap * i} width={w} height={gap} fill="transparent" />
               {/* bg track */}
-              <rect x={pl} y={y} width={chartW} height={barH} rx={r} ry={r} fill="#f1f5f9" />
+              <rect x={pl} y={y} width={chartW} height={barH} rx={r} ry={r} fill={dark ? '#334155' : '#f1f5f9'} />
               {/* bar */}
               <rect x={pl} y={y} width={barW} height={barH} rx={r} ry={r} fill={`url(#bar${i})`} />
               {/* label left */}
-              <text x={pl - 6} y={y + barH / 2} textAnchor="end" fill="#64748b" fontSize="8" fontWeight="500" dominantBaseline="central">{b.label}</text>
+              <text x={pl - 6} y={y + barH / 2} textAnchor="end" fill={dark ? '#94a3b8' : '#64748b'} fontSize="8" fontWeight="500" dominantBaseline="central">{b.label}</text>
             </g>
           );
         })}
@@ -389,6 +390,7 @@ const FeedItem = styled.div`
 const FeedIcon = styled.div<{ $bg: string; $fg: string }>`
   width: 32px; height: 32px; border-radius: 8px;
   background: ${({ $bg }) => $bg}; color: ${({ $fg }) => $fg};
+  border: 1.5px solid ${({ $fg }) => $fg}25;
   display: flex; align-items: center; justify-content: center;
   font-size: 0.8rem; flex-shrink: 0;
 `;
@@ -424,7 +426,7 @@ const SchedItem = styled.div<{ $isToday?: boolean }>`
   padding: 10px 0;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   &:last-child { border-bottom: none; }
-  ${({ $isToday }) => $isToday && 'background: #eff6ff; margin: 0 -20px; padding: 10px 20px; border-radius: 6px;'}
+  ${({ $isToday, theme }) => $isToday && `background: ${theme.mode === 'dark' ? '#1e293b' : '#eff6ff'}; margin: 0 -20px; padding: 10px 20px; border-radius: 6px;`}
 `;
 const SchedTime = styled.div`
   font-size: 0.75rem; font-weight: 600; color: ${({ theme }) => theme.colors.textSecondary};
@@ -561,6 +563,8 @@ interface UpcomingEvent {
 
 const Dashboard: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const dark = theme.mode === 'dark';
   const navigate = useNavigate();
   // Fetch all leads (high limit for stats)
   const { data: leadsData, isLoading: leadsLoading } = useLeads({ page: 1, limit: 100 });
@@ -719,36 +723,36 @@ const Dashboard: React.FC = () => {
 
       {/* KPI Row — LUNO style */}
       <KpiGrid>
-        <KpiCard $bg="#eff6ff">
+        <KpiCard $bg={dark ? '#1e3a5f' : '#f8faff'}>
           <KpiRow>
-            <KpiIcon $bg="#dbeafe" $fg="#2563eb"><IconLeads /></KpiIcon>
+            <KpiIcon $bg={dark ? '#1e3a5f' : '#e8f0fe'} $fg="#3b82f6"><IconLeads /></KpiIcon>
             <div>
               <KpiLabel>{t('dashboard.totalLeads')}</KpiLabel>
               <KpiValue>{stats.total}<KpiChange $up={stats.newLeads > 0}>{stats.newLeads > 0 ? `+${stats.newLeads}` : '0'}</KpiChange></KpiValue>
             </div>
           </KpiRow>
         </KpiCard>
-        <KpiCard $bg="#fefce8">
+        <KpiCard $bg={dark ? '#422006' : '#fffdf5'}>
           <KpiRow>
-            <KpiIcon $bg="#fef9c4" $fg="#ca8a04"><IconDraft /></KpiIcon>
+            <KpiIcon $bg={dark ? '#422006' : '#fef6d8'} $fg="#f59e0b"><IconDraft /></KpiIcon>
             <div>
               <KpiLabel>{t('dashboard.pendingDrafts')}</KpiLabel>
               <KpiValue>{stats.pendingDrafts}<KpiChange $up={stats.pendingDrafts === 0}>{stats.pendingDrafts > 0 ? t('dashboard.pending') : t('dashboard.clear')}</KpiChange></KpiValue>
             </div>
           </KpiRow>
         </KpiCard>
-        <KpiCard $bg="#f0fdf4">
+        <KpiCard $bg={dark ? '#14532d' : '#f6fef8'}>
           <KpiRow>
-            <KpiIcon $bg="#dcfce7" $fg="#16a34a"><IconChart /></KpiIcon>
+            <KpiIcon $bg={dark ? '#14532d' : '#e2f9e8'} $fg="#22c55e"><IconChart /></KpiIcon>
             <div>
               <KpiLabel>{t('dashboard.replyRate')}</KpiLabel>
               <KpiValue>{stats.replyRate}%<KpiChange $up={stats.replyRate > 0}>{stats.replied}/{stats.contacted}</KpiChange></KpiValue>
             </div>
           </KpiRow>
         </KpiCard>
-        <KpiCard $bg="#faf5ff">
+        <KpiCard $bg={dark ? '#3b0764' : '#fcf8ff'}>
           <KpiRow>
-            <KpiIcon $bg="#f3e8ff" $fg="#8b5cf6"><IconRocket /></KpiIcon>
+            <KpiIcon $bg={dark ? '#3b0764' : '#f0e6fd'} $fg="#a78bfa"><IconRocket /></KpiIcon>
             <div>
               <KpiLabel>{t('dashboard.sentThisWeek')}</KpiLabel>
               <KpiValue>{stats.sentThisWeek}<KpiChange $up={stats.sentThisWeek > 0}>/{stats.sentEmails}</KpiChange></KpiValue>
@@ -767,22 +771,22 @@ const Dashboard: React.FC = () => {
               <ActionItem>
                 <ActionDot $color="#d97706" />
                 <ActionText>{t('dashboard.draftsPendingApproval')}</ActionText>
-                <ActionCount $bg="#fef3c7" $fg="#b45309">{actions.pendingDrafts}</ActionCount>
+                <ActionCount $bg={dark ? '#422006' : '#fef3c7'} $fg={dark ? '#f59e0b' : '#b45309'}>{actions.pendingDrafts}</ActionCount>
               </ActionItem>
               <ActionItem>
                 <ActionDot $color="#16a34a" />
                 <ActionText>{t('dashboard.newRepliesToHandle')}</ActionText>
-                <ActionCount $bg="#dcfce7" $fg="#16a34a">{actions.newReplies}</ActionCount>
+                <ActionCount $bg={dark ? '#14532d' : '#dcfce7'} $fg={dark ? '#4ade80' : '#16a34a'}>{actions.newReplies}</ActionCount>
               </ActionItem>
               <ActionItem>
                 <ActionDot $color="#8b5cf6" />
                 <ActionText>{t('dashboard.pendingMeetings')}</ActionText>
-                <ActionCount $bg="#f3e8ff" $fg="#8b5cf6">{actions.pendingMeetings}</ActionCount>
+                <ActionCount $bg={dark ? '#3b0764' : '#f3e8ff'} $fg={dark ? '#c4b5fd' : '#8b5cf6'}>{actions.pendingMeetings}</ActionCount>
               </ActionItem>
               <ActionItem>
                 <ActionDot $color="#dc2626" />
                 <ActionText>{t('dashboard.contactedNoFollowup')}</ActionText>
-                <ActionCount $bg="#fee2e2" $fg="#dc2626">{actions.noReplyNoFollowup}</ActionCount>
+                <ActionCount $bg={dark ? '#450a0a' : '#fee2e2'} $fg={dark ? '#fca5a5' : '#dc2626'}>{actions.noReplyNoFollowup}</ActionCount>
               </ActionItem>
             </ActionList>
           </CardBody>
@@ -792,7 +796,7 @@ const Dashboard: React.FC = () => {
         <Card>
           <CardHeader>{t('dashboard.funnel')}</CardHeader>
           <CardBody>
-            <BarChart bars={[
+            <BarChart dark={dark} bars={[
               { label: t('dashboard.newLeads'), value: funnel.total, color: '#3b82f6' },
               { label: t('dashboard.contacted'), value: funnel.contacted, color: '#f59e0b' },
               { label: t('dashboard.replied'), value: funnel.replied, color: '#22c55e' },
@@ -884,8 +888,8 @@ const Dashboard: React.FC = () => {
                 {recentActivity.map((item, i) => (
                   <FeedItem key={i}>
                     <FeedIcon
-                      $bg={item.type === 'sent' ? '#dbeafe' : item.type === 'reply' ? '#dcfce7' : '#fef3c7'}
-                      $fg={item.type === 'sent' ? '#2563eb' : item.type === 'reply' ? '#16a34a' : '#d97706'}
+                      $bg={item.type === 'sent' ? (dark ? '#1e3a5f' : '#dbeafe') : item.type === 'reply' ? (dark ? '#14532d' : '#dcfce7') : (dark ? '#422006' : '#fef3c7')}
+                      $fg={item.type === 'sent' ? '#3b82f6' : item.type === 'reply' ? '#22c55e' : '#f59e0b'}
                     >
                       {item.type === 'sent' ? <IconSent /> : item.type === 'reply' ? <IconReply /> : <IconPen />}
                     </FeedIcon>

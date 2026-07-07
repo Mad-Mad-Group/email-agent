@@ -83,10 +83,10 @@ const StatLabel = styled.div`
 /* ── Card ── */
 
 const Card = styled.div`
-  background: #ffffff;
+  background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+  box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 
 const CardBody = styled.div`padding: ${({ theme }) => theme.spacing.md}px;`;
@@ -102,7 +102,7 @@ const ProfileHeader = styled.div`
 
 const ProfileIcon = styled.div`
   width: 56px; height: 56px; border-radius: 50%;
-  background: #2563eb;
+  background: ${({ theme }) => theme.colors.blue};
   display: flex; align-items: center; justify-content: center;
   color: #fff; flex-shrink: 0;
   svg { width: 28px; height: 28px; }
@@ -129,8 +129,8 @@ const Tab = styled.button<{ $active?: boolean }>`
     ? 'transparent'
     : 'transparent'};
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textTertiary};
-  border-bottom: 2px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.textTertiary};
+  border-bottom: 2px solid ${({ $active, theme }) => $active ? theme.colors.blue : 'transparent'};
   margin-bottom: -1px; white-space: nowrap;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
   &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
@@ -142,7 +142,7 @@ const TabCount = styled.span<{ $active?: boolean }>`
   border-radius: 9px; margin-left: 6px;
   font-size: 0.625rem; font-weight: 600;
   background: ${({ $active, theme }) => $active
-    ? '#2563eb'
+    ? theme.colors.blue
     : theme.colors.surfaceMuted};
   color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textTertiary};
 `;
@@ -161,7 +161,7 @@ const Table = styled.table`
   th {
     font-weight: 600; text-transform: uppercase; font-size: 0.6875rem;
     color: ${({ theme }) => theme.colors.textTertiary};
-    background: #f7f7f4;
+    background: ${({ theme }) => theme.colors.canvas};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   }
   ${media.mobile} {
@@ -174,11 +174,11 @@ const Table = styled.table`
 
 const TRow = styled.tr<{ $even?: boolean }>`
   background: ${({ $even, theme }) => $even
-    ? '#f7f7f4'
+    ? theme.colors.surfaceMuted
     : theme.colors.surface};
   transition: background 0.15s;
   &:hover {
-    background: #eff6ff;
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.04)' : '#eff6ff'};
   }
   td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
   cursor: pointer;
@@ -192,7 +192,7 @@ const AvatarCircle = styled.div<{ $bg: string }>`
   width: 36px; height: 36px; border-radius: 50%;
   background: ${({ $bg }) => $bg};
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.8125rem; font-weight: 600; color: #334155;
+  font-size: 0.8125rem; font-weight: 600; color: ${({ theme }) => theme.colors.textPrimary};
   flex-shrink: 0;
   box-shadow: none;
 `;
@@ -385,7 +385,7 @@ const DpActivityItem = styled.div`
     width: 8px;
     height: 8px;
     border-radius: 50%;
-    background: #3b82f6;
+    background: ${({ theme }) => theme.colors.blue};
     border: 2px solid ${({ theme }) => theme.colors.surface};
   }
 `;
@@ -409,9 +409,9 @@ const DpPermBadge = styled.span<{ $active?: boolean }>`
   border-radius: 99px;
   font-size: 0.75rem;
   font-weight: 500;
-  background: ${({ $active }) => $active ? '#2563eb18' : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textTertiary};
-  border: 1px solid ${({ $active }) => $active ? '#2563eb40' : '#0f172a18'};
+  background: ${({ $active, theme }) => $active ? `${theme.colors.blue}18` : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.textTertiary};
+  border: 1px solid ${({ $active, theme }) => $active ? `${theme.colors.blue}40` : theme.colors.border};
 `;
 
 const DpFooter = styled.div`
@@ -438,8 +438,8 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   white-space: nowrap;
   transition: opacity 0.15s;
   background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? '#dc2626' :
-    $variant === 'primary' ? '#2563eb' : theme.colors.surfaceMuted};
+    $variant === 'danger' ? theme.colors.red :
+    $variant === 'primary' ? theme.colors.blue : theme.colors.surfaceMuted};
   color: ${({ $variant }) =>
     $variant === 'danger' ? '#fff' :
     $variant === 'primary' ? '#fff' : 'inherit'};
