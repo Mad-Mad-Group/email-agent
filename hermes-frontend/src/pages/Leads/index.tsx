@@ -1101,15 +1101,14 @@ const NEXT_STATUS: Record<string, string> = {
   pending: 'contacted',
 };
 
-const REPLY_CATEGORY_LABEL: Record<string, { text: string; bg: string; fg: string }> = {
-  interested:      { text: '有興趣',       bg: '#dcfce7', fg: '#16a34a' },
-  interested_pending: { text: '有興趣 · 待約時間', bg: '#fef3c7', fg: '#b45309' },
-  not_interested:  { text: '冇興趣',       bg: '#fee2e2', fg: '#dc2626' },
-  meeting:         { text: '約時間',       bg: '#dbeafe', fg: '#2563eb' },
-  auto_reply:      { text: '自動回覆',     bg: '#f3f4f6', fg: '#6b7280' },
-  // 未明確表態（其他 / 有疑問 / 內容唔清楚）→ 顯示「處理中」
-  question:        { text: '處理中',       bg: '#e0e7ff', fg: '#4338ca' },
-};
+const getReplyCategoryLabel = (t: (k: string, opts?: any) => string) => ({
+  interested:         { text: t('leads.replyInterested'),        bg: '#dcfce7', fg: '#16a34a' },
+  interested_pending: { text: t('leads.replyInterestedPending'), bg: '#fef3c7', fg: '#b45309' },
+  not_interested:     { text: t('leads.replyNotInterested'),     bg: '#fee2e2', fg: '#dc2626' },
+  meeting:            { text: t('leads.replyMeeting'),           bg: '#dbeafe', fg: '#2563eb' },
+  auto_reply:         { text: t('leads.replyAutoReply'),         bg: '#f3f4f6', fg: '#6b7280' },
+  question:           { text: t('leads.replyProcessing'),        bg: '#e0e7ff', fg: '#4338ca' },
+} as Record<string, { text: string; bg: string; fg: string }>);
 
 /* ── DEV MOCK DATA ── */
 const MOCK_LEADS: Lead[] = [
@@ -1239,29 +1238,26 @@ const MOCK_EMAILS: EmailItem[] = [
 ];
 
 /** 根據 lead 狀態決定顯示邊個 reply badge */
-const getReplyBadge = (lead: Lead) => {
-  // 已回覆 → 顯示回覆分類
+const getReplyBadge = (lead: Lead, t: (k: string, opts?: any) => string) => {
+  const labels = getReplyCategoryLabel(t);
   if (lead._replied) {
     if (lead._reply_category === 'interested' && lead._pending_meeting) {
-      return REPLY_CATEGORY_LABEL.interested_pending;
+      return labels.interested_pending;
     }
-    // 未明確表態 / 未知分類 → 一律當「處理中」
-    return REPLY_CATEGORY_LABEL[lead._reply_category || ''] || { text: '處理中', bg: '#e0e7ff', fg: '#4338ca' };
+    return labels[lead._reply_category || ''] || { text: t('leads.replyProcessing'), bg: '#e0e7ff', fg: '#4338ca' };
   }
-  // 未回覆 → 根據進度顯示
   if (lead.status === 'contacted') {
     return lead._has_email_draft
-      ? { text: '草稿待審', bg: '#fef3c7', fg: '#b45309' }
-      : { text: '等回覆', bg: '#e0e7ff', fg: '#6366f1' };
+      ? { text: t('leads.draftPending'), bg: '#fef3c7', fg: '#b45309' }
+      : { text: t('leads.awaitingReply'), bg: '#e0e7ff', fg: '#6366f1' };
   }
   if (lead.status === 'pending') {
-    return { text: '草稿待審', bg: '#fef3c7', fg: '#b45309' };
+    return { text: t('leads.draftPending'), bg: '#fef3c7', fg: '#b45309' };
   }
-  // 已有草稿寫咗（但未 send / status 仲係 null）→ 唔算「未處理」，係「草稿待審」
   if (lead._has_email_draft) {
-    return { text: '草稿待審', bg: '#fef3c7', fg: '#b45309' };
+    return { text: t('leads.draftPending'), bg: '#fef3c7', fg: '#b45309' };
   }
-  return { text: '未處理', bg: '#f3f4f6', fg: '#9ca3af' };
+  return { text: t('leads.unprocessed'), bg: '#f3f4f6', fg: '#9ca3af' };
 };
 
 const ReplyBadge = styled.span<{ $bg: string; $fg: string }>`
@@ -1282,11 +1278,11 @@ const NoReplyText = styled.span`
 
 /* ── Lead Emails section（撳開 lead 就睇到所有相關 email） ── */
 
-const EMAIL_TYPE_LABEL: Record<string, { text: string; bg: string; fg: string }> = {
-  reply:      { text: '回應',   bg: '#dcfce7', fg: '#15803d' },
-  followup:   { text: '跟進',   bg: '#fef3c7', fg: '#b45309' },
-  reoutreach: { text: '再開發', bg: '#e0e7ff', fg: '#4338ca' },
-};
+const getEmailTypeLabel = (t: (k: string) => string) => ({
+  reply:      { text: t('leads.emailTypeReply'),      bg: '#dcfce7', fg: '#15803d' },
+  followup:   { text: t('leads.emailTypeFollowup'),   bg: '#fef3c7', fg: '#b45309' },
+  reoutreach: { text: t('leads.emailTypeReoutreach'), bg: '#e0e7ff', fg: '#4338ca' },
+} as Record<string, { text: string; bg: string; fg: string }>);
 
 const EMAIL_STATUS_COLOR: Record<string, { bg: string; fg: string }> = {
   pending:  { bg: '#fef3c7', fg: '#d97706' },
@@ -1410,7 +1406,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
   const send = useSendEmail();
 
   const apiEmails = (data?.data as EmailItem[]) || [];
-  const pool = apiEmails.length ? apiEmails : MOCK_EMAILS;
+  const pool = [...MOCK_EMAILS, ...apiEmails];
   const emails = pool
     .filter((e) => (e.lead_id === leadId) || (e.company_name || '') === companyName)
     .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
@@ -1451,7 +1447,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
     <>
       <DpSectionTitle>{t('leads.emailRecords')} ({emails.length})</DpSectionTitle>
       {emails.map((d) => {
-        const typeTag = d._type ? EMAIL_TYPE_LABEL[d._type] : null;
+        const typeTag = d._type ? getEmailTypeLabel(t)[d._type] : null;
         const statusColor = EMAIL_STATUS_COLOR[d.status || 'pending'] || EMAIL_STATUS_COLOR.pending;
 
         return (
@@ -1694,8 +1690,8 @@ const Leads: React.FC = () => {
   const createLead = useCreateLead();
 
   const apiLeads: Lead[] = data?.data ?? [];
-  // DEV: fallback to mock data when backend has no leads
-  const allLeads: Lead[] = apiLeads.length ? apiLeads : MOCK_LEADS;
+  // DEV: always include mock data for UI testing
+  const allLeads: Lead[] = [...MOCK_LEADS, ...apiLeads];
 
   /* ── Auto-open detail panel from URL ?detail=<leadId> ── */
   const detailHandled = useRef<string | null>(null);
