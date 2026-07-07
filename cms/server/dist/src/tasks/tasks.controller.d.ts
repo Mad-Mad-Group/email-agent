@@ -15,6 +15,7 @@ export declare class TasksController {
         page: number;
         limit: number;
     }>;
+    stats(): Promise<Record<string, unknown>[]>;
     get(taskId: string): Promise<import("mongoose").Document<unknown, {}, import("./schemas/task.schema").Task, {}, {}> & import("./schemas/task.schema").Task & {
         _id: import("mongoose").Types.ObjectId;
     } & {

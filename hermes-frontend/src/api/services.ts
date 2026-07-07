@@ -73,8 +73,18 @@ export interface TaskItem {
   updatedAt?: string;
 }
 
+export interface AgentSkillStats {
+  _id: string; // skill_id: S1, S2, S3, S4
+  completed: number;
+  failed: number;
+  running: number;
+  pending: number;
+  last_run: string | null;
+}
+
 export const tasksApi = {
   list: () => client.get('/tasks'),
+  stats: () => client.get<AgentSkillStats[]>('/tasks/stats'),
   get: (id: string) => client.get(`/tasks/${id}`),
   enqueue: (data?: Record<string, unknown>) =>
     client.post('/tasks', data),

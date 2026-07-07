@@ -156,6 +156,21 @@ let TasksService = class TasksService {
         const res = await this.model.updateMany({ status: task_status_enum_1.TaskStatus.PENDING, _created_at: { $lt: cutoff } }, { $set: { _created_at: this.nowIso(), _updated_at: this.nowIso() } });
         return res.modifiedCount ?? 0;
     }
+    async stats() {
+        return this.model.aggregate([
+            {
+                $group: {
+                    _id: '$skill_id',
+                    completed: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+                    failed: { $sum: { $cond: [{ $eq: ['$status', 'failed'] }, 1, 0] } },
+                    running: { $sum: { $cond: [{ $eq: ['$status', 'running'] }, 1, 0] } },
+                    pending: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } },
+                    last_run: { $max: '$_updated_at' },
+                },
+            },
+            { $sort: { _id: 1 } },
+        ]).exec();
+    }
     nowIso() {
         return new Date().toISOString();
     }

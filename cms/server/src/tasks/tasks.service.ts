@@ -193,6 +193,25 @@ export class TasksService {
     return res.modifiedCount ?? 0;
   }
 
+  /**
+   * 按 skill_id 聚合統計：completed / failed / running 數量、成功率、最後完成時間。
+   */
+  async stats(): Promise<Record<string, unknown>[]> {
+    return this.model.aggregate([
+      {
+        $group: {
+          _id: '$skill_id',
+          completed: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+          failed: { $sum: { $cond: [{ $eq: ['$status', 'failed'] }, 1, 0] } },
+          running: { $sum: { $cond: [{ $eq: ['$status', 'running'] }, 1, 0] } },
+          pending: { $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] } },
+          last_run: { $max: '$_updated_at' },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]).exec();
+  }
+
   private nowIso(): string {
     return new Date().toISOString();
   }

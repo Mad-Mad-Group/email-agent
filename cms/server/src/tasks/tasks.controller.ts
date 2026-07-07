@@ -37,6 +37,13 @@ export class TasksController {
     return this.tasks.findAll(q);
   }
 
+  @Get('stats')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  async stats() {
+    return this.tasks.stats();
+  }
+
   @Get(':taskId')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)

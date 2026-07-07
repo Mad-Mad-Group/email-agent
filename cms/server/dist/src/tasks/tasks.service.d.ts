@@ -27,5 +27,6 @@ export declare class TasksService {
     fail(taskId: string, error?: string): Promise<TaskDocument>;
     requeueStalled(maxAgeMinutes: number): Promise<number>;
     requeueOldPending(maxAgeMinutes: number): Promise<number>;
+    stats(): Promise<Record<string, unknown>[]>;
     private nowIso;
 }
