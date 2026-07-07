@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { leadsApi, LeadListParams } from './leads';
 import { emailQueueApi, EmailListParams } from './emailQueue';
+import { notificationsApi } from './notifications';
 import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi } from './services';
 import { authApi } from './auth';
 
@@ -263,3 +264,39 @@ export const useAgents = () =>
       ],
     }),
   });
+
+/* ── Notifications ── */
+
+export const useNotifications = (params?: { read?: boolean; limit?: number; page?: number }) =>
+  useQuery({
+    queryKey: ['notifications', params],
+    queryFn: () => notificationsApi.list(params).then(r => r.data),
+    refetchInterval: 30_000, // 30s polling
+  });
+
+export const useUnreadCount = () =>
+  useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: () => notificationsApi.unreadCount().then(r => (r.data as any)?.unread_count ?? 0),
+    refetchInterval: 30_000,
+  });
+
+export const useMarkNotificationRead = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => notificationsApi.markRead(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
+export const useMarkAllNotificationsRead = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => notificationsApi.markAllRead(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { media } from '../../styles/media';
 import { useSettings } from '../../api/hooks';
 import { settingsApi } from '../../api/services';
@@ -218,8 +219,10 @@ const Settings: React.FC = () => {
       await settingsApi.update({ settings: { agent_ip_address: agentIp.trim() } });
       queryClient.invalidateQueries({ queryKey: ['settings'] });
       setFeedback(t('settings.updated'));
+      toast.success(t('settings.updated'));
     } catch {
       setFeedback(t('settings.updateFailed'));
+      toast.error(t('settings.updateFailed'));
     } finally {
       setBusy(false);
       setTimeout(() => setFeedback(null), 3000);

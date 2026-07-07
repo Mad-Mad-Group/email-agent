@@ -27,6 +27,7 @@ const email_queue_module_1 = require("./email-queue/email-queue.module");
 const hermes_module_1 = require("./hermes/hermes.module");
 const jobs_module_1 = require("./jobs/jobs.module");
 const calendar_module_1 = require("./calendar/calendar.module");
+const notifications_module_1 = require("./notifications/notifications.module");
 const app_controller_1 = require("./app.controller");
 let AppModule = class AppModule {
 };
@@ -53,6 +54,7 @@ exports.AppModule = AppModule = __decorate([
             hermes_module_1.HermesModule,
             jobs_module_1.JobsModule,
             calendar_module_1.CalendarModule,
+            notifications_module_1.NotificationsModule,
         ],
         controllers: [app_controller_1.AppController],
     })

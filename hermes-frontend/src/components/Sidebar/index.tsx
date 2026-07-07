@@ -581,7 +581,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
         </Divider>
         <li><MLink to="/cms-search"><IconSearch /><span>{t('nav.leadSearch')}</span></MLink></li>
         <li><MLink to="/cms-leads"><IconLeads /><span>{t('nav.leadPool')}</span></MLink></li>
-        <li><MLink to="/cms-tasks"><IconTasks /><span>{t('nav.workflows')}</span></MLink></li>
+        {/* <li><MLink to="/cms-tasks"><IconTasks /><span>{t('nav.workflows')}</span></MLink></li> */}
         <li><MLink to="/cms-agents"><IconAgent /><span>{t('nav.agents')}</span></MLink></li>
         <li><MLink to="/cms-users"><IconUsers /><span>{t('nav.team')}</span></MLink></li>
         <li><MLink to="/cms-settings"><IconSettings /><span>{t('nav.settings')}</span></MLink></li>

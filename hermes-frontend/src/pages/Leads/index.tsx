@@ -7,6 +7,7 @@ import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useEmailQu
 import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
 import client from '../../api/client';
+import toast from 'react-hot-toast';
 import { media } from '../../styles/media';
 
 /* ══════════════════════════════════════
@@ -1202,13 +1203,31 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
   const busy = approve.isPending || reject.isPending || send.isPending;
 
   const handleApproveAndSend = (d: EmailItem) => {
-    if (d.status === 'approved') send.mutate(d._id);
-    else approve.mutate(d._id, { onSuccess: () => send.mutate(d._id) });
+    if (d.status === 'approved') {
+      send.mutate(d._id, {
+        onSuccess: () => toast.success('郵件已發送'),
+        onError: () => toast.error('發送失敗'),
+      });
+    } else {
+      approve.mutate(d._id, {
+        onSuccess: () => {
+          toast.success('已批准，正在發送…');
+          send.mutate(d._id, {
+            onSuccess: () => toast.success('郵件已發送'),
+            onError: () => toast.error('發送失敗'),
+          });
+        },
+        onError: () => toast.error('批准失敗'),
+      });
+    }
   };
 
   const handleReject = (id: string) => {
     const reason = window.prompt('拒絕原因（可空）') || undefined;
-    reject.mutate({ id, reason });
+    reject.mutate({ id, reason }, {
+      onSuccess: () => toast.success('已拒絕'),
+      onError: () => toast.error('拒絕失敗'),
+    });
   };
 
   return (
@@ -1530,7 +1549,10 @@ const Leads: React.FC = () => {
 
   const handleDelete = (id: string) => {
     if (window.confirm(t('leads.confirmDelete'))) {
-      deleteLead.mutate(id);
+      deleteLead.mutate(id, {
+        onSuccess: () => toast.success('Lead 已刪除'),
+        onError: () => toast.error('刪除失敗'),
+      });
     }
   };
 
