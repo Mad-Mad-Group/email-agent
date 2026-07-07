@@ -16,8 +16,15 @@ const PHASE_BG: Record<TimePhase, string> = {
   night: 'linear-gradient(180deg, #0a1428 0%, #162040 20%, #1a3328 42%, #2a5530 56%, #2a5530 100%)',
 };
 
-const TIME_LABELS: Record<TimePhase, string> = {
-  dawn: '清晨 6:00', noon: '正午 12:00', dusk: '黃昏 18:00', night: '深夜 23:00',
+const PHASE_NAMES: Record<TimePhase, string> = {
+  dawn: '清晨', noon: '日間', dusk: '黃昏', night: '深夜',
+};
+
+const getRealTimeLabel = (phase: TimePhase): string => {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  return `${PHASE_NAMES[phase]} ${hh}:${mm}`;
 };
 
 /* Animations */
@@ -228,11 +235,14 @@ const getPhaseFromTime = (): TimePhase => {
 
 const IsometricWorld: React.FC = () => {
   const [phase, setPhase] = useState<TimePhase>(getPhaseFromTime);
+  const [timeLabel, setTimeLabel] = useState(() => getRealTimeLabel(getPhaseFromTime()));
 
   // Sync with real time every minute
   useEffect(() => {
     const t = setInterval(() => {
-      setPhase(getPhaseFromTime());
+      const p = getPhaseFromTime();
+      setPhase(p);
+      setTimeLabel(getRealTimeLabel(p));
     }, 60_000);
     return () => clearInterval(t);
   }, []);
@@ -261,9 +271,9 @@ const IsometricWorld: React.FC = () => {
       <Beam $p={phase} $i={0} />
       <Beam $p={phase} $i={1} />
 
-      <Pill>{TIME_LABELS[phase]}</Pill>
+      <Pill>{timeLabel}</Pill>
       <Btns>{PHASES.map(p=>(
-        <Btn key={p} $on={phase===p} $c={BC[p]} onClick={()=>setPhase(p)} />
+        <Btn key={p} $on={phase===p} $c={BC[p]} onClick={()=>{setPhase(p);setTimeLabel(getRealTimeLabel(p));}} />
       ))}</Btns>
 
 

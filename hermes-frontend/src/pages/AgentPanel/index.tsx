@@ -25,8 +25,15 @@ const NOTIF_EVENT_MAP: Record<string, string> = {
   system: 'qualify',
 };
 
+/** 安全解析時間字串（worker 用 toISOString() 儲存 UTC，去咗 Z，要加返） */
+function safeParseDate(s: string): Date {
+  const normalized = s.includes('T') ? s : s.replace(' ', 'T');
+  // 冇時區標記 → 當 UTC（因為 worker 用 toISOString 產生）
+  return new Date(normalized.endsWith('Z') ? normalized : normalized + 'Z');
+}
+
 function formatTimeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
+  const diff = Date.now() - safeParseDate(iso).getTime();
   const mins = Math.floor(diff / 60_000);
   if (mins < 1) return 'Just now';
   if (mins < 60) return `${mins} min ago`;
@@ -36,8 +43,16 @@ function formatTimeAgo(iso: string): string {
 }
 
 function formatTime(iso: string): string {
-  const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  const d = safeParseDate(iso);
+  if (isNaN(d.getTime())) return '--:--';
+  const now = new Date();
+  const isToday = d.toDateString() === now.toDateString();
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  if (isToday) return `${hh}:${mm}`;
+  const MM = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${MM}/${dd} ${hh}:${mm}`;
 }
 
 /* ══════════════════════════════════════
