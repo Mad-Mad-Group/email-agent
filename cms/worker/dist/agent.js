@@ -221,6 +221,17 @@ const MAX_IDLE = Number(process.env.WORKER_MAX_IDLE || 0); // 0 = 永遠
 let token = '';
 const log = (...a) => console.log(`[agent ${AGENT_ID}]`, ...a);
 const nowIso = () => new Date().toISOString();
+/** POST /sse/notify → 通知 NestJS SSE bus，前端即時收到 */
+async function sseNotify(type, data) {
+    try {
+        await fetch(`${API}/sse/notify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ type, data }),
+        });
+    }
+    catch { /* SSE 通知失敗唔影響主流程 */ }
+}
 /** 寫入通知記錄到 MongoDB */
 async function notify(db, title, opts = {}) {
     try {
@@ -487,6 +498,7 @@ ${brand_1.BRAND_SIGNATURE}
         await db
             .collection('leads')
             .updateOne({ _id: lead._id }, { $set: leadUpdate });
+        await sseNotify('email_update', { id: lead.lead_id, action: 'created', status: 'pending' });
         return true;
     }
     catch {
@@ -748,6 +760,7 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
                 _imported_at: nowIso(),
             });
             ids.push(res.insertedId.toString());
+            await sseNotify('lead_update', { id: res.insertedId.toString(), action: 'created' });
             newThisRound++;
         }
         const foundThisRound = newThisRound + totalSkipped; // hermes 返回咗幾多個（唔理重複）
@@ -763,6 +776,7 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
             message: `關鍵字「${p.keyword}」在「${p.location}」搵到 ${ids.length} 個新結果，跳過 ${totalSkipped} 個重複`,
             type: 'lead',
         });
+        await sseNotify('notification', { title: `搜尋完成：搵到 ${ids.length} 個新 lead`, type: 'lead' });
     }
     return { created_leads: ids.length, lead_object_ids: ids, skipped: totalSkipped };
 }
@@ -986,6 +1000,7 @@ Output ONLY JSON, empty string if not found:
         }
     }
     await db.collection('leads').updateOne({ _id }, { $set: set });
+    await sseNotify('lead_update', { id: _id.toString(), action: 'updated', status: 'enriched' });
     return {
         enriched: true,
         via,
@@ -1074,6 +1089,7 @@ Output ONLY one JSON object, no other text:
         _via: via,
         _analyzed_at: nowIso(),
     });
+    await sseNotify('lead_update', { id: _id.toString(), action: 'updated', status: 'analyzed' });
     return { analyzed: true, via, primary: c.primary };
 }
 /** S3 草稿 → 叫 Hermes(LLM) 寫 outreach email → email_draft + email_queue */
@@ -1119,6 +1135,8 @@ ${brand_1.BRAND_SIGNATURE}
         type: 'email',
         ref_id: lead.lead_id,
     });
+    await sseNotify('email_update', { id: lead.lead_id, action: 'created', status: 'pending' });
+    await sseNotify('notification', { title: `新草稿：${lead.company_name}`, type: 'email' });
     return { drafted: true, via: 'hermes', subject: c.subject };
 }
 /** 檢查邊啲 contacted leads 超過 5 日冇回覆，逐個派 followup draft task */
@@ -1215,6 +1233,8 @@ ${brand_1.BRAND_SIGNATURE}
         created_at: nowIso(),
     });
     await db.collection('leads').updateOne({ _id }, { $set: { _followup_count: count, _last_followup_at: nowIso() } });
+    await sseNotify('email_update', { id: lead.lead_id, action: 'created', status: 'pending' });
+    await sseNotify('notification', { title: `Follow-up #${count}：${lead.company_name}`, type: 'email' });
     log(`  → followup #${count} drafted for ${lead.company_name}`);
     return { drafted: true, type: 'followup', count, subject: c.subject };
 }
@@ -1261,6 +1281,8 @@ ${brand_1.BRAND_SIGNATURE}
         created_at: nowIso(),
     });
     await db.collection('leads').updateOne({ _id }, { $set: { _reoutreach_done: true, _reoutreach_at: nowIso() } });
+    await sseNotify('email_update', { id: lead.lead_id, action: 'created', status: 'pending' });
+    await sseNotify('notification', { title: `Re-outreach：${lead.company_name}`, type: 'email' });
     log(`  → reoutreach drafted for ${lead.company_name}`);
     return { drafted: true, type: 'reoutreach', subject: c.subject };
 }
@@ -1343,6 +1365,9 @@ async function doSend(p, db) {
         type: 'email',
         ref_id: lead.lead_id,
     });
+    await sseNotify('email_update', { id: eq._id.toString(), action: 'status_changed', status: 'sent' });
+    await sseNotify('lead_update', { id: _id.toString(), action: 'status_changed', status: 'contacted' });
+    await sseNotify('notification', { title: `郵件已發送：${lead.company_name}`, type: 'email' });
     return { sent: true, to };
 }
 // ───────── main loop ─────────
@@ -1396,6 +1421,7 @@ async function main() {
         try {
             const result = await handle(task, db);
             await complete(task.task_id, result);
+            await sseNotify('task_update', { id: task.task_id, action: 'completed' });
             log(`✓ 完成 ${task.task_id}`, JSON.stringify(result));
         }
         catch (e) {
@@ -1410,6 +1436,8 @@ async function main() {
                     type: 'task',
                     ref_id: task.task_id,
                 });
+                await sseNotify('task_update', { id: task.task_id, action: 'failed' });
+                await sseNotify('notification', { title: `任務失敗：${task.title || task.task_id}`, type: 'task' });
             }
             catch (e2) {
                 log(`⚠ failTask 都失敗咗 (${task.task_id}) — task 留喺 running，等 reap-stalled-tasks cron requeue:`, e2?.message ?? e2);

@@ -22,6 +22,7 @@ import {
 import { EMAIL_SENDER } from './email-sender.interface';
 import type { EmailSender } from './email-sender.interface';
 import { LeadsService } from '../leads/leads.service';
+import { SseEvent, SseService } from '../sse/sse.service';
 
 @Injectable()
 export class EmailQueueService {
@@ -30,6 +31,7 @@ export class EmailQueueService {
     private readonly model: Model<EmailQueueDocument>,
     @Inject(EMAIL_SENDER) private readonly sender: EmailSender,
     @Optional() private readonly leads?: LeadsService,
+    @Optional() private readonly sse?: SseService,
   ) {}
 
   async findAll(q: ListEmailQueueQueryDto) {
@@ -75,17 +77,21 @@ export class EmailQueueService {
     if (dto.subject !== undefined) item.subject = dto.subject;
     if (dto.body !== undefined) item.body = dto.body;
     await item.save();
+    this.sse?.emit(SseEvent.EMAIL_UPDATE, { id: item.id, action: 'updated', status: item.status });
     return item;
   }
 
-  approve(id: string) {
-    return this.transition(id, EmailStatus.APPROVED);
+  async approve(id: string) {
+    const item = await this.transition(id, EmailStatus.APPROVED);
+    this.sse?.emit(SseEvent.EMAIL_UPDATE, { id: item.id, action: 'status_changed', status: 'approved' });
+    return item;
   }
 
   async reject(id: string, dto: RejectEmailDto): Promise<EmailQueueDocument> {
     const item = await this.transition(id, EmailStatus.REJECTED);
     if (dto.reason) item.error = { rejected_reason: dto.reason };
     await item.save();
+    this.sse?.emit(SseEvent.EMAIL_UPDATE, { id: item.id, action: 'status_changed', status: 'rejected' });
     return item;
   }
 
@@ -116,6 +122,7 @@ export class EmailQueueService {
     item.error = null;
     await item.save();
 
+    this.sse?.emit(SseEvent.EMAIL_UPDATE, { id: item.id, action: 'status_changed', status: 'sent' });
     // 連動：對應 lead → contacted（+ SSE lead_update 由 LeadsService 發）
     if (item.lead_id && this.leads) {
       await this.leads.markContactedByLeadId(item.lead_id);

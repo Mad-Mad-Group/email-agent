@@ -343,24 +343,32 @@ const NotifBadge = styled.span`
   line-height: 1;
 `;
 
-const NotifPanel = styled.div`
-  position: absolute;
-  top: calc(100% + 8px);
+const NotifOverlay = styled.div<{ $open: boolean }>`
+  position: fixed;
+  inset: 0;
+  z-index: 1999;
+  background: rgba(0, 0, 0, ${({ $open }) => $open ? 0.3 : 0});
+  pointer-events: ${({ $open }) => $open ? 'auto' : 'none'};
+  transition: background 0.25s ease;
+`;
+
+const NotifPanel = styled.div<{ $open: boolean }>`
+  position: fixed;
+  top: 0;
   right: 0;
-  width: 360px;
-  max-height: 480px;
+  bottom: 0;
+  width: 380px;
   background: ${({ theme }) => theme.colors.surface};
-  border-radius: 12px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+  border-left: 1px solid ${({ theme }) => theme.colors.border};
   z-index: 2000;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  transform: translateX(${({ $open }) => $open ? '0' : '100%'});
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   ${media.mobile} {
-    width: 300px;
-    right: -40px;
+    width: 100%;
   }
 `;
 
@@ -368,8 +376,20 @@ const NotifPanelHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px 10px;
+  padding: 16px 20px 12px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  flex-shrink: 0;
+`;
+
+const NotifCloseBtn = styled.button`
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  padding: 0 4px;
+  line-height: 1;
+  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
 `;
 
 const NotifPanelTitle = styled.h3`
@@ -393,7 +413,6 @@ const NotifMarkAllBtn = styled.button`
 const NotifList = styled.div`
   overflow-y: auto;
   flex: 1;
-  max-height: 400px;
 `;
 
 const NotifItemRow = styled.div<{ $read?: boolean }>`
@@ -633,7 +652,6 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
 
   /* ── Notifications ── */
   const [notifOpen, setNotifOpen] = useState(false);
-  const notifRef = useRef<HTMLDivElement>(null);
   const { data: unreadCount } = useUnreadCount();
   const { data: notifData } = useNotifications({ limit: 20 });
   const markRead = useMarkNotificationRead();
@@ -642,14 +660,12 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
   const notifications: NotificationItem[] = (notifData as any)?.data ?? [];
   const unread = (typeof unreadCount === 'number' ? unreadCount : 0);
 
-  // 點擊外面關閉
+  // ESC 關閉
   useEffect(() => {
     if (!notifOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (notifRef.current && !notifRef.current.contains(e.target as Node)) setNotifOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setNotifOpen(false); };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
   }, [notifOpen]);
 
   const formatTimeAgo = (dateStr: string) => {
@@ -905,42 +921,44 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
         <ThemeToggle onClick={toggleTheme} title={mode === 'light' ? 'Dark mode' : 'Light mode'}>
           {mode === 'light' ? <MoonIcon /> : <SunIcon />}
         </ThemeToggle>
-        <NotifWrapper ref={notifRef}>
+        <NotifWrapper>
           <IconBtn title={t('topbar.notifications')} onClick={() => setNotifOpen(v => !v)}>
             <NotifBellIcon />
             {unread > 0 && <NotifBadge>{unread > 99 ? '99+' : unread}</NotifBadge>}
           </IconBtn>
-          {notifOpen && (
-            <NotifPanel>
-              <NotifPanelHeader>
-                <NotifPanelTitle>通知 {unread > 0 && `(${unread})`}</NotifPanelTitle>
-                {unread > 0 && (
-                  <NotifMarkAllBtn onClick={() => markAllRead.mutate()}>全部已讀</NotifMarkAllBtn>
-                )}
-              </NotifPanelHeader>
-              <NotifList>
-                {notifications.length === 0 ? (
-                  <NotifEmpty>暫時冇通知</NotifEmpty>
-                ) : (
-                  notifications.map((n) => (
-                    <NotifItemRow
-                      key={n._id}
-                      $read={n.read}
-                      onClick={() => { if (!n.read) markRead.mutate(n._id); }}
-                    >
-                      <NotifDot $type={n.type} />
-                      <NotifContent>
-                        <NotifTitle>{n.title}</NotifTitle>
-                        {n.message && <NotifMsg>{n.message}</NotifMsg>}
-                        <NotifTime>{formatTimeAgo(n.created_at)}</NotifTime>
-                      </NotifContent>
-                    </NotifItemRow>
-                  ))
-                )}
-              </NotifList>
-            </NotifPanel>
-          )}
         </NotifWrapper>
+        <NotifOverlay $open={notifOpen} onClick={() => setNotifOpen(false)} />
+        <NotifPanel $open={notifOpen}>
+          <NotifPanelHeader>
+            <NotifPanelTitle>通知 {unread > 0 && `(${unread})`}</NotifPanelTitle>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {unread > 0 && (
+                <NotifMarkAllBtn onClick={() => markAllRead.mutate()}>全部已讀</NotifMarkAllBtn>
+              )}
+              <NotifCloseBtn onClick={() => setNotifOpen(false)}>&times;</NotifCloseBtn>
+            </div>
+          </NotifPanelHeader>
+          <NotifList>
+            {notifications.length === 0 ? (
+              <NotifEmpty>暫時冇通知</NotifEmpty>
+            ) : (
+              notifications.map((n) => (
+                <NotifItemRow
+                  key={n._id}
+                  $read={n.read}
+                  onClick={() => { if (!n.read) markRead.mutate(n._id); }}
+                >
+                  <NotifDot $type={n.type} />
+                  <NotifContent>
+                    <NotifTitle>{n.title}</NotifTitle>
+                    {n.message && <NotifMsg>{n.message}</NotifMsg>}
+                    <NotifTime>{formatTimeAgo(n.created_at)}</NotifTime>
+                  </NotifContent>
+                </NotifItemRow>
+              ))
+            )}
+          </NotifList>
+        </NotifPanel>
         <UserAvatar>MM</UserAvatar>
         {actionLabel && onAction && (
           <ActionButton onClick={onAction}>{actionLabel}</ActionButton>

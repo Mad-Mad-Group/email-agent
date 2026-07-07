@@ -20,14 +20,17 @@ const email_queue_schema_1 = require("./schemas/email-queue.schema");
 const email_status_enum_1 = require("./dto/email-status.enum");
 const email_sender_interface_1 = require("./email-sender.interface");
 const leads_service_1 = require("../leads/leads.service");
+const sse_service_1 = require("../sse/sse.service");
 let EmailQueueService = class EmailQueueService {
     model;
     sender;
     leads;
-    constructor(model, sender, leads) {
+    sse;
+    constructor(model, sender, leads, sse) {
         this.model = model;
         this.sender = sender;
         this.leads = leads;
+        this.sse = sse;
     }
     async findAll(q) {
         const filter = {};
@@ -73,16 +76,20 @@ let EmailQueueService = class EmailQueueService {
         if (dto.body !== undefined)
             item.body = dto.body;
         await item.save();
+        this.sse?.emit(sse_service_1.SseEvent.EMAIL_UPDATE, { id: item.id, action: 'updated', status: item.status });
         return item;
     }
-    approve(id) {
-        return this.transition(id, email_status_enum_1.EmailStatus.APPROVED);
+    async approve(id) {
+        const item = await this.transition(id, email_status_enum_1.EmailStatus.APPROVED);
+        this.sse?.emit(sse_service_1.SseEvent.EMAIL_UPDATE, { id: item.id, action: 'status_changed', status: 'approved' });
+        return item;
     }
     async reject(id, dto) {
         const item = await this.transition(id, email_status_enum_1.EmailStatus.REJECTED);
         if (dto.reason)
             item.error = { rejected_reason: dto.reason };
         await item.save();
+        this.sse?.emit(sse_service_1.SseEvent.EMAIL_UPDATE, { id: item.id, action: 'status_changed', status: 'rejected' });
         return item;
     }
     async send(id) {
@@ -108,6 +115,7 @@ let EmailQueueService = class EmailQueueService {
         item.sent_at = this.nowStamp();
         item.error = null;
         await item.save();
+        this.sse?.emit(sse_service_1.SseEvent.EMAIL_UPDATE, { id: item.id, action: 'status_changed', status: 'sent' });
         if (item.lead_id && this.leads) {
             await this.leads.markContactedByLeadId(item.lead_id);
         }
@@ -140,6 +148,8 @@ exports.EmailQueueService = EmailQueueService = __decorate([
     __param(0, (0, mongoose_1.InjectModel)(email_queue_schema_1.EmailQueueItem.name)),
     __param(1, (0, common_1.Inject)(email_sender_interface_1.EMAIL_SENDER)),
     __param(2, (0, common_1.Optional)()),
-    __metadata("design:paramtypes", [mongoose_2.Model, Object, leads_service_1.LeadsService])
+    __param(3, (0, common_1.Optional)()),
+    __metadata("design:paramtypes", [mongoose_2.Model, Object, leads_service_1.LeadsService,
+        sse_service_1.SseService])
 ], EmailQueueService);
 //# sourceMappingURL=email-queue.service.js.map

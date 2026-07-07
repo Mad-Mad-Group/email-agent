@@ -5,11 +5,13 @@ import { EditEmailDto } from './dto/edit-email.dto';
 import { RejectEmailDto } from './dto/reject-email.dto';
 import type { EmailSender } from './email-sender.interface';
 import { LeadsService } from '../leads/leads.service';
+import { SseService } from '../sse/sse.service';
 export declare class EmailQueueService {
     private readonly model;
     private readonly sender;
     private readonly leads?;
-    constructor(model: Model<EmailQueueDocument>, sender: EmailSender, leads?: LeadsService | undefined);
+    private readonly sse?;
+    constructor(model: Model<EmailQueueDocument>, sender: EmailSender, leads?: LeadsService | undefined, sse?: SseService | undefined);
     findAll(q: ListEmailQueueQueryDto): Promise<{
         items: (import("mongoose").FlattenMaps<import("mongoose").Document<unknown, {}, EmailQueueItem, {}, {}> & EmailQueueItem & {
             _id: Types.ObjectId;

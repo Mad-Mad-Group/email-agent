@@ -12,6 +12,9 @@ const rxjs_1 = require("rxjs");
 var SseEvent;
 (function (SseEvent) {
     SseEvent["LEAD_UPDATE"] = "lead_update";
+    SseEvent["EMAIL_UPDATE"] = "email_update";
+    SseEvent["NOTIFICATION"] = "notification";
+    SseEvent["TASK_UPDATE"] = "task_update";
     SseEvent["HERMES_LOG"] = "hermes_log";
     SseEvent["PIPELINE_PROGRESS"] = "pipeline_progress";
 })(SseEvent || (exports.SseEvent = SseEvent = {}));
