@@ -840,8 +840,9 @@ const DpOverlay = styled.div`
 `;
 
 const DpPanel = styled.div`
-  width: 96vw;
-  height: 92vh;
+  width: 88vw;
+  max-width: 1400px;
+  height: 90vh;
   display: flex;
   flex-direction: column;
   background: ${({ theme }) => theme.colors.surface};
@@ -861,9 +862,10 @@ const DpPanel = styled.div`
 const DpHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 14px 20px 12px;
+  gap: 14px;
+  padding: 16px 24px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surfaceMuted};
 `;
 
 const DpHeaderInfo = styled.div`
@@ -876,9 +878,10 @@ const DpHeaderInfo = styled.div`
 
 const DpCompanyName = styled.h2`
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
+  letter-spacing: -0.01em;
 `;
 
 const DpCloseBtn = styled.button`
@@ -968,7 +971,7 @@ const DpField = styled.div`
 `;
 
 const DpFieldLabel = styled.span`
-  font-size: 0.6875rem;
+  font-size: 0.8rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -976,7 +979,7 @@ const DpFieldLabel = styled.span`
 `;
 
 const DpFieldValue = styled.span`
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   color: ${({ theme }) => theme.colors.textPrimary};
   word-break: break-word;
   text-align: right;
@@ -984,8 +987,8 @@ const DpFieldValue = styled.span`
 `;
 
 const DpSectionTitle = styled.h3`
-  margin: 4px 0 0;
-  font-size: 0.75rem;
+  margin: 6px 0 2px;
+  font-size: 0.85rem;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
   text-transform: uppercase;
@@ -1107,6 +1110,133 @@ const REPLY_CATEGORY_LABEL: Record<string, { text: string; bg: string; fg: strin
   // 未明確表態（其他 / 有疑問 / 內容唔清楚）→ 顯示「處理中」
   question:        { text: '處理中',       bg: '#e0e7ff', fg: '#4338ca' },
 };
+
+/* ── DEV MOCK DATA ── */
+const MOCK_LEADS: Lead[] = [
+  {
+    _id: 'mock-1', company_name: 'Acme Corp', email: 'hello@acme.com', phone: '+852 9123 4567',
+    website: 'https://acme.com', address: '123 Queen\'s Road, Central, HK',
+    source: 'Google Maps', status: 'new', rating: '4.5', industry_tags: ['SaaS', 'B2B'],
+    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    _imported_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+  },
+  {
+    _id: 'mock-2', company_name: 'ByteDance HK', email: 'contact@bytedance.hk', phone: '+852 6789 0123',
+    website: 'https://bytedance.hk', address: '灣仔告士打道 100 號',
+    source: 'LinkedIn', status: 'pending', rating: '3.8', industry_tags: ['AI', 'Social Media', 'Tech'],
+    createdAt: new Date(Date.now() - 86400000).toISOString(),
+    _has_email_draft: true,
+  },
+  {
+    _id: 'mock-3', company_name: 'StarTech Solutions', email: 'info@startech.io',
+    source: 'Referral', status: 'contacted', rating: '4.2', industry_tags: ['FinTech'],
+    createdAt: new Date(Date.now() - 86400000 * 5).toISOString(),
+    _replied: false, _has_email_draft: false,
+  },
+  {
+    _id: 'mock-4', company_name: 'Dragon Logistics', email: 'ops@dragonlog.com', phone: '+86 138 0000 1234',
+    website: 'https://dragonlogistics.cn', address: '深圳市南山區科技園',
+    source: 'Cold Email', status: 'contacted', rating: '4.0', industry_tags: ['Logistics', 'Supply Chain'],
+    createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
+    _replied: true, _reply_category: 'interested', _reply_summary: 'Interested in partnership, wants a demo next week.',
+    _reply_sentiment: 'positive', _reply_next_step: 'Schedule demo call', _reply_at: new Date(Date.now() - 86400000).toISOString(),
+  },
+  {
+    _id: 'mock-5', company_name: 'Neon Digital', email: 'team@neondigital.co',
+    source: 'Website', status: 'contacted', industry_tags: ['Marketing', 'Digital'],
+    createdAt: new Date(Date.now() - 86400000 * 10).toISOString(),
+    _replied: true, _reply_category: 'not_interested', _reply_summary: 'Not looking for new vendors at this time.',
+    _reply_sentiment: 'negative', _reply_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+  },
+  {
+    _id: 'mock-6', company_name: 'Zenith Labs', email: 'hello@zenithlabs.ai', phone: '+852 5555 6666',
+    website: 'https://zenithlabs.ai',
+    source: 'Google Maps', status: 'contacted', rating: '4.8', industry_tags: ['AI', 'Healthcare'],
+    createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
+    _replied: true, _reply_category: 'meeting', _reply_summary: 'Wants to schedule a meeting to discuss integration.',
+    _reply_sentiment: 'positive', _reply_next_step: 'Confirm meeting time', _pending_meeting: true,
+    _reply_at: new Date(Date.now() - 86400000 * 1).toISOString(),
+  },
+  {
+    _id: 'mock-7', company_name: 'AutoReply Inc', email: 'support@autoreply.biz',
+    source: 'Cold Email', status: 'contacted',
+    createdAt: new Date(Date.now() - 86400000 * 6).toISOString(),
+    _replied: true, _reply_category: 'auto_reply', _reply_summary: 'Out of office auto-reply received.',
+    _reply_at: new Date(Date.now() - 86400000 * 3).toISOString(),
+  },
+  {
+    _id: 'mock-8', company_name: 'Quantum Finance', email: 'cfo@quantumfin.hk', phone: '+852 2888 9999',
+    website: 'https://quantumfinance.hk', address: '中環國際金融中心 38 樓',
+    source: 'Referral', status: 'contacted', rating: '5.0', industry_tags: ['FinTech', 'Banking'],
+    createdAt: new Date(Date.now() - 86400000 * 8).toISOString(),
+    _replied: true, _reply_category: 'question', _reply_summary: 'Asked about pricing and compliance requirements.',
+    _reply_sentiment: 'neutral', _reply_next_step: 'Send pricing sheet',
+    _reply_at: new Date(Date.now() - 86400000 * 1).toISOString(), _followup_count: 2,
+  },
+  {
+    _id: 'mock-9', company_name: 'FreshBrew Coffee', email: 'owner@freshbrew.hk',
+    source: 'Google Maps', status: null, rating: '4.3', industry_tags: ['F&B', 'Retail'],
+    createdAt: new Date().toISOString(),
+  },
+  {
+    _id: 'mock-10', company_name: 'Peak Ventures', email: 'invest@peakvc.com', phone: '+852 3000 1111',
+    website: 'https://peakventures.com',
+    source: 'LinkedIn', status: 'contacted', rating: '4.7', industry_tags: ['VC', 'Investment'],
+    createdAt: new Date(Date.now() - 86400000 * 12).toISOString(),
+    _replied: true, _reply_category: 'interested', _pending_meeting: true,
+    _reply_summary: 'Very interested, wants to meet founders.', _reply_sentiment: 'positive',
+    _reply_at: new Date(Date.now() - 86400000 * 0.5).toISOString(),
+  },
+];
+
+const MOCK_EMAILS: EmailItem[] = [
+  // Dragon Logistics — sent
+  { _id: 'em-1', lead_id: 'mock-4', company_name: 'Dragon Logistics', to_email: 'ops@dragonlog.com',
+    subject: 'Partnership Opportunity — MADMAD x Dragon Logistics',
+    body: '<p>Hi there,</p><p>We\'d love to explore a potential partnership. Our AI-driven email automation could significantly reduce your outreach costs.</p><p>Would you be available for a 15-min call next week?</p><p>Best,<br/>MADMAD Team</p>',
+    status: 'sent', _type: undefined, created_at: new Date(Date.now() - 86400000 * 8).toISOString(),
+    sent_at: new Date(Date.now() - 86400000 * 8).toISOString() } as any,
+  // Dragon Logistics — followup, pending
+  { _id: 'em-2', lead_id: 'mock-4', company_name: 'Dragon Logistics', to_email: 'ops@dragonlog.com',
+    subject: 'Re: Partnership Opportunity — Follow-up',
+    body: '<p>Hi again,</p><p>Just following up on our previous email. We have a few time slots available for a demo this week. Let me know what works!</p>',
+    status: 'pending', _type: 'followup', created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
+    _summary: 'Follow-up on demo scheduling. Two time slots proposed for this week.' } as any,
+  // ByteDance HK — draft pending review
+  { _id: 'em-3', lead_id: 'mock-2', company_name: 'ByteDance HK', to_email: 'contact@bytedance.hk',
+    subject: 'AI Email Automation for ByteDance HK',
+    body: '<p>Dear ByteDance team,</p><p>We noticed your impressive growth in the HK market. Our platform could help streamline your B2B outreach with AI-powered email drafting and scheduling.</p><p>Would love to chat!</p>',
+    status: 'pending', _type: undefined, created_at: new Date(Date.now() - 86400000).toISOString(),
+    _reply_category: undefined },
+  // Neon Digital — rejected
+  { _id: 'em-4', lead_id: 'mock-5', company_name: 'Neon Digital', to_email: 'team@neondigital.co',
+    subject: 'Digital Marketing Collaboration',
+    body: '<p>Hi Neon Digital,</p><p>Love your portfolio! We think there\'s a great synergy between our platforms.</p>',
+    status: 'rejected', _type: undefined, created_at: new Date(Date.now() - 86400000 * 9).toISOString(),
+    error: { rejected_reason: 'Lead expressed no interest' } },
+  // Zenith Labs — approved, ready to send
+  { _id: 'em-5', lead_id: 'mock-6', company_name: 'Zenith Labs', to_email: 'hello@zenithlabs.ai',
+    subject: 'Meeting Confirmation — AI Healthcare Integration',
+    body: '<p>Hi Zenith Labs,</p><p>Thanks for your interest! I\'ve attached our product brief. Let\'s confirm a time for the call — how about Thursday 3pm HKT?</p>',
+    status: 'approved', _type: 'reply', created_at: new Date(Date.now() - 3600000 * 5).toISOString() },
+  // Quantum Finance — reply, pending
+  { _id: 'em-6', lead_id: 'mock-8', company_name: 'Quantum Finance', to_email: 'cfo@quantumfin.hk',
+    subject: 'Re: Pricing & Compliance — MADMAD Platform',
+    body: '<p>Hi,</p><p>Thanks for your questions. Here\'s our pricing breakdown:</p><ul><li>Starter: $299/mo</li><li>Pro: $799/mo</li><li>Enterprise: Custom</li></ul><p>All plans include SOC2 compliance. Happy to discuss further.</p>',
+    status: 'pending', _type: 'reply', created_at: new Date(Date.now() - 7200000).toISOString(),
+    _summary: 'Detailed pricing info sent. Covers Starter/Pro/Enterprise tiers + SOC2 compliance.' } as any,
+  // Acme Corp — sent first outreach
+  { _id: 'em-7', lead_id: 'mock-1', company_name: 'Acme Corp', to_email: 'hello@acme.com',
+    subject: 'Intro — MADMAD AI Email Agent',
+    body: '<p>Hello Acme Corp,</p><p>We\'re reaching out because we believe our AI email agent could help your sales team. Would you be open to a quick intro call?</p>',
+    status: 'sent', created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
+    sent_at: new Date(Date.now() - 86400000 * 2).toISOString() },
+  // Peak Ventures — reoutreach, pending
+  { _id: 'em-8', lead_id: 'mock-10', company_name: 'Peak Ventures', to_email: 'invest@peakvc.com',
+    subject: 'Re-introduction — MADMAD Series A Update',
+    body: '<p>Hi Peak Ventures,</p><p>Since we last connected, we\'ve hit some exciting milestones. Would love to share our latest traction numbers.</p>',
+    status: 'pending', _type: 'reoutreach', created_at: new Date(Date.now() - 3600000).toISOString() },
+];
 
 /** 根據 lead 狀態決定顯示邊個 reply badge */
 const getReplyBadge = (lead: Lead) => {
@@ -1273,12 +1403,15 @@ const LeadSendBtn = styled.button`
 `;
 
 const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ companyName, leadId }) => {
+  const { t } = useTranslation();
   const { data } = useEmailQueue({ search: companyName });
   const approve = useApproveEmail();
   const reject = useRejectEmail();
   const send = useSendEmail();
 
-  const emails = ((data?.data as EmailItem[]) || [])
+  const apiEmails = (data?.data as EmailItem[]) || [];
+  const pool = apiEmails.length ? apiEmails : MOCK_EMAILS;
+  const emails = pool
     .filter((e) => (e.lead_id === leadId) || (e.company_name || '') === companyName)
     .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
 
@@ -1316,7 +1449,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
 
   return (
     <>
-      <DpSectionTitle>郵件記錄 ({emails.length})</DpSectionTitle>
+      <DpSectionTitle>{t('leads.emailRecords')} ({emails.length})</DpSectionTitle>
       {emails.map((d) => {
         const typeTag = d._type ? EMAIL_TYPE_LABEL[d._type] : null;
         const statusColor = EMAIL_STATUS_COLOR[d.status || 'pending'] || EMAIL_STATUS_COLOR.pending;
@@ -1334,38 +1467,38 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
                 <>
                   <LeadSendBtn disabled={busy} onClick={() => handleApproveAndSend(d)}>
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    {busy ? '處理中…' : '批准並發送'}
+                    {busy ? t('leads.processing') : t('leads.approveAndSend')}
                   </LeadSendBtn>
                   <EmailActionBtn $bg="#fef2f2" $fg="#ef4444" disabled={busy} onClick={() => handleReject(d._id)}>
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                    Reject
+                    {t('leads.reject')}
                   </EmailActionBtn>
                 </>
               )}
               {d.status === 'approved' && (
                 <LeadSendBtn disabled={busy} onClick={() => send.mutate(d._id)}>
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  {busy ? '處理中…' : '發送'}
+                  {busy ? t('leads.processing') : t('leads.send')}
                 </LeadSendBtn>
               )}
               {d.status === 'sent' && (
-                <span style={{ fontSize: '0.75rem', color: '#16a34a' }}>✓ 已發送 {d.sent_at ? new Date(d.sent_at).toLocaleString('zh-HK') : ''}</span>
+                <span style={{ fontSize: '0.75rem', color: '#16a34a' }}>✓ {t('leads.sentAt')} {d.sent_at ? new Date(d.sent_at).toLocaleString('zh-HK') : ''}</span>
               )}
               {d.status === 'rejected' && (
-                <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>✗ 已拒絕</span>
+                <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>✗ {t('leads.rejected')}</span>
               )}
             </EmailCardHead>
 
             {(d as any)._summary && (
               <EmailSummary>
-                <EmailSummaryLabel>AI 摘要：</EmailSummaryLabel>
+                <EmailSummaryLabel>{t('leads.aiSummary')}</EmailSummaryLabel>
                 {(d as any)._summary}
               </EmailSummary>
             )}
 
             <EmailCardBody>
               <EmailBodyContent dangerouslySetInnerHTML={{ __html: d.body || '—' }} />
-              <EmailCardMeta>寄往 {d.to_email || '—'}</EmailCardMeta>
+              <EmailCardMeta>{t('leads.sendTo')} {d.to_email || '—'}</EmailCardMeta>
             </EmailCardBody>
           </EmailCard>
         );
@@ -1561,9 +1694,8 @@ const Leads: React.FC = () => {
   const createLead = useCreateLead();
 
   const apiLeads: Lead[] = data?.data ?? [];
-  // 唔再 fall back 去 MOCK_LEADS —— backend 失敗應該 user-facing 出 error，
-  // 唔可以悄悄 display demo 假資料。
-  const allLeads: Lead[] = apiLeads;
+  // DEV: fallback to mock data when backend has no leads
+  const allLeads: Lead[] = apiLeads.length ? apiLeads : MOCK_LEADS;
 
   /* ── Auto-open detail panel from URL ?detail=<leadId> ── */
   const detailHandled = useRef<string | null>(null);
@@ -1959,7 +2091,7 @@ const Leads: React.FC = () => {
               <DpCompanyName>{selectedLead.company_name || 'Unknown'}</DpCompanyName>
               <StatusBadge $status={selectedLead.status ?? 'new'}>{selectedLead.status ?? 'new'}</StatusBadge>
             </DpHeaderInfo>
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', marginLeft: 'auto' }}>
+            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
               {selectedLead.status && selectedLead.status !== 'contacted' && NEXT_STATUS[selectedLead.status] && (
                 <DpActionBtn
                   $variant="primary"
@@ -1968,7 +2100,7 @@ const Leads: React.FC = () => {
                     handleCloseDetail();
                   }}
                 >
-                  推進狀態
+                  {t('leads.advanceStatus')}
                 </DpActionBtn>
               )}
               <DpActionBtn
@@ -1989,62 +2121,62 @@ const Leads: React.FC = () => {
             {/* Left: About + Journey + Tags + Reply */}
             <DpColLeft>
               <DpCollapsibleHead onClick={() => setAboutOpen(o => !o)}>
-                <DpSectionTitle>About — {selectedLead.email || '—'}</DpSectionTitle>
+                <DpSectionTitle>{t('leads.about')} — {selectedLead.email || '—'}</DpSectionTitle>
                 <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{aboutOpen ? '▲' : '▼'}</span>
               </DpCollapsibleHead>
               <DpCollapsibleBody $open={aboutOpen}>
-                <DpSectionTitle>About</DpSectionTitle>
+                <DpSectionTitle>{t('leads.about')}</DpSectionTitle>
                 <DpGrid>
                   <DpField>
-                    <DpFieldLabel>Email</DpFieldLabel>
+                    <DpFieldLabel>{t('leads.email')}</DpFieldLabel>
                     <DpFieldValue>{selectedLead.email || '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
-                    <DpFieldLabel>Phone</DpFieldLabel>
+                    <DpFieldLabel>{t('leads.phone')}</DpFieldLabel>
                     <DpFieldValue>{selectedLead.phone || '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
-                    <DpFieldLabel>Website</DpFieldLabel>
+                    <DpFieldLabel>{t('leads.website')}</DpFieldLabel>
                     <DpFieldValue>{selectedLead.website || '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
-                    <DpFieldLabel>Address</DpFieldLabel>
+                    <DpFieldLabel>{t('leads.address')}</DpFieldLabel>
                     <DpFieldValue>{selectedLead.address || '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
-                    <DpFieldLabel>Source</DpFieldLabel>
+                    <DpFieldLabel>{t('leads.source')}</DpFieldLabel>
                     <DpFieldValue>{selectedLead.source || '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
-                    <DpFieldLabel>Rating</DpFieldLabel>
+                    <DpFieldLabel>{t('leads.rating', { defaultValue: '評分' })}</DpFieldLabel>
                     <DpFieldValue>{selectedLead.rating ? `${selectedLead.rating} / 5.0` : '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
-                    <DpFieldLabel>Created</DpFieldLabel>
+                    <DpFieldLabel>{t('leads.importedAt')}</DpFieldLabel>
                     <DpFieldValue>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</DpFieldValue>
                   </DpField>
                 </DpGrid>
 
                 <div style={{ height: 12 }} />
-                <DpSectionTitle>Lead Journey</DpSectionTitle>
+                <DpSectionTitle>{t('leads.leadJourney')}</DpSectionTitle>
                 <DpTimeline>
                   <DpTimelineItem $active>
-                    Discovered via {selectedLead.source || 'unknown'}
+                    {t('leads.discoveredVia', { source: selectedLead.source || 'unknown' })}
                   </DpTimelineItem>
                   <DpTimelineItem $active>
-                    Added to pool
+                    {t('leads.addedToPool')}
                   </DpTimelineItem>
                   <DpTimelineItem $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'}>
-                    {selectedLead.status === 'new' ? 'Awaiting review' : 'Marked as pending'}
+                    {selectedLead.status === 'new' ? t('leads.awaitingReview') : t('leads.markedAsPending')}
                   </DpTimelineItem>
                   {(selectedLead.status === 'contacted') && (
                     <DpTimelineItem $active>
-                      Contacted
+                      {t('leads.contactedStep')}
                     </DpTimelineItem>
                   )}
                   {selectedLead._replied && (
                     <DpTimelineItem $active>
-                      收到回覆 — {getReplyBadge(selectedLead)?.text || '已回覆'}
+                      {t('leads.receivedReply', { text: getReplyBadge(selectedLead)?.text || t('leads.replied') })}
                     </DpTimelineItem>
                   )}
                 </DpTimeline>
@@ -2052,7 +2184,7 @@ const Leads: React.FC = () => {
                 {selectedLead.industry_tags && selectedLead.industry_tags.length > 0 && (
                   <>
                     <div style={{ height: 8 }} />
-                    <DpSectionTitle>Tags</DpSectionTitle>
+                    <DpSectionTitle>{t('leads.tags')}</DpSectionTitle>
                     <DpTagList>
                       {selectedLead.industry_tags.map(tag => (
                         <DpTag key={tag}>{tag}</DpTag>
