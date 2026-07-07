@@ -977,8 +977,8 @@ async function doAnalyze(p: any, db: Db) {
     via = 'hermes-llm';
     const desc = lead.website_description || '';
     const svcs = (lead._scraped_services || []).join(', ');
-    const text = (lead._scraped_text || '').slice(0, 4000);
-    const prompt = `You are a B2B research assistant representing ${BRAND_NAME} (${BRAND_TAGLINE}),
+    // 爬蟲內容量做參數：太多資料令 LLM 逾時嘅話，縮短再試
+    const buildPrompt = (chars: number) => `You are a B2B research assistant representing ${BRAND_NAME} (${BRAND_TAGLINE}),
 a Hong Kong digital agency.
 ${BRAND_CONTEXT_BLOCK}
 
@@ -987,7 +987,7 @@ Website: ${lead.website || 'N/A'}
 Company description: ${desc}
 Their services: ${svcs}
 Website content (scraped):
-${text}
+${(lead._scraped_text || '').slice(0, chars)}
 
 Based on the above information, propose a SPECIFIC collaboration angle —
 i.e. WHICH of ${BRAND_NAME}'s services (STRATEGIZE / DESIGN / CODE / MARKET, or any
@@ -995,7 +995,13 @@ of: ${BRAND_SOLUTIONS.join(' / ')}) maps best to this lead's pain points, and wh
 ${BRAND_TONE_GUIDE}
 Output ONLY one JSON object, no other text:
 {"primary":"主要合作方向","pitch":"一句 pitch (港式繁中 + EN mix OK)","reason":"理由","services":["服務1","服務2"]}`;
-    out = callHermes(prompt);
+    try {
+      out = callHermes(buildPrompt(4000), 300_000);
+    } catch {
+      // 「太多資料」逾時 → 大幅縮短爬蟲內容再試一次
+      log(`[analyze] ${lead.company_name} 分析逾時，縮短資料後重試`);
+      out = callHermes(buildPrompt(1200), 300_000);
+    }
   } else {
     // 冇爬蟲資料 → 用 Hermes 瀏覽器去睇官網
     via = 'hermes-browser';
@@ -1015,7 +1021,7 @@ maps best to this lead's pain points, and why.
 ${BRAND_TONE_GUIDE}
 Output ONLY one JSON object, no other text:
 {"primary":"主要合作方向","pitch":"一句 pitch (港式繁中 + EN mix OK)","reason":"理由","services":["服務1","服務2"]}`;
-    out = callHermes(prompt);
+    out = callHermes(prompt, 360_000); // browser 導航較慢，畀多啲時間
   }
 
   const c = extractJson(out);
