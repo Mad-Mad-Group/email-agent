@@ -17,7 +17,7 @@ const SearchBox = styled.div`
   align-items: flex-end;
   background: ${({ theme }) => theme.colors.surface};
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 `;
 
@@ -58,7 +58,7 @@ const ResultsList = styled.div`
 
 const ResultCard = styled.div`
   background: ${({ theme }) => theme.colors.surface};
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.2s;

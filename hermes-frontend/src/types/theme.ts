@@ -4,6 +4,7 @@ export interface StatusColor {
 }
 
 export interface HermesTheme {
+  mode: 'light' | 'dark';
   colors: {
     canvas: string;
     surface: string;

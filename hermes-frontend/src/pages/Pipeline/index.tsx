@@ -19,9 +19,10 @@ const KanbanGrid = styled.div`
 
 const KanbanColumn = styled.div`
   background: ${({ theme }) => theme.colors.canvas};
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 16px;
   min-height: 400px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
 `;
 
 const ColumnHeader = styled.div`

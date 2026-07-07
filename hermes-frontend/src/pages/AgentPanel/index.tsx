@@ -64,7 +64,7 @@ const AgentStrip = styled.div`
 
 const AgentMiniCard = styled.div`
   background: ${({ theme }) => theme.colors.surface};
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 8px 10px;
   box-shadow: ${({ theme }) => theme.shadows.card};
   display: flex;
@@ -102,7 +102,7 @@ const StatsRow = styled.div`
 
 const PanelCard = styled.div`
   background: ${({ theme }) => theme.colors.surface};
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px;
   box-shadow: ${({ theme }) => theme.shadows.card};
 `;
@@ -198,7 +198,7 @@ const FeedMessage = styled.span`
 /* ── Left pane: quick stats beneath world ── */
 const QuickStats = styled.div`
   background: ${({ theme }) => theme.colors.surface};
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 14px;
   box-shadow: ${({ theme }) => theme.shadows.card};
   display: grid;
@@ -230,7 +230,7 @@ const FloatingPanel = styled.div`
   width: 420px;
   max-height: 80vh;
   background: ${({ theme }) => theme.colors.surface};
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow: 0 20px 60px rgba(0,0,0,0.25), 0 0 0 1px ${({ theme }) => theme.colors.border};
   display: flex;
   flex-direction: column;
