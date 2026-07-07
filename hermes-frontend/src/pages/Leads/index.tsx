@@ -7,7 +7,6 @@ import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useEmailQu
 import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
 import client from '../../api/client';
-import toast from 'react-hot-toast';
 import { media } from '../../styles/media';
 
 /* ══════════════════════════════════════
@@ -160,6 +159,25 @@ const HeaderBtns = styled.div`
     grid-template-columns: 1fr 1fr;
     width: 100%;
     gap: 8px;
+  }
+`;
+
+const HeaderFeedback = styled.div`
+  min-height: 0;
+  display: flex;
+  gap: 12px;
+`;
+
+const FeedbackMsg = styled.span<{ $error?: boolean }>`
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: ${({ $error, theme }) => $error ? theme.colors.red : '#16a34a'};
+  animation: leadsFeedbackFade 4s ease-out forwards;
+  @keyframes leadsFeedbackFade {
+    0% { opacity: 0; transform: translateY(-4px); }
+    10% { opacity: 1; transform: translateY(0); }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
   }
 `;
 
@@ -671,12 +689,21 @@ const ModalHeader = styled.div`
 `;
 
 const CloseBtn = styled.button`
-  background: none;
+  background: transparent;
   border: none;
-  font-size: 1.25rem;
   cursor: pointer;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.colors.blue};
+  flex-shrink: 0;
+  transition: all 0.15s;
+  &:hover {
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'};
+  }
 `;
 
 const ModalBody = styled.div`
@@ -791,22 +818,44 @@ const Footer = styled.footer`
 
 /* ── Detail Panel ── */
 
-const dpSlideIn = keyframes`
-  from { opacity: 0; transform: translateX(40px); }
-  to   { opacity: 1; transform: translateX(0); }
+const dpFadeIn = keyframes`
+  from { opacity: 0; }
+  to   { opacity: 1; }
+`;
+
+const dpSlideUp = keyframes`
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
+
+const DpOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.45)'};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ${dpFadeIn} 0.2s ease-out;
 `;
 
 const DpPanel = styled.div`
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 1201;
-  width: 100vw;
-  height: 100vh;
+  width: 96vw;
+  height: 92vh;
   display: flex;
   flex-direction: column;
   background: ${({ theme }) => theme.colors.surface};
-  animation: ${dpSlideIn} 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.card + 2}px;
+  box-shadow: ${({ theme }) => theme.mode === 'dark'
+    ? '0 20px 60px rgba(0,0,0,0.5)'
+    : '0 20px 60px rgba(0,0,0,0.18)'};
+  overflow: hidden;
+  animation: ${dpSlideUp} 0.25s ease-out;
+  ${media.mobile} {
+    width: 95vw;
+    height: 92vh;
+  }
 `;
 
 const DpHeader = styled.div`
@@ -833,14 +882,21 @@ const DpCompanyName = styled.h2`
 `;
 
 const DpCloseBtn = styled.button`
-  background: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
   border: none;
-  font-size: 1.4rem;
-  line-height: 1;
+  border-radius: 50%;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.blue};
   cursor: pointer;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  padding: 4px;
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+  flex-shrink: 0;
+  transition: all 0.15s;
+  &:hover {
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'};
+  }
 `;
 
 const DpBody = styled.div`
@@ -848,7 +904,7 @@ const DpBody = styled.div`
   height: 0;
   min-height: 0;
   display: grid;
-  grid-template-columns: 340px 1fr 220px;
+  grid-template-columns: 340px 1fr;
   grid-template-rows: 1fr;
   gap: 0;
   overflow: hidden;
@@ -895,18 +951,6 @@ const DpColCenter = styled.div`
   gap: 10px;
   min-width: 0;
   ${media.tabletDown} { overflow-y: visible; padding: 12px 16px; }
-`;
-
-const DpColRight = styled.div`
-  padding: 16px 18px;
-  overflow-y: auto;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-  border-left: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.surfaceMuted};
-  ${media.tabletDown} { border-left: none; border-top: 1px solid ${({ theme }) => theme.colors.border}; overflow-y: visible; }
 `;
 
 const DpGrid = styled.div`
@@ -968,27 +1012,50 @@ const DpTimeline = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding-left: 10px;
-  border-left: 2px solid ${({ theme }) => theme.colors.border};
+  position: relative;
+  padding-left: 14px;
 `;
 
 const DpTimelineItem = styled.div<{ $active?: boolean }>`
   position: relative;
-  padding: 5px 0 5px 14px;
+  padding: 8px 0 8px 16px;
   font-size: 0.7rem;
   color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textTertiary};
   font-weight: ${({ $active }) => $active ? 600 : 400};
 
+  /* Vertical connecting line */
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 1.5px;
+    background: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.border};
+    ${({ $active, theme }) => $active ? `
+      box-shadow: 0 0 6px ${theme.colors.blue}66, 0 0 12px ${theme.colors.blue}33;
+    ` : ''}
+  }
+  &:last-child::after {
+    display: none;
+  }
+
+  /* Dot */
   &::before {
     content: '';
     position: absolute;
-    left: -6px;
+    left: -3.5px;
     top: 10px;
-    width: 6px;
-    height: 6px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
+    z-index: 1;
     background: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.border};
-    border: 2px solid ${({ theme }) => theme.colors.surfaceMuted};
+    ${({ $active, theme }) => $active ? `
+      box-shadow: 0 0 8px ${theme.colors.blue}88, 0 0 16px ${theme.colors.blue}44;
+    ` : ''}
+    transition: box-shadow 0.3s, background 0.3s;
   }
 `;
 
@@ -1010,10 +1077,10 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   white-space: nowrap;
   transition: opacity 0.15s;
   background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? '#dc2626' :
+    $variant === 'danger' ? (theme.mode === 'dark' ? '#374151' : '#f3f4f6') :
     $variant === 'primary' ? theme.colors.blue : theme.colors.surfaceMuted};
-  color: ${({ $variant }) =>
-    $variant === 'danger' ? '#fff' :
+  color: ${({ $variant, theme }) =>
+    $variant === 'danger' ? (theme.mode === 'dark' ? '#9ca3af' : '#6b7280') :
     $variant === 'primary' ? '#fff' : 'inherit'};
   &:hover { opacity: 0.85; }
 `;
@@ -1115,7 +1182,7 @@ const EmailCardHead = styled.div`
 `;
 const EmailCardSubject = styled.span`
   font-weight: 600;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: ${({ theme }) => theme.colors.textPrimary};
   flex: 1;
   min-width: 0;
@@ -1124,7 +1191,7 @@ const EmailCardSubject = styled.span`
   text-overflow: ellipsis;
 `;
 const EmailCardDate = styled.span`
-  font-size: 0.6875rem;
+  font-size: 0.8rem;
   color: ${({ theme }) => theme.colors.textTertiary};
   white-space: nowrap;
 `;
@@ -1135,7 +1202,7 @@ const EmailBodyContent = styled.div`
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: break-word;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   line-height: 1.5;
   color: ${({ theme }) => theme.colors.textSecondary};
   padding: ${({ theme }) => theme.spacing.sm}px;
@@ -1146,7 +1213,7 @@ const EmailBodyContent = styled.div`
 `;
 const EmailCardMeta = styled.div`
   margin-top: 6px;
-  font-size: 0.6875rem;
+  font-size: 0.8rem;
   color: ${({ theme }) => theme.colors.textTertiary};
 `;
 const EmailSummary = styled.div`
@@ -1155,7 +1222,7 @@ const EmailSummary = styled.div`
   background: ${({ theme }) => theme.mode === 'dark' ? '#1e3a5f' : '#eff6ff'};
   border: 1px solid ${({ theme }) => theme.mode === 'dark' ? '#2563eb40' : '#bfdbfe'};
   border-radius: ${({ theme }) => theme.radii.control}px;
-  font-size: 0.8rem;
+  font-size: 0.9rem;
   line-height: 1.5;
   color: ${({ theme }) => theme.colors.blue};
   display: flex;
@@ -1178,10 +1245,27 @@ const EmailActionBtn = styled.button<{ $bg: string; $fg: string }>`
   padding: 5px 14px;
   border: none;
   border-radius: 6px;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: ${({ $fg }) => $fg};
   background: ${({ $bg }) => $bg};
+  cursor: pointer;
+  transition: opacity 0.15s;
+  &:hover:not(:disabled) { opacity: 0.85; }
+  &:disabled { opacity: 0.45; cursor: not-allowed; }
+`;
+
+const LeadSendBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 16px;
+  border: none;
+  border-radius: 6px;
+  background: #10b981;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s;
   &:hover:not(:disabled) { opacity: 0.85; }
@@ -1205,19 +1289,19 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
   const handleApproveAndSend = (d: EmailItem) => {
     if (d.status === 'approved') {
       send.mutate(d._id, {
-        onSuccess: () => toast.success('郵件已發送'),
-        onError: () => toast.error('發送失敗'),
+        onSuccess: () => console.info('郵件已發送'),
+        onError: () => console.error('發送失敗'),
       });
     } else {
       approve.mutate(d._id, {
         onSuccess: () => {
-          toast.success('已批准，正在發送…');
+          console.info('已批准，正在發送…');
           send.mutate(d._id, {
-            onSuccess: () => toast.success('郵件已發送'),
-            onError: () => toast.error('發送失敗'),
+            onSuccess: () => console.info('郵件已發送'),
+            onError: () => console.error('發送失敗'),
           });
         },
-        onError: () => toast.error('批准失敗'),
+        onError: () => console.error('批准失敗'),
       });
     }
   };
@@ -1225,8 +1309,8 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
   const handleReject = (id: string) => {
     const reason = window.prompt('拒絕原因（可空）') || undefined;
     reject.mutate({ id, reason }, {
-      onSuccess: () => toast.success('已拒絕'),
-      onError: () => toast.error('拒絕失敗'),
+      onSuccess: () => console.info('已拒絕'),
+      onError: () => console.error('拒絕失敗'),
     });
   };
 
@@ -1248,18 +1332,21 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
               <div style={{ flex: 1 }} />
               {d.status === 'pending' && (
                 <>
-                  <EmailActionBtn $bg="#2563eb" $fg="#fff" disabled={busy} onClick={() => handleApproveAndSend(d)}>
+                  <LeadSendBtn disabled={busy} onClick={() => handleApproveAndSend(d)}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     {busy ? '處理中…' : '批准並發送'}
-                  </EmailActionBtn>
-                  <EmailActionBtn $bg="#dc2626" $fg="#fff" disabled={busy} onClick={() => handleReject(d._id)}>
-                    拒絕
+                  </LeadSendBtn>
+                  <EmailActionBtn $bg="#fef2f2" $fg="#ef4444" disabled={busy} onClick={() => handleReject(d._id)}>
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    Reject
                   </EmailActionBtn>
                 </>
               )}
               {d.status === 'approved' && (
-                <EmailActionBtn $bg="#3b82f6" $fg="#fff" disabled={busy} onClick={() => send.mutate(d._id)}>
+                <LeadSendBtn disabled={busy} onClick={() => send.mutate(d._id)}>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   {busy ? '處理中…' : '發送'}
-                </EmailActionBtn>
+                </LeadSendBtn>
               )}
               {d.status === 'sent' && (
                 <span style={{ fontSize: '0.75rem', color: '#16a34a' }}>✓ 已發送 {d.sent_at ? new Date(d.sent_at).toLocaleString('zh-HK') : ''}</span>
@@ -1550,8 +1637,8 @@ const Leads: React.FC = () => {
   const handleDelete = (id: string) => {
     if (window.confirm(t('leads.confirmDelete'))) {
       deleteLead.mutate(id, {
-        onSuccess: () => toast.success('Lead 已刪除'),
-        onError: () => toast.error('刪除失敗'),
+        onSuccess: () => console.info('Lead 已刪除'),
+        onError: () => console.error('刪除失敗'),
       });
     }
   };
@@ -1620,9 +1707,13 @@ const Leads: React.FC = () => {
                 {t('leads.addLead')}
               </AddBtnGreen>
             </HeaderBtns>
-            {replyCheckMsg && <span style={{ fontSize: '0.75rem', color: replyCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{replyCheckMsg}</span>}
-            {followupCheckMsg && <span style={{ fontSize: '0.75rem', color: followupCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a' }}>{followupCheckMsg}</span>}
           </HeaderTop>
+          {(replyCheckMsg || followupCheckMsg) && (
+            <HeaderFeedback>
+              {replyCheckMsg && <FeedbackMsg key={replyCheckMsg} $error={replyCheckMsg.startsWith('觸發失敗')}>{replyCheckMsg}</FeedbackMsg>}
+              {followupCheckMsg && <FeedbackMsg key={followupCheckMsg} $error={followupCheckMsg.startsWith('觸發失敗')}>{followupCheckMsg}</FeedbackMsg>}
+            </HeaderFeedback>
+          )}
         </HeaderSection>
         {/* Tabs */}
         <TabsRow>
@@ -1794,7 +1885,7 @@ const Leads: React.FC = () => {
           <Modal onClick={e => e.stopPropagation()}>
             <ModalHeader>
               <h2>{t('leads.addLead')}</h2>
-              <CloseBtn onClick={() => setShowAdd(false)}>&times;</CloseBtn>
+              <CloseBtn onClick={() => setShowAdd(false)}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
             </ModalHeader>
             <form onSubmit={handleCreate}>
               <ModalBody>
@@ -1856,9 +1947,10 @@ const Leads: React.FC = () => {
         </Overlay>
       )}
 
-      {/* Lead Detail Panel — fullscreen dual-column */}
+      {/* Lead Detail Panel — floating modal */}
       {selectedLead && createPortal(
-        <DpPanel>
+        <DpOverlay onClick={handleCloseDetail}>
+        <DpPanel onClick={(e: React.MouseEvent) => e.stopPropagation()}>
           <DpHeader>
             <Avatar $color={hashColor(selectedLead.company_name || 'Unknown')} style={{ width: 42, height: 42, fontSize: '0.875rem' }}>
               {getInitials(selectedLead.company_name || 'Unknown')}
@@ -1886,14 +1978,15 @@ const Leads: React.FC = () => {
                   handleCloseDetail();
                 }}
               >
-                刪除
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ marginRight: 4 }}><path d="M2.5 4h9M5 4V2.5a.5.5 0 01.5-.5h3a.5.5 0 01.5.5V4M11 4v7.5a1 1 0 01-1 1H4a1 1 0 01-1-1V4M6 6.5v3M8 6.5v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Delete
               </DpActionBtn>
             </div>
-            <DpCloseBtn onClick={handleCloseDetail}>&times;</DpCloseBtn>
+            <DpCloseBtn onClick={handleCloseDetail}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></DpCloseBtn>
           </DpHeader>
 
           <DpBody>
-            {/* Left sidebar: About */}
+            {/* Left: About + Journey + Tags + Reply */}
             <DpColLeft>
               <DpCollapsibleHead onClick={() => setAboutOpen(o => !o)}>
                 <DpSectionTitle>About — {selectedLead.email || '—'}</DpSectionTitle>
@@ -1931,95 +2024,90 @@ const Leads: React.FC = () => {
                     <DpFieldValue>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</DpFieldValue>
                   </DpField>
                 </DpGrid>
+
+                <div style={{ height: 12 }} />
+                <DpSectionTitle>Lead Journey</DpSectionTitle>
+                <DpTimeline>
+                  <DpTimelineItem $active>
+                    Discovered via {selectedLead.source || 'unknown'}
+                  </DpTimelineItem>
+                  <DpTimelineItem $active>
+                    Added to pool
+                  </DpTimelineItem>
+                  <DpTimelineItem $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'}>
+                    {selectedLead.status === 'new' ? 'Awaiting review' : 'Marked as pending'}
+                  </DpTimelineItem>
+                  {(selectedLead.status === 'contacted') && (
+                    <DpTimelineItem $active>
+                      Contacted
+                    </DpTimelineItem>
+                  )}
+                  {selectedLead._replied && (
+                    <DpTimelineItem $active>
+                      收到回覆 — {getReplyBadge(selectedLead)?.text || '已回覆'}
+                    </DpTimelineItem>
+                  )}
+                </DpTimeline>
+
+                {selectedLead.industry_tags && selectedLead.industry_tags.length > 0 && (
+                  <>
+                    <div style={{ height: 8 }} />
+                    <DpSectionTitle>Tags</DpSectionTitle>
+                    <DpTagList>
+                      {selectedLead.industry_tags.map(tag => (
+                        <DpTag key={tag}>{tag}</DpTag>
+                      ))}
+                    </DpTagList>
+                  </>
+                )}
+
+                {selectedLead._replied && (() => {
+                  const cat = getReplyBadge(selectedLead) || { text: '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
+                  return (
+                    <>
+                      <div style={{ height: 8 }} />
+                      <DpSectionTitle>回覆資訊</DpSectionTitle>
+                      <DpGrid>
+                        <DpField>
+                          <DpFieldLabel>分類</DpFieldLabel>
+                          <DpFieldValue><ReplyBadge $bg={cat.bg} $fg={cat.fg}>{cat.text}</ReplyBadge></DpFieldValue>
+                        </DpField>
+                        <DpField>
+                          <DpFieldLabel>情緒</DpFieldLabel>
+                          <DpFieldValue>{selectedLead._reply_sentiment || '—'}</DpFieldValue>
+                        </DpField>
+                        <DpField>
+                          <DpFieldLabel>摘要</DpFieldLabel>
+                          <DpFieldValue>{selectedLead._reply_summary || '—'}</DpFieldValue>
+                        </DpField>
+                        <DpField>
+                          <DpFieldLabel>下一步</DpFieldLabel>
+                          <DpFieldValue>{selectedLead._reply_next_step || '—'}</DpFieldValue>
+                        </DpField>
+                        <DpField>
+                          <DpFieldLabel>方式</DpFieldLabel>
+                          <DpFieldValue>{selectedLead._reply_via || '—'}</DpFieldValue>
+                        </DpField>
+                        <DpField>
+                          <DpFieldLabel>時間</DpFieldLabel>
+                          <DpFieldValue>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString('zh-HK') : '—'}</DpFieldValue>
+                        </DpField>
+                      </DpGrid>
+                    </>
+                  );
+                })()}
               </DpCollapsibleBody>
             </DpColLeft>
 
-            {/* Center: email feed */}
+            {/* Right: email feed (full width) */}
             <DpColCenter>
               {selectedLead.company_name && (
                 <LeadEmails companyName={selectedLead.company_name} leadId={selectedLead._id} />
               )}
             </DpColCenter>
-
-            {/* Right sidebar: Journey + Tags + Reply */}
-            <DpColRight>
-              <DpCollapsibleHead onClick={() => setJourneyOpen(o => !o)}>
-                <DpSectionTitle>Journey / Tags / Reply</DpSectionTitle>
-                <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{journeyOpen ? '▲' : '▼'}</span>
-              </DpCollapsibleHead>
-              <DpCollapsibleBody $open={journeyOpen}>
-              <DpSectionTitle>Lead Journey</DpSectionTitle>
-              <DpTimeline>
-                <DpTimelineItem $active>
-                  Discovered via {selectedLead.source || 'unknown'}
-                </DpTimelineItem>
-                <DpTimelineItem $active>
-                  Added to pool
-                </DpTimelineItem>
-                <DpTimelineItem $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'}>
-                  {selectedLead.status === 'new' ? 'Awaiting review' : 'Marked as pending'}
-                </DpTimelineItem>
-                {(selectedLead.status === 'contacted') && (
-                  <DpTimelineItem $active>
-                    Contacted
-                  </DpTimelineItem>
-                )}
-                {selectedLead._replied && (
-                  <DpTimelineItem $active>
-                    收到回覆 — {getReplyBadge(selectedLead)?.text || '已回覆'}
-                  </DpTimelineItem>
-                )}
-              </DpTimeline>
-
-              {selectedLead.industry_tags && selectedLead.industry_tags.length > 0 && (
-                <>
-                  <DpSectionTitle>Tags</DpSectionTitle>
-                  <DpTagList>
-                    {selectedLead.industry_tags.map(tag => (
-                      <DpTag key={tag}>{tag}</DpTag>
-                    ))}
-                  </DpTagList>
-                </>
-              )}
-
-              {selectedLead._replied && (() => {
-                const cat = getReplyBadge(selectedLead) || { text: '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
-                return (
-                  <>
-                    <DpSectionTitle>回覆資訊</DpSectionTitle>
-                    <DpGrid>
-                      <DpField>
-                        <DpFieldLabel>分類</DpFieldLabel>
-                        <DpFieldValue><ReplyBadge $bg={cat.bg} $fg={cat.fg}>{cat.text}</ReplyBadge></DpFieldValue>
-                      </DpField>
-                      <DpField>
-                        <DpFieldLabel>情緒</DpFieldLabel>
-                        <DpFieldValue>{selectedLead._reply_sentiment || '—'}</DpFieldValue>
-                      </DpField>
-                      <DpField>
-                        <DpFieldLabel>摘要</DpFieldLabel>
-                        <DpFieldValue>{selectedLead._reply_summary || '—'}</DpFieldValue>
-                      </DpField>
-                      <DpField>
-                        <DpFieldLabel>下一步</DpFieldLabel>
-                        <DpFieldValue>{selectedLead._reply_next_step || '—'}</DpFieldValue>
-                      </DpField>
-                      <DpField>
-                        <DpFieldLabel>方式</DpFieldLabel>
-                        <DpFieldValue>{selectedLead._reply_via || '—'}</DpFieldValue>
-                      </DpField>
-                      <DpField>
-                        <DpFieldLabel>時間</DpFieldLabel>
-                        <DpFieldValue>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString('zh-HK') : '—'}</DpFieldValue>
-                      </DpField>
-                    </DpGrid>
-                  </>
-                );
-              })()}
-              </DpCollapsibleBody>
-            </DpColRight>
           </DpBody>
-        </DpPanel>,
+        </DpPanel>
+        </DpOverlay>,
         document.body
       )}
 

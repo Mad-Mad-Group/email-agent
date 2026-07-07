@@ -1,7 +1,7 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 
-type Status = 'new' | 'pending' | 'contacted' | 'rejected' | 'qualified' | 'draft' | 'approved' | 'sent';
+type Status = 'new' | 'pending' | 'contacted' | 'rejected' | 'qualified' | 'draft' | 'approved' | 'sent' | 'running' | 'idle' | 'active';
 
 interface StatusBadgeProps {
   status: Status;
@@ -17,11 +17,20 @@ const statusFgMap: Record<string, string> = {
   draft: '#2563eb',
   approved: '#10b981',
   sent: '#10b981',
+  running: '#2563eb',
+  idle: '#94a3b8',
+  active: '#10b981',
 };
 
-const Pill = styled.span<{ $fg: string }>`
+const spinDots = keyframes`
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
+
+const Pill = styled.span<{ $fg: string; $isRunning?: boolean }>`
   display: inline-flex;
   align-items: center;
+  gap: 6px;
   padding: ${({ theme }) => theme.spacing.xs}px ${({ theme }) => theme.spacing.sm}px;
   border-radius: 999px;
   font-size: 0.75rem;
@@ -31,10 +40,31 @@ const Pill = styled.span<{ $fg: string }>`
   color: ${({ $fg }) => $fg};
 `;
 
+const SpinnerWrap = styled.span`
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  animation: ${spinDots} 1s linear infinite;
+`;
+
+const SpinnerSvg = () => (
+  <SpinnerWrap>
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <circle cx="7"    cy="1"    r="2"   fill="currentColor" opacity="1" />
+      <circle cx="2.5"  cy="3"    r="1.7" fill="currentColor" opacity="0.7" />
+      <circle cx="1"    cy="7"    r="1.4" fill="currentColor" opacity="0.45" />
+      <circle cx="3"    cy="11"   r="1.1" fill="currentColor" opacity="0.25" />
+      <circle cx="7"    cy="13"   r="0.9" fill="currentColor" opacity="0.12" />
+    </svg>
+  </SpinnerWrap>
+);
+
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const fg = statusFgMap[status] ?? '#2563eb';
+  const isRunning = status === 'running';
   return (
-    <Pill $fg={fg}>
+    <Pill $fg={fg} $isRunning={isRunning}>
+      {isRunning && <SpinnerSvg />}
       {status}
     </Pill>
   );

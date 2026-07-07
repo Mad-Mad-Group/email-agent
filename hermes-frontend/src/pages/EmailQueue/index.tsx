@@ -134,8 +134,8 @@ const PageTab = styled.button<{ $active: boolean }>`
   font-size: 0.875rem;
   font-weight: ${({ $active }) => $active ? 700 : 500};
   cursor: pointer;
-  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textSecondary};
-  border-bottom: 2px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.textSecondary};
+  border-bottom: 2px solid ${({ $active, theme }) => $active ? theme.colors.blue : 'transparent'};
   margin-bottom: -1px;
   transition: all 0.15s;
   &:hover {
@@ -147,7 +147,7 @@ const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+  box-shadow: ${({ theme }) => theme.shadows.card};
   display: flex;
   min-height: 620px;
   overflow: hidden;
@@ -235,18 +235,18 @@ const FolderItem = styled.li<{ $active?: boolean }>`
   color: ${({ $active, theme }) => ($active ? theme.colors.textPrimary : theme.colors.textSecondary)};
   font-weight: ${({ $active }) => ($active ? 600 : 400)};
   background: ${({ $active, theme }) => ($active
-    ? '#eff6ff'
+    ? (theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : '#eff6ff')
     : 'transparent')};
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
   &:hover {
     background: ${({ $active, theme }) => ($active
-      ? '#dbeafe'
+      ? (theme.mode === 'dark' ? 'rgba(37,99,235,0.2)' : '#dbeafe')
       : theme.colors.surfaceMuted)};
   }
   svg {
     flex-shrink: 0;
-    color: ${({ $active, theme }) => ($active ? '#2563eb' : theme.colors.textTertiary)};
+    color: ${({ $active, theme }) => ($active ? theme.colors.blue : theme.colors.textTertiary)};
   }
 `;
 
@@ -317,7 +317,7 @@ const IconBtn = styled.button`
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.textSecondary};
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  box-shadow: ${({ theme }) => theme.mode === 'dark' ? '0 1px 2px rgba(0,0,0,0.2)' : '0 1px 2px rgba(15,23,42,0.04)'};
   transition: background 0.15s, color 0.15s, transform 0.1s, border-color 0.15s;
   &:hover:not(:disabled) {
     background: ${({ theme }) => theme.colors.surfaceMuted};
@@ -348,14 +348,14 @@ const EmailRow = styled.div<{ $selected?: boolean }>`
   cursor: pointer;
   position: relative;
   background: ${({ $selected, theme }) => $selected
-    ? '#f0f7ff'
+    ? (theme.mode === 'dark' ? 'rgba(37,99,235,0.12)' : '#f0f7ff')
     : 'transparent'};
   transition: background 0.12s, border-left-color 0.12s;
   &:hover {
     background: ${({ $selected, theme }) => $selected
-      ? '#e0eef9'
+      ? (theme.mode === 'dark' ? 'rgba(37,99,235,0.18)' : '#e0eef9')
       : theme.colors.surfaceMuted};
-    box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+    box-shadow: ${({ theme }) => theme.mode === 'dark' ? '0 1px 4px rgba(0,0,0,0.2)' : '0 1px 4px rgba(15,23,42,0.06)'};
   }
   &:hover .hover-actions {
     display: flex;
@@ -372,7 +372,7 @@ const AvatarCircle = styled.div<{ $bg: string }>`
   min-width: 28px;
   border-radius: 50%;
   background: ${({ $bg }) => $bg};
-  color: #334155;
+  color: ${({ theme }) => theme.colors.textPrimary};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -381,7 +381,7 @@ const AvatarCircle = styled.div<{ $bg: string }>`
   text-transform: uppercase;
   user-select: none;
   box-shadow: none;
-  border: 1px solid rgba(255,255,255,0.4);
+  border: 1px solid ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.4)'};
 `;
 
 const SenderCol = styled.div`
@@ -440,9 +440,9 @@ const StatusBadge = styled.span<{ $status?: string }>`
   text-transform: capitalize;
   white-space: nowrap;
   flex-shrink: 0;
-  ${({ $status }) => {
+  ${({ $status, theme }) => {
     const color = statusColorMap[$status || ''] || '#d97706';
-    return `background: #ffffff; color: ${color}; border: 1px solid ${color}33;`;
+    return `background: ${theme.colors.surface}; color: ${color}; border: 1px solid ${color}33;`;
   }}
 `;
 
@@ -461,7 +461,7 @@ const HoverActions = styled.div`
   transform: translateY(-50%);
   gap: 2px;
   background: ${({ theme }) => theme.colors.surface};
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+  box-shadow: ${({ theme }) => theme.mode === 'dark' ? '0 1px 6px rgba(0,0,0,0.4)' : '0 1px 6px rgba(0,0,0,0.12)'};
   border-radius: ${({ theme }) => theme.radii.control}px;
   padding: 2px;
 `;
@@ -485,6 +485,28 @@ const HoverBtn = styled.button<{ $color?: string }>`
   &:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+`;
+
+/* ── Toolbar Feedback ── */
+
+const ToolbarFeedbackArea = styled.div`
+  padding: 0 ${({ theme }) => theme.spacing.md}px;
+  min-height: 0;
+`;
+
+const FeedbackMsg = styled.span<{ $error?: boolean }>`
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: ${({ $error, theme }) => $error ? theme.colors.red : '#16a34a'};
+  padding: 4px 0;
+  animation: feedbackFade 4s ease-out forwards;
+  @keyframes feedbackFade {
+    0% { opacity: 0; transform: translateY(-4px); }
+    10% { opacity: 1; transform: translateY(0); }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
   }
 `;
 
@@ -571,15 +593,81 @@ const BulkBtn = styled.button<{ $color: string }>`
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 `;
 
-/* ── Detail View ── */
+/* ── Detail Floating Modal ── */
 
-const DetailToolbar = styled.div`
+const DetailOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.45)'};
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
+  justify-content: center;
+  z-index: 1000;
+  animation: detailFadeIn 0.2s ease-out;
+  @keyframes detailFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+`;
+
+const DetailModal = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.card + 2}px;
+  width: 90vw;
+  max-width: 880px;
+  height: 85vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: ${({ theme }) => theme.mode === 'dark'
+    ? '0 20px 60px rgba(0,0,0,0.5)'
+    : '0 20px 60px rgba(0,0,0,0.18)'};
+  animation: detailSlideUp 0.25s ease-out;
+  overflow: hidden;
+  @keyframes detailSlideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  ${media.mobile} {
+    width: 95vw;
+    height: 92vh;
+  }
+`;
+
+const DetailModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  min-height: 48px;
+  flex-shrink: 0;
+  gap: ${({ theme }) => theme.spacing.md}px;
+`;
+
+const DetailModalHeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+`;
+
+const DetailModalClose = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.blue};
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  &:hover {
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'};
+  }
 `;
 
 const DetailToolbarBtn = styled.button<{ $color?: string }>`
@@ -594,6 +682,7 @@ const DetailToolbarBtn = styled.button<{ $color?: string }>`
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
+  flex-shrink: 0;
   transition: background 0.12s;
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceMuted};
@@ -604,31 +693,33 @@ const DetailToolbarBtn = styled.button<{ $color?: string }>`
   }
 `;
 
-const DetailWrap = styled.div`
+const SendBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  background: #10b981;
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+  &:hover { opacity: 0.85; }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+`;
+
+const DetailModalBody = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
+  padding: ${({ theme }) => theme.spacing.lg}px;
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md}px;
   ${media.mobile} {
-    padding: ${({ theme }) => theme.spacing.sm}px;
-  }
-`;
-
-const BackLink = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.blue};
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 0;
-  &:hover {
-    text-decoration: underline;
+    padding: ${({ theme }) => theme.spacing.md}px;
   }
 `;
 
@@ -786,13 +877,20 @@ const ModalHeader = styled.div`
 `;
 
 const CloseBtn = styled.button`
-  background: none;
+  background: transparent;
   border: none;
-  font-size: 1.25rem;
   cursor: pointer;
-  color: ${({ theme }) => theme.colors.textTertiary};
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.colors.blue};
+  flex-shrink: 0;
+  transition: all 0.15s;
   &:hover {
-    color: ${({ theme }) => theme.colors.textPrimary};
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'};
   }
 `;
 
@@ -925,14 +1023,11 @@ const FooterLinks = styled.div`
 
 const LIMIT = 10;
 
-type ViewType = 'list' | 'detail';
-
 const EmailQueue: React.FC = () => {
   const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [view, setView] = useState<ViewType>('list');
   const [activeEmail, setActiveEmail] = useState<EmailItem | null>(null);
   const [modalPreview, setModalPreview] = useState<EmailItem | null>(null);
   const [pageTab, setPageTab] = useState<'queue' | 'templates'>('queue');
@@ -1028,7 +1123,7 @@ const EmailQueue: React.FC = () => {
 
   // Fetch lead reply data when viewing detail of a sent email
   useEffect(() => {
-    if (view !== 'detail' || !activeEmail?.lead_id) {
+    if (!activeEmail?.lead_id) {
       setLeadReply(null);
       return;
     }
@@ -1039,7 +1134,7 @@ const EmailQueue: React.FC = () => {
         else setLeadReply(null);
       })
       .catch(() => setLeadReply(null));
-  }, [view, activeEmail?.lead_id]);
+  }, [activeEmail?.lead_id]);
 
   const apiEmails: EmailItem[] = data?.data ?? [];
   // 唔再 fall back 去 MOCK_EMAILS —— backend 失敗應該 user-facing 出 error，
@@ -1081,11 +1176,9 @@ const EmailQueue: React.FC = () => {
 
   const openDetail = (item: EmailItem) => {
     setActiveEmail(item);
-    setView('detail');
   };
 
-  const goList = () => {
-    setView('list');
+  const closeDetail = () => {
     setActiveEmail(null);
   };
 
@@ -1133,7 +1226,7 @@ const EmailQueue: React.FC = () => {
             onClick={() => {
               setStatusFilter(f.filterValue);
               setPage(1);
-              if (view === 'detail') goList();
+              closeDetail();
             }}
           >
             <I d={(icons as Record<string, string>)[f.icon] || icons.inbox} />
@@ -1179,11 +1272,6 @@ const EmailQueue: React.FC = () => {
             <I d={icons.envelope} />
             {replyChecking ? '檢查中…' : '檢查回覆'}
           </DetailToolbarBtn>
-          {replyCheckMsg && (
-            <span style={{ fontSize: '0.75rem', color: replyCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a', marginLeft: 4 }}>
-              {replyCheckMsg}
-            </span>
-          )}
           <DetailToolbarBtn
             $color="#d97706"
             onClick={handleCheckFollowups}
@@ -1193,11 +1281,6 @@ const EmailQueue: React.FC = () => {
             <I d={icons.clock} />
             {followupChecking ? '檢查中…' : '檢查跟進'}
           </DetailToolbarBtn>
-          {followupCheckMsg && (
-            <span style={{ fontSize: '0.75rem', color: followupCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a', marginLeft: 4 }}>
-              {followupCheckMsg}
-            </span>
-          )}
         </ToolbarLeft>
         <ToolbarRight>
           {total > 0 && (
@@ -1213,6 +1296,20 @@ const EmailQueue: React.FC = () => {
           </IconBtn>
         </ToolbarRight>
       </Toolbar>
+      {(replyCheckMsg || followupCheckMsg) && (
+        <ToolbarFeedbackArea>
+          {replyCheckMsg && (
+            <FeedbackMsg key={replyCheckMsg} $error={replyCheckMsg.startsWith('觸發失敗')}>
+              {replyCheckMsg}
+            </FeedbackMsg>
+          )}
+          {followupCheckMsg && (
+            <FeedbackMsg key={followupCheckMsg} $error={followupCheckMsg.startsWith('觸發失敗')} style={{ marginLeft: replyCheckMsg ? 12 : 0 }}>
+              {followupCheckMsg}
+            </FeedbackMsg>
+          )}
+        </ToolbarFeedbackArea>
+      )}
 
       <EmailListWrap>
         {error ? (
@@ -1258,7 +1355,7 @@ const EmailQueue: React.FC = () => {
                 <BulkBtn $color="#2563eb" onClick={handleBulkApprove} disabled={bulkApprove.isPending}>
                   Approve ({selectedIds.size})
                 </BulkBtn>
-                <BulkBtn $color="#dc2626" onClick={handleBulkReject} disabled={bulkReject.isPending}>
+                <BulkBtn $color="#ef4444" onClick={handleBulkReject} disabled={bulkReject.isPending}>
                   Reject ({selectedIds.size})
                 </BulkBtn>
                 <BulkBtn
@@ -1361,7 +1458,7 @@ const EmailQueue: React.FC = () => {
     </MainPanel>
   );
 
-  /* ── Detail View ── */
+  /* ── Detail Floating Modal ── */
 
   const renderDetail = () => {
     if (!activeEmail) return null;
@@ -1372,123 +1469,126 @@ const EmailQueue: React.FC = () => {
     const status = item.status || 'pending';
 
     return (
-      <MainPanel>
-        <DetailToolbar>
-          {status === 'pending' && (
-            <>
-              <DetailToolbarBtn
-                $color="#2563eb"
-                onClick={() => {
-                  approve.mutate(item._id);
-                  goList();
-                }}
-                disabled={approve.isPending}
-              >
-                <I d={icons.check} />
-                {t('emailQueue.approve')}
-              </DetailToolbarBtn>
-              <DetailToolbarBtn
-                $color="#dc2626"
-                onClick={() => {
-                  handleReject(item._id);
-                  goList();
-                }}
-                disabled={reject.isPending}
-              >
-                <I d={icons.x} />
-                {t('emailQueue.reject')}
-              </DetailToolbarBtn>
-            </>
-          )}
-          {status === 'approved' && (
-            <DetailToolbarBtn
-              $color="#3b82f6"
-              onClick={() => {
-                send.mutate(item._id);
-                goList();
-              }}
-              disabled={send.isPending}
-            >
-              <I d={icons.send} />
-              {t('emailQueue.send')}
-            </DetailToolbarBtn>
-          )}
-        </DetailToolbar>
+      <DetailOverlay onClick={closeDetail}>
+        <DetailModal onClick={(e) => e.stopPropagation()}>
+          <DetailModalHeader>
+            <DetailModalHeaderLeft>
+              <AvatarCircle $bg={avatarColor}>{initial}</AvatarCircle>
+              <SubjectHeading style={{ fontSize: '1.05rem' }}>
+                {item.subject || t('emailQueue.noSubject')}
+              </SubjectHeading>
+            </DetailModalHeaderLeft>
+            <DetailModalHeaderLeft style={{ flex: 'none', gap: 6 }}>
+              {status === 'pending' && (
+                <>
+                  <DetailToolbarBtn
+                    $color="#2563eb"
+                    onClick={() => {
+                      approve.mutate(item._id);
+                      closeDetail();
+                    }}
+                    disabled={approve.isPending}
+                  >
+                    <I d={icons.check} />
+                    {t('emailQueue.approve')}
+                  </DetailToolbarBtn>
+                  <DetailToolbarBtn
+                    $color="#ef4444"
+                    onClick={() => {
+                      handleReject(item._id);
+                      closeDetail();
+                    }}
+                    disabled={reject.isPending}
+                    style={{ background: '#fef2f2', border: '1px solid #fecaca' }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    Reject
+                  </DetailToolbarBtn>
+                </>
+              )}
+              {status === 'approved' && (
+                <SendBtn
+                  onClick={() => {
+                    send.mutate(item._id);
+                    closeDetail();
+                  }}
+                  disabled={send.isPending}
+                >
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {t('emailQueue.send')}
+                </SendBtn>
+              )}
+              <DetailModalClose onClick={closeDetail}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </DetailModalClose>
+            </DetailModalHeaderLeft>
+          </DetailModalHeader>
 
-        <DetailWrap>
-          <BackLink onClick={goList}>
-            <I d={icons.arrowLeft} />
-            {t('emailQueue.backToList')}
-          </BackLink>
+          <DetailModalBody>
+            <DetailSenderRow>
+              <DetailSenderInfo>
+                <DetailSenderName>{displayName}</DetailSenderName>
+                {item.to_email && <DetailSenderEmail>&lt;{item.to_email}&gt;</DetailSenderEmail>}
+              </DetailSenderInfo>
+              <DetailDateRight>
+                <StatusBadge $status={status}>{status}</StatusBadge>
+                <span>{formatDateFull(item.created_at)}</span>
+              </DetailDateRight>
+            </DetailSenderRow>
 
-          <SubjectHeading>{item.subject || t('emailQueue.noSubject')}</SubjectHeading>
+            <DetailMeta>
+              <span>寄件人: {import.meta.env.VITE_SMTP_FROM || '—'}</span>
+              <span>收件人: {item.to_email || import.meta.env.VITE_TEST_RECIPIENT || '—'}</span>
+              {item.error?.rejected_reason && <span>{t('emailQueue.reason')} {item.error?.rejected_reason}</span>}
+              {item.lead_id && <span>{t('emailQueue.lead')} {item.lead_id}</span>}
+            </DetailMeta>
 
-          <DetailSenderRow>
-            <AvatarCircle $bg={avatarColor}>{initial}</AvatarCircle>
-            <DetailSenderInfo>
-              <DetailSenderName>{displayName}</DetailSenderName>
-              {item.to_email && <DetailSenderEmail>&lt;{item.to_email}&gt;</DetailSenderEmail>}
-            </DetailSenderInfo>
-            <DetailDateRight>
-              <span>{formatDateFull(item.created_at)}</span>
-            </DetailDateRight>
-          </DetailSenderRow>
+            <EmailBodyText dangerouslySetInnerHTML={{ __html: item.body || t('emailQueue.emptyBody') }} />
 
-          <DetailMeta>
-            <span>寄件人: {import.meta.env.VITE_SMTP_FROM || '—'}</span>
-            <span>收件人: {item.to_email || import.meta.env.VITE_TEST_RECIPIENT || '—'}</span>
-            <span>
-              {t('emailQueue.status')} <StatusBadge $status={status}>{status}</StatusBadge>
-            </span>
-            {item.error?.rejected_reason && <span>{t('emailQueue.reason')} {item.error?.rejected_reason}</span>}
-            {item.lead_id && <span>{t('emailQueue.lead')} {item.lead_id}</span>}
-          </DetailMeta>
-
-          <EmailBodyText dangerouslySetInnerHTML={{ __html: item.body || t('emailQueue.emptyBody') }} />
-
-          {/* Lead Reply Section */}
-          {leadReply && (() => {
-            const cat = REPLY_CATEGORY_LABEL[leadReply._reply_category || ''] || { text: leadReply._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
-            return (
-              <ReplySection>
-                <ReplySectionHeader>
-                  📩 對方回覆
-                  <ReplyCategoryBadge $bg={cat.bg} $fg={cat.fg}>{cat.text}</ReplyCategoryBadge>
-                  {leadReply._reply_at && (
-                    <span style={{ fontSize: '0.75rem', fontWeight: 400, color: '#94a3b8', marginLeft: 'auto' }}>
-                      {new Date(leadReply._reply_at).toLocaleString('zh-HK')}
-                    </span>
-                  )}
-                </ReplySectionHeader>
-                <ReplyBody>
-                  <ReplyFieldRow>
-                    <ReplyField>
-                      <ReplyFieldLabel>摘要</ReplyFieldLabel>
-                      <ReplyFieldValue>{leadReply._reply_summary || '—'}</ReplyFieldValue>
-                    </ReplyField>
-                  </ReplyFieldRow>
-                  <ReplyFieldRow>
-                    <ReplyField>
-                      <ReplyFieldLabel>情緒</ReplyFieldLabel>
-                      <ReplyFieldValue>{leadReply._reply_sentiment || '—'}</ReplyFieldValue>
-                    </ReplyField>
-                    <ReplyField>
-                      <ReplyFieldLabel>回覆方式</ReplyFieldLabel>
-                      <ReplyFieldValue>{leadReply._reply_via || '—'}</ReplyFieldValue>
-                    </ReplyField>
-                  </ReplyFieldRow>
-                  <ReplyFieldRow>
-                    <ReplyField>
-                      <ReplyFieldLabel>建議下一步</ReplyFieldLabel>
-                      <ReplyFieldValue>{leadReply._reply_next_step || '—'}</ReplyFieldValue>
-                    </ReplyField>
-                  </ReplyFieldRow>
-                </ReplyBody>
-              </ReplySection>
-            );
-          })()}
-        </DetailWrap>
-      </MainPanel>
+            {/* Lead Reply Section */}
+            {leadReply && (() => {
+              const cat = REPLY_CATEGORY_LABEL[leadReply._reply_category || ''] || { text: leadReply._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
+              return (
+                <ReplySection>
+                  <ReplySectionHeader>
+                    📩 對方回覆
+                    <ReplyCategoryBadge $bg={cat.bg} $fg={cat.fg}>{cat.text}</ReplyCategoryBadge>
+                    {leadReply._reply_at && (
+                      <span style={{ fontSize: '0.75rem', fontWeight: 400, color: '#94a3b8', marginLeft: 'auto' }}>
+                        {new Date(leadReply._reply_at).toLocaleString('zh-HK')}
+                      </span>
+                    )}
+                  </ReplySectionHeader>
+                  <ReplyBody>
+                    <ReplyFieldRow>
+                      <ReplyField>
+                        <ReplyFieldLabel>摘要</ReplyFieldLabel>
+                        <ReplyFieldValue>{leadReply._reply_summary || '—'}</ReplyFieldValue>
+                      </ReplyField>
+                    </ReplyFieldRow>
+                    <ReplyFieldRow>
+                      <ReplyField>
+                        <ReplyFieldLabel>情緒</ReplyFieldLabel>
+                        <ReplyFieldValue>{leadReply._reply_sentiment || '—'}</ReplyFieldValue>
+                      </ReplyField>
+                      <ReplyField>
+                        <ReplyFieldLabel>回覆方式</ReplyFieldLabel>
+                        <ReplyFieldValue>{leadReply._reply_via || '—'}</ReplyFieldValue>
+                      </ReplyField>
+                    </ReplyFieldRow>
+                    <ReplyFieldRow>
+                      <ReplyField>
+                        <ReplyFieldLabel>建議下一步</ReplyFieldLabel>
+                        <ReplyFieldValue>{leadReply._reply_next_step || '—'}</ReplyFieldValue>
+                      </ReplyField>
+                    </ReplyFieldRow>
+                  </ReplyBody>
+                </ReplySection>
+              );
+            })()}
+          </DetailModalBody>
+        </DetailModal>
+      </DetailOverlay>
     );
   };
 
@@ -1504,7 +1604,7 @@ const EmailQueue: React.FC = () => {
         <Modal onClick={(e) => e.stopPropagation()}>
           <ModalHeader>
             <h2>{item.subject || t('emailQueue.noSubject')}</h2>
-            <CloseBtn onClick={() => setModalPreview(null)}>&times;</CloseBtn>
+            <CloseBtn onClick={() => setModalPreview(null)}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
           </ModalHeader>
           <ModalBody>
             <ModalMeta>
@@ -1532,28 +1632,30 @@ const EmailQueue: React.FC = () => {
                   {t('emailQueue.approve')}
                 </ActionButton>
                 <ActionButton
-                  $color="#dc2626"
+                  $color="#ef4444"
                   onClick={() => {
                     handleReject(item._id);
                     setModalPreview(null);
                   }}
                   disabled={reject.isPending}
+                  style={{ background: '#fef2f2', border: '1px solid #fecaca' }}
                 >
-                  {t('emailQueue.reject')}
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  Reject
                 </ActionButton>
               </>
             )}
             {status === 'approved' && (
-              <ActionButton
-                $color="#3b82f6"
+              <SendBtn
                 onClick={() => {
                   send.mutate(item._id);
                   setModalPreview(null);
                 }}
                 disabled={send.isPending}
               >
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 {t('emailQueue.send')}
-              </ActionButton>
+              </SendBtn>
             )}
             <OutlineBtn onClick={() => setModalPreview(null)}>{t('common.close')}</OutlineBtn>
           </ModalFooter>
@@ -1577,9 +1679,9 @@ const EmailQueue: React.FC = () => {
         <>
           <Card>
             {renderSidebar()}
-            {view === 'list' && renderList()}
-            {view === 'detail' && renderDetail()}
+            {renderList()}
           </Card>
+          {renderDetail()}
           {renderModal()}
         </>
       ) : (

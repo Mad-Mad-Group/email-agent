@@ -270,21 +270,20 @@ const PanelHeaderSub = styled.span`
 `;
 
 const CloseBtn = styled.button`
-  background: none;
+  background: transparent;
   border: none;
   cursor: pointer;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  font-size: 18px;
-  transition: background 0.15s;
+  color: ${({ theme }) => theme.colors.blue};
+  flex-shrink: 0;
+  transition: all 0.15s;
   &:hover {
-    background: ${({ theme }) => theme.colors.canvas};
-    color: ${({ theme }) => theme.colors.textPrimary};
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'};
   }
 `;
 
@@ -546,7 +545,7 @@ const AgentPanel: React.FC = () => {
                 <PanelHeaderTitle>{selectedAgent.name}</PanelHeaderTitle>
                 <PanelHeaderSub>{selectedAgent.type} · {selectedAgent.lastRun}</PanelHeaderSub>
               </PanelHeaderLeft>
-              <CloseBtn onClick={handleClose} title="Close">×</CloseBtn>
+              <CloseBtn onClick={handleClose} title="Close"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
             </PanelHeader>
 
             <TimelineBody>

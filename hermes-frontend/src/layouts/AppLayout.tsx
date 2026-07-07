@@ -2,7 +2,6 @@ import React, { useState, useCallback, useEffect } from 'react';
 import styled, { css } from 'styled-components';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Toaster } from 'react-hot-toast';
 import Sidebar from '../components/Sidebar';
 import Topbar from '../components/Topbar';
 import { media } from '../styles/media';
@@ -168,15 +167,6 @@ const AppLayout: React.FC = () => {
 
   return (
     <Shell $collapsed={sidebarCollapsed}>
-      <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 3000,
-          style: { fontSize: '0.875rem', borderRadius: '8px', padding: '10px 16px' },
-          success: { iconTheme: { primary: '#16a34a', secondary: '#fff' } },
-          error: { duration: 5000, iconTheme: { primary: '#dc2626', secondary: '#fff' } },
-        }}
-      />
       <MobileHamburgerBtn $open={mobileOpen} onClick={toggleMobile} aria-label="Toggle menu">
         <MobileHamburgerLines $open={mobileOpen}>
           <HamburgerLine />

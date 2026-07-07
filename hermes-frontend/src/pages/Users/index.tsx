@@ -307,14 +307,21 @@ const DpUserName = styled.h2`
 `;
 
 const DpCloseBtn = styled.button`
-  background: none;
+  background: transparent;
   border: none;
-  font-size: 1.4rem;
-  line-height: 1;
   cursor: pointer;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  padding: 4px;
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.colors.blue};
+  flex-shrink: 0;
+  transition: all 0.15s;
+  &:hover {
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'};
+  }
 `;
 
 const DpBody = styled.div`
@@ -655,7 +662,7 @@ const Users: React.FC = () => {
                   {selectedUser.role}
                 </RoleBadge>
               </DpHeaderInfo>
-              <DpCloseBtn onClick={handleCloseDetail}>&times;</DpCloseBtn>
+              <DpCloseBtn onClick={handleCloseDetail}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></DpCloseBtn>
             </DpHeader>
 
             <DpBody>

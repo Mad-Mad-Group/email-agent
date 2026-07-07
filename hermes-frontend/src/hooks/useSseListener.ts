@@ -1,7 +1,5 @@
 import { useEffect, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
-
 const SSE_URL =
   (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '') + '/events';
 
@@ -28,10 +26,9 @@ export function useSseListener() {
 
     es.addEventListener('notification', (e) => {
       qc.invalidateQueries({ queryKey: ['notifications'] });
-      // 顯示 toast
       try {
         const data = JSON.parse(e.data);
-        if (data?.title) toast(data.title, { icon: '🔔' });
+        if (data?.title) console.info('[notification]', data.title);
       } catch { /* ignore */ }
     });
 

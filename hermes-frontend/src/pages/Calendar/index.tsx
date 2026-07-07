@@ -166,9 +166,12 @@ const DayDetailTitle = styled.h3`
 `;
 
 const DayDetailClose = styled.button`
-  background: none; border: none; font-size: 1.2rem; cursor: pointer;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+  background: transparent; border: none; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: ${({ theme }) => theme.colors.blue};
+  flex-shrink: 0; transition: all 0.15s;
+  &:hover { background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'}; }
 `;
 
 const DayEventList = styled.div`
@@ -363,7 +366,7 @@ const Calendar: React.FC = () => {
           <DayDetailWrap>
             <DayDetailHeader>
               <DayDetailTitle>{MONTHS[month]} {selectedDay}, {year} 日程</DayDetailTitle>
-              <DayDetailClose onClick={() => setSelectedDay(null)}>&times;</DayDetailClose>
+              <DayDetailClose onClick={() => setSelectedDay(null)}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></DayDetailClose>
             </DayDetailHeader>
             {dayEvents.length > 0 ? (
               <DayEventList>

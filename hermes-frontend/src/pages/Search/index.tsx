@@ -835,14 +835,21 @@ const DpTypeBadge = styled.span`
 `;
 
 const DpCloseBtn = styled.button`
-  background: none;
+  background: transparent;
   border: none;
-  font-size: 1.4rem;
-  line-height: 1;
   cursor: pointer;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  padding: 4px;
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.colors.blue};
+  flex-shrink: 0;
+  transition: all 0.15s;
+  &:hover {
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'};
+  }
 `;
 
 const DpBody = styled.div`

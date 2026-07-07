@@ -160,9 +160,12 @@ const ModalHeader = styled.div`
 `;
 
 const CloseBtn = styled.button`
-  background: none; border: none; font-size: 1.25rem; cursor: pointer;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+  background: transparent; border: none; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: ${({ theme }) => theme.colors.blue};
+  flex-shrink: 0; transition: all 0.15s;
+  &:hover { background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'}; }
 `;
 
 const ModalBody = styled.div`
@@ -368,7 +371,7 @@ const Customers: React.FC = () => {
           <Modal onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
               <h2>{t('customers.addCustomer')}</h2>
-              <CloseBtn onClick={() => setModalOpen(false)}>&times;</CloseBtn>
+              <CloseBtn onClick={() => setModalOpen(false)}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
             </ModalHeader>
             <ModalBody>
               <FormRow>

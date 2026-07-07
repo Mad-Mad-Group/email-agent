@@ -651,7 +651,7 @@ const Overlay = styled.div`
 const FloatingPanel = styled.div`
   position: fixed; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 1201; width: 460px; max-height: 80vh;
+  z-index: 1201; width: 680px; max-height: 88vh;
   background: ${({ theme }) => theme.colors.surface};
   border-radius: 14px;
   box-shadow: 0 24px 80px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.1), 0 0 0 1px ${({ theme }) => theme.colors.border};
@@ -683,12 +683,12 @@ const PanelSub = styled.span`
 `;
 
 const CloseBtn = styled.button`
-  background: none; border: none; cursor: pointer;
-  width: 28px; height: 28px; border-radius: 6px;
+  background: transparent; border: none; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  font-size: 18px; transition: background 0.15s;
-  &:hover { background: ${({ theme }) => theme.colors.canvas}; color: ${({ theme }) => theme.colors.textPrimary}; }
+  color: ${({ theme }) => theme.colors.blue};
+  flex-shrink: 0; transition: all 0.15s;
+  &:hover { background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'}; }
 `;
 
 const WfBody = styled.div`
@@ -697,13 +697,6 @@ const WfBody = styled.div`
 
 const WfList = styled.ul`
   list-style: none; margin: 0; padding: 0; position: relative;
-  /* Vertical connector line — centered on dot column (44px time + 12px gap + 6px half-dot = 62px) */
-  &::before {
-    content: ''; position: absolute; left: 61px;
-    top: 18px; bottom: 18px; width: 2px;
-    background: ${({ theme }) => theme.colors.blue};
-    border-radius: 1px;
-  }
 `;
 
 const pulseGlow = keyframes`
@@ -716,6 +709,26 @@ const WfItem = styled.li<{ $s: 'done'|'active'|'pending' }>`
   padding: 8px 0; position: relative;
   transition: opacity 0.2s;
   ${({ $s }) => $s === 'pending' && css`opacity: 0.45;`}
+
+  /* Per-item connecting line to next item */
+  &::after {
+    content: '';
+    position: absolute;
+    left: 62px;
+    top: 16px;
+    bottom: -8px;
+    width: 3px;
+    border-radius: 1.5px;
+    background: ${({ $s, theme }) =>
+      $s === 'done' ? theme.colors.green :
+      $s === 'active' ? theme.colors.blue :
+      theme.colors.border};
+    ${({ $s, theme }) => ($s === 'done' || $s === 'active') && `
+      box-shadow: 0 0 6px ${$s === 'done' ? theme.colors.green : theme.colors.blue}66,
+                  0 0 12px ${$s === 'done' ? theme.colors.green : theme.colors.blue}33;
+    `}
+  }
+  &:last-child::after { display: none; }
 `;
 
 const WfTime = styled.span`
@@ -734,14 +747,12 @@ const WfDot = styled.div<{ $s: 'done'|'active'|'pending' }>`
     $s === 'done' ? theme.colors.green :
     $s === 'active' ? theme.colors.blue :
     theme.colors.border};
-  border: 2px solid ${({ $s, theme }) =>
-    $s === 'done' ? theme.colors.green :
-    $s === 'active' ? theme.colors.blue :
-    theme.colors.border};
-  box-sizing: border-box;
+  ${({ $s, theme }) => ($s === 'done' || $s === 'active') && `
+    box-shadow: 0 0 8px ${$s === 'done' ? theme.colors.green : theme.colors.blue}88,
+                0 0 16px ${$s === 'done' ? theme.colors.green : theme.colors.blue}44;
+  `}
   ${({ $s }) => $s === 'active' && css`
     animation: ${pulseGlow} 2s ease-in-out infinite;
-    background: ${({ theme }: any) => theme.colors.blue};
   `}
   ${({ $s }) => $s === 'done' && css`
     &::after {
@@ -754,6 +765,7 @@ const WfDot = styled.div<{ $s: 'done'|'active'|'pending' }>`
   ${({ $s }) => $s === 'pending' && css`
     background: ${({ theme }: any) => theme.colors.surface};
     border: 2px solid ${({ theme }: any) => theme.colors.border};
+    box-sizing: border-box;
   `}
 `;
 
@@ -1000,7 +1012,7 @@ const Tasks: React.FC = () => {
                   <PanelTitle>{title}</PanelTitle>
                   <PanelSub>{skill && `${t(`tasks.skills.${skill}`, { defaultValue: skill })} · `}{t(`tasks.${status}`, { defaultValue: status })}</PanelSub>
                 </PanelHeadLeft>
-                <CloseBtn onClick={handleClose} title={t('common.close')}>×</CloseBtn>
+                <CloseBtn onClick={handleClose} title={t('common.close')}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
               </PanelHead>
 
               <WfBody>
