@@ -252,48 +252,121 @@ const ActionCount = styled.span<{ $bg: string; $fg: string }>`
 
 interface BarData { label: string; value: number; color: string }
 
+/* dynamic scale: leave headroom so bars never look full; e.g. 20 → 100 */
+const niceCeil = (v: number): number => {
+  if (v <= 0) return 5;
+  const steps = [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 50000, 100000];
+  const target = v * 3;
+  return steps.find(s => s >= target) ?? Math.ceil(target);
+};
+
+const BarChartTooltip = styled.div<{ $x: number; $y: number; $visible: boolean }>`
+  position: absolute;
+  left: ${({ $x }) => $x}px;
+  top: ${({ $y }) => $y}px;
+  transform: translate(-50%, -100%);
+  background: #1e293b;
+  color: #fff;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  pointer-events: none;
+  white-space: nowrap;
+  opacity: ${({ $visible }) => $visible ? 1 : 0};
+  transition: opacity 0.12s;
+  z-index: 10;
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 4px solid transparent;
+    border-top-color: #1e293b;
+  }
+`;
+
+const BarChartWrap = styled.div`position: relative;`;
+
 const BarChart: React.FC<{ bars: BarData[] }> = ({ bars }) => {
+  const [hover, setHover] = useState<{ idx: number; x: number; y: number } | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
+
   const w = 440;
-  const h = 160;
+  const h = 180;
   const pl = 52;   /* left for labels */
-  const pr = 32;   /* right for value text */
+  const pr = 12;
   const pt = 6;
-  const pb = 6;
+  const pb = 22;   /* bottom for axis ticks */
   const chartW = w - pl - pr;
   const chartH = h - pt - pb;
-  const maxVal = Math.max(...bars.map(b => b.value), 1);
-  const barH = Math.min(22, (chartH / bars.length) * 0.58);
+  const rawMax = Math.max(...bars.map(b => b.value));
+  const maxVal = niceCeil(rawMax);
+  const barH = Math.min(20, (chartH / bars.length) * 0.55);
   const gap = chartH / bars.length;
 
-  return (
-    <svg width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }}>
-      <defs>
-        {bars.map((b, i) => (
-          <linearGradient key={i} id={`bar${i}`} x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor={b.color} stopOpacity="0.65" />
-            <stop offset="100%" stopColor={b.color} stopOpacity="0.95" />
-          </linearGradient>
-        ))}
-      </defs>
+  /* axis ticks: 0 … maxVal in ~4–5 steps */
+  const tickCount = maxVal <= 5 ? maxVal : Math.min(5, maxVal);
+  const tickStep = maxVal / tickCount;
+  const ticks: number[] = [];
+  for (let i = 0; i <= tickCount; i++) ticks.push(Math.round(tickStep * i));
 
-      {bars.map((b, i) => {
-        const y = pt + gap * i + (gap - barH) / 2;
-        const barW = Math.max((b.value / maxVal) * chartW, 6);
-        const r = 5;
-        return (
-          <g key={i}>
-            {/* bg track */}
-            <rect x={pl} y={y} width={chartW} height={barH} rx={r} ry={r} fill="#f1f5f9" />
-            {/* bar */}
-            <rect x={pl} y={y} width={barW} height={barH} rx={r} ry={r} fill={`url(#bar${i})`} />
-            {/* label left */}
-            <text x={pl - 8} y={y + barH / 2} textAnchor="end" fill="#64748b" fontSize="9" fontWeight="500" dominantBaseline="central">{b.label}</text>
-            {/* value right */}
-            <text x={pl + barW + 8} y={y + barH / 2} textAnchor="start" fill={b.color} fontSize="9.5" fontWeight="700" dominantBaseline="central">{b.value}</text>
-          </g>
-        );
-      })}
-    </svg>
+  const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>, idx: number) => {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    setHover({ idx, x: e.clientX - rect.left, y: e.clientY - rect.top - 6 });
+  }, []);
+
+  return (
+    <BarChartWrap>
+      {hover !== null && (
+        <BarChartTooltip $x={hover.x} $y={hover.y} $visible>
+          {bars[hover.idx].label}: {bars[hover.idx].value}
+        </BarChartTooltip>
+      )}
+      <svg ref={svgRef} width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }}>
+        <defs>
+          {bars.map((b, i) => (
+            <linearGradient key={i} id={`bar${i}`} x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor={b.color} stopOpacity="0.65" />
+              <stop offset="100%" stopColor={b.color} stopOpacity="0.95" />
+            </linearGradient>
+          ))}
+        </defs>
+
+        {/* axis ticks + grid lines */}
+        {ticks.map((tick, i) => {
+          const x = pl + (tick / maxVal) * chartW;
+          return (
+            <g key={`tick${i}`}>
+              <line x1={x} y1={pt} x2={x} y2={pt + chartH} stroke="#e2e8f0" strokeWidth="0.5" strokeDasharray={i === 0 ? undefined : '3,3'} />
+              <text x={x} y={pt + chartH + 14} textAnchor="middle" fill="#94a3b8" fontSize="8" fontWeight="400">{tick}</text>
+            </g>
+          );
+        })}
+
+        {bars.map((b, i) => {
+          const y = pt + gap * i + (gap - barH) / 2;
+          const barW = maxVal > 0 ? Math.max((b.value / maxVal) * chartW, b.value > 0 ? 6 : 0) : 0;
+          const r = 5;
+          return (
+            <g key={i} style={{ cursor: 'pointer' }}
+               onMouseMove={(e) => handleMouseMove(e, i)}
+               onMouseLeave={() => setHover(null)}>
+              {/* hover hit area */}
+              <rect x={0} y={pt + gap * i} width={w} height={gap} fill="transparent" />
+              {/* bg track */}
+              <rect x={pl} y={y} width={chartW} height={barH} rx={r} ry={r} fill="#f1f5f9" />
+              {/* bar */}
+              <rect x={pl} y={y} width={barW} height={barH} rx={r} ry={r} fill={`url(#bar${i})`} />
+              {/* label left */}
+              <text x={pl - 6} y={y + barH / 2} textAnchor="end" fill="#64748b" fontSize="8" fontWeight="500" dominantBaseline="central">{b.label}</text>
+            </g>
+          );
+        })}
+      </svg>
+    </BarChartWrap>
   );
 };
 
