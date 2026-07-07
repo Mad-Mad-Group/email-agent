@@ -221,6 +221,22 @@ const MAX_IDLE = Number(process.env.WORKER_MAX_IDLE || 0); // 0 = 永遠
 let token = '';
 const log = (...a) => console.log(`[agent ${AGENT_ID}]`, ...a);
 const nowIso = () => new Date().toISOString();
+/** 寫入通知記錄到 MongoDB */
+async function notify(db, title, opts = {}) {
+    try {
+        await db.collection('notifications').insertOne({
+            title,
+            message: opts.message,
+            type: opts.type ?? 'system',
+            ref_id: opts.ref_id,
+            read: false,
+            created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
+        });
+    }
+    catch (e) {
+        log('⚠ notify 寫入失敗:', e);
+    }
+}
 /**
  * 將 lead 嘅真實公司資料組成一段 context，畀 LLM 參考。
  * 避免 AI 冇資料亂作公司背景。
@@ -742,6 +758,12 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
             break;
         }
     }
+    if (ids.length > 0) {
+        await notify(db, `搜尋完成：搵到 ${ids.length} 個新 lead`, {
+            message: `關鍵字「${p.keyword}」在「${p.location}」搵到 ${ids.length} 個新結果，跳過 ${totalSkipped} 個重複`,
+            type: 'lead',
+        });
+    }
     return { created_leads: ids.length, lead_object_ids: ids, skipped: totalSkipped };
 }
 /**
@@ -1085,6 +1107,11 @@ ${brand_1.BRAND_SIGNATURE}
         _via: 'hermes',
         created_at: nowIso(),
     });
+    await notify(db, `新草稿：${lead.company_name}`, {
+        message: `主題：${c.subject}`,
+        type: 'email',
+        ref_id: lead.lead_id,
+    });
     return { drafted: true, via: 'hermes', subject: c.subject };
 }
 /** 檢查邊啲 contacted leads 超過 5 日冇回覆，逐個派 followup draft task */
@@ -1304,6 +1331,11 @@ async function doSend(p, db) {
     await db
         .collection('leads')
         .updateOne({ _id }, { $set: { status: 'contacted', _email_sent: true, _last_sent_at: nowIso() } });
+    await notify(db, `郵件已發送：${lead.company_name}`, {
+        message: `已發送至 ${to}`,
+        type: 'email',
+        ref_id: lead.lead_id,
+    });
     return { sent: true, to };
 }
 // ───────── main loop ─────────
@@ -1366,6 +1398,11 @@ async function main() {
             // (DB 入面個 task 仲 stay 在 running，stale-minutes cron 之後會 requeue)。
             try {
                 await failTask(task.task_id, e?.message ?? String(e));
+                await notify(db, `任務失敗：${task.title || task.task_id}`, {
+                    message: e?.message ?? String(e),
+                    type: 'task',
+                    ref_id: task.task_id,
+                });
             }
             catch (e2) {
                 log(`⚠ failTask 都失敗咗 (${task.task_id}) — task 留喺 running，等 reap-stalled-tasks cron requeue:`, e2?.message ?? e2);
