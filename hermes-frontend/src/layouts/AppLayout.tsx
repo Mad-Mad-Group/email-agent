@@ -24,13 +24,13 @@ const Overlay = styled.div<{ $open: boolean }>`
 
 const Shell = styled.div<{ $collapsed?: boolean }>`
   display: grid;
-  grid-template-columns: ${({ $collapsed }) => $collapsed ? '61px' : '225px'} 1fr;
+  grid-template-columns: ${({ $collapsed }) => $collapsed ? '61px' : '225px'} minmax(0, 1fr);
   min-height: 100vh;
   background: ${({ theme }) => theme.colors.canvas};
   transition: grid-template-columns 0.3s ease;
 
   ${media.tablet} {
-    grid-template-columns: ${({ $collapsed }) => $collapsed ? '61px' : '225px'} 1fr;
+    grid-template-columns: ${({ $collapsed }) => $collapsed ? '61px' : '225px'} minmax(0, 1fr);
   }
 
   ${media.mobile} {
@@ -42,7 +42,9 @@ const Main = styled.main`
   display: flex;
   flex-direction: column;
   min-height: 0;
+  min-width: 0;
   height: 100vh;
+  overflow-x: hidden;
   overflow-y: auto;
 `;
 
@@ -53,6 +55,8 @@ const Content = styled.div`
   flex-direction: column;
   gap: 8px;
   margin-top: 5px;
+  min-width: 0;
+  overflow: hidden;
 
   ${media.mobile} {
     padding: 56px 10px 8px;
