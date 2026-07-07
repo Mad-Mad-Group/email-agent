@@ -1223,10 +1223,31 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
             <EmailCardHead>
               {typeTag && <ReplyBadge $bg={typeTag.bg} $fg={typeTag.fg}>{typeTag.text}</ReplyBadge>}
               <ReplyBadge $bg={statusColor.bg} $fg={statusColor.fg}>{d.status || 'pending'}</ReplyBadge>
-              {/* subject 已由 AI 摘要區塊取代 */}
               <EmailCardDate>
                 {d.created_at ? new Date(d.created_at).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : ''}
               </EmailCardDate>
+              <div style={{ flex: 1 }} />
+              {d.status === 'pending' && (
+                <>
+                  <EmailActionBtn $bg="#2563eb" $fg="#fff" disabled={busy} onClick={() => handleApproveAndSend(d)}>
+                    {busy ? '處理中…' : '批准並發送'}
+                  </EmailActionBtn>
+                  <EmailActionBtn $bg="#dc2626" $fg="#fff" disabled={busy} onClick={() => handleReject(d._id)}>
+                    拒絕
+                  </EmailActionBtn>
+                </>
+              )}
+              {d.status === 'approved' && (
+                <EmailActionBtn $bg="#3b82f6" $fg="#fff" disabled={busy} onClick={() => send.mutate(d._id)}>
+                  {busy ? '處理中…' : '發送'}
+                </EmailActionBtn>
+              )}
+              {d.status === 'sent' && (
+                <span style={{ fontSize: '0.75rem', color: '#16a34a' }}>✓ 已發送 {d.sent_at ? new Date(d.sent_at).toLocaleString('zh-HK') : ''}</span>
+              )}
+              {d.status === 'rejected' && (
+                <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>✗ 已拒絕</span>
+              )}
             </EmailCardHead>
 
             {(d as any)._summary && (
@@ -1239,30 +1260,6 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
             <EmailCardBody>
               <EmailBodyContent dangerouslySetInnerHTML={{ __html: d.body || '—' }} />
               <EmailCardMeta>寄往 {d.to_email || '—'}</EmailCardMeta>
-
-              <EmailCardActions>
-                {d.status === 'pending' && (
-                  <>
-                    <EmailActionBtn $bg="#2563eb" $fg="#fff" disabled={busy} onClick={() => handleApproveAndSend(d)}>
-                      {busy ? '處理中…' : '批准並發送'}
-                    </EmailActionBtn>
-                    <EmailActionBtn $bg="#dc2626" $fg="#fff" disabled={busy} onClick={() => handleReject(d._id)}>
-                      拒絕
-                    </EmailActionBtn>
-                  </>
-                )}
-                {d.status === 'approved' && (
-                  <EmailActionBtn $bg="#3b82f6" $fg="#fff" disabled={busy} onClick={() => send.mutate(d._id)}>
-                    {busy ? '處理中…' : '發送'}
-                  </EmailActionBtn>
-                )}
-                {d.status === 'sent' && (
-                  <span style={{ fontSize: '0.75rem', color: '#16a34a' }}>✓ 已發送 {d.sent_at ? new Date(d.sent_at).toLocaleString('zh-HK') : ''}</span>
-                )}
-                {d.status === 'rejected' && (
-                  <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>✗ 已拒絕</span>
-                )}
-              </EmailCardActions>
             </EmailCardBody>
           </EmailCard>
         );
