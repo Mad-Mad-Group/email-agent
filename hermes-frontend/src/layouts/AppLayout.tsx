@@ -56,7 +56,7 @@ const Content = styled.div`
   gap: 8px;
   margin-top: 5px;
   min-width: 0;
-  overflow: hidden;
+  overflow-x: hidden;
 
   ${media.mobile} {
     padding: 56px 10px 8px;
