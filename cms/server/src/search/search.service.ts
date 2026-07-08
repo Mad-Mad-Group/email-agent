@@ -12,6 +12,16 @@ export class SearchService {
   constructor(private readonly tasks: TasksService) {}
 
   async run(dto: SearchDto) {
+    // 防 spam：相同 keyword + location 仲有 task 未做完，或 60 秒內啱啱派過 →
+    // 唔重複派，直接回返嗰個 task（避免 spam 撳制塞爆 queue + 燒 Hermes quota）。
+    const dup = await this.tasks.findActiveOrRecent(
+      SKILL.SEARCH,
+      { keyword: dto.keyword, location: dto.location },
+      60_000,
+    );
+    if (dup) {
+      return { task_id: dup.task_id, status: dup.status, deduped: true };
+    }
     const task = await this.tasks.enqueue({
       skill_id: SKILL.SEARCH, // S1 搵客源
       title: `搜尋：${dto.keyword} ${dto.location}（目標 ${dto.targetCount}）`,
