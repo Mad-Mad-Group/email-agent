@@ -10,3 +10,4 @@ export { Pagination } from './Pagination';
 export { LiveFeed } from './LiveFeed';
 export { Sidebar } from './Sidebar';
 export { Topbar } from './Topbar';
+export { DialogProvider, useDialog } from './Dialog';

@@ -1,90 +1,114 @@
-import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import React, { useState, useEffect, useMemo } from 'react';
+import styled, { css, keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { media } from '../../styles/media';
 import client from '../../api/client';
 
 /* ══════════════════════════════════════
-   LUNO Calendar Page — 1:1 replica
+   LUNO Calendar — Month + Week views
    ══════════════════════════════════════ */
+
+/* ── Layout ── */
 
 const Page = styled.div`display: flex; flex-direction: column; gap: 16px;`;
 
-const Breadcrumb = styled.ol`
-  list-style: none; margin: 0; padding: 0; display: flex; gap: 8px;
-  font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary};
-  li + li::before { content: '/'; margin-right: 8px; }
-  a { color: ${({ theme }) => theme.colors.textSecondary}; text-decoration: none; }
-`;
-
-const ToolbarRow = styled.div`
-  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-`;
-
-const PageTitle = styled.h1`
-  font-size: 1.15rem; font-weight: 600; margin: 4px 0 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const PageSub = styled.small`
-  color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
-`;
-
-const StatsRow = styled.div`
-  display: flex; gap: 24px;
+const CalLayout = styled.div`
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
   ${media.mobile} {
-    flex-wrap: wrap;
-    gap: 12px;
+    flex-direction: column;
   }
 `;
-const StatItem = styled.div``;
-const StatValue = styled.div`font-size: 1rem; font-weight: 600;`;
-const StatChange = styled.small<{ $up: boolean }>`
-  font-size: 0.75rem; margin-left: 4px;
-  color: ${({ $up, theme }) => $up ? theme.colors.green : theme.colors.red};
+
+const Sidebar = styled.div`
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  ${media.mobile} {
+    width: 100%;
+  }
 `;
-const StatLabel = styled.div`font-size: 0.6875rem; text-transform: uppercase; color: ${({ theme }) => theme.colors.textTertiary};`;
+
+const MainArea = styled.div`
+  flex: 1;
+  min-width: 0;
+`;
 
 const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
-  border-radius: 10px;
+  border-radius: 14px;
   box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 
-/* ── Calendar Styles ── */
-
-const CalendarWrap = styled(Card)`
+const SpiralCalCard = styled(Card)`
+  position: relative;
   padding: 16px;
-  ${media.mobile} {
-    padding: 8px;
-    overflow-x: auto;
+  overflow: visible;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  &::before, &::after {
+    content: '';
+    position: absolute;
+    left: 4px; right: 4px;
+    border-radius: 14px;
+    z-index: -1;
+    background: ${({ theme }) => theme.colors.surface};
+    border: 1px solid ${({ theme }) => theme.colors.border};
   }
+  &::before { bottom: -5px; height: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.06); }
+  &::after  { bottom: -9px; left: 8px; right: 8px; height: 8px; box-shadow: 0 3px 6px rgba(0,0,0,0.04); }
+  ${media.mobile} { padding: 8px; overflow-x: auto; }
 `;
+
+/* ── Header / Toolbar ── */
 
 const CalHeader = styled.div`
   display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
-  ${media.mobile} {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
+  flex-wrap: wrap; gap: 10px;
 `;
 
 const CalTitle = styled.h2`font-size: 1.1rem; font-weight: 600; margin: 0;`;
 
 const CalNav = styled.div`display: flex; gap: 4px; align-items: center;`;
 const CalBtn = styled.button<{ $primary?: boolean; $disabled?: boolean }>`
-  padding: 6px 14px; border-radius: 6px; border: none; font-size: 0.8125rem; cursor: pointer;
-  background: ${({ $primary }) => $primary ? 'var(--primary, #c78787)' : '#f0f3f5'};
-  color: ${({ $primary, $disabled }) => $disabled ? '#aaa' : $primary ? '#fff' : '#0f172a'};
+  padding: 6px 14px; border-radius: 8px; border: none; font-size: 0.8125rem; cursor: pointer;
+  background: ${({ $primary, theme }) => $primary ? theme.colors.blue : theme.colors.surfaceMuted};
+  color: ${({ $primary, $disabled, theme }) => $disabled ? theme.colors.textTertiary : $primary ? '#fff' : theme.colors.textPrimary};
   opacity: ${({ $disabled }) => $disabled ? 0.6 : 1};
   &:hover { opacity: 0.85; }
 `;
 
+/* ── Pill Toggle ── */
+
+const PillWrap = styled.div`
+  display: inline-flex;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  border-radius: 20px;
+  padding: 3px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const PillBtn = styled.button<{ $active: boolean }>`
+  padding: 5px 16px;
+  border-radius: 17px;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: ${({ $active, theme }) => $active ? theme.colors.blue : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textSecondary};
+  &:hover { opacity: 0.85; }
+`;
+
+/* ── Month Grid ── */
+
 const CalGrid = styled.div`
   display: grid; grid-template-columns: repeat(7, 1fr);
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 4px;
+  border-radius: 8px;
 `;
 
 const CalDayHeader = styled.div`
@@ -98,28 +122,27 @@ const CalCell = styled.div<{ $today?: boolean; $other?: boolean; $selected?: boo
   min-height: 90px; padding: 4px 6px; font-size: 0.75rem;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   border-right: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ $today, $selected, theme }) => $selected ? '#e0eef9' : $today ? '#fffde7' : theme.colors.surface};
+  background: ${({ $today, $selected, theme }) =>
+    $selected ? (theme.mode === 'dark' ? '#1e3a5f' : '#e0eef9') :
+    $today ? (theme.mode === 'dark' ? '#332b00' : '#fffde7') :
+    theme.colors.surface};
   color: ${({ $other, theme }) => $other ? theme.colors.textTertiary : theme.colors.textPrimary};
   cursor: pointer;
   transition: background 0.12s;
-  &:hover { background: ${({ $selected }) => $selected ? '#d0e4f5' : '#f0f7ff'}; }
+  &:hover { background: ${({ $selected, theme }) =>
+    $selected ? (theme.mode === 'dark' ? '#1e3a5f' : '#d0e4f5') :
+    (theme.mode === 'dark' ? '#1e293b' : '#f0f7ff')}; }
   &:nth-child(7n) { border-right: none; }
-  ${media.mobile} {
-    min-height: 60px;
-    font-size: 0.65rem;
-  }
-  ${media.tablet} {
-    min-height: 70px;
-  }
+  ${media.mobile} { min-height: 60px; font-size: 0.65rem; }
 `;
 
 const CellDay = styled.div<{ $today?: boolean }>`
   font-weight: ${({ $today }) => $today ? 700 : 400};
   margin-bottom: 2px;
-  ${({ $today }) => $today && `
+  ${({ $today, theme }) => $today && css`
     display: inline-flex; align-items: center; justify-content: center;
     width: 22px; height: 22px; border-radius: 50%;
-    background: var(--primary, #c78787); color: #fff;
+    background: ${theme.colors.blue}; color: #fff;
   `}
 `;
 
@@ -130,9 +153,7 @@ const EventBlock = styled.div<{ $color?: string; $past?: boolean }>`
   text-decoration: ${({ $past }) => $past ? 'line-through' : 'none'};
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   cursor: pointer;
-  ${media.mobile} {
-    font-size: 0.55rem;
-  }
+  ${media.mobile} { font-size: 0.55rem; }
 `;
 
 const EventDot = styled.div<{ $past?: boolean }>`
@@ -142,29 +163,363 @@ const EventDot = styled.div<{ $past?: boolean }>`
   padding: 1px 0;
   &::before {
     content: ''; width: 6px; height: 6px; border-radius: 50%;
-    background: ${({ $past }) => $past ? '#d1d5db' : 'var(--blue, #567ebb)'}; flex-shrink: 0;
+    background: ${({ $past, theme }) => $past ? '#d1d5db' : theme.colors.blue}; flex-shrink: 0;
   }
-  ${media.mobile} {
-    font-size: 0.55rem;
+  ${media.mobile} { font-size: 0.55rem; }
+`;
+
+/* ── Week View ── */
+
+const WeekGrid = styled.div`
+  display: grid;
+  grid-template-columns: 56px repeat(7, 1fr);
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  overflow: hidden;
+`;
+
+const WeekDayHeader = styled.div<{ $today?: boolean }>`
+  padding: 10px 4px;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  border-right: 1px solid ${({ theme }) => theme.colors.border};
+  &:last-child { border-right: none; }
+  color: ${({ $today, theme }) => $today ? theme.colors.blue : theme.colors.textPrimary};
+`;
+
+const WeekDayNum = styled.div<{ $today?: boolean }>`
+  font-size: 1.1rem;
+  font-weight: 700;
+  ${({ $today, theme }) => $today && css`
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 28px; height: 28px; border-radius: 50%;
+    background: ${theme.colors.blue}; color: #fff;
+  `}
+`;
+
+const WeekDayName = styled.div`
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  margin-top: 2px;
+`;
+
+const TimeLabel = styled.div`
+  padding: 0 6px;
+  font-size: 0.65rem;
+  font-family: 'JetBrains Mono', monospace;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  text-align: right;
+  border-right: 1px solid ${({ theme }) => theme.colors.border};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-end;
+  padding-top: 2px;
+  min-height: 60px;
+`;
+
+const TimeCorner = styled.div`
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  border-right: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const WeekCell = styled.div<{ $today?: boolean }>`
+  position: relative;
+  min-height: 60px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  border-right: 1px solid ${({ theme }) => theme.colors.border};
+  &:nth-child(8n) { border-right: none; } /* last col in 8-col grid */
+  background: ${({ $today, theme }) => $today ? (theme.mode === 'dark' ? '#1a2332' : '#fafcff') : 'transparent'};
+`;
+
+/* ── Week Event Card ── */
+
+const TYPE_COLORS: Record<string, { bg: string; border: string; text: string }> = {
+  meeting:   { bg: '#ede9fe', border: '#8b5cf6', text: '#6d28d9' },
+  follow_up: { bg: '#dcfce7', border: '#22c55e', text: '#15803d' },
+  deadline:  { bg: '#fee2e2', border: '#ef4444', text: '#b91c1c' },
+  other:     { bg: '#dbeafe', border: '#3b82f6', text: '#1d4ed8' },
+};
+
+const TYPE_COLORS_DARK: Record<string, { bg: string; border: string; text: string }> = {
+  meeting:   { bg: '#2e1065', border: '#8b5cf6', text: '#c4b5fd' },
+  follow_up: { bg: '#052e16', border: '#22c55e', text: '#86efac' },
+  deadline:  { bg: '#450a0a', border: '#ef4444', text: '#fca5a5' },
+  other:     { bg: '#172554', border: '#3b82f6', text: '#93c5fd' },
+};
+
+const WeekEventCard = styled.div<{ $type: string; $dark?: boolean; $top: number; $height: number }>`
+  position: absolute;
+  left: 3px; right: 3px;
+  top: ${({ $top }) => $top}px;
+  height: ${({ $height }) => Math.max($height, 28)}px;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 0.7rem;
+  overflow: hidden;
+  cursor: pointer;
+  z-index: 1;
+  transition: transform 0.12s, box-shadow 0.12s;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: ${({ $type, $dark }) => {
+    const c = ($dark ? TYPE_COLORS_DARK : TYPE_COLORS)[$type] || ($dark ? TYPE_COLORS_DARK : TYPE_COLORS).other;
+    return c.bg;
+  }};
+  border-left: 3px solid ${({ $type, $dark }) => {
+    const c = ($dark ? TYPE_COLORS_DARK : TYPE_COLORS)[$type] || ($dark ? TYPE_COLORS_DARK : TYPE_COLORS).other;
+    return c.border;
+  }};
+  color: ${({ $type, $dark }) => {
+    const c = ($dark ? TYPE_COLORS_DARK : TYPE_COLORS)[$type] || ($dark ? TYPE_COLORS_DARK : TYPE_COLORS).other;
+    return c.text;
+  }};
+
+  &:hover {
+    transform: scale(1.02);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+    z-index: 2;
   }
+`;
+
+const WeekEvTitle = styled.div`
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const WeekEvTime = styled.div`
+  font-size: 0.6rem;
+  opacity: 0.8;
+`;
+
+const WeekEvActions = styled.div`
+  display: flex;
+  gap: 4px;
+  margin-top: auto;
+`;
+
+const WeekEvBtn = styled.button<{ $type: string; $dark?: boolean }>`
+  padding: 2px 8px;
+  border-radius: 4px;
+  border: 1px solid ${({ $type, $dark }) => {
+    const c = ($dark ? TYPE_COLORS_DARK : TYPE_COLORS)[$type] || ($dark ? TYPE_COLORS_DARK : TYPE_COLORS).other;
+    return c.border;
+  }};
+  background: ${({ $dark }) => $dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.7)'};
+  color: inherit;
+  font-size: 0.6rem;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover { opacity: 0.75; }
+`;
+
+/* ── Now Indicator ── */
+
+const NowLine = styled.div`
+  position: absolute;
+  left: 0; right: 0;
+  height: 2px;
+  background: #ef4444;
+  z-index: 3;
+  &::before {
+    content: '';
+    position: absolute;
+    left: -4px; top: -3px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #ef4444;
+  }
+`;
+
+const NowBadge = styled.div`
+  position: absolute;
+  left: 2px; right: 2px;
+  height: 2px;
+  background: #ef4444;
+  z-index: 3;
+`;
+
+/* ── Sidebar: Mini Calendar ── */
+
+const SideCard = styled(Card)`
+  padding: 14px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const SideTitle = styled.h4`
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  margin: 0 0 10px;
+`;
+
+const MiniCalGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+  text-align: center;
+`;
+
+const MiniCalHead = styled.div`
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  padding: 2px;
+`;
+
+const MiniCalDay = styled.button<{ $today?: boolean; $other?: boolean; $inWeek?: boolean }>`
+  border: none;
+  background: ${({ $today, $inWeek, theme }) =>
+    $today ? theme.colors.blue :
+    $inWeek ? (theme.mode === 'dark' ? '#1e3a5f' : '#e0eef9') :
+    'transparent'};
+  color: ${({ $today, $other, theme }) =>
+    $today ? '#fff' :
+    $other ? theme.colors.textTertiary :
+    theme.colors.textPrimary};
+  font-size: 0.7rem;
+  font-weight: ${({ $today }) => $today ? 700 : 400};
+  border-radius: 50%;
+  width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  margin: 0 auto;
+  transition: background 0.12s;
+  &:hover {
+    background: ${({ $today, theme }) => $today ? theme.colors.blue : (theme.mode === 'dark' ? '#334155' : '#f0f7ff')};
+  }
+`;
+
+const MiniNavRow = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+`;
+
+const MiniNavTitle = styled.span`
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const MiniNavBtn = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  padding: 2px 6px;
+  border-radius: 4px;
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+`;
+
+/* ── Sidebar: Type Filters ── */
+
+const FilterRow = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const FilterDot = styled.span<{ $color: string }>`
+  width: 8px; height: 8px; border-radius: 50%;
+  background: ${({ $color }) => $color};
+  flex-shrink: 0;
+`;
+
+const FilterToggle = styled.div<{ $on: boolean }>`
+  width: 32px; height: 18px; border-radius: 9px;
+  background: ${({ $on, theme }) => $on ? theme.colors.blue : theme.colors.border};
+  position: relative;
+  margin-left: auto;
+  flex-shrink: 0;
+  transition: background 0.2s;
+  &::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: ${({ $on }) => $on ? '16px' : '2px'};
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: #fff;
+    transition: left 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  }
+`;
+
+/* ── Sidebar: Upcoming ── */
+
+const UpcomingItem = styled.div`
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  &:last-child { border-bottom: none; }
+`;
+
+const UpcomingDot = styled.div<{ $color: string }>`
+  width: 6px; height: 6px; border-radius: 50%;
+  background: ${({ $color }) => $color};
+  flex-shrink: 0;
+  margin-top: 5px;
+`;
+
+const UpcomingInfo = styled.div`
+  flex: 1; min-width: 0;
+`;
+
+const UpcomingTitle = styled.div`
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const UpcomingMeta = styled.div`
+  font-size: 0.675rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  margin-top: 1px;
+`;
+
+const UpcomingTag = styled.span<{ $color: string }>`
+  display: inline-block;
+  font-size: 0.6rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: ${({ $color }) => $color}20;
+  color: ${({ $color }) => $color};
+  flex-shrink: 0;
+  margin-top: 2px;
 `;
 
 /* ── Day Detail Panel ── */
 
-const DayDetailWrap = styled(Card)`
-  padding: 20px 24px;
-`;
-
+const DayDetailWrap = styled(Card)` padding: 20px 24px; `;
 const DayDetailHeader = styled.div`
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
 `;
-
 const DayDetailTitle = styled.h3`
-  margin: 0; font-size: 1rem; font-weight: 600;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  margin: 0; font-size: 1rem; font-weight: 600; color: ${({ theme }) => theme.colors.textPrimary};
 `;
-
 const DayDetailClose = styled.button`
   background: transparent; border: none; cursor: pointer;
   width: 36px; height: 36px; border-radius: 50%;
@@ -173,31 +528,23 @@ const DayDetailClose = styled.button`
   flex-shrink: 0; transition: all 0.15s;
   &:hover { background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'}; }
 `;
-
-const DayEventList = styled.div`
-  display: flex; flex-direction: column; gap: 10px;
-`;
-
+const DayEventList = styled.div` display: flex; flex-direction: column; gap: 10px; `;
 const DayEventItem = styled.div<{ $color?: string; $past?: boolean }>`
   display: flex; align-items: flex-start; gap: 12px;
   padding: 12px 16px; border-radius: 8px;
   background: ${({ theme }) => theme.colors.surfaceMuted};
   border-left: 4px solid ${({ $past, $color }) => $past ? '#d1d5db' : ($color || '#567ebb')};
   opacity: ${({ $past }) => $past ? 0.6 : 1};
-  text-decoration: ${({ $past }) => $past ? 'line-through' : 'none'};
   transition: transform 0.1s;
   &:hover { transform: translateX(2px); }
 `;
-
 const DayEventTime = styled.span`
   font-size: 0.8125rem; font-weight: 600; color: ${({ theme }) => theme.colors.textSecondary};
   min-width: 50px; flex-shrink: 0;
 `;
-
 const DayEventTitle = styled.span`
   font-size: 0.875rem; font-weight: 500; color: ${({ theme }) => theme.colors.textPrimary};
 `;
-
 const DayEmptyText = styled.div`
   text-align: center; padding: 24px 0;
   font-size: 0.875rem; color: ${({ theme }) => theme.colors.textTertiary};
@@ -210,34 +557,56 @@ interface CalEvent {
   title: string;
   time?: string;
   type: 'block' | 'dot';
+  eventType: 'meeting' | 'follow_up' | 'deadline' | 'other';
   color?: string;
   span?: number;
   past?: boolean;
+  startHour?: number;
+  startMin?: number;
+  endHour?: number;
+  endMin?: number;
+  description?: string;
+  rawStart?: Date;
 }
 
 const FALLBACK_EVENTS: CalEvent[] = [
-  { day: 1, title: 'All Day Event', type: 'block', color: '#567ebb' },
-  { day: 7, title: 'Long Event', type: 'block', color: '#567ebb', span: 3 },
-  { day: 9, title: 'Repeating Event', time: '4p', type: 'dot' },
-  { day: 16, title: 'Repeating Event', time: '4p', type: 'dot' },
-  { day: 23, title: 'Conference', type: 'block', color: '#567ebb', span: 2 },
-  { day: 24, title: 'Meeting', time: '10:30a', type: 'dot' },
-  { day: 24, title: 'Lunch', time: '12p', type: 'dot' },
-  { day: 25, title: 'Birthday Party', time: '7a', type: 'dot' },
-  { day: 28, title: 'Click for Google', type: 'block', color: '#567ebb' },
+  { day: 1, title: 'All Day Event', type: 'block', eventType: 'other', color: '#567ebb' },
+  { day: 7, title: 'Long Event', type: 'block', eventType: 'meeting', color: '#567ebb', span: 3 },
+  { day: 9, title: 'Repeating Event', time: '4p', type: 'dot', eventType: 'follow_up', startHour: 16, startMin: 0, endHour: 17, endMin: 0 },
+  { day: 16, title: 'Repeating Event', time: '4p', type: 'dot', eventType: 'follow_up', startHour: 16, startMin: 0, endHour: 17, endMin: 0 },
+  { day: 23, title: 'Conference', type: 'block', eventType: 'meeting', color: '#567ebb', span: 2 },
+  { day: 24, title: 'Meeting', time: '10:30a', type: 'dot', eventType: 'meeting', startHour: 10, startMin: 30, endHour: 11, endMin: 30 },
+  { day: 24, title: 'Lunch', time: '12p', type: 'dot', eventType: 'other', startHour: 12, startMin: 0, endHour: 13, endMin: 0 },
+  { day: 25, title: 'Birthday Party', time: '7a', type: 'dot', eventType: 'other', startHour: 7, startMin: 0, endHour: 8, endMin: 0 },
+  { day: 28, title: 'Click for Google', type: 'block', eventType: 'deadline', color: '#567ebb' },
 ];
 
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
 
 const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
-/** 將 API event 轉成 CalEvent */
+const EVENT_TYPE_LABELS: Record<string, string> = {
+  meeting: 'Meeting',
+  follow_up: 'Follow-up',
+  deadline: 'Deadline',
+  other: 'Other',
+};
+
+const EVENT_TYPE_DOT_COLORS: Record<string, string> = {
+  meeting: '#8b5cf6',
+  follow_up: '#22c55e',
+  deadline: '#ef4444',
+  other: '#3b82f6',
+};
+
 function apiToCalEvents(apiEvents: any[]): CalEvent[] {
   const now = new Date();
   return apiEvents.map((e) => {
     const d = new Date(e.start);
-    const end = e.end ? new Date(e.end) : d;
+    const end = e.end ? new Date(e.end) : new Date(d.getTime() + 3600000);
     const day = d.getDate();
     const h = d.getHours();
     const m = d.getMinutes();
@@ -247,11 +616,30 @@ function apiToCalEvents(apiEvents: any[]): CalEvent[] {
       title: e.title || 'Event',
       time,
       type: e.all_day ? 'block' as const : 'dot' as const,
+      eventType: (e.type as CalEvent['eventType']) || 'other',
       color: e.color || '#567ebb',
       past: end < now,
+      startHour: h,
+      startMin: m,
+      endHour: end.getHours(),
+      endMin: end.getMinutes(),
+      description: e.description,
+      rawStart: d,
     };
   });
 }
+
+/** Get the start of the week (Sunday) containing a date */
+function getWeekStart(year: number, month: number, day: number): Date {
+  const d = new Date(year, month, day);
+  const dow = d.getDay();
+  d.setDate(d.getDate() - dow);
+  return d;
+}
+
+const HOURS = Array.from({ length: 16 }, (_, i) => i + 7); // 07:00 ~ 22:00
+
+/* ════════════════ Component ════════════════ */
 
 const Calendar: React.FC = () => {
   const { t } = useTranslation();
@@ -260,8 +648,15 @@ const Calendar: React.FC = () => {
   const [month, setMonth] = useState(today.getMonth());
   const [apiEvents, setApiEvents] = useState<CalEvent[]>([]);
   const [selectedDay, setSelectedDay] = useState<number | null>(null);
+  const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
+  const [weekStart, setWeekStart] = useState<Date>(() => getWeekStart(today.getFullYear(), today.getMonth(), today.getDate()));
+  const [typeFilters, setTypeFilters] = useState<Record<string, boolean>>({
+    meeting: true, follow_up: true, deadline: true, other: true,
+  });
+  const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
 
-  // Fetch calendar events from API
+  const dark = typeof window !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark';
+
   useEffect(() => {
     client.get('/calendar', { params: { month: month + 1, year } })
       .then((res) => {
@@ -277,101 +672,349 @@ const Calendar: React.FC = () => {
 
   const EVENTS = apiEvents.length > 0 ? apiEvents : FALLBACK_EVENTS;
 
+  // Filtered events
+  const filteredEvents = useMemo(
+    () => EVENTS.filter(e => typeFilters[e.eventType] !== false),
+    [EVENTS, typeFilters],
+  );
+
   const daysInMonth = getDaysInMonth(year, month);
   const firstDay = getFirstDayOfMonth(year, month);
   const prevMonthDays = getDaysInMonth(year, month - 1);
 
   const cells: { day: number; current: boolean; today?: boolean }[] = [];
-
-  // Previous month fill
-  for (let i = firstDay - 1; i >= 0; i--) {
-    cells.push({ day: prevMonthDays - i, current: false });
-  }
-  // Current month
+  for (let i = firstDay - 1; i >= 0; i--) cells.push({ day: prevMonthDays - i, current: false });
   for (let d = 1; d <= daysInMonth; d++) {
-    cells.push({
-      day: d,
-      current: true,
-      today: d === today.getDate() && month === today.getMonth() && year === today.getFullYear(),
-    });
+    cells.push({ day: d, current: true, today: d === today.getDate() && month === today.getMonth() && year === today.getFullYear() });
   }
-  // Next month fill
   const remaining = 42 - cells.length;
-  for (let d = 1; d <= remaining; d++) {
-    cells.push({ day: d, current: false });
-  }
+  for (let d = 1; d <= remaining; d++) cells.push({ day: d, current: false });
 
+  // Week days
+  const weekDays = useMemo(() => {
+    const days: Date[] = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  }, [weekStart]);
+
+  // Navigation
   const prev = () => {
     setSelectedDay(null);
-    if (month === 0) { setYear(year - 1); setMonth(11); }
-    else setMonth(month - 1);
+    if (viewMode === 'week') {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() - 7);
+      setWeekStart(d);
+      setMonth(d.getMonth());
+      setYear(d.getFullYear());
+    } else {
+      if (month === 0) { setYear(year - 1); setMonth(11); }
+      else setMonth(month - 1);
+    }
   };
   const next = () => {
     setSelectedDay(null);
-    if (month === 11) { setYear(year + 1); setMonth(0); }
-    else setMonth(month + 1);
+    if (viewMode === 'week') {
+      const d = new Date(weekStart);
+      d.setDate(d.getDate() + 7);
+      setWeekStart(d);
+      setMonth(d.getMonth());
+      setYear(d.getFullYear());
+    } else {
+      if (month === 11) { setYear(year + 1); setMonth(0); }
+      else setMonth(month + 1);
+    }
   };
-  const goToday = () => { setSelectedDay(null); setYear(today.getFullYear()); setMonth(today.getMonth()); };
+  const goToday = () => {
+    setSelectedDay(null);
+    setYear(today.getFullYear());
+    setMonth(today.getMonth());
+    setWeekStart(getWeekStart(today.getFullYear(), today.getMonth(), today.getDate()));
+  };
 
   const isCurrentMonth = month === today.getMonth() && year === today.getFullYear();
 
   const getEvents = (day: number, isCurrent: boolean) => {
     if (!isCurrent) return [];
-    return EVENTS.filter(e => e.day === day);
+    return filteredEvents.filter(e => e.day === day);
   };
+
+  // Week events for a given date
+  const getWeekDayEvents = (date: Date) => {
+    return filteredEvents.filter(e => {
+      if (e.rawStart) {
+        return e.rawStart.getFullYear() === date.getFullYear() &&
+               e.rawStart.getMonth() === date.getMonth() &&
+               e.rawStart.getDate() === date.getDate();
+      }
+      return date.getMonth() === month && e.day === date.getDate();
+    });
+  };
+
+  // Upcoming events (next 3 future events)
+  const upcoming = useMemo(() => {
+    const now = new Date();
+    return filteredEvents
+      .filter(e => !e.past)
+      .sort((a, b) => (a.day - b.day))
+      .slice(0, 3);
+  }, [filteredEvents]);
+
+  const toggleFilter = (key: string) => {
+    setTypeFilters(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  // Mini calendar click → jump to that week
+  const handleMiniDayClick = (d: Date) => {
+    setWeekStart(getWeekStart(d.getFullYear(), d.getMonth(), d.getDate()));
+    setViewMode('week');
+    setMonth(d.getMonth());
+    setYear(d.getFullYear());
+  };
+
+  // Mini calendar cells
+  const miniCells = useMemo(() => {
+    const dim = getDaysInMonth(year, month);
+    const fd = getFirstDayOfMonth(year, month);
+    const pdim = getDaysInMonth(year, month - 1);
+    const arr: { date: Date; current: boolean }[] = [];
+    for (let i = fd - 1; i >= 0; i--) {
+      const d = new Date(year, month - 1, pdim - i);
+      arr.push({ date: d, current: false });
+    }
+    for (let d = 1; d <= dim; d++) {
+      arr.push({ date: new Date(year, month, d), current: true });
+    }
+    const rem = 42 - arr.length;
+    for (let d = 1; d <= rem; d++) {
+      arr.push({ date: new Date(year, month + 1, d), current: false });
+    }
+    return arr;
+  }, [year, month]);
+
+  // Check if a date is in the current viewed week
+  const isInWeek = (d: Date) => {
+    const ws = weekStart.getTime();
+    const we = ws + 7 * 86400000;
+    return d.getTime() >= ws && d.getTime() < we;
+  };
+
+  const isToday = (d: Date) =>
+    d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+
+  // Title for week view
+  const weekTitle = useMemo(() => {
+    const end = new Date(weekStart);
+    end.setDate(end.getDate() + 6);
+    if (weekStart.getMonth() === end.getMonth()) {
+      return `${MONTHS[weekStart.getMonth()]} ${weekStart.getDate()} – ${end.getDate()}, ${weekStart.getFullYear()}`;
+    }
+    return `${MONTHS_SHORT[weekStart.getMonth()]} ${weekStart.getDate()} – ${MONTHS_SHORT[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`;
+  }, [weekStart]);
+
+  // Now indicator position
+  const nowMinutes = today.getHours() * 60 + today.getMinutes();
+  const hourHeight = 60; // px per hour slot
 
   return (
     <Page>
-      {/* Calendar */}
-      <CalendarWrap>
-        <CalHeader>
-          <CalTitle>{MONTHS[month]} {year}</CalTitle>
-          <CalNav>
-            <CalBtn $disabled={isCurrentMonth} onClick={goToday}>{t('calendar.today')}</CalBtn>
-            <CalBtn onClick={prev}>&lt;</CalBtn>
-            <CalBtn onClick={next}>&gt;</CalBtn>
-          </CalNav>
-        </CalHeader>
+      <CalLayout>
+        {/* ── Left Sidebar ── */}
+        <Sidebar>
+          {/* Mini Calendar */}
+          <SideCard>
+            <MiniNavRow>
+              <MiniNavBtn onClick={() => {
+                if (month === 0) { setYear(year - 1); setMonth(11); }
+                else setMonth(month - 1);
+              }}>&lt;</MiniNavBtn>
+              <MiniNavTitle>{MONTHS_SHORT[month]} {year}</MiniNavTitle>
+              <MiniNavBtn onClick={() => {
+                if (month === 11) { setYear(year + 1); setMonth(0); }
+                else setMonth(month + 1);
+              }}>&gt;</MiniNavBtn>
+            </MiniNavRow>
+            <MiniCalGrid>
+              {DAY_NAMES.map(d => <MiniCalHead key={d}>{d.charAt(0)}</MiniCalHead>)}
+              {miniCells.map((c, i) => (
+                <MiniCalDay
+                  key={i}
+                  $today={isToday(c.date)}
+                  $other={!c.current}
+                  $inWeek={viewMode === 'week' && isInWeek(c.date)}
+                  onClick={() => handleMiniDayClick(c.date)}
+                >
+                  {c.date.getDate()}
+                </MiniCalDay>
+              ))}
+            </MiniCalGrid>
+          </SideCard>
 
-        <CalGrid>
-          {[t('calendar.sun'), t('calendar.mon'), t('calendar.tue'), t('calendar.wed'), t('calendar.thu'), t('calendar.fri'), t('calendar.sat')].map(d => (
-            <CalDayHeader key={d}>{d}</CalDayHeader>
-          ))}
-          {cells.map((cell, i) => {
-            const events = getEvents(cell.day, cell.current);
-            return (
-              <CalCell
-                key={i}
-                $today={cell.today}
-                $other={!cell.current}
-                $selected={cell.current && cell.day === selectedDay}
-                onClick={() => cell.current && setSelectedDay(cell.day === selectedDay ? null : cell.day)}
-              >
-                <CellDay $today={cell.today}>{cell.day}</CellDay>
-                {events.map((ev, j) => (
-                  ev.type === 'block'
-                    ? <EventBlock key={j} $color={ev.color} $past={ev.past}>{ev.title}</EventBlock>
-                    : <EventDot key={j} $past={ev.past}>{ev.time} {ev.title}</EventDot>
+          {/* Event Type Filters */}
+          <SideCard>
+            <SideTitle>Event type</SideTitle>
+            {(['meeting', 'follow_up', 'deadline', 'other'] as const).map(key => (
+              <FilterRow key={key} onClick={() => toggleFilter(key)}>
+                <FilterDot $color={EVENT_TYPE_DOT_COLORS[key]} />
+                <span>{EVENT_TYPE_LABELS[key]}</span>
+                <FilterToggle $on={typeFilters[key]} />
+              </FilterRow>
+            ))}
+          </SideCard>
+
+          {/* Upcoming */}
+          <SideCard>
+            <SideTitle>Upcoming</SideTitle>
+            {upcoming.length === 0 && (
+              <UpcomingMeta style={{ padding: '8px 0' }}>No upcoming events</UpcomingMeta>
+            )}
+            {upcoming.map((ev, i) => (
+              <UpcomingItem key={i}>
+                <UpcomingDot $color={EVENT_TYPE_DOT_COLORS[ev.eventType] || '#3b82f6'} />
+                <UpcomingInfo>
+                  <UpcomingTitle>{ev.title}</UpcomingTitle>
+                  <UpcomingMeta>
+                    {MONTHS_SHORT[month]} {ev.day} · {ev.time || 'All day'}
+                  </UpcomingMeta>
+                </UpcomingInfo>
+                <UpcomingTag $color={EVENT_TYPE_DOT_COLORS[ev.eventType] || '#3b82f6'}>
+                  {EVENT_TYPE_LABELS[ev.eventType]}
+                </UpcomingTag>
+              </UpcomingItem>
+            ))}
+          </SideCard>
+        </Sidebar>
+
+        {/* ── Main Calendar Area ── */}
+        <MainArea>
+          <SpiralCalCard>
+            <CalHeader>
+              <CalTitle>{viewMode === 'month' ? `${MONTHS[month]} ${year}` : weekTitle}</CalTitle>
+              <CalNav>
+                <PillWrap>
+                  <PillBtn $active={viewMode === 'month'} onClick={() => setViewMode('month')}>Month</PillBtn>
+                  <PillBtn $active={viewMode === 'week'} onClick={() => setViewMode('week')}>Week</PillBtn>
+                </PillWrap>
+                <CalBtn $disabled={isCurrentMonth && viewMode === 'month'} onClick={goToday}>{t('calendar.today')}</CalBtn>
+                <CalBtn onClick={prev}>&lt;</CalBtn>
+                <CalBtn onClick={next}>&gt;</CalBtn>
+              </CalNav>
+            </CalHeader>
+
+            {viewMode === 'month' ? (
+              /* ── Month View ── */
+              <CalGrid>
+                {[t('calendar.sun'), t('calendar.mon'), t('calendar.tue'), t('calendar.wed'), t('calendar.thu'), t('calendar.fri'), t('calendar.sat')].map(d => (
+                  <CalDayHeader key={d}>{d}</CalDayHeader>
                 ))}
-              </CalCell>
-            );
-          })}
-        </CalGrid>
-      </CalendarWrap>
+                {cells.map((cell, i) => {
+                  const events = getEvents(cell.day, cell.current);
+                  return (
+                    <CalCell
+                      key={i}
+                      $today={cell.today}
+                      $other={!cell.current}
+                      $selected={cell.current && cell.day === selectedDay}
+                      onClick={() => cell.current && setSelectedDay(cell.day === selectedDay ? null : cell.day)}
+                    >
+                      <CellDay $today={cell.today}>{cell.day}</CellDay>
+                      {events.map((ev, j) => (
+                        ev.type === 'block'
+                          ? <EventBlock key={j} $color={ev.color} $past={ev.past}>{ev.title}</EventBlock>
+                          : <EventDot key={j} $past={ev.past}>{ev.time} {ev.title}</EventDot>
+                      ))}
+                    </CalCell>
+                  );
+                })}
+              </CalGrid>
+            ) : (
+              /* ── Week View ── */
+              <WeekGrid>
+                {/* Header row */}
+                <TimeCorner />
+                {weekDays.map((d, i) => (
+                  <WeekDayHeader key={i} $today={isToday(d)}>
+                    <WeekDayNum $today={isToday(d)}>{d.getDate()}</WeekDayNum>
+                    <WeekDayName>{DAY_NAMES[d.getDay()]}</WeekDayName>
+                  </WeekDayHeader>
+                ))}
 
-      {/* Day Detail */}
-      {selectedDay !== null && (() => {
-        const dayEvents = EVENTS.filter(e => e.day === selectedDay);
+                {/* Time rows */}
+                {HOURS.map(h => (
+                  <React.Fragment key={h}>
+                    <TimeLabel>{String(h).padStart(2, '0')}:00</TimeLabel>
+                    {weekDays.map((d, di) => {
+                      const cellEvents = getWeekDayEvents(d).filter(
+                        ev => ev.startHour !== undefined && ev.startHour >= h && ev.startHour < h + 1
+                      );
+                      const isTodayCol = isToday(d);
+                      const showNow = isTodayCol && nowMinutes >= h * 60 && nowMinutes < (h + 1) * 60;
+                      const nowOffset = showNow ? ((nowMinutes - h * 60) / 60) * hourHeight : 0;
+
+                      return (
+                        <WeekCell key={di} $today={isTodayCol}>
+                          {showNow && <NowLine style={{ top: `${nowOffset}px` }} />}
+                          {cellEvents.map((ev, ei) => {
+                            const startOffset = ((ev.startMin || 0) / 60) * hourHeight;
+                            const duration = ev.endHour !== undefined && ev.endMin !== undefined
+                              ? ((ev.endHour * 60 + ev.endMin) - ((ev.startHour || 0) * 60 + (ev.startMin || 0))) / 60 * hourHeight
+                              : hourHeight;
+                            const evId = `${d.getDate()}-${ei}-${ev.title}`;
+                            const isExpanded = expandedEvent === evId;
+                            return (
+                              <WeekEventCard
+                                key={ei}
+                                $type={ev.eventType}
+                                $dark={dark}
+                                $top={startOffset}
+                                $height={duration}
+                                onClick={() => setExpandedEvent(isExpanded ? null : evId)}
+                              >
+                                <WeekEvTitle>{ev.title}</WeekEvTitle>
+                                <WeekEvTime>
+                                  {ev.time || 'All day'}
+                                  {ev.endHour !== undefined ? ` – ${ev.endHour > 12 ? ev.endHour - 12 : ev.endHour || 12}:${String(ev.endMin || 0).padStart(2, '0')}${(ev.endHour || 0) >= 12 ? 'pm' : 'am'}` : ''}
+                                </WeekEvTime>
+                                {isExpanded && duration > 40 && (
+                                  <WeekEvActions>
+                                    <WeekEvBtn $type={ev.eventType} $dark={dark}>Detail</WeekEvBtn>
+                                    <WeekEvBtn $type={ev.eventType} $dark={dark}>Participant</WeekEvBtn>
+                                  </WeekEvActions>
+                                )}
+                              </WeekEventCard>
+                            );
+                          })}
+                        </WeekCell>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+              </WeekGrid>
+            )}
+          </SpiralCalCard>
+        </MainArea>
+      </CalLayout>
+
+      {/* Day Detail (month view) */}
+      {viewMode === 'month' && selectedDay !== null && (() => {
+        const dayEvents = filteredEvents.filter(e => e.day === selectedDay);
         return (
           <DayDetailWrap>
             <DayDetailHeader>
               <DayDetailTitle>{MONTHS[month]} {selectedDay}, {year} 日程</DayDetailTitle>
-              <DayDetailClose onClick={() => setSelectedDay(null)}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></DayDetailClose>
+              <DayDetailClose onClick={() => setSelectedDay(null)}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                </svg>
+              </DayDetailClose>
             </DayDetailHeader>
             {dayEvents.length > 0 ? (
               <DayEventList>
                 {dayEvents.map((ev, i) => (
-                  <DayEventItem key={i} $color={ev.color} $past={ev.past}>
+                  <DayEventItem key={i} $color={EVENT_TYPE_DOT_COLORS[ev.eventType]} $past={ev.past}>
                     <DayEventTime>{ev.time || '全日'}</DayEventTime>
                     <DayEventTitle>{ev.title}</DayEventTitle>
                   </DayEventItem>

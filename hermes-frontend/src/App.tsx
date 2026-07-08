@@ -20,6 +20,7 @@ import TasksPage from './pages/Tasks';
 import UsersPage from './pages/Users';
 import SettingsPage from './pages/Settings';
 import AgentPanel from './pages/AgentPanel';
+import { DialogProvider } from './components';
 import './i18n';
 
 /** Redirect to /login when no token */
@@ -44,7 +45,9 @@ const ThemedApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <ThemeProvider theme={mode === 'dark' ? darkTheme : lightTheme}>
       <GlobalStyles />
-      {children}
+      <DialogProvider>
+        {children}
+      </DialogProvider>
     </ThemeProvider>
   );
 };

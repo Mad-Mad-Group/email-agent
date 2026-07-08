@@ -208,7 +208,7 @@ const LocDropdown = styled.div`
   position: absolute; top: calc(100% + 6px); right: 50px;
   background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 12px;
+  border-radius: 14px;
   box-shadow: 0 8px 32px rgba(15,23,42,0.12);
   padding: 8px; z-index: 100;
   display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
@@ -524,7 +524,7 @@ const ResultCard = styled.div`
   align-items: flex-start;
   gap: 12px;
   padding: 12px 14px;
-  border-radius: 10px;
+  border-radius: 14px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-left: 3px solid #3b82f6;
   background: #ffffff;
@@ -606,7 +606,7 @@ const RcActions = styled.div`
 
 const RcSmallBtn = styled.button`
   padding: 4px 10px;
-  border-radius: 6px;
+  border-radius: 8px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.surface};
   font-size: 0.6875rem;
@@ -923,7 +923,7 @@ const DpRelatedItem = styled.div`
 const DpRelatedIcon = styled.span`
   width: 28px;
   height: 28px;
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -975,7 +975,7 @@ const ResultPane = styled.div`
 
 const BrowserFrame = styled.div`
   background: ${({ theme }) => theme.colors.surface};
-  border-radius: 10px;
+  border-radius: 14px;
   box-shadow: ${({ theme }) => theme.shadows.card};
   overflow: hidden;
   border: 1px solid ${({ theme }) => theme.colors.border};

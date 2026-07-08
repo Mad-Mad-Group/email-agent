@@ -1,7 +1,7 @@
 import { HermesTheme } from '../types/theme';
 
 const shared = {
-  radii: { card: 10, tile: 10, control: 6 },
+  radii: { card: 14, tile: 14, control: 8 },
   fonts: {
     primary: "'Noto Sans TC', 'PingFang TC', 'PingFang SC', -apple-system, system-ui, 'Microsoft JhengHei', sans-serif",
     display: "'Bebas Neue', sans-serif",

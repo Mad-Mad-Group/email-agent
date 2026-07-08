@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import styled, { css } from 'styled-components';
+import { useDialog } from '../../components';
 
 /* ══════════════════════════════════════
    Email Template Editor
@@ -473,6 +474,7 @@ const VarExample = styled.span`
    ══════════════════════════════════════ */
 
 const EmailTemplateEditor: React.FC = () => {
+  const { showPrompt } = useDialog();
   const [templates, setTemplates] = useState<EmailTemplate[]>(INITIAL_TEMPLATES);
   const [activeId, setActiveId] = useState<string>(INITIAL_TEMPLATES[0].id);
   const [rightTab, setRightTab] = useState<'preview' | 'variables'>('preview');
@@ -658,8 +660,8 @@ const EmailTemplateEditor: React.FC = () => {
           </ToolBtn>
           <ToolDivider />
           <ToolBtn
-            onClick={() => {
-              const url = window.prompt('Enter URL:');
+            onClick={async () => {
+              const url = await showPrompt('Enter URL:', '', 'https://');
               if (url) execCmd('createLink', url);
             }}
             title="Insert Link"

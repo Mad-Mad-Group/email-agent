@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { media } from '../../styles/media';
@@ -160,6 +160,62 @@ const Footer = styled.footer`
   a:hover { text-decoration: underline; }
 `;
 
+/* ── Physical Toggle Switch ── */
+
+const ToggleTrack = styled.label<{ $on: boolean }>`
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  cursor: pointer;
+  background: ${({ $on }) => $on
+    ? 'linear-gradient(135deg, #22c55e, #16a34a)'
+    : 'linear-gradient(135deg, #cbd5e1, #94a3b8)'};
+  box-shadow:
+    inset 0 2px 4px rgba(0,0,0,0.15),
+    0 1px 2px rgba(0,0,0,0.08);
+  transition: background 0.3s;
+`;
+
+const ToggleKnob = styled.span<{ $on: boolean }>`
+  position: absolute;
+  top: 2px;
+  left: ${({ $on }) => $on ? '22px' : '2px'};
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #fff 0%, #f1f5f9 100%);
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.2),
+    inset 0 1px 0 rgba(255,255,255,0.8);
+  transition: left 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* metallic highlight dot */
+  &::after {
+    content: '';
+    position: absolute;
+    top: 4px; left: 5px;
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 40% 35%, rgba(255,255,255,0.9) 0%, transparent 70%);
+  }
+`;
+
+const ToggleHidden = styled.input`
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+`;
+
+const ToggleSwitch: React.FC<{ on: boolean; onChange?: (v: boolean) => void; disabled?: boolean }> = ({ on, onChange, disabled }) => (
+  <ToggleTrack $on={on} style={disabled ? { opacity: 0.5, cursor: 'not-allowed' } : undefined}>
+    <ToggleHidden type="checkbox" checked={on} onChange={(e) => !disabled && onChange?.(e.target.checked)} />
+    <ToggleKnob $on={on} />
+  </ToggleTrack>
+);
+
 /* ── Helpers ── */
 
 function renderValue(val: unknown, t: (key: string) => string): string {
@@ -270,7 +326,11 @@ const Settings: React.FC = () => {
             {entries.map(([key, val]) => (
               <SettingRow key={key}>
                 <SettingKey>{humanKey(key)}</SettingKey>
-                <SettingValue>{renderValue(val, t)}</SettingValue>
+                {typeof val === 'boolean' ? (
+                  <ToggleSwitch on={val} disabled />
+                ) : (
+                  <SettingValue>{renderValue(val, t)}</SettingValue>
+                )}
               </SettingRow>
             ))}
           </CardBody>

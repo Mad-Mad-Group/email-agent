@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail, useBulkApproveEmails, useBulkRejectEmails, useBulkSendEmails } from '../../api/hooks';
 import { EmailItem } from '../../api/emailQueue';
 import { Lead } from '../../api/leads';
 import client from '../../api/client';
 import { media } from '../../styles/media';
+import { useDialog } from '../../components';
 import EmailTemplateEditor from './EmailTemplateEditor';
 
 /* ══════════════════════════════════════
@@ -150,7 +152,38 @@ const Card = styled.div`
   box-shadow: ${({ theme }) => theme.shadows.card};
   display: flex;
   min-height: 620px;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
+
+  /* airmail stripe bottom edge */
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -4px;
+    height: 4px;
+    border-radius: 0 0 ${({ theme }) => theme.radii.card}px ${({ theme }) => theme.radii.card}px;
+    background: repeating-linear-gradient(
+      -45deg,
+      #dc2626 0, #dc2626 4px,
+      transparent 4px, transparent 8px,
+      #2563eb 8px, #2563eb 12px,
+      transparent 12px, transparent 16px
+    );
+    opacity: 0.35;
+  }
+
+  /* envelope flap triangle */
+  &::before {
+    content: '';
+    position: absolute;
+    top: -12px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 28px solid transparent;
+    border-right: 28px solid transparent;
+    border-bottom: 12px solid ${({ theme }) => theme.colors.border};
+    opacity: 0.5;
+  }
+
   ${media.mobile} {
     flex-direction: column;
     min-height: auto;
@@ -1025,9 +1058,14 @@ const LIMIT = 10;
 
 const EmailQueue: React.FC = () => {
   const { t } = useTranslation();
+  const { showConfirm, showPrompt } = useDialog();
+  const [urlParams] = useSearchParams();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(() => {
+    const s = urlParams.get('status');
+    return s && ['pending', 'approved', 'rejected', 'sent', 'failed'].includes(s) ? s : '';
+  });
   const [activeEmail, setActiveEmail] = useState<EmailItem | null>(null);
   const [modalPreview, setModalPreview] = useState<EmailItem | null>(null);
   const [pageTab, setPageTab] = useState<'queue' | 'templates'>('queue');
@@ -1107,17 +1145,18 @@ const EmailQueue: React.FC = () => {
     if (selectedIds.size === 0) return;
     bulkApprove.mutate([...selectedIds], { onSuccess: () => clearSelection() });
   };
-  const handleBulkReject = () => {
+  const handleBulkReject = async () => {
     if (selectedIds.size === 0) return;
-    const reason = window.prompt(`拒絕 ${selectedIds.size} 個 email 嘅原因?（可空）`) || undefined;
+    const reason = await showPrompt(`拒絕 ${selectedIds.size} 個 email 嘅原因?（可空）`);
+    if (reason === null) return;
     bulkReject.mutate(
-      { ids: [...selectedIds], reason },
+      { ids: [...selectedIds], reason: reason || undefined },
       { onSuccess: () => clearSelection() },
     );
   };
-  const handleBulkSend = () => {
+  const handleBulkSend = async () => {
     if (selectedIds.size === 0) return;
-    if (!window.confirm(`寄出 ${selectedIds.size} 個 email?`)) return;
+    if (!(await showConfirm(`寄出 ${selectedIds.size} 個 email?`))) return;
     bulkSend.mutate([...selectedIds], { onSuccess: () => clearSelection() });
   };
 
@@ -1169,8 +1208,9 @@ const EmailQueue: React.FC = () => {
     statusCounts[s] = (statusCounts[s] || 0) + 1;
   }
 
-  const handleReject = (id: string) => {
-    const reason = window.prompt(t('emailQueue.rejectPrompt'));
+  const handleReject = async (id: string) => {
+    const reason = await showPrompt(t('emailQueue.rejectPrompt'));
+    if (reason === null) return;
     reject.mutate({ id, reason: reason || undefined });
   };
 

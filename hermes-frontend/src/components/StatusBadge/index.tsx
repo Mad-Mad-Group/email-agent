@@ -1,5 +1,5 @@
 import React from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, css } from 'styled-components';
 
 type Status = 'new' | 'pending' | 'contacted' | 'rejected' | 'qualified' | 'draft' | 'approved' | 'sent' | 'running' | 'idle' | 'active';
 
@@ -27,6 +27,11 @@ const spinDots = keyframes`
   100% { transform: rotate(360deg); }
 `;
 
+const ledPulse = keyframes`
+  0%, 100% { box-shadow: 0 0 3px 1px currentColor; }
+  50%      { box-shadow: 0 0 8px 3px currentColor; }
+`;
+
 const Pill = styled.span<{ $fg: string; $isRunning?: boolean }>`
   display: inline-flex;
   align-items: center;
@@ -38,6 +43,18 @@ const Pill = styled.span<{ $fg: string; $isRunning?: boolean }>`
   font-family: ${({ theme }) => theme.fonts.primary};
   background: ${({ theme }) => theme.colors.surfaceMuted};
   color: ${({ $fg }) => $fg};
+`;
+
+const LedDot = styled.span<{ $fg: string; $active?: boolean }>`
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: ${({ $fg }) => $fg};
+  color: ${({ $fg }) => $fg};
+  box-shadow: 0 0 3px 1px currentColor;
+  animation: ${({ $active }) => $active ? css`${ledPulse} 2s ease-in-out infinite` : 'none'};
+  flex-shrink: 0;
 `;
 
 const SpinnerWrap = styled.span`
@@ -62,9 +79,10 @@ const SpinnerSvg = () => (
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
   const fg = statusFgMap[status] ?? '#2563eb';
   const isRunning = status === 'running';
+  const isActive = isRunning || status === 'active';
   return (
     <Pill $fg={fg} $isRunning={isRunning}>
-      {isRunning && <SpinnerSvg />}
+      {isRunning ? <SpinnerSvg /> : <LedDot $fg={fg} $active={isActive} />}
       {status}
     </Pill>
   );

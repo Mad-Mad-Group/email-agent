@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import styled, { css } from 'styled-components';
+import styled, { css, keyframes } from 'styled-components';
 import { NavLink, useLocation } from 'react-router-dom';
 import { media } from '../../styles/media';
 
@@ -310,7 +310,7 @@ const MenuList = styled.ul`
   margin: 4px 6px 4px 8px;
   padding: 0;
   border: 1.5px dashed ${({ theme }) => theme.colors.borderStrong};
-  border-radius: 8px;
+  border-radius: 14px;
 
   & > li + li {
     border-top: 1.5px dashed ${({ theme }) => theme.colors.borderStrong};
@@ -352,20 +352,31 @@ const DividerSmall = styled.small`
   ${collapsedHide}
 `;
 
+const iconFloat = keyframes`
+  0%   { transform: translateY(0)   rotate(0deg); }
+  25%  { transform: translateY(-3px) rotate(4deg); }
+  50%  { transform: translateY(-4px) rotate(0deg); }
+  75%  { transform: translateY(-3px) rotate(-4deg); }
+  100% { transform: translateY(0)   rotate(0deg); }
+`;
+
 const MLink = styled(NavLink)`
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 14px;
   font-size: 0.9375rem;
   color: ${({ theme }) => theme.colors.textPrimary};
   text-decoration: none;
   transition: all 0.15s ease;
 
+  svg { transition: transform 0.2s ease; }
+
   &:hover {
     color: ${({ theme }) => theme.colors.textPrimary};
     background: ${({ theme }) => theme.colors.surfaceMuted};
+    svg { animation: ${iconFloat} 0.6s ease-in-out; }
   }
 
   &.active {
@@ -385,7 +396,7 @@ const MLinkButton = styled.button<{ $active?: boolean }>`
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-radius: 8px;
+  border-radius: 14px;
   font-size: 0.9375rem;
   color: ${({ theme, $active }) => $active ? 'var(--primary, #2563eb)' : theme.colors.textPrimary};
   font-weight: ${({ $active }) => $active ? 600 : 400};
@@ -397,8 +408,11 @@ const MLinkButton = styled.button<{ $active?: boolean }>`
   cursor: pointer;
   text-align: left;
 
+  svg { transition: transform 0.2s ease; }
+
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceMuted};
+    svg { animation: ${iconFloat} 0.6s ease-in-out; }
   }
 
   [data-collapsed="true"] & {
@@ -499,13 +513,16 @@ const FooterBtn = styled.a`
   padding: 8px;
   color: ${({ theme }) => theme.colors.textTertiary};
   text-decoration: none;
-  border-radius: 8px;
+  border-radius: 14px;
   transition: all 0.15s;
   cursor: pointer;
+
+  svg { transition: transform 0.2s ease; }
 
   &:hover {
     color: ${({ theme }) => theme.colors.textPrimary};
     background: ${({ theme }) => theme.colors.surfaceMuted};
+    svg { animation: ${iconFloat} 0.6s ease-in-out; }
   }
 
   ${media.mobile} {
