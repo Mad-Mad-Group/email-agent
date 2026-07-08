@@ -42,17 +42,27 @@ const slideUp = keyframes`
   to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 `;
 
+const fadeOut = keyframes`
+  from { opacity: 1; }
+  to   { opacity: 0; }
+`;
+
+const slideDown = keyframes`
+  from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  to   { opacity: 0; transform: translate(-50%, -50%) scale(0.95); }
+`;
+
 /* ── Styled Components ── */
 
-const Overlay = styled.div`
+const Overlay = styled.div<{ $closing?: boolean }>`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.35);
   z-index: 9999;
-  animation: ${fadeIn} 0.15s ease-out;
+  animation: ${({ $closing }) => $closing ? fadeOut : fadeIn} ${({ $closing }) => $closing ? '0.2s' : '0.15s'} ease-out forwards;
 `;
 
-const Panel = styled.div`
+const Panel = styled.div<{ $closing?: boolean }>`
   position: fixed;
   top: 50%;
   left: 50%;
@@ -65,7 +75,7 @@ const Panel = styled.div`
   width: 340px;
   max-width: 90vw;
   padding: 20px 22px 16px;
-  animation: ${slideUp} 0.2s ease-out;
+  animation: ${({ $closing }) => $closing ? slideDown : slideUp} 0.2s ease-out forwards;
 `;
 
 const Message = styled.p`
@@ -125,6 +135,7 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     resolve: null,
   });
   const inputRef = useRef<HTMLInputElement>(null);
+  const [closing, setClosing] = useState(false);
 
   useEffect(() => {
     if (state.open && state.type === 'prompt') {
@@ -145,21 +156,29 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, []);
 
   const handleConfirm = () => {
-    if (state.type === 'confirm') {
-      state.resolve?.(true);
-    } else {
-      state.resolve?.(inputRef.current?.value ?? '');
-    }
-    setState((s) => ({ ...s, open: false, resolve: null }));
+    setClosing(true);
+    setTimeout(() => {
+      if (state.type === 'confirm') {
+        state.resolve?.(true);
+      } else {
+        state.resolve?.(inputRef.current?.value ?? '');
+      }
+      setState((s) => ({ ...s, open: false, resolve: null }));
+      setClosing(false);
+    }, 200);
   };
 
   const handleCancel = () => {
-    if (state.type === 'confirm') {
-      state.resolve?.(false);
-    } else {
-      state.resolve?.(null);
-    }
-    setState((s) => ({ ...s, open: false, resolve: null }));
+    setClosing(true);
+    setTimeout(() => {
+      if (state.type === 'confirm') {
+        state.resolve?.(false);
+      } else {
+        state.resolve?.(null);
+      }
+      setState((s) => ({ ...s, open: false, resolve: null }));
+      setClosing(false);
+    }, 200);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -172,8 +191,8 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       {children}
       {state.open && (
         <>
-          <Overlay onClick={handleCancel} />
-          <Panel onKeyDown={handleKeyDown}>
+          <Overlay $closing={closing} onClick={handleCancel} />
+          <Panel $closing={closing} onKeyDown={handleKeyDown}>
             <Message>{state.message}</Message>
             {state.type === 'prompt' && (
               <Input

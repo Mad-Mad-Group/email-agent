@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { media } from '../../styles/media';
 
@@ -134,17 +134,36 @@ const ActionBtn = styled.button<{ $color: string }>`
 
 /* ── Modal ── */
 
-const Overlay = styled.div`
+const modalFadeIn = keyframes`
+  from { opacity: 0; }
+  to   { opacity: 1; }
+`;
+const modalFadeOut = keyframes`
+  from { opacity: 1; }
+  to   { opacity: 0; }
+`;
+const modalSlideIn = keyframes`
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+`;
+const modalSlideOut = keyframes`
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(8px) scale(0.97); }
+`;
+
+const Overlay = styled.div<{ $closing?: boolean }>`
   position: fixed; inset: 0; background: rgba(0,0,0,0.45);
   display: flex; align-items: center; justify-content: center;
   z-index: 1000;
+  animation: ${({ $closing }) => $closing ? modalFadeOut : modalFadeIn} 0.2s ease-out forwards;
 `;
 
-const Modal = styled.div`
+const Modal = styled.div<{ $closing?: boolean }>`
   background: ${({ theme }) => theme.colors.surface};
   border-radius: ${({ theme }) => theme.radii.card}px;
   width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
   box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+  animation: ${({ $closing }) => $closing ? modalSlideOut : modalSlideIn} 0.2s ease-out forwards;
   ${media.mobile} {
     width: 95%;
     margin: 20px auto;
@@ -266,6 +285,15 @@ const Customers: React.FC = () => {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalClosing, setModalClosing] = useState(false);
+  const modalTimerRef = useRef<ReturnType<typeof setTimeout>>();
+
+  const closeModal = useCallback(() => {
+    setModalClosing(true);
+    modalTimerRef.current = setTimeout(() => { setModalOpen(false); setModalClosing(false); }, 200);
+  }, []);
+
+  useEffect(() => () => { if (modalTimerRef.current) clearTimeout(modalTimerRef.current); }, []);
 
   const filtered = CUSTOMERS.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase())
@@ -367,11 +395,11 @@ const Customers: React.FC = () => {
 
       {/* Add Customer Modal */}
       {modalOpen && (
-        <Overlay onClick={() => setModalOpen(false)}>
-          <Modal onClick={(e) => e.stopPropagation()}>
+        <Overlay $closing={modalClosing} onClick={closeModal}>
+          <Modal $closing={modalClosing} onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
               <h2>{t('customers.addCustomer')}</h2>
-              <CloseBtn onClick={() => setModalOpen(false)}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
+              <CloseBtn onClick={closeModal}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
             </ModalHeader>
             <ModalBody>
               <FormRow>
@@ -417,8 +445,8 @@ const Customers: React.FC = () => {
               </FormGroup>
             </ModalBody>
             <ModalFooter>
-              <SecondaryBtn onClick={() => setModalOpen(false)}>{t('common.close')}</SecondaryBtn>
-              <PrimaryBtn onClick={() => setModalOpen(false)}>{t('common.submit')}</PrimaryBtn>
+              <SecondaryBtn onClick={closeModal}>{t('common.close')}</SecondaryBtn>
+              <PrimaryBtn onClick={closeModal}>{t('common.submit')}</PrimaryBtn>
             </ModalFooter>
           </Modal>
         </Overlay>

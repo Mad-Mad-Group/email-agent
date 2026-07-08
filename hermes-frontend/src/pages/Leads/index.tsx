@@ -86,13 +86,47 @@ const IconLeadScraper = () => (
 /* ── Avatar color from name hash ── */
 
 const hashColor = (name: string): string => {
-  const colors = ['#bfdbfe', '#c4b5fd', '#a5f3fc', '#bbf7d0'];
+  const colors = ['#bfdbfe', '#c4b5fd', '#a5f3fc', '#bbf7d0', '#fecaca', '#fde68a', '#e9d5ff', '#cffafe'];
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
   return colors[Math.abs(hash) % colors.length];
 };
+
+/* 20 distinct SVG paths (16×16 viewBox) for company avatars */
+const AVATAR_ICONS: string[] = [
+  /* building */    'M3 2h10v12H3V2zm2 2h2v2H5zm4 0h2v2H9zM5 8h2v2H5zm4 0h2v2H9zM6 12h4v2H6z',
+  /* briefcase */   'M4 5h8a1 1 0 011 1v7a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zM6 5V3.5a.5.5 0 01.5-.5h3a.5.5 0 01.5.5V5M3 8h10',
+  /* globe */       'M8 1a7 7 0 100 14A7 7 0 008 1zM1 8h14M8 1c2 2 3 4 3 7s-1 5-3 7c-2-2-3-4-3-7s1-5 3-7z',
+  /* rocket */      'M8 14s-4-2-4-7c0-3 2-5 4-6 2 1 4 3 4 6 0 5-4 7-4 7zM6 9.5a2 2 0 104 0 2 2 0 00-4 0M5 12l-2 2M11 12l2 2',
+  /* chart */       'M2 14V8l3-2v8zm4 0V5l3-1v10zm4 0V3l3-1v12z',
+  /* lightbulb */   'M8 1a4.5 4.5 0 00-1.5 8.75V12h3V9.75A4.5 4.5 0 008 1zM6.5 13h3M6.5 14h3',
+  /* gear */        'M8 5.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5zM8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.5 1.5M11.5 11.5L13 13M13 3l-1.5 1.5M4.5 11.5L3 13',
+  /* target */      'M8 1a7 7 0 100 14A7 7 0 008 1zM8 4a4 4 0 100 8 4 4 0 000-8zM8 6.5a1.5 1.5 0 100 3 1.5 1.5 0 000-3z',
+  /* store */       'M2 6l1-4h10l1 4M2 6v8h12V6M2 6h12M6 10h4v4H6z',
+  /* lab */         'M6 1v5L2 13a1 1 0 001 1h10a1 1 0 001-1L10 6V1M5 1h6M4.5 10h7',
+  /* truck */       'M1 3h9v7H1V3zm9 2h3l2 3v4h-5V5zM4 12a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM12 12a1.5 1.5 0 100-3 1.5 1.5 0 000 3z',
+  /* signal */      'M2 14V10M5 14V7M8 14V4M11 14V2M14 14V5',
+  /* shield */      'M8 1L2 4v4c0 4 3 6 6 7 3-1 6-3 6-7V4L8 1zM6 8l2 2 3-4',
+  /* diamond */     'M3 6l5-5 5 5-5 9-5-9zM1 6h14',
+  /* leaf */        'M3 14c0-6 4-10 10-11-1 6-5 10-10 10V14zM3 14c2-2 4-3 6-3',
+  /* bolt */        'M9 1L4 8h4l-1 7 5-7H8l1-7z',
+  /* cube */        'M2 5l6-3 6 3v6l-6 3-6-3V5zM2 5l6 3M8 8v6M14 5l-6 3',
+  /* users */       'M6 7a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM1 14c0-2.5 2-4.5 5-4.5s5 2 5 4.5M11 4.5a2.5 2.5 0 110 5M12 9.5c2 .5 3 2 3 4.5',
+  /* pin */         'M8 1a5 5 0 00-5 5c0 4 5 9 5 9s5-5 5-9a5 5 0 00-5-5zm0 3a2 2 0 110 4 2 2 0 010-4z',
+  /* wrench */      'M4 12l6-6M14 4l-3 3-2.5-2.5L11.5 1.5a4 4 0 00-5 1L4 5l7 7 2.5-2.5a4 4 0 001-5z',
+];
+const hashIcon = (name: string): number => {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
+  return Math.abs(h) % AVATAR_ICONS.length;
+};
+const AvatarIcon: React.FC<{ name: string }> = ({ name }) => (
+  <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+    <path d={AVATAR_ICONS[hashIcon(name)]} stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
 
 /* ── Layout ── */
 
@@ -643,17 +677,17 @@ const NameCell = styled.div`
 const Avatar = styled.div<{ $color: string }>`
   width: 34px;
   height: 34px;
-  border-radius: 50%;
+  border-radius: 10px;
   background: ${({ $color }) => $color};
   color: ${({ theme }) => theme.colors.textPrimary};
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 1rem;
   font-weight: 700;
   flex-shrink: 0;
-  text-transform: uppercase;
   box-shadow: none;
+  line-height: 1;
 `;
 
 const NameText = styled.div`
@@ -838,7 +872,24 @@ const PageBtn = styled.button<{ $active?: boolean }>`
 
 /* ── Modal ── */
 
-const Overlay = styled.div`
+const modalFadeIn = keyframes`
+  from { opacity: 0; }
+  to   { opacity: 1; }
+`;
+const modalFadeOut = keyframes`
+  from { opacity: 1; }
+  to   { opacity: 0; }
+`;
+const modalSlideIn = keyframes`
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+`;
+const modalSlideOut = keyframes`
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(8px) scale(0.97); }
+`;
+
+const Overlay = styled.div<{ $closing?: boolean }>`
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.45);
@@ -846,9 +897,10 @@ const Overlay = styled.div`
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  animation: ${({ $closing }) => $closing ? modalFadeOut : modalFadeIn} 0.2s ease-out forwards;
 `;
 
-const Modal = styled.div`
+const Modal = styled.div<{ $closing?: boolean }>`
   background: ${({ theme }) => theme.colors.surface};
   border-radius: ${({ theme }) => theme.radii.card}px;
   width: 520px;
@@ -856,6 +908,7 @@ const Modal = styled.div`
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+  animation: ${({ $closing }) => $closing ? modalSlideOut : modalSlideIn} 0.2s ease-out forwards;
   ${media.mobile} { width: 95%; }
 `;
 
@@ -1013,7 +1066,17 @@ const dpSlideUp = keyframes`
   to   { opacity: 1; transform: translateY(0); }
 `;
 
-const DpOverlay = styled.div`
+const dpFadeOut = keyframes`
+  from { opacity: 1; }
+  to   { opacity: 0; }
+`;
+
+const dpSlideDown = keyframes`
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(16px); }
+`;
+
+const DpOverlay = styled.div<{ $closing?: boolean }>`
   position: fixed;
   inset: 0;
   z-index: 1200;
@@ -1021,10 +1084,10 @@ const DpOverlay = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: ${dpFadeIn} 0.2s ease-out;
+  animation: ${({ $closing }) => $closing ? dpFadeOut : dpFadeIn} 0.2s ease-out forwards;
 `;
 
-const DpPanel = styled.div`
+const DpPanel = styled.div<{ $closing?: boolean }>`
   width: 88vw;
   max-width: 1400px;
   height: 90vh;
@@ -1037,7 +1100,7 @@ const DpPanel = styled.div`
     ? '0 20px 60px rgba(0,0,0,0.5)'
     : '0 20px 60px rgba(0,0,0,0.18)'};
   overflow: hidden;
-  animation: ${dpSlideUp} 0.25s ease-out;
+  animation: ${({ $closing }) => $closing ? dpSlideDown : dpSlideUp} 0.25s ease-out forwards;
   ${media.mobile} {
     width: 95vw;
     height: 92vh;
@@ -1069,7 +1132,7 @@ const DpCompanyName = styled.h2`
   font-weight: 700;
   color: ${({ theme }) => theme.mode === 'dark' ? '#e0edff' : '#1e3a5f'};
   letter-spacing: 0.01em;
-  font-family: 'Georgia', 'Times New Roman', serif;
+  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif;
 `;
 
 const DpCloseBtn = styled.button`
@@ -1849,7 +1912,11 @@ const Leads: React.FC = () => {
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAdd, setShowAdd] = useState(false);
+  const [addClosing, setAddClosing] = useState(false);
+  const addTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [detailClosing, setDetailClosing] = useState(false);
+  const detailTimerRef = useRef<ReturnType<typeof setTimeout>>();
   const [aboutOpen, setAboutOpen] = useState(false);
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [form, setForm] = useState({
@@ -1873,6 +1940,14 @@ const Leads: React.FC = () => {
       setDemoMode(on);
     }).catch(() => {});
   }, []);
+
+  const closeAddModal = useCallback(() => {
+    setAddClosing(true);
+    addTimerRef.current = setTimeout(() => { setShowAdd(false); setAddClosing(false); }, 200);
+  }, []);
+
+  useEffect(() => () => { if (addTimerRef.current) clearTimeout(addTimerRef.current); }, []);
+  useEffect(() => () => { if (detailTimerRef.current) clearTimeout(detailTimerRef.current); }, []);
 
   const handleToggleDemo = async () => {
     setDemoLoading(true);
@@ -2043,13 +2118,16 @@ const Leads: React.FC = () => {
     e.preventDefault();
     createLead.mutate(form as any, {
       onSuccess: () => {
-        setShowAdd(false);
+        closeAddModal();
         setForm({ company_name: '', email: '', phone: '', website: '', address: '' });
       },
     });
   };
 
-  const handleCloseDetail = useCallback(() => setSelectedLead(null), []);
+  const handleCloseDetail = useCallback(() => {
+    setDetailClosing(true);
+    detailTimerRef.current = setTimeout(() => { setSelectedLead(null); setDetailClosing(false); }, 200);
+  }, []);
 
   return (
     <Page>
@@ -2229,7 +2307,7 @@ const Leads: React.FC = () => {
                         </td>
                         <td>
                           <NameCell>
-                            <Avatar $color={color}>{getInitials(name)}</Avatar>
+                            <Avatar $color={color}><AvatarIcon name={name} /></Avatar>
                             <NameText>
                               <strong>{name}</strong>
                               {lead.website && <small>{lead.website}</small>}
@@ -2291,11 +2369,11 @@ const Leads: React.FC = () => {
 
       {/* Add Lead Modal */}
       {showAdd && (
-        <Overlay onClick={() => setShowAdd(false)}>
-          <Modal onClick={e => e.stopPropagation()}>
+        <Overlay $closing={addClosing} onClick={closeAddModal}>
+          <Modal $closing={addClosing} onClick={e => e.stopPropagation()}>
             <ModalHeader>
               <h2>{t('leads.addLead')}</h2>
-              <CloseBtn onClick={() => setShowAdd(false)}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
+              <CloseBtn onClick={closeAddModal}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
             </ModalHeader>
             <form onSubmit={handleCreate}>
               <ModalBody>
@@ -2347,7 +2425,7 @@ const Leads: React.FC = () => {
                 </FormGroup>
               </ModalBody>
               <ModalFooter>
-                <SecondaryBtn type="button" onClick={() => setShowAdd(false)}>{t('common.close')}</SecondaryBtn>
+                <SecondaryBtn type="button" onClick={closeAddModal}>{t('common.close')}</SecondaryBtn>
                 <PrimaryBtn type="submit" disabled={createLead.isPending}>
                   {createLead.isPending ? t('leads.creating') : t('common.submit')}
                 </PrimaryBtn>
@@ -2359,8 +2437,8 @@ const Leads: React.FC = () => {
 
       {/* Lead Detail Panel — floating modal */}
       {selectedLead && createPortal(
-        <DpOverlay onClick={handleCloseDetail}>
-        <DpPanel onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+        <DpOverlay $closing={detailClosing} onClick={handleCloseDetail}>
+        <DpPanel $closing={detailClosing} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
           <DpHeader>
             <span style={{
               position: 'absolute',
@@ -2377,7 +2455,7 @@ const Leads: React.FC = () => {
               backdropFilter: 'blur(4px)',
             }}>{selectedLead.status ?? 'new'}</span>
             <Avatar $color={hashColor(selectedLead.company_name || 'Unknown')} style={{ width: 42, height: 42, fontSize: '0.875rem', border: isDark ? '2px solid rgba(255,255,255,0.3)' : '2px solid rgba(37,99,235,0.2)' }}>
-              {getInitials(selectedLead.company_name || 'Unknown')}
+              <AvatarIcon name={selectedLead.company_name || 'Unknown'} />
             </Avatar>
             <DpHeaderInfo>
               <DpCompanyName>{selectedLead.company_name || 'Unknown'}</DpCompanyName>
@@ -2438,7 +2516,11 @@ const Leads: React.FC = () => {
                       <DpFieldIcon $color="#7c3aed"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zM1 8h14M8 1c1.7 2 2.7 4 2.7 7s-1 5-2.7 7c-1.7-2-2.7-4-2.7-7s1-5 2.7-7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
                       {t('leads.website')}
                     </DpFieldLabel>
-                    <DpFieldValue style={{ color: selectedLead.website ? '#7c3aed' : undefined }}>{selectedLead.website || '—'}</DpFieldValue>
+                    <DpFieldValue style={{ color: selectedLead.website ? '#7c3aed' : undefined }}>
+                      {selectedLead.website ? (
+                        <a href={selectedLead.website.startsWith('http') ? selectedLead.website : `https://${selectedLead.website}`} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: '2px' }}>{selectedLead.website}</a>
+                      ) : '—'}
+                    </DpFieldValue>
                   </DpField>
                   <DpField>
                     <DpFieldLabel>
