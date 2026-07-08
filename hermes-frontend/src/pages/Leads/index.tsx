@@ -8,6 +8,7 @@ import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
 import client from '../../api/client';
 import { media } from '../../styles/media';
+import { useDialog } from '../../components';
 
 /* ══════════════════════════════════════
    CMS Leads — Luno Contacts-style UI
@@ -1571,6 +1572,7 @@ const LeadSendBtn = styled.button`
 
 const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ companyName, leadId }) => {
   const { t } = useTranslation();
+  const { showPrompt } = useDialog();
   const { data } = useEmailQueue({ search: companyName });
   const approve = useApproveEmail();
   const reject = useRejectEmail();
@@ -1606,8 +1608,8 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
     }
   };
 
-  const handleReject = (id: string) => {
-    const reason = window.prompt('拒絕原因（可空）') || undefined;
+  const handleReject = async (id: string) => {
+    const reason = (await showPrompt(t('leads.rejectReason'))) || undefined;
     reject.mutate({ id, reason }, {
       onSuccess: () => console.info('已拒絕'),
       onError: () => console.error('拒絕失敗'),
@@ -1718,6 +1720,7 @@ const LIMIT = 10;
 
 const Leads: React.FC = () => {
   const { t } = useTranslation();
+  const { showConfirm } = useDialog();
 
   const isNew = (l: Lead) => l.status === 'new' || l.status === null || l.status === undefined;
 
@@ -1860,8 +1863,8 @@ const Leads: React.FC = () => {
   // confirm message is in Chinese to match the rest of the UI.
   const handleClearAll = async () => {
     const count = apiLeads.length;
-    const ok = window.confirm(
-      `確定清空全部 Leads 嗎？\n\n將會永久刪除 ${count} 筆客戶資料，呢個動作唔可以 undo。`,
+    const ok = await showConfirm(
+      t('leads.confirmClearAll', { count }),
     );
     if (!ok) return;
     setClearMsg('');
@@ -1961,8 +1964,9 @@ const Leads: React.FC = () => {
   // 保留 stats.total 畀 KPI header
   const stats = useMemo(() => ({ total: allLeads.length }), [allLeads]);
 
-  const handleDelete = (id: string) => {
-    if (window.confirm(t('leads.confirmDelete'))) {
+  const handleDelete = async (id: string) => {
+    const ok = await showConfirm(t('leads.confirmDelete'));
+    if (ok) {
       deleteLead.mutate(id, {
         onSuccess: () => console.info('Lead 已刪除'),
         onError: () => console.error('刪除失敗'),

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
+import { useTranslation } from 'react-i18next';
 
 /* ══════════════════════════════════════
    Custom Dialog — replaces window.prompt / window.confirm
@@ -116,6 +117,7 @@ const Btn = styled.button<{ $primary?: boolean }>`
 /* ── Provider ── */
 
 export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { t } = useTranslation();
   const [state, setState] = useState<DialogState>({
     open: false,
     type: 'confirm',
@@ -181,8 +183,8 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
               />
             )}
             <ButtonRow>
-              <Btn onClick={handleCancel}>取消</Btn>
-              <Btn $primary onClick={handleConfirm}>確定</Btn>
+              <Btn onClick={handleCancel}>{t('dialog.cancel')}</Btn>
+              <Btn $primary onClick={handleConfirm}>{t('dialog.confirm')}</Btn>
             </ButtonRow>
           </Panel>
         </>

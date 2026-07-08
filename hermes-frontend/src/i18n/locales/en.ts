@@ -34,6 +34,10 @@ const en = {
     noResults: 'No results found.',
     actions: 'Actions',
   },
+  dialog: {
+    cancel: 'Cancel',
+    confirm: 'OK',
+  },
   nav: {
     dashboard: 'Dashboard',
     pipeline: 'Pipeline',
@@ -228,6 +232,8 @@ const en = {
     noLeads: 'No leads found.',
     showingOf: 'Showing {{count}} of {{total}} leads',
     confirmDelete: 'Are you sure you want to delete this lead?',
+    confirmClearAll: 'Clear all leads?\n\nThis will permanently delete {{count}} leads. This action cannot be undone.',
+    rejectReason: 'Rejection reason (optional)',
     companyName: 'Company Name *',
     website: 'Website',
     address: 'Address',

@@ -34,6 +34,10 @@ const zhTW = {
     noResults: '未找到結果。',
     actions: '操作',
   },
+  dialog: {
+    cancel: '取消',
+    confirm: '確定',
+  },
   nav: {
     dashboard: '儀表板',
     pipeline: '銷售管線',
@@ -228,6 +232,8 @@ const zhTW = {
     noLeads: '未找到潛在客戶。',
     showingOf: '顯示 {{count}} / {{total}} 位潛在客戶',
     confirmDelete: '確定要刪除此潛在客戶嗎？',
+    confirmClearAll: '確定清空全部 Leads 嗎？\n\n將會永久刪除 {{count}} 筆客戶資料，此操作無法復原。',
+    rejectReason: '拒絕原因（可空）',
     companyName: '公司名稱 *',
     website: '網站',
     address: '地址',
