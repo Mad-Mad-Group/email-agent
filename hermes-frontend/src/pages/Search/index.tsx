@@ -1759,6 +1759,17 @@ const SearchPage: React.FC = () => {
     }
   }, [pipelineLogs]);
 
+  /* ── Clear form after pipeline completes ── */
+  useEffect(() => {
+    if (pipelineComplete) {
+      setKeyword('');
+      setLocation('香港');
+      setDistrict('全區');
+      setTargetCount(20);
+      try { localStorage.removeItem('search-form'); } catch {}
+    }
+  }, [pipelineComplete]);
+
   /* ── Filter state ── */
   const [filterEmail, setFilterEmail] = useState(false);
   const [filterPhone, setFilterPhone] = useState(false);
