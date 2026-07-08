@@ -52,6 +52,10 @@ let LeadsController = class LeadsController {
         await this.leads.remove(id);
         return { id };
     }
+    async clearAll() {
+        const count = await this.leads.clearAll();
+        return { deleted: count };
+    }
 };
 exports.LeadsController = LeadsController;
 __decorate([
@@ -120,6 +124,15 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "remove", null);
+__decorate([
+    (0, common_1.Delete)(),
+    (0, common_1.HttpCode)(200),
+    (0, permission_decorator_1.Permission)('leads.delete'),
+    openapi.ApiResponse({ status: 200 }),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", []),
+    __metadata("design:returntype", Promise)
+], LeadsController.prototype, "clearAll", null);
 exports.LeadsController = LeadsController = __decorate([
     (0, swagger_1.ApiTags)('Leads 搵客管理'),
     (0, swagger_1.ApiBearerAuth)(),

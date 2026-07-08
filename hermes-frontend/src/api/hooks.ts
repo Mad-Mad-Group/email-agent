@@ -55,6 +55,16 @@ export const useDeleteLead = () => {
   });
 };
 
+// ponytail: bulk-clear hook. Returns deleted-count from server so the caller
+// can show "已清 N 筆" feedback.
+export const useClearAllLeads = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => leadsApi.clearAll().then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
+  });
+};
+
 export const useChangeLeadStatus = () => {
   const qc = useQueryClient();
   return useMutation({

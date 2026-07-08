@@ -1843,9 +1843,10 @@ const SearchPage: React.FC = () => {
         {DOT_CONFIG.map((d, i) => (
           <Dot key={i} $x={d.x} $y={d.y} $size={d.size} $delay={d.delay} $dur={d.dur} />
         ))}
-        {/* Search Form — Unified Bar. Hidden while a pipeline is running or
-            just completed; replaced with skeleton shimmer + spinner. */}
-        {isPipelineRunning || pipelineComplete ? (
+        {/* Search Form — Unified Bar. Hidden ONLY while a pipeline is actively
+            running; replaced with skeleton shimmer + spinner. After completion
+            the bar reappears so the user can immediately run another search. */}
+        {isPipelineRunning ? (
           <SkeletonWrap>
             <SkeletonSpinner />
             <SkeletonBar $w={140} />

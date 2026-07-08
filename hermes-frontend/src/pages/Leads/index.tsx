@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail } from '../../api/hooks';
+import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail, useClearAllLeads } from '../../api/hooks';
 import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
 import client from '../../api/client';
@@ -299,6 +299,16 @@ const AddBtnGreen = styled(AddBtn)`
   box-shadow: 0 1px 3px rgba(22,163,74,0.2);
   &:hover {
     box-shadow: 0 3px 10px rgba(22,163,74,0.25);
+  }
+`;
+
+// ponytail: red danger button for "一鍵清空" — visually distinct from the
+// green AddBtn so the user can't misclick.
+const ClearBtn = styled(AddBtn)`
+  background: linear-gradient(135deg, #dc2626, #ef4444);
+  box-shadow: 0 1px 3px rgba(220,38,38,0.2);
+  &:hover:not(:disabled) {
+    box-shadow: 0 3px 10px rgba(220,38,38,0.25);
   }
 `;
 
@@ -1681,6 +1691,28 @@ const Leads: React.FC = () => {
     } finally { setFollowupChecking(false); }
   };
 
+  // ponytail: bulk-clear with explicit confirm. We require typing "DELETE"
+  // (or at least a window.confirm) so a misclick doesn't wipe the DB. The
+  // confirm message is in Chinese to match the rest of the UI.
+  const handleClearAll = async () => {
+    const count = apiLeads.length;
+    const ok = window.confirm(
+      `確定清空全部 Leads 嗎？\n\n將會永久刪除 ${count} 筆客戶資料，呢個動作唔可以 undo。`,
+    );
+    if (!ok) return;
+    setClearMsg('');
+    clearAllLeads.mutate(undefined, {
+      onSuccess: (data) => {
+        setClearMsg(`已清空 ${data?.deleted ?? 0} 筆 leads`);
+        setTimeout(() => setClearMsg(''), 4000);
+      },
+      onError: (err: any) => {
+        setClearMsg('清空失敗: ' + (err?.message || '未知錯誤'));
+        setTimeout(() => setClearMsg(''), 5000);
+      },
+    });
+  };
+
   // 攞可攞到嘅全部 leads（backend DTO 限 limit ≤ 100）。
   // status/search filtering client side 做。
   const { data, isLoading, error, refetch, isFetching } = useLeads({ page: 1, limit: 100 });
@@ -1688,10 +1720,13 @@ const Leads: React.FC = () => {
   const deleteLead = useDeleteLead();
   const changeStatus = useChangeLeadStatus();
   const createLead = useCreateLead();
+  const clearAllLeads = useClearAllLeads();
+  const [clearMsg, setClearMsg] = useState('');
 
   const apiLeads: Lead[] = data?.data ?? [];
-  // DEV: always include mock data for UI testing
-  const allLeads: Lead[] = [...MOCK_LEADS, ...apiLeads];
+  // ponytail: was `[...MOCK_LEADS, ...apiLeads]` — removed mock per request;
+  // the "一鍵清空" button now produces a visibly empty list.
+  const allLeads: Lead[] = apiLeads;
 
   /* ── Auto-open detail panel from URL ?detail=<leadId> ── */
   const detailHandled = useRef<string | null>(null);
@@ -1830,16 +1865,20 @@ const Leads: React.FC = () => {
               <AddBtn onClick={() => refetch()} disabled={isFetching} title="重新整理">
                 {isFetching ? '⟳ 刷新中…' : '⟳ 刷新'}
               </AddBtn>
+              <ClearBtn onClick={handleClearAll} disabled={clearAllLeads.isPending || apiLeads.length === 0} title="永久刪除所有 leads">
+                {clearAllLeads.isPending ? '清空中…' : '🗑 一鍵清空'}
+              </ClearBtn>
               <AddBtnGreen onClick={() => setShowAdd(true)}>
                 <IconPlus />
                 {t('leads.addLead')}
               </AddBtnGreen>
             </HeaderBtns>
           </HeaderTop>
-          {(replyCheckMsg || followupCheckMsg) && (
+          {(replyCheckMsg || followupCheckMsg || clearMsg) && (
             <HeaderFeedback>
               {replyCheckMsg && <FeedbackMsg key={replyCheckMsg} $error={replyCheckMsg.startsWith('觸發失敗')}>{replyCheckMsg}</FeedbackMsg>}
               {followupCheckMsg && <FeedbackMsg key={followupCheckMsg} $error={followupCheckMsg.startsWith('觸發失敗')}>{followupCheckMsg}</FeedbackMsg>}
+              {clearMsg && <FeedbackMsg key={clearMsg} $error={clearMsg.startsWith('清空失敗')}>{clearMsg}</FeedbackMsg>}
             </HeaderFeedback>
           )}
         </HeaderSection>
