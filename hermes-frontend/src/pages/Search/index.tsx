@@ -1811,14 +1811,14 @@ const SearchPage: React.FC = () => {
       }).catch(() => { /* ignore polling errors */ });
     }, 3000);
 
-    // ── 5-min hard timeout ──
+    // ── 30-min hard timeout ──
     const timeoutId = window.setTimeout(() => {
       if (!done) {
         done = true;
-        console.warn(`[Search] Pipeline ${campaignId} timed out after 5 min`);
+        console.warn(`[Search] Pipeline ${campaignId} timed out after 30 min`);
         fetchLeadsAndFinish(campaignId);
       }
-    }, 5 * 60 * 1000);
+    }, 30 * 60 * 1000);
 
     return () => {
       unsubLog();
