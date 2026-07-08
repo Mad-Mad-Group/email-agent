@@ -609,16 +609,29 @@ const Table = styled.table`
   }
 `;
 
-const TRow = styled.tr<{ $even?: boolean }>`
+const TRow = styled.tr<{ $even?: boolean; $collapsed?: boolean }>`
   background: ${({ $even, theme }) => $even ? theme.colors.surfaceMuted : theme.colors.surface};
   transition: background 0.15s;
   cursor: pointer;
   &:hover {
-    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.04)' : '#eff6ff'};
+    background: ${({ theme, $collapsed }) => $collapsed ? 'transparent' : (theme.mode === 'dark' ? 'rgba(255,255,255,0.04)' : '#eff6ff')};
   }
   td {
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+    overflow: hidden;
+    transition: padding 0.3s ease, max-height 0.3s ease, opacity 0.3s ease, border-color 0.3s ease;
   }
+  ${({ $collapsed }) => $collapsed && `
+    pointer-events: none;
+    td {
+      padding-top: 0;
+      padding-bottom: 0;
+      max-height: 0;
+      opacity: 0;
+      border-color: transparent;
+      line-height: 0;
+    }
+  `}
 `;
 
 const NameCell = styled.div`
@@ -2173,8 +2186,7 @@ const Leads: React.FC = () => {
                               </td>
                             </GroupBar>
                           )}
-                          {!isCollapsed && (
-                          <TRow $even={i % 2 === 1} style={{ cursor: 'pointer' }} onClick={() => setSelectedLead(lead)}>
+                          <TRow $even={i % 2 === 1} $collapsed={isCollapsed} style={{ cursor: isCollapsed ? 'default' : 'pointer' }} onClick={() => !isCollapsed && setSelectedLead(lead)}>
                         <td>
                           <StatusBadge $status={lead.status ?? 'new'}>{lead.status ?? 'new'}</StatusBadge>
                         </td>
@@ -2220,7 +2232,6 @@ const Leads: React.FC = () => {
                           </ActionBtn>
                         </td>
                       </TRow>
-                          )}
                         </React.Fragment>
                       );
                     });
