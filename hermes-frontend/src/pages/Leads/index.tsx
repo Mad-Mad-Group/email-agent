@@ -1177,7 +1177,33 @@ const DpColLeft = styled.div`
   ${media.tabletDown} { border-right: none; border-bottom: 1px solid ${({ theme }) => theme.colors.border}; overflow-y: visible; padding: 10px 16px; }
 `;
 
-const DpSectionCard = styled.div`
+const DpTabSection = styled.div`
+  position: relative;
+  margin-top: 22px;
+  &:first-of-type { margin-top: 0; }
+`;
+
+const DpTabLabel = styled.span`
+  position: absolute;
+  top: -1px;
+  left: 14px;
+  transform: translateY(-100%);
+  padding: 4px 14px 3px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border}33;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.surface};
+  border-radius: 8px 8px 0 0;
+  z-index: 1;
+  user-select: none;
+`;
+
+const DpTabCard = styled.div`
+  position: relative;
   background: ${({ theme }) => theme.colors.surface};
   border-radius: ${({ theme }) => theme.radii.control}px;
   padding: 14px 16px;
@@ -2494,8 +2520,9 @@ const Leads: React.FC = () => {
                 <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{aboutOpen ? '▲' : '▼'}</span>
               </DpCollapsibleHead>
               <DpCollapsibleBody $open={aboutOpen}>
-                <DpSectionTitle>{t('leads.about')}</DpSectionTitle>
-                <DpSectionCard>
+                <DpTabSection>
+                <DpTabLabel>{t('leads.about')}</DpTabLabel>
+                <DpTabCard>
                 <DpGrid>
                   <DpField>
                     <DpFieldLabel>
@@ -2551,10 +2578,12 @@ const Leads: React.FC = () => {
                     <DpFieldValue>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</DpFieldValue>
                   </DpField>
                 </DpGrid>
-                </DpSectionCard>
+                </DpTabCard>
+                </DpTabSection>
 
-                <DpSectionTitle>{t('leads.leadJourney')}</DpSectionTitle>
-                <DpSectionCard>
+                <DpTabSection>
+                <DpTabLabel>{t('leads.leadJourney')}</DpTabLabel>
+                <DpTabCard>
                 <DpTimeline>
                   <DpTimelineItem>
                     <DpTimelineTime>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : '—'}</DpTimelineTime>
@@ -2586,27 +2615,28 @@ const Leads: React.FC = () => {
                     </DpTimelineItem>
                   )}
                 </DpTimeline>
-                </DpSectionCard>
+                </DpTabCard>
+                </DpTabSection>
 
                 {selectedLead.industry_tags && selectedLead.industry_tags.length > 0 && (
-                  <>
-                    <DpSectionTitle>{t('leads.tags')}</DpSectionTitle>
-                    <DpSectionCard>
+                  <DpTabSection>
+                    <DpTabLabel>{t('leads.tags')}</DpTabLabel>
+                    <DpTabCard>
                     <DpTagList>
                       {selectedLead.industry_tags.map(tag => (
                         <DpTag key={tag}>{tag}</DpTag>
                       ))}
                     </DpTagList>
-                    </DpSectionCard>
-                  </>
+                    </DpTabCard>
+                  </DpTabSection>
                 )}
 
                 {selectedLead._replied && (() => {
                   const cat = getReplyBadge(selectedLead, t) || { text: '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
                   return (
-                    <>
-                      <DpSectionTitle>回覆資訊</DpSectionTitle>
-                      <DpSectionCard>
+                    <DpTabSection>
+                      <DpTabLabel>回覆資訊</DpTabLabel>
+                      <DpTabCard>
                       <DpGrid>
                         <DpField>
                           <DpFieldLabel>分類</DpFieldLabel>
@@ -2633,8 +2663,8 @@ const Leads: React.FC = () => {
                           <DpFieldValue>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString('zh-HK') : '—'}</DpFieldValue>
                         </DpField>
                       </DpGrid>
-                      </DpSectionCard>
-                    </>
+                      </DpTabCard>
+                    </DpTabSection>
                   );
                 })()}
               </DpCollapsibleBody>
