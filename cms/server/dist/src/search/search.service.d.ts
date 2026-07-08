@@ -6,5 +6,10 @@ export declare class SearchService {
     run(dto: SearchDto): Promise<{
         task_id: string;
         status: string;
+        deduped: boolean;
+    } | {
+        task_id: string;
+        status: string;
+        deduped?: undefined;
     }>;
 }

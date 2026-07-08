@@ -36,7 +36,7 @@ __decorate([
     (0, common_1.Post)(),
     (0, common_1.HttpCode)(200),
     (0, permission_decorator_1.Permission)('search.run'),
-    openapi.ApiResponse({ status: 200 }),
+    openapi.ApiResponse({ status: 200, type: Object }),
     __param(0, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [search_dto_1.SearchDto]),

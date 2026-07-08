@@ -22,6 +22,7 @@ export declare class TasksService {
         limit: number;
     }>;
     findByTaskId(taskId: string): Promise<TaskDocument>;
+    findActiveOrRecent(skillId: string, paramsMatch: Record<string, unknown>, cooldownMs?: number): Promise<TaskDocument | null>;
     claimNext(dto: ClaimTaskDto): Promise<TaskDocument | null>;
     complete(taskId: string, result?: Record<string, unknown>): Promise<TaskDocument>;
     fail(taskId: string, error?: string): Promise<TaskDocument>;

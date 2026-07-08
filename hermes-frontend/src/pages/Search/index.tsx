@@ -1210,6 +1210,53 @@ const PipelineStageLabel = styled.div`
   gap: 8px;
 `;
 
+/* ── Skeleton loader (replaces search bar while pipeline runs) ── */
+const skeletonShimmer = keyframes`
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+`;
+
+const SkeletonWrap = styled.div`
+  width: 100%;
+  max-width: 760px;
+  padding: 14px 18px;
+  border-radius: 999px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  display: flex;
+  align-items: center;
+  gap: 12px;
+`;
+
+const SkeletonBar = styled.div<{ $w: number; $h?: number }>`
+  flex: none;
+  width: ${({ $w }) => $w}px;
+  height: ${({ $h }) => $h ?? 12}px;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    ${({ theme }) => theme.colors.border} 0%,
+    ${({ theme }) => theme.colors.surfaceMuted} 50%,
+    ${({ theme }) => theme.colors.border} 100%
+  );
+  background-size: 800px 100%;
+  animation: ${skeletonShimmer} 1.4s ease-in-out infinite;
+`;
+
+const skeletonSpin = keyframes`
+  to { transform: rotate(360deg); }
+`;
+
+const SkeletonSpinner = styled.div`
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border-radius: 50%;
+  border: 2.5px solid ${({ theme }) => theme.colors.border};
+  border-top-color: #2563eb;
+  animation: ${skeletonSpin} 0.9s linear infinite;
+`;
+
 const PipelineLogFeed = styled.div`
   max-height: 200px;
   overflow-y: auto;
@@ -1468,13 +1515,26 @@ const BrowserPreview: React.FC<{ keyword: string; location: string }> = ({ keywo
 const SearchPage: React.FC = () => {
   const { t } = useTranslation();
   const [greeting] = useState(() => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
-  const [keyword, setKeyword] = useState('');
-  const [location, setLocation] = useState('香港');
-  const [district, setDistrict] = useState('全區');
+  // ponytail: restore form state from localStorage so refresh doesn't wipe it.
+  // Falls back to defaults if key missing or JSON corrupt.
+  const readSavedForm = (): { kw: string; loc: string; dist: string; tc: number } => {
+    try {
+      const raw = localStorage.getItem('search-form');
+      if (raw) {
+        const j = JSON.parse(raw);
+        if (typeof j.kw === 'string') return j;
+      }
+    } catch { /* ignore corrupt localStorage */ }
+    return { kw: '', loc: '香港', dist: '全區', tc: 20 };
+  };
+  const saved = readSavedForm();
+  const [keyword, setKeyword] = useState(saved.kw);
+  const [location, setLocation] = useState(saved.loc);
+  const [district, setDistrict] = useState(saved.dist);
   const [showLocPicker, setShowLocPicker] = useState(false);
-  const [targetCount, setTargetCount] = useState(20);
+  const [targetCount, setTargetCount] = useState(saved.tc);
   const navigate = useNavigate();
-  const locRef = useRef<HTMLDivElement>(null);
+  const locRef = useRef<HTMLFormElement>(null);
 
   /* Close location picker on outside click */
   useEffect(() => {
@@ -1486,12 +1546,46 @@ const SearchPage: React.FC = () => {
   }, []);
 
   /* ── Pipeline SSE state ── */
-  const [campaignId, setCampaignId] = useState<string | null>(null);
+  const [campaignId, setCampaignId] = useState<string | null>(() => {
+    // ponytail: restore last campaign on mount so a refresh keeps the user
+    // attached to their in-flight pipeline. fetchLeadsAndFinish + SSE will
+    // reattach automatically via HermesService.getCampaign / events.
+    try { return localStorage.getItem('search-campaign-id'); } catch { return null; }
+  });
   const [pipelineLogs, setPipelineLogs] = useState<Array<{time: string, stage: string, message: string, level: string}>>([]);
   const [pipelineProgress, setPipelineProgress] = useState<{stage: string, current: number, total: number, percent: number} | null>(null);
   const [pipelineComplete, setPipelineComplete] = useState(false);
   const [realResults, setRealResults] = useState<MockLead[]>([]);
   const pipelineLogRef = useRef<HTMLDivElement>(null);
+
+  // ponytail: lazy permission request — only ask the user once a pipeline has
+  // actually completed. Asking on mount gets blanket-denied in most browsers.
+  const ensureNotificationPermission = useCallback(async () => {
+    if (typeof Notification === 'undefined') return false;
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied') return false;
+    try {
+      const result = await Notification.requestPermission();
+      return result === 'granted';
+    } catch { return false; }
+  }, []);
+
+  const fireCompletionNotification = useCallback((leadCount: number) => {
+    // ponytail: fire-and-forget. Awaiting would block the SSE handler which
+    // already triggered the fetch-and-finish path; that's harmless to run
+    // while permission dialog is up.
+    void ensureNotificationPermission().then((granted) => {
+      if (!granted) return;
+      try {
+        new Notification('潛在客戶搜尋完成', {
+          body: `搵到 ${leadCount} 筆新結果，撳去睇 →`,
+          tag: 'search-complete',
+        });
+      } catch (e) {
+        console.warn('[Search] Notification failed:', e);
+      }
+    });
+  }, [ensureNotificationPermission]);
 
   /* ── Connect SSE on mount ── */
   useEffect(() => {
@@ -1524,6 +1618,8 @@ const SearchPage: React.FC = () => {
   });
 
   /* ── Helper: fetch campaign leads and mark pipeline complete ── */
+  // ponytail: defined BEFORE the mount-restore useEffect below — TDZ trap if
+  // the useEffect runs first. React doesn't hoist useCallback.
   const fetchLeadsAndFinish = useCallback((cId: string) => {
     // 先拎 campaign 嘅 lead_ids，再逐個 fetch 只屬於呢次搜尋嘅 leads
     hermesApi.getCampaign(cId).then(res => {
@@ -1532,6 +1628,8 @@ const SearchPage: React.FC = () => {
       if (leadIds.length === 0) {
         setRealResults([]);
         setPipelineComplete(true);
+        fireCompletionNotification(0);
+        try { localStorage.removeItem('search-campaign-id'); } catch {}
         return;
       }
       Promise.all(leadIds.map(id => leadsApi.get(id).then(r => {
@@ -1542,12 +1640,53 @@ const SearchPage: React.FC = () => {
           const mapped = results.filter(Boolean).map(l => mapLead(l as Lead));
           setRealResults(mapped);
           setPipelineComplete(true);
+          fireCompletionNotification(mapped.length);
+          // ponytail: pipeline done — drop the saved campaignId so a refresh
+          // doesn't try to reattach to a finished campaign.
+          try { localStorage.removeItem('search-campaign-id'); } catch {}
         });
     }).catch(err => {
       console.error('[Search] Failed to fetch campaign leads:', err);
       setPipelineComplete(true);
+      fireCompletionNotification(0);
+      try { localStorage.removeItem('search-campaign-id'); } catch {}
     });
-  }, []);
+  }, [fireCompletionNotification]);
+
+  /* ── On mount: validate restored campaignId, drop stale ones ── */
+  useEffect(() => {
+    let cancelled = false;
+    try {
+      const saved = localStorage.getItem('search-campaign-id');
+      if (!saved) return;
+      hermesApi.getCampaign(saved).then(res => {
+        if (cancelled) return;
+        const campaign = (res.data as any)?.data ?? res.data;
+        if (!campaign) {
+          // ponytail: campaign no longer exists on backend — clear local copy.
+          try { localStorage.removeItem('search-campaign-id'); } catch {}
+          setCampaignId(null);
+          return;
+        }
+        if (campaign.status === 'completed') {
+          // ponytail: pipeline already finished before we came back — pull
+          // the results and notify so the user doesn't lose their work.
+          fetchLeadsAndFinish(saved);
+        } else if (campaign.status === 'cancelled') {
+          try { localStorage.removeItem('search-campaign-id'); } catch {}
+          setCampaignId(null);
+        }
+        // status === 'running' → keep campaignId; SSE listener will pick up
+        // progress and the polling fallback will finish it.
+      }).catch(() => {
+        // ponytail: backend unreachable / 404 → drop stale campaignId so we
+        // don't show a ghost pipeline state.
+        try { localStorage.removeItem('search-campaign-id'); } catch {}
+        setCampaignId(null);
+      });
+    } catch { /* localStorage disabled */ }
+    return () => { cancelled = true; };
+  }, [fetchLeadsAndFinish]);
 
   /* ── Listen for SSE events filtered by campaignId ── */
   useEffect(() => {
@@ -1653,13 +1792,24 @@ const SearchPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!keyword.trim()) return;
+    // ponytail: gate re-entrant submits. Button `disabled` is a DOM hint;
+    // form onSubmit / Enter-on-input can still fire while mutation is in flight.
+    if (search.isPending || !keyword.trim()) return;
     const fullLocation = district === '全區' ? location : `${location} ${district}`;
     const payload: SearchPayload = {
       keyword: keyword.trim(),
       location: fullLocation.trim(),
       targetCount,
     };
+    // ponytail: persist form so a refresh during the pipeline restores inputs.
+    try {
+      localStorage.setItem('search-form', JSON.stringify({
+        kw: payload.keyword,
+        loc: location,
+        dist: district,
+        tc: targetCount,
+      }));
+    } catch { /* ignore quota / disabled storage */ }
     // Reset pipeline state for new search
     setCampaignId(null);
     setPipelineLogs([]);
@@ -1673,6 +1823,8 @@ const SearchPage: React.FC = () => {
         const id = data?.campaign_id;
         if (id) {
           setCampaignId(id);
+          // ponytail: remember campaignId so a refresh can restore the pipeline.
+          try { localStorage.setItem('search-campaign-id', id); } catch {}
         }
       },
     });
@@ -1691,45 +1843,56 @@ const SearchPage: React.FC = () => {
         {DOT_CONFIG.map((d, i) => (
           <Dot key={i} $x={d.x} $y={d.y} $size={d.size} $delay={d.delay} $dur={d.dur} />
         ))}
-        {/* Search Form — Unified Bar */}
-        <UnifiedBar as="form" onSubmit={handleSubmit} ref={locRef}>
-          <BarInput
-            type="text"
-            placeholder={t('search.keywordPlaceholder')}
-            value={keyword}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setKeyword(e.target.value)}
-            required
-          />
-          <LocBadge type="button" onClick={() => setShowLocPicker(p => !p)}>
-            <LocFlag>HK</LocFlag>
-            {district === '全區' ? '全區' : district}
-          </LocBadge>
-          <NumberWrap style={{ marginRight: 4 }}>
-            <NumberInput
-              type="number"
-              min={1}
-              max={200}
-              value={targetCount}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTargetCount(Math.max(1, Math.min(200, Number(e.target.value) || 1)))}
+        {/* Search Form — Unified Bar. Hidden while a pipeline is running or
+            just completed; replaced with skeleton shimmer + spinner. */}
+        {isPipelineRunning || pipelineComplete ? (
+          <SkeletonWrap>
+            <SkeletonSpinner />
+            <SkeletonBar $w={140} />
+            <SkeletonBar $w={80} />
+            <SkeletonBar $w={60} />
+            <SkeletonBar $w={48} $h={36} />
+          </SkeletonWrap>
+        ) : (
+          <UnifiedBar as="form" onSubmit={handleSubmit} ref={locRef}>
+            <BarInput
+              type="text"
+              placeholder={t('search.keywordPlaceholder')}
+              value={keyword}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setKeyword(e.target.value)}
+              required
             />
-            <NumArrows>
-              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(200, c + 5))}>▲</NumArrowBtn>
-              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.max(1, c - 5))}>▼</NumArrowBtn>
-            </NumArrows>
-          </NumberWrap>
-          <BarSearchBtn type="submit" disabled={search.isPending || !keyword.trim()}>
-            {search.isPending ? <Spinner /> : <SearchBtnIcon />}
-          </BarSearchBtn>
-          {showLocPicker && (
-            <LocDropdown>
-              {HK_DISTRICTS.map(d => (
-                <LocOption key={d} $active={district === d} onClick={() => { setDistrict(d); setShowLocPicker(false); }}>
-                  {d}
-                </LocOption>
-              ))}
-            </LocDropdown>
-          )}
-        </UnifiedBar>
+            <LocBadge type="button" onClick={() => setShowLocPicker(p => !p)}>
+              <LocFlag>HK</LocFlag>
+              {district === '全區' ? '全區' : district}
+            </LocBadge>
+            <NumberWrap style={{ marginRight: 4 }}>
+              <NumberInput
+                type="number"
+                min={1}
+                max={200}
+                value={targetCount}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTargetCount(Math.max(1, Math.min(200, Number(e.target.value) || 1)))}
+              />
+              <NumArrows>
+                <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(200, c + 5))}>▲</NumArrowBtn>
+                <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.max(1, c - 5))}>▼</NumArrowBtn>
+              </NumArrows>
+            </NumberWrap>
+            <BarSearchBtn type="submit" disabled={search.isPending || !keyword.trim()}>
+              {search.isPending ? <Spinner /> : <SearchBtnIcon />}
+            </BarSearchBtn>
+            {showLocPicker && (
+              <LocDropdown>
+                {HK_DISTRICTS.map(d => (
+                  <LocOption key={d} $active={district === d} onClick={() => { setDistrict(d); setShowLocPicker(false); }}>
+                    {d}
+                  </LocOption>
+                ))}
+              </LocDropdown>
+            )}
+          </UnifiedBar>
+        )}
       </GlowWrap>
 
       {/* ── Pipeline progress + results ── */}

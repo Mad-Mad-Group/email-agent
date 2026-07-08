@@ -2,6 +2,7 @@ import { Injectable, OnModuleInit } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { randomBytes } from 'crypto';
+import { ConfigService } from '@nestjs/config';
 import { TasksService } from '../tasks/tasks.service';
 import { TaskEvents } from '../tasks/task-events';
 import { SKILL } from '../tasks/dto/task-status.enum';
@@ -9,6 +10,7 @@ import { TaskDocument } from '../tasks/schemas/task.schema';
 import { SseEvent, SseService } from '../sse/sse.service';
 import { Campaign, CampaignDocument } from './schemas/campaign.schema';
 import { RunHermesDto } from './dto/run-hermes.dto';
+import { EmailService } from '../email/email.service';
 
 /** 每個 pipeline stage：用咩 skill + 下一個 stage 係咩 */
 const STAGE_SKILL: Record<string, string> = {
@@ -40,6 +42,8 @@ export class HermesService implements OnModuleInit {
     private readonly tasks: TasksService,
     private readonly taskEvents: TaskEvents,
     private readonly sse: SseService,
+    private readonly email: EmailService,
+    private readonly config: ConfigService,
   ) {}
 
   onModuleInit() {
@@ -212,6 +216,39 @@ export class HermesService implements OnModuleInit {
       stage: 'complete',
       message: `Pipeline 完成（${why}）`,
     });
+    // ponytail: best-effort email notify. Wrapped in try/catch so SMTP failure
+    // can't undo the status save. Notify uses fixed dev inbox from .env.
+    void this.notifyCompletion(campaign, why).catch((e) =>
+      this.sse.emit(SseEvent.HERMES_LOG, {
+        runId: campaign.campaign_id,
+        level: 'warn',
+        stage: 'notify',
+        message: `Email 通知失敗：${e?.message ?? e}`,
+      }),
+    );
+  }
+
+  /**
+   * ponytail: best-effort completion email. Reads SMTP_TO from env (defaults
+   * to .env SMTP_FROM target), sends a one-shot summary. Never throws.
+   */
+  private async notifyCompletion(campaign: CampaignDocument, why: string): Promise<void> {
+    const to = this.config.get<string>('SMTP_TO') || 's1165449@s.eduhk.hk';
+    const subject = `[Lead Scraper] 搜尋完成：${campaign.keyword} ${campaign.location} (${campaign.lead_ids.length} leads)`;
+    const html = `
+      <h2>Pipeline 完成</h2>
+      <ul>
+        <li><b>Campaign ID</b>: ${campaign.campaign_id}</li>
+        <li><b>關鍵字</b>: ${campaign.keyword}</li>
+        <li><b>地點</b>: ${campaign.location}</li>
+        <li><b>目標數量</b>: ${campaign.target_count}</li>
+        <li><b>找到 Leads</b>: ${campaign.lead_ids.length}</li>
+        <li><b>完成時間</b>: ${campaign._updated_at}</li>
+        <li><b>備註</b>: ${why}</li>
+      </ul>
+      <p>👉 <a href="http://localhost:5173/cms-search">睇結果</a></p>
+    `;
+    await this.email.sendMail(to, subject, html);
   }
 
   async getCampaign(id: string) {
