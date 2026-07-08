@@ -2233,13 +2233,8 @@ const Leads: React.FC = () => {
     };
     createLead.mutate(payload as any, {
       onSuccess: () => {
-<<<<<<< Updated upstream
         closeAddModal();
-        setForm({ company_name: '', email: '', phone: '', website: '', address: '' });
-=======
-        setShowAdd(false);
         setForm({ company_name: '', email: '', phone: '', website: '', address: '', source: '', rating: '', industry_tags: '', website_description: '' });
->>>>>>> Stashed changes
       },
     });
   };
