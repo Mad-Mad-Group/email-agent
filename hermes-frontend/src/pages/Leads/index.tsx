@@ -1048,9 +1048,11 @@ const DpHeader = styled.div`
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 16px 24px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.surfaceMuted};
+  padding: 18px 24px;
+  border-bottom: none;
+  background: ${({ theme }) => theme.mode === 'dark' ? '#1e3a5f' : '#e0edff'};
+  position: relative;
+  overflow: hidden;
 `;
 
 const DpHeaderInfo = styled.div`
@@ -1063,10 +1065,11 @@ const DpHeaderInfo = styled.div`
 
 const DpCompanyName = styled.h2`
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1.2rem;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  letter-spacing: -0.01em;
+  color: ${({ theme }) => theme.mode === 'dark' ? '#e0edff' : '#1e3a5f'};
+  letter-spacing: 0.01em;
+  font-family: 'Georgia', 'Times New Roman', serif;
 `;
 
 const DpCloseBtn = styled.button`
@@ -1078,12 +1081,12 @@ const DpCloseBtn = styled.button`
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.8)' : '#2563eb'};
   cursor: pointer;
   flex-shrink: 0;
   transition: all 0.15s;
   &:hover {
-    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'};
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(37,99,235,0.08)'};
   }
 `;
 
@@ -1100,15 +1103,23 @@ const DpBody = styled.div`
 `;
 
 const DpColLeft = styled.div`
-  padding: 16px 18px;
+  padding: 20px 22px;
   overflow-y: auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 12px;
   border-right: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.surfaceMuted};
   ${media.tabletDown} { border-right: none; border-bottom: 1px solid ${({ theme }) => theme.colors.border}; overflow-y: visible; padding: 10px 16px; }
+`;
+
+const DpSectionCard = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  border: 1px solid ${({ theme }) => theme.colors.border}33;
 `;
 
 const DpCollapsibleHead = styled.div`
@@ -1144,31 +1155,49 @@ const DpColCenter = styled.div`
 const DpGrid = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0;
 `;
 
 const DpField = styled.div`
   display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  padding: 4px 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border}22;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border}11;
+  &:last-child { border-bottom: none; }
 `;
 
 const DpFieldLabel = styled.span`
-  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8125rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
   color: ${({ theme }) => theme.colors.textTertiary};
+  letter-spacing: 0.02em;
+  min-width: 80px;
+  flex-shrink: 0;
 `;
 
 const DpFieldValue = styled.span`
-  font-size: 0.85rem;
+  font-size: 0.8625rem;
   color: ${({ theme }) => theme.colors.textPrimary};
   word-break: break-word;
-  text-align: right;
-  max-width: 55%;
+  flex: 1;
+  min-width: 0;
+`;
+
+const DpFieldIcon = styled.span<{ $color: string }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: ${({ $color }) => $color}14;
+  color: ${({ $color }) => $color};
+  flex-shrink: 0;
+  svg { width: 13px; height: 13px; }
 `;
 
 const DpSectionTitle = styled.h3`
@@ -1200,51 +1229,41 @@ const DpTimeline = styled.div`
   display: flex;
   flex-direction: column;
   gap: 0;
-  position: relative;
-  padding-left: 14px;
 `;
 
 const DpTimelineItem = styled.div<{ $active?: boolean }>`
-  position: relative;
-  padding: 8px 0 8px 16px;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border}15;
+  &:last-child { border-bottom: none; }
+`;
+
+const DpTimelineTime = styled.span`
   font-size: 0.7rem;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  min-width: 72px;
+  flex-shrink: 0;
+  padding-top: 1px;
+`;
+
+const DpTimelineDot = styled.span<{ $active?: boolean }>`
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-top: 4px;
+  flex-shrink: 0;
+  background: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.border};
+  ${({ $active, theme }) => $active ? `box-shadow: 0 0 6px ${theme.colors.blue}55;` : ''}
+`;
+
+const DpTimelineText = styled.span<{ $active?: boolean }>`
+  font-size: 0.8rem;
+  line-height: 1.4;
   color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textTertiary};
   font-weight: ${({ $active }) => $active ? 600 : 400};
-
-  /* Vertical connecting line */
-  &::after {
-    content: '';
-    position: absolute;
-    left: 0;
-    top: 0;
-    bottom: 0;
-    width: 3px;
-    border-radius: 1.5px;
-    background: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.border};
-    ${({ $active, theme }) => $active ? `
-      box-shadow: 0 0 6px ${theme.colors.blue}66, 0 0 12px ${theme.colors.blue}33;
-    ` : ''}
-  }
-  &:last-child::after {
-    display: none;
-  }
-
-  /* Dot */
-  &::before {
-    content: '';
-    position: absolute;
-    left: -3.5px;
-    top: 10px;
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    z-index: 1;
-    background: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.border};
-    ${({ $active, theme }) => $active ? `
-      box-shadow: 0 0 8px ${theme.colors.blue}88, 0 0 16px ${theme.colors.blue}44;
-    ` : ''}
-    transition: box-shadow 0.3s, background 0.3s;
-  }
 `;
 
 const DpFooter = styled.div`
@@ -1257,19 +1276,20 @@ const DpFooter = styled.div`
 
 const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   padding: 5px 12px;
-  border: none;
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   transition: opacity 0.15s;
+  border: 1px solid ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(37,99,235,0.2)'};
   background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? (theme.mode === 'dark' ? '#374151' : '#f3f4f6') :
-    $variant === 'primary' ? theme.colors.blue : theme.colors.surfaceMuted};
+    $variant === 'danger' ? (theme.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(220,38,38,0.06)') :
+    $variant === 'primary' ? (theme.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(37,99,235,0.1)') :
+    'transparent'};
   color: ${({ $variant, theme }) =>
-    $variant === 'danger' ? (theme.mode === 'dark' ? '#9ca3af' : '#6b7280') :
-    $variant === 'primary' ? '#fff' : 'inherit'};
+    $variant === 'danger' ? (theme.mode === 'dark' ? '#f87171' : '#dc2626') :
+    (theme.mode === 'dark' ? '#93c5fd' : '#2563eb')};
   &:hover { opacity: 0.85; }
 `;
 
@@ -1478,11 +1498,26 @@ const EMAIL_STATUS_COLOR: Record<string, { bg: string; fg: string }> = {
 };
 
 const EmailCard = styled.div<{ $expanded?: boolean }>`
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.control}px;
-  margin-bottom: 6px;
-  background: ${({ theme }) => theme.colors.surfaceMuted};
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  margin-bottom: 10px;
+  background: ${({ theme }) => theme.mode === 'dark' ? theme.colors.surface : '#fffdf9'};
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.03);
   max-width: 100%;
+  position: relative;
+  overflow: hidden;
+
+  /* Paper fold corner */
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(225deg, ${({ theme }) => theme.mode === 'dark' ? theme.colors.canvas : '#f1ede6'} 50%, transparent 50%);
+    border-bottom-left-radius: 4px;
+  }
 `;
 const EmailCardHead = styled.div`
   display: flex;
@@ -1514,11 +1549,13 @@ const EmailBodyContent = styled.div`
   word-break: break-word;
   overflow-wrap: break-word;
   font-size: 0.875rem;
-  line-height: 1.5;
+  line-height: 1.7;
   color: ${({ theme }) => theme.colors.textSecondary};
-  padding: ${({ theme }) => theme.spacing.sm}px;
-  background: ${({ theme }) => theme.colors.surface};
+  padding: ${({ theme }) => theme.spacing.md}px;
+  background: ${({ theme }) => theme.mode === 'dark' ? theme.colors.surfaceMuted : '#fffcf7'};
   border-radius: ${({ theme }) => theme.radii.control}px;
+  border: 1px solid ${({ theme }) => theme.mode === 'dark' ? theme.colors.border : '#e8e0d4'};
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
   max-width: 100%;
   overflow-x: hidden;
 `;
@@ -2325,12 +2362,25 @@ const Leads: React.FC = () => {
         <DpOverlay onClick={handleCloseDetail}>
         <DpPanel onClick={(e: React.MouseEvent) => e.stopPropagation()}>
           <DpHeader>
-            <Avatar $color={hashColor(selectedLead.company_name || 'Unknown')} style={{ width: 42, height: 42, fontSize: '0.875rem' }}>
+            <span style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              background: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(37,99,235,0.12)',
+              color: isDark ? '#93c5fd' : '#2563eb',
+              fontSize: '0.625rem',
+              fontWeight: 700,
+              padding: '3px 16px 3px 8px',
+              borderBottomRightRadius: '10px',
+              letterSpacing: '0.05em',
+              textTransform: 'uppercase',
+              backdropFilter: 'blur(4px)',
+            }}>{selectedLead.status ?? 'new'}</span>
+            <Avatar $color={hashColor(selectedLead.company_name || 'Unknown')} style={{ width: 42, height: 42, fontSize: '0.875rem', border: isDark ? '2px solid rgba(255,255,255,0.3)' : '2px solid rgba(37,99,235,0.2)' }}>
               {getInitials(selectedLead.company_name || 'Unknown')}
             </Avatar>
             <DpHeaderInfo>
               <DpCompanyName>{selectedLead.company_name || 'Unknown'}</DpCompanyName>
-              <StatusBadge $status={selectedLead.status ?? 'new'}>{selectedLead.status ?? 'new'}</StatusBadge>
             </DpHeaderInfo>
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
               {selectedLead.status && selectedLead.status !== 'contacted' && NEXT_STATUS[selectedLead.status] && (
@@ -2367,70 +2417,105 @@ const Leads: React.FC = () => {
               </DpCollapsibleHead>
               <DpCollapsibleBody $open={aboutOpen}>
                 <DpSectionTitle>{t('leads.about')}</DpSectionTitle>
+                <DpSectionCard>
                 <DpGrid>
                   <DpField>
-                    <DpFieldLabel>{t('leads.email')}</DpFieldLabel>
-                    <DpFieldValue>{selectedLead.email || '—'}</DpFieldValue>
+                    <DpFieldLabel>
+                      <DpFieldIcon $color="#2563eb"><svg viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
+                      {t('leads.email')}
+                    </DpFieldLabel>
+                    <DpFieldValue style={{ color: selectedLead.email ? '#2563eb' : undefined }}>{selectedLead.email || '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
-                    <DpFieldLabel>{t('leads.phone')}</DpFieldLabel>
-                    <DpFieldValue>{selectedLead.phone || '—'}</DpFieldValue>
+                    <DpFieldLabel>
+                      <DpFieldIcon $color="#16a34a"><svg viewBox="0 0 16 16" fill="none"><path d="M10 1.5a3.5 3.5 0 013.5 3.5c0 3-5 8.5-5 8.5s-5-5.5-5-8.5A3.5 3.5 0 017 1.79" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 9l1.5-3h1L10 9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
+                      {t('leads.phone')}
+                    </DpFieldLabel>
+                    <DpFieldValue style={{ color: selectedLead.phone ? '#16a34a' : undefined }}>{selectedLead.phone || '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
-                    <DpFieldLabel>{t('leads.website')}</DpFieldLabel>
-                    <DpFieldValue>{selectedLead.website || '—'}</DpFieldValue>
+                    <DpFieldLabel>
+                      <DpFieldIcon $color="#7c3aed"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zM1 8h14M8 1c1.7 2 2.7 4 2.7 7s-1 5-2.7 7c-1.7-2-2.7-4-2.7-7s1-5 2.7-7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
+                      {t('leads.website')}
+                    </DpFieldLabel>
+                    <DpFieldValue style={{ color: selectedLead.website ? '#7c3aed' : undefined }}>{selectedLead.website || '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
-                    <DpFieldLabel>{t('leads.address')}</DpFieldLabel>
+                    <DpFieldLabel>
+                      <DpFieldIcon $color="#ea580c"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5C5 1.5 2 4.5 2 8c0 2.5 1 4.5 2.5 6h7C13 12.5 14 10.5 14 8c0-3.5-3-6.5-6-6.5zM5 14.5h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
+                      {t('leads.address')}
+                    </DpFieldLabel>
                     <DpFieldValue>{selectedLead.address || '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
-                    <DpFieldLabel>{t('leads.source')}</DpFieldLabel>
+                    <DpFieldLabel>
+                      <DpFieldIcon $color="#64748b"><svg viewBox="0 0 16 16" fill="none"><path d="M2 13V3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H5l-3 2z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
+                      {t('leads.source')}
+                    </DpFieldLabel>
                     <DpFieldValue>{selectedLead.source || '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
-                    <DpFieldLabel>{t('leads.rating', { defaultValue: '評分' })}</DpFieldLabel>
-                    <DpFieldValue>{selectedLead.rating ? `${selectedLead.rating} / 5.0` : '—'}</DpFieldValue>
+                    <DpFieldLabel>
+                      <DpFieldIcon $color="#d97706"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
+                      {t('leads.rating', { defaultValue: '評分' })}
+                    </DpFieldLabel>
+                    <DpFieldValue style={{ color: selectedLead.rating ? '#d97706' : undefined }}>{selectedLead.rating ? `${selectedLead.rating} / 5.0` : '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
-                    <DpFieldLabel>{t('leads.importedAt')}</DpFieldLabel>
+                    <DpFieldLabel>
+                      <DpFieldIcon $color="#94a3b8"><svg viewBox="0 0 16 16" fill="none"><path d="M2 3h12v10H2V3zm0 3h12M5 1v3M11 1v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
+                      {t('leads.importedAt')}
+                    </DpFieldLabel>
                     <DpFieldValue>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</DpFieldValue>
                   </DpField>
                 </DpGrid>
+                </DpSectionCard>
 
-                <div style={{ height: 12 }} />
                 <DpSectionTitle>{t('leads.leadJourney')}</DpSectionTitle>
+                <DpSectionCard>
                 <DpTimeline>
-                  <DpTimelineItem $active>
-                    {t('leads.discoveredVia', { source: selectedLead.source || 'unknown' })}
+                  <DpTimelineItem>
+                    <DpTimelineTime>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : '—'}</DpTimelineTime>
+                    <DpTimelineDot $active />
+                    <DpTimelineText $active>{t('leads.discoveredVia', { source: selectedLead.source || 'unknown' })}</DpTimelineText>
                   </DpTimelineItem>
-                  <DpTimelineItem $active>
-                    {t('leads.addedToPool')}
+                  <DpTimelineItem>
+                    <DpTimelineTime>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : '—'}</DpTimelineTime>
+                    <DpTimelineDot $active />
+                    <DpTimelineText $active>{t('leads.addedToPool')}</DpTimelineText>
                   </DpTimelineItem>
-                  <DpTimelineItem $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'}>
-                    {selectedLead.status === 'new' ? t('leads.awaitingReview') : t('leads.markedAsPending')}
+                  <DpTimelineItem>
+                    <DpTimelineTime>{selectedLead.status !== 'new' && selectedLead.updatedAt ? new Date(selectedLead.updatedAt).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : '—'}</DpTimelineTime>
+                    <DpTimelineDot $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'} />
+                    <DpTimelineText $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'}>{selectedLead.status === 'new' ? t('leads.awaitingReview') : t('leads.markedAsPending')}</DpTimelineText>
                   </DpTimelineItem>
                   {(selectedLead.status === 'contacted') && (
-                    <DpTimelineItem $active>
-                      {t('leads.contactedStep')}
+                    <DpTimelineItem>
+                      <DpTimelineTime>{selectedLead.updatedAt ? new Date(selectedLead.updatedAt).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : '—'}</DpTimelineTime>
+                      <DpTimelineDot $active />
+                      <DpTimelineText $active>{t('leads.contactedStep')}</DpTimelineText>
                     </DpTimelineItem>
                   )}
                   {selectedLead._replied && (
-                    <DpTimelineItem $active>
-                      {t('leads.receivedReply', { text: getReplyBadge(selectedLead, t)?.text || t('leads.replied') })}
+                    <DpTimelineItem>
+                      <DpTimelineTime>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : '—'}</DpTimelineTime>
+                      <DpTimelineDot $active />
+                      <DpTimelineText $active>{t('leads.receivedReply', { text: getReplyBadge(selectedLead, t)?.text || t('leads.replied') })}</DpTimelineText>
                     </DpTimelineItem>
                   )}
                 </DpTimeline>
+                </DpSectionCard>
 
                 {selectedLead.industry_tags && selectedLead.industry_tags.length > 0 && (
                   <>
-                    <div style={{ height: 8 }} />
                     <DpSectionTitle>{t('leads.tags')}</DpSectionTitle>
+                    <DpSectionCard>
                     <DpTagList>
                       {selectedLead.industry_tags.map(tag => (
                         <DpTag key={tag}>{tag}</DpTag>
                       ))}
                     </DpTagList>
+                    </DpSectionCard>
                   </>
                 )}
 
@@ -2438,8 +2523,8 @@ const Leads: React.FC = () => {
                   const cat = getReplyBadge(selectedLead, t) || { text: '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
                   return (
                     <>
-                      <div style={{ height: 8 }} />
                       <DpSectionTitle>回覆資訊</DpSectionTitle>
+                      <DpSectionCard>
                       <DpGrid>
                         <DpField>
                           <DpFieldLabel>分類</DpFieldLabel>
@@ -2466,6 +2551,7 @@ const Leads: React.FC = () => {
                           <DpFieldValue>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString('zh-HK') : '—'}</DpFieldValue>
                         </DpField>
                       </DpGrid>
+                      </DpSectionCard>
                     </>
                   );
                 })()}
