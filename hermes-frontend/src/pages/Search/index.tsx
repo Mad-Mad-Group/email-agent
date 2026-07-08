@@ -156,8 +156,8 @@ const UnifiedBar = styled.div<{ $morphing?: boolean }>`
   z-index: 1;
 
   /* morph transition */
-  width: ${({ $morphing }) => $morphing ? '104px' : '100%'};
-  height: ${({ $morphing }) => $morphing ? '104px' : 'auto'};
+  width: ${({ $morphing }) => $morphing ? '144px' : '100%'};
+  height: ${({ $morphing }) => $morphing ? '144px' : 'auto'};
   margin: ${({ $morphing }) => $morphing ? '0 auto' : '0'};
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
               height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
@@ -466,12 +466,18 @@ const ringPulse = keyframes`
   50%      { filter: drop-shadow(0 0 14px rgba(37,99,235,0.5)); }
 `;
 
-const SearchRing = styled.div.attrs({ className: 'search-ring' })<{ $percent?: number }>`
-  width: 100px;
-  height: 100px;
-  position: relative;
+const SearchRingWrap = styled.div.attrs({ className: 'search-ring' })`
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: 10px;
+`;
+
+const SearchRing = styled.div<{ $percent?: number }>`
+  width: 140px;
+  height: 140px;
+  position: relative;
+  display: flex;
   align-items: center;
   justify-content: center;
   animation: ${ringPulse} 2s ease-in-out infinite;
@@ -483,34 +489,26 @@ const SearchRing = styled.div.attrs({ className: 'search-ring' })<{ $percent?: n
   }
 `;
 
-const RingStage = styled.span`
-  font-size: 0.625rem;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.blue};
-  z-index: 1;
-  text-align: center;
-  line-height: 1.3;
-  max-width: 70px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-`;
-
 const RingCount = styled.span`
-  font-size: 0.8125rem;
-  font-weight: 800;
+  font-size: 0.9375rem;
+  font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
   z-index: 1;
   letter-spacing: -0.02em;
 `;
 
+const RingStage = styled.span`
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.blue};
+  text-align: center;
+  line-height: 1.4;
+`;
+
 const RingHint = styled.span`
-  display: block;
-  margin-top: 8px;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   color: ${({ theme }) => theme.colors.textTertiary};
   text-align: center;
-  z-index: 1;
 `;
 
 /* ── Results ── */
@@ -1622,12 +1620,7 @@ const SearchPage: React.FC = () => {
   }, []);
 
   /* ── Pipeline SSE state ── */
-  const [campaignId, setCampaignId] = useState<string | null>(() => {
-    // ponytail: restore last campaign on mount so a refresh keeps the user
-    // attached to their in-flight pipeline. fetchLeadsAndFinish + SSE will
-    // reattach automatically via HermesService.getCampaign / events.
-    try { return localStorage.getItem('search-campaign-id'); } catch { return null; }
-  });
+  const [campaignId, setCampaignId] = useState<string | null>(null);
   const [pipelineLogs, setPipelineLogs] = useState<Array<{time: string, stage: string, message: string, level: string}>>([]);
   const [pipelineProgress, setPipelineProgress] = useState<{stage: string, current: number, total: number, percent: number} | null>(null);
   const [pipelineComplete, setPipelineComplete] = useState(false);
@@ -1705,7 +1698,7 @@ const SearchPage: React.FC = () => {
         setRealResults([]);
         setPipelineComplete(true);
         fireCompletionNotification(0);
-        try { localStorage.removeItem('search-campaign-id'); } catch {}
+        /* localStorage campaign persistence removed — refresh clears search */
         return;
       }
       Promise.all(leadIds.map(id => leadsApi.get(id).then(r => {
@@ -1719,7 +1712,7 @@ const SearchPage: React.FC = () => {
           fireCompletionNotification(mapped.length);
           // ponytail: pipeline done — drop the saved campaignId so a refresh
           // doesn't try to reattach to a finished campaign.
-          try { localStorage.removeItem('search-campaign-id'); } catch {}
+          /* localStorage campaign persistence removed — refresh clears search */
         });
     }).catch(err => {
       console.error('[Search] Failed to fetch campaign leads:', err);
@@ -1728,41 +1721,6 @@ const SearchPage: React.FC = () => {
       try { localStorage.removeItem('search-campaign-id'); } catch {}
     });
   }, [fireCompletionNotification]);
-
-  /* ── On mount: validate restored campaignId, drop stale ones ── */
-  useEffect(() => {
-    let cancelled = false;
-    try {
-      const saved = localStorage.getItem('search-campaign-id');
-      if (!saved) return;
-      hermesApi.getCampaign(saved).then(res => {
-        if (cancelled) return;
-        const campaign = (res.data as any)?.data ?? res.data;
-        if (!campaign) {
-          // ponytail: campaign no longer exists on backend — clear local copy.
-          try { localStorage.removeItem('search-campaign-id'); } catch {}
-          setCampaignId(null);
-          return;
-        }
-        if (campaign.status === 'completed') {
-          // ponytail: pipeline already finished before we came back — pull
-          // the results and notify so the user doesn't lose their work.
-          fetchLeadsAndFinish(saved);
-        } else if (campaign.status === 'cancelled') {
-          try { localStorage.removeItem('search-campaign-id'); } catch {}
-          setCampaignId(null);
-        }
-        // status === 'running' → keep campaignId; SSE listener will pick up
-        // progress and the polling fallback will finish it.
-      }).catch(() => {
-        // ponytail: backend unreachable / 404 → drop stale campaignId so we
-        // don't show a ghost pipeline state.
-        try { localStorage.removeItem('search-campaign-id'); } catch {}
-        setCampaignId(null);
-      });
-    } catch { /* localStorage disabled */ }
-    return () => { cancelled = true; };
-  }, [fetchLeadsAndFinish]);
 
   /* ── Listen for SSE events filtered by campaignId ── */
   useEffect(() => {
@@ -1911,7 +1869,7 @@ const SearchPage: React.FC = () => {
         if (id) {
           setCampaignId(id);
           // ponytail: remember campaignId so a refresh can restore the pipeline.
-          try { localStorage.setItem('search-campaign-id', id); } catch {}
+          /* localStorage campaign persistence removed — refresh clears search */
         }
       },
     });
@@ -1969,44 +1927,43 @@ const SearchPage: React.FC = () => {
             )}
             {/* Progress ring overlay */}
             {(search.isPending || isPipelineRunning) && (
-              <SearchRing className="search-ring" $percent={pipelineProgress?.percent}>
-                <svg className="ring-svg" width="100" height="100" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(37,99,235,0.10)" strokeWidth="4" />
-                  <circle
-                    cx="50" cy="50" r="44"
-                    fill="none"
-                    stroke="#2563eb"
-                    strokeWidth="4"
-                    strokeLinecap="round"
-                    strokeDasharray={`${2 * Math.PI * 44}`}
-                    strokeDashoffset={
-                      pipelineProgress
-                        ? `${2 * Math.PI * 44 * (1 - pipelineProgress.percent / 100)}`
-                        : `${2 * Math.PI * 44 * 0.75}`
-                    }
-                    transform="rotate(-90 50 50)"
-                    style={{ transition: 'stroke-dashoffset 0.4s ease' }}
-                  />
-                </svg>
-                {pipelineProgress ? (
-                  <>
-                    <RingCount>{pipelineProgress.current}/{pipelineProgress.total}</RingCount>
-                    <RingStage>{STAGE_LABELS[pipelineProgress.stage] || pipelineProgress.stage}</RingStage>
-                  </>
-                ) : search.isPending ? (
-                  <RingStage>提交中</RingStage>
-                ) : (
-                  <RingStage>準備中</RingStage>
+              <SearchRingWrap>
+                <SearchRing $percent={pipelineProgress?.percent}>
+                  <svg className="ring-svg" width="140" height="140" viewBox="0 0 140 140">
+                    <circle cx="70" cy="70" r="62" fill="none" stroke="rgba(37,99,235,0.10)" strokeWidth="4" />
+                    <circle
+                      cx="70" cy="70" r="62"
+                      fill="none"
+                      stroke="#2563eb"
+                      strokeWidth="4"
+                      strokeLinecap="round"
+                      strokeDasharray={`${2 * Math.PI * 62}`}
+                      strokeDashoffset={
+                        pipelineProgress
+                          ? `${2 * Math.PI * 62 * (1 - pipelineProgress.percent / 100)}`
+                          : `${2 * Math.PI * 62 * 0.75}`
+                      }
+                      transform="rotate(-90 70 70)"
+                      style={{ transition: 'stroke-dashoffset 0.4s ease' }}
+                    />
+                  </svg>
+                  <RingCount>
+                    {pipelineProgress
+                      ? `${pipelineProgress.current}/${pipelineProgress.total}`
+                      : search.isPending ? '提交中' : '準備中'}
+                  </RingCount>
+                </SearchRing>
+                {pipelineProgress && (
+                  <RingStage>
+                    {STAGE_LABELS[pipelineProgress.stage] || pipelineProgress.stage}
+                  </RingStage>
                 )}
-              </SearchRing>
-            )}
-            {/* Hint text below morphed ring */}
-            {(search.isPending || isPipelineRunning) && (
-              <RingHint className="search-ring">
-                {pipelineProgress
-                  ? `${STAGE_LABELS[pipelineProgress.stage] || pipelineProgress.stage} — ${Math.round(pipelineProgress.percent)}%`
-                  : search.isPending ? '正在連線至搜尋引擎…' : '等待管道啟動…'}
-              </RingHint>
+                <RingHint>
+                  {pipelineProgress
+                    ? `${Math.round(pipelineProgress.percent)}% 完成`
+                    : search.isPending ? '正在連線至搜尋引擎…' : '等待管道啟動…'}
+                </RingHint>
+              </SearchRingWrap>
             )}
           </UnifiedBar>
       </GlowWrap>
