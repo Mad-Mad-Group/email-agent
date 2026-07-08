@@ -48,6 +48,7 @@ export declare class LeadsService {
     }): Promise<LeadDocument>;
     markContactedByLeadId(leadId: string): Promise<void>;
     remove(id: string): Promise<void>;
+    clearAll(): Promise<number>;
     private nowStamp;
     private escapeRegex;
     private assertObjectId;

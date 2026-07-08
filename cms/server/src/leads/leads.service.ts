@@ -213,6 +213,19 @@ export class LeadsService {
     this.sse?.emit(SseEvent.LEAD_UPDATE, { id: lead.id, action: 'deleted' });
   }
 
+  /**
+   * ponytail: hard-delete every lead. Used by the "一鍵清空" button on the
+   * Leads page. Backend-only — no soft-delete tombstone, no audit. Intentional:
+   * dev tool, NOT exposed to non-super_admin in the controller decorator.
+   */
+  async clearAll(): Promise<number> {
+    // ponytail: bulk deleteMany. SSE_LEAD_UPDATE payload type is strict on
+    // action+id only, so we skip per-row events and let the frontend refetch
+    // the (now-empty) list via React Query invalidation.
+    const res = await this.leadModel.deleteMany({}).exec();
+    return res.deletedCount ?? 0;
+  }
+
   // ---- helpers ----
   /** 同 Python 一致格式 "YYYY-MM-DD HH:MM:SS" */
   private nowStamp(): string {

@@ -71,6 +71,27 @@ export class TasksService {
     return t;
   }
 
+  /**
+   * 防 spam：搵有冇相同 skill + params 嘅 task 仲喺處理中（pending/running），
+   * 或者喺 cooldown 內啱啱建立過。有就唔使再 enqueue（同一請求短時間內去重）。
+   */
+  async findActiveOrRecent(
+    skillId: string,
+    paramsMatch: Record<string, unknown>,
+    cooldownMs = 60_000,
+  ): Promise<TaskDocument | null> {
+    const cutoff = new Date(Date.now() - cooldownMs).toISOString();
+    const filter: FilterQuery<TaskDocument> = { skill_id: skillId };
+    for (const [k, v] of Object.entries(paramsMatch)) {
+      (filter as Record<string, unknown>)[`params.${k}`] = v;
+    }
+    filter.$or = [
+      { status: { $in: [TaskStatus.PENDING, TaskStatus.RUNNING] } },
+      { _created_at: { $gte: cutoff } },
+    ];
+    return this.model.findOne(filter).sort({ _created_at: -1 }).exec();
+  }
+
   /** Hermes agent 攞下一個 pending task（原子 claim）*/
   async claimNext(dto: ClaimTaskDto): Promise<TaskDocument | null> {
     const filter: FilterQuery<TaskDocument> = { status: TaskStatus.PENDING };

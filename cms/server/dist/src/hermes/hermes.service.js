@@ -17,11 +17,13 @@ const common_1 = require("@nestjs/common");
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose_2 = require("mongoose");
 const crypto_1 = require("crypto");
+const config_1 = require("@nestjs/config");
 const tasks_service_1 = require("../tasks/tasks.service");
 const task_events_1 = require("../tasks/task-events");
 const task_status_enum_1 = require("../tasks/dto/task-status.enum");
 const sse_service_1 = require("../sse/sse.service");
 const campaign_schema_1 = require("./schemas/campaign.schema");
+const email_service_1 = require("../email/email.service");
 const STAGE_SKILL = {
     search: task_status_enum_1.SKILL.SEARCH,
     enrich: task_status_enum_1.SKILL.ANALYZE,
@@ -41,11 +43,15 @@ let HermesService = class HermesService {
     tasks;
     taskEvents;
     sse;
-    constructor(campaigns, tasks, taskEvents, sse) {
+    email;
+    config;
+    constructor(campaigns, tasks, taskEvents, sse, email, config) {
         this.campaigns = campaigns;
         this.tasks = tasks;
         this.taskEvents = taskEvents;
         this.sse = sse;
+        this.email = email;
+        this.config = config;
     }
     onModuleInit() {
         this.taskEvents.completed$.subscribe((task) => {
@@ -172,6 +178,30 @@ let HermesService = class HermesService {
             stage: 'complete',
             message: `Pipeline 完成（${why}）`,
         });
+        void this.notifyCompletion(campaign, why).catch((e) => this.sse.emit(sse_service_1.SseEvent.HERMES_LOG, {
+            runId: campaign.campaign_id,
+            level: 'warn',
+            stage: 'notify',
+            message: `Email 通知失敗：${e?.message ?? e}`,
+        }));
+    }
+    async notifyCompletion(campaign, why) {
+        const to = this.config.get('SMTP_TO') || 's1165449@s.eduhk.hk';
+        const subject = `[Lead Scraper] 搜尋完成：${campaign.keyword} ${campaign.location} (${campaign.lead_ids.length} leads)`;
+        const html = `
+      <h2>Pipeline 完成</h2>
+      <ul>
+        <li><b>Campaign ID</b>: ${campaign.campaign_id}</li>
+        <li><b>關鍵字</b>: ${campaign.keyword}</li>
+        <li><b>地點</b>: ${campaign.location}</li>
+        <li><b>目標數量</b>: ${campaign.target_count}</li>
+        <li><b>找到 Leads</b>: ${campaign.lead_ids.length}</li>
+        <li><b>完成時間</b>: ${campaign._updated_at}</li>
+        <li><b>備註</b>: ${why}</li>
+      </ul>
+      <p>👉 <a href="http://localhost:5173/cms-search">睇結果</a></p>
+    `;
+        await this.email.sendMail(to, subject, html);
     }
     async getCampaign(id) {
         return this.campaigns.findOne({ campaign_id: id }).lean().exec();
@@ -201,6 +231,8 @@ exports.HermesService = HermesService = __decorate([
     __metadata("design:paramtypes", [mongoose_2.Model,
         tasks_service_1.TasksService,
         task_events_1.TaskEvents,
-        sse_service_1.SseService])
+        sse_service_1.SseService,
+        email_service_1.EmailService,
+        config_1.ConfigService])
 ], HermesService);
 //# sourceMappingURL=hermes.service.js.map

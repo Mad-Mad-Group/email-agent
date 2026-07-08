@@ -1,16 +1,20 @@
 import { OnModuleInit } from '@nestjs/common';
 import { Model } from 'mongoose';
+import { ConfigService } from '@nestjs/config';
 import { TasksService } from '../tasks/tasks.service';
 import { TaskEvents } from '../tasks/task-events';
 import { SseService } from '../sse/sse.service';
 import { Campaign, CampaignDocument } from './schemas/campaign.schema';
 import { RunHermesDto } from './dto/run-hermes.dto';
+import { EmailService } from '../email/email.service';
 export declare class HermesService implements OnModuleInit {
     private readonly campaigns;
     private readonly tasks;
     private readonly taskEvents;
     private readonly sse;
-    constructor(campaigns: Model<CampaignDocument>, tasks: TasksService, taskEvents: TaskEvents, sse: SseService);
+    private readonly email;
+    private readonly config;
+    constructor(campaigns: Model<CampaignDocument>, tasks: TasksService, taskEvents: TaskEvents, sse: SseService, email: EmailService, config: ConfigService);
     onModuleInit(): void;
     run(dto: RunHermesDto): Promise<{
         campaign_id: string;
@@ -20,6 +24,7 @@ export declare class HermesService implements OnModuleInit {
     private onTaskFailed;
     private enqueueStage;
     private finish;
+    private notifyCompletion;
     getCampaign(id: string): Promise<(import("mongoose").FlattenMaps<import("mongoose").Document<unknown, {}, Campaign, {}, {}> & Campaign & {
         _id: import("mongoose").Types.ObjectId;
     } & {

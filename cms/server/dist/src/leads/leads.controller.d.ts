@@ -46,4 +46,7 @@ export declare class LeadsController {
     remove(id: string): Promise<{
         id: string;
     }>;
+    clearAll(): Promise<{
+        deleted: number;
+    }>;
 }

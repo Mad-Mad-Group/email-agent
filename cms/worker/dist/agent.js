@@ -710,12 +710,12 @@ ${excludeClause}
 INSTRUCTIONS:
 1. Open your browser and go to Google Maps or Google Search. You have a stealth browser that handles captchas automatically — it is safe and expected to use it.
 2. Search for "${p.keyword} ${p.location}" and read the results.
-3. Extract: name, address, phone, website for each business you find.
+3. For each business get: name, website, and EMAIL address. EMAIL is the priority — if it is not shown in the listing, open the business's own website / contact page to find it. Phone and address are NOT needed, skip them.
 4. Use "" for any field you cannot find. Only include businesses that actually appeared in your search results.
 5. If you find no results, return an empty array: []
 
 RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
-[{"name":"Example School","address":"123 Main St","phone":"1234 5678","website":"https://example.com"}]`;
+[{"name":"Example School","website":"https://example.com","email":"info@example.com"}]`;
         let arr;
         try {
             arr = hermesJson(prompt, { array: true, timeout: 300000 });
@@ -730,28 +730,13 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
                 continue;
             // 記住呢個名，下輪排除
             excludeNames.push(r.name);
-            // ── 去重：company_name 或 website domain 已存在就跳過 ──
-            const dupQuery = [
-                { company_name: { $regex: `^${r.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } },
-            ];
-            if (r.website) {
-                const domain = extractDomain(r.website);
-                if (domain) {
-                    dupQuery.push({ website: { $regex: domain.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), $options: 'i' } });
-                }
-            }
-            const existing = await db.collection('leads').findOne({ $or: dupQuery });
-            if (existing) {
-                log(`  跳過重複 lead：${r.name}（已存在: ${existing.company_name}）`);
-                totalSkipped++;
-                continue;
-            }
+            // ⚠️ 暫時停用 DB 去重（要快 + 想見到所有結果；去重會 skip → 做多幾輪更慢）。日後可重開。
             const res = await db.collection('leads').insertOne({
                 lead_id: (0, crypto_1.randomBytes)(8).toString('hex'),
                 company_name: r.name,
-                address: r.address,
-                phone: r.phone,
+                email: r.email || '', // 主力攞 email（outreach 用）
                 website: r.website,
+                address: r.address || '', // 電話唔再要；address 有就存，冇就留空
                 source: 'google_maps',
                 _via: 'hermes',
                 search_query: `${p.keyword} ${p.location}`,

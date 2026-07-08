@@ -19,6 +19,10 @@ let SearchService = class SearchService {
         this.tasks = tasks;
     }
     async run(dto) {
+        const dup = await this.tasks.findActiveOrRecent(task_status_enum_1.SKILL.SEARCH, { keyword: dto.keyword, location: dto.location }, 60_000);
+        if (dup) {
+            return { task_id: dup.task_id, status: dup.status, deduped: true };
+        }
         const task = await this.tasks.enqueue({
             skill_id: task_status_enum_1.SKILL.SEARCH,
             title: `搜尋：${dto.keyword} ${dto.location}（目標 ${dto.targetCount}）`,

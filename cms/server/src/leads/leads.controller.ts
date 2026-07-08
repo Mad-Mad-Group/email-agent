@@ -74,4 +74,16 @@ export class LeadsController {
     await this.leads.remove(id);
     return { id };
   }
+
+  // ponytail: bulk-clear endpoint for the Leads page "一鍵清空" button.
+  // Order matters — this MUST be registered after @Delete(':id') so the path
+  // `''` resolves to the collection root, not `:id`. NestJS resolves routes
+  // top-to-bottom.
+  @Delete()
+  @HttpCode(200)
+  @Permission('leads.delete')
+  async clearAll() {
+    const count = await this.leads.clearAll();
+    return { deleted: count };
+  }
 }

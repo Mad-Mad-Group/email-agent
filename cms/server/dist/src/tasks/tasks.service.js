@@ -76,6 +76,18 @@ let TasksService = class TasksService {
             throw new common_1.NotFoundException('Task not found');
         return t;
     }
+    async findActiveOrRecent(skillId, paramsMatch, cooldownMs = 60_000) {
+        const cutoff = new Date(Date.now() - cooldownMs).toISOString();
+        const filter = { skill_id: skillId };
+        for (const [k, v] of Object.entries(paramsMatch)) {
+            filter[`params.${k}`] = v;
+        }
+        filter.$or = [
+            { status: { $in: [task_status_enum_1.TaskStatus.PENDING, task_status_enum_1.TaskStatus.RUNNING] } },
+            { _created_at: { $gte: cutoff } },
+        ];
+        return this.model.findOne(filter).sort({ _created_at: -1 }).exec();
+    }
     async claimNext(dto) {
         const filter = { status: task_status_enum_1.TaskStatus.PENDING };
         if (dto.skill_id)

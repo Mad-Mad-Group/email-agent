@@ -162,6 +162,10 @@ let LeadsService = class LeadsService {
         await lead.save();
         this.sse?.emit(sse_service_1.SseEvent.LEAD_UPDATE, { id: lead.id, action: 'deleted' });
     }
+    async clearAll() {
+        const res = await this.leadModel.deleteMany({}).exec();
+        return res.deletedCount ?? 0;
+    }
     nowStamp() {
         return new Date().toISOString().replace('T', ' ').slice(0, 19);
     }

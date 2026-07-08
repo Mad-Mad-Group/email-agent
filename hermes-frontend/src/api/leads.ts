@@ -75,6 +75,11 @@ export const leadsApi = {
   remove: (id: string) =>
     client.delete(`/leads/${id}`),
 
+  // ponytail: bulk clear — DELETE /leads (no :id). Backend must register this
+  // route AFTER @Delete(':id') so the empty path resolves to the collection.
+  clearAll: () =>
+    client.delete<{ deleted: number }>('/leads'),
+
   changeStatus: (id: string, status: string, note?: string) =>
     client.patch(`/leads/${id}/status`, { status, note }),
 
