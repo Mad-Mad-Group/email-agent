@@ -2042,6 +2042,9 @@ const Leads: React.FC = () => {
               <CircleActionBtn $color="#64748b" aria-label={t('leads.refresh', { defaultValue: '刷新' })} onClick={() => refetch()} disabled={isFetching}>
                 <IconRefresh />
               </CircleActionBtn>
+              <CircleActionBtn $color="#dc2626" aria-label={t('leads.clearAll', { defaultValue: '清空全部' })} onClick={handleClearAll} disabled={clearAllLeads.isPending}>
+                <IconTrash />
+              </CircleActionBtn>
             </HeaderBtns>
             <AddBtnGreen onClick={() => setShowAdd(true)}>
               <IconPlus />
