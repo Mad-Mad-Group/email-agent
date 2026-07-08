@@ -1185,10 +1185,10 @@ const DpTabSection = styled.div`
 
 const DpTabLabel = styled.span`
   position: absolute;
-  top: -1px;
-  left: 14px;
+  top: 5px;
+  left: 0;
   transform: translateY(-100%);
-  padding: 4px 14px 3px;
+  padding: 3px 14px 2px;
   font-size: 0.7rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -1196,10 +1196,24 @@ const DpTabLabel = styled.span`
   color: ${({ theme }) => theme.colors.textSecondary};
   background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border}33;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.surface};
-  border-radius: 8px 8px 0 0;
-  z-index: 1;
+  border-bottom: none;
+  border-radius: 10px 10px 0 0;
+  z-index: 2;
   user-select: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    right: -14px;
+    width: 14px;
+    height: 14px;
+    background: transparent;
+    border-radius: 0 0 0 14px;
+    box-shadow: -6px 0 0 0 ${({ theme }) => theme.colors.surface};
+    border-left: 1px solid ${({ theme }) => theme.colors.border}33;
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border}33;
+  }
 `;
 
 const DpTabCard = styled.div`
