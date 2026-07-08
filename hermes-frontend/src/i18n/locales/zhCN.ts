@@ -34,6 +34,10 @@ const zhCN = {
     noResults: '未找到结果。',
     actions: '操作',
   },
+  dialog: {
+    cancel: '取消',
+    confirm: '确定',
+  },
   nav: {
     dashboard: '仪表盘',
     pipeline: '销售管线',
@@ -227,6 +231,8 @@ const zhCN = {
     noLeads: '未找到潜在客户。',
     showingOf: '显示 {{count}} / {{total}} 位潜在客户',
     confirmDelete: '确定要删除此潜在客户吗？',
+    confirmClearAll: '确定清空全部 Leads 吗？\n\n将会永久删除 {{count}} 笔客户资料，此操作无法恢复。',
+    rejectReason: '拒绝原因（可空）',
     companyName: '公司名称 *',
     website: '网站',
     address: '地址',
