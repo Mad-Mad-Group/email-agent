@@ -59,10 +59,17 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  * --yolo = 非互動自動批准工具（開 browser 唔卡）。
  */
 function callHermes(prompt, timeoutMs = 300000) {
-    return (0, child_process_1.execFileSync)('hermes', ['-z', prompt, '--yolo'], {
-        encoding: 'utf8',
-        timeout: timeoutMs,
-        maxBuffer: 16 * 1024 * 1024,
+    return new Promise((resolve, reject) => {
+        (0, child_process_1.execFile)('hermes', ['-z', prompt, '--yolo'], {
+            encoding: 'utf8',
+            timeout: timeoutMs,
+            maxBuffer: 16 * 1024 * 1024,
+        }, (err, stdout) => {
+            if (err)
+                reject(err);
+            else
+                resolve(stdout);
+        });
     });
 }
 /**
@@ -196,17 +203,21 @@ function extractJsonArray(s) {
 /**
  * 叫 Hermes 並攞 JSON。parse 唔到（佢「講」而唔係回 JSON）就再叫一次強硬版。
  */
-function hermesJson(prompt, opts = {}) {
+async function hermesJson(prompt, opts = {}) {
     const pick = (s) => opts.array ? extractJsonArray(s) : extractJson(s);
+    // 第一次就加 JSON 格式提示，大幅減少 parse 失敗需要 retry 嘅機會
+    const jsonHint = opts.array
+        ? `\n\nRespond with ONLY a raw JSON array (start with [ end with ]). No markdown, no explanation.`
+        : `\n\nRespond with ONLY a raw JSON object (start with { end with }). No markdown, no explanation.`;
     try {
-        return pick(callHermes(prompt, opts.timeout));
+        return pick(await callHermes(prompt + jsonHint, opts.timeout));
     }
     catch {
         const strict = prompt +
             `\n\nIMPORTANT: Your ENTIRE reply must be ONLY the raw JSON` +
             (opts.array ? ' array (start with [ end with ])' : ' object (start with { end with })') +
             `. No explanation, no markdown, no words before or after.`;
-        return pick(callHermes(strict, opts.timeout));
+        return pick(await callHermes(strict, opts.timeout));
     }
 }
 const API = process.env.API_URL || 'http://localhost:4000/api';
@@ -216,6 +227,7 @@ const EMAIL = process.env.AGENT_EMAIL || 'admin@test.com';
 const PASS = process.env.AGENT_PASS || '123456';
 const AGENT_ID = process.env.AGENT_ID || 'WORKER-1';
 const SKILL = process.env.AGENT_SKILL || ''; // 空 = 任何 skill
+const SKILL_EXCLUDE = process.env.AGENT_SKILL_EXCLUDE || ''; // 逗號分隔，排除某啲 skill
 const POLL_MS = Number(process.env.POLL_MS || 2000);
 const MAX_IDLE = Number(process.env.WORKER_MAX_IDLE || 0); // 0 = 永遠
 let token = '';
@@ -304,6 +316,7 @@ async function api(path, method = 'GET', body) {
 const claim = () => api('/tasks/claim', 'POST', {
     agent_id: AGENT_ID,
     ...(SKILL ? { skill_id: SKILL } : {}),
+    ...(SKILL_EXCLUDE ? { exclude_skills: SKILL_EXCLUDE } : {}),
 }).then((j) => j?.data ?? null);
 const complete = (id, result) => api(`/tasks/${id}/complete`, 'POST', { result });
 async function failTask(id, error, retries = 3) {
@@ -369,7 +382,7 @@ function getDefaultMeetingTime() {
  * 用 Hermes(LLM) 分析一封回覆：分類 + 真摘要 + 語氣 + 下一步建議。
  * Hermes 掛咗 / parse 唔到 → fallback keyword（classifyReply），確保唔會漏。
  */
-function analyzeReply(subject, body, lead) {
+async function analyzeReply(subject, body, lead) {
     const allowed = ['interested', 'not_interested', 'meeting', 'auto_reply', 'question'];
     const clip = (body || '').slice(0, 4000); // 保護 prompt 長度
     const prompt = `你係 B2B 業務助手。下面係潛在客戶「${lead.company_name || lead.email}」對我哋 outreach email 嘅回覆。
@@ -390,7 +403,7 @@ ${clip}
 category 定義：interested=明確有興趣並有實質內容（想了解某方面／提出需求／想要資料或報價）；meeting=想開會或約時間；not_interested=明確拒絕或退訂；auto_reply=自動回覆／放假／測試訊息無實質內容；question=未明確表態或有疑問（包括只係一句「有興趣」但冇任何具體內容、或其他唔清楚嘅回覆）。內容唔清楚或未明確表態就填 "question"。
 proposed_time：如果對方提到了具體日期/時間（如「下週三下午兩點」「7月10號 2:30pm」），轉成 ISO 8601；冇提就留空。`;
     try {
-        const c = hermesJson(prompt, { timeout: 300000 });
+        const c = await hermesJson(prompt, { timeout: 300000 });
         return {
             category: allowed.includes(c.category) ? c.category : classifyReply(subject, body),
             summary: String(c.summary || subject).slice(0, 300),
@@ -470,7 +483,7 @@ ${brand_1.BRAND_SIGNATURE}
 
 只回一個 JSON object（ENTIRE reply 只可以係佢）：{"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）"}`;
     try {
-        const c = hermesJson(prompt, { timeout: 300000 });
+        const c = await hermesJson(prompt, { timeout: 300000 });
         if (!c.body)
             return false;
         const subject = c.subject ||
@@ -610,7 +623,7 @@ async function doReplyCheck(_p, db) {
     let replyDrafts = 0;
     const via = {};
     for (const m of matched) {
-        const a = analyzeReply(m.subject, m.text, m.lead);
+        const a = await analyzeReply(m.subject, m.text, m.lead);
         via[a.via] = (via[a.via] || 0) + 1;
         await db.collection('leads').updateOne({ _id: m.lead._id }, {
             $set: {
@@ -689,7 +702,7 @@ async function doReplyCheck(_p, db) {
 /** S1 搜尋 → 叫 Hermes 開 stealth browser 搵 Google Maps，回真公司 */
 async function doSearch(p, db) {
     const target = Math.min(Number(p.target_count) || 3, 10);
-    const MAX_ROUNDS = 3;
+    const MAX_ROUNDS = 1;
     const ids = [];
     let totalSkipped = 0;
     const excludeNames = []; // 避免 hermes 重複返回同樣結果
@@ -718,7 +731,7 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
 [{"name":"Example School","website":"https://example.com","email":"info@example.com"}]`;
         let arr;
         try {
-            arr = hermesJson(prompt, { array: true, timeout: 300000 });
+            arr = await hermesJson(prompt, { array: true, timeout: 300000 });
         }
         catch (e) {
             log(`  [search] 第 ${round} 輪 hermes 失敗: ${e?.message ?? e}`);
@@ -826,10 +839,11 @@ async function scrapeWebsite(url) {
         { url: base + '/contact', type: 'contact' },
         { url: base + '/contact-us', type: 'contact' },
     ];
-    for (const page of pagesToTry) {
+    // ── 並行抓取所有頁面 ──
+    const fetchResults = await Promise.allSettled(pagesToTry.map(async (page) => {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
         try {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 10000);
             const res = await fetch(page.url, {
                 signal: controller.signal,
                 headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' },
@@ -837,10 +851,21 @@ async function scrapeWebsite(url) {
             });
             clearTimeout(timeout);
             if (!res.ok)
-                continue;
-            const html = await res.text();
+                return null;
+            return { html: await res.text(), type: page.type };
+        }
+        catch {
+            clearTimeout(timeout);
+            return null;
+        }
+    }));
+    for (const r of fetchResults) {
+        if (r.status !== 'fulfilled' || !r.value)
+            continue;
+        const { html, type } = r.value;
+        try {
             const text = htmlToText(html);
-            pageTexts.push(`[${page.type}] ${text}`);
+            pageTexts.push(`[${type}] ${text}`);
             // ── 抽 email ──
             const mailtoMatches = html.match(/mailto:([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/gi) || [];
             for (const m of mailtoMatches) {
@@ -866,19 +891,17 @@ async function scrapeWebsite(url) {
                     phones.push(ph.trim());
             }
             // ── 抽公司簡介（首頁 / about 頁嘅 meta description 或首段文字） ──
-            if (!description && (page.type === 'home' || page.type === 'about')) {
+            if (!description && (type === 'home' || type === 'about')) {
                 const meta = extractMetaDescription(html);
                 if (meta) {
                     description = meta;
                 }
                 else if (text.length > 50) {
-                    // 用首 300 字做簡介
                     description = text.slice(0, 300).trim();
                 }
             }
             // ── 抽服務/產品（services / products 頁面嘅列表項） ──
-            if (page.type === 'services') {
-                // 嘗試抽 <li> 內容或 <h2>/<h3> 標題作為服務名
+            if (type === 'services') {
                 const headings = html.match(/<(?:h[23]|li)[^>]*>([^<]{3,80})<\/(?:h[23]|li)>/gi) || [];
                 for (const h of headings.slice(0, 15)) {
                     const clean = h.replace(/<[^>]+>/g, '').trim();
@@ -887,7 +910,7 @@ async function scrapeWebsite(url) {
                 }
             }
         }
-        catch { /* 忽略 fetch 失敗嘅頁面 */ }
+        catch { /* 忽略處理失敗嘅頁面 */ }
     }
     return {
         emails: [...new Set(emails)],
@@ -937,7 +960,7 @@ Also find phone and address if visible.
 Output ONLY JSON, empty string if not found:
 {"email":"","phone":"","address":""}`;
         try {
-            const c = hermesJson(prompt, { timeout: 300000 });
+            const c = await hermesJson(prompt, { timeout: 300000 });
             if (c.email && !foundEmail) {
                 foundEmail = c.email;
                 via = 'hermes';
@@ -1026,12 +1049,12 @@ ${brand_1.BRAND_TONE_GUIDE}
 Output ONLY one JSON object, no other text:
 {"primary":"主要合作方向","pitch":"一句 pitch (港式繁中 + EN mix OK)","reason":"理由","services":["服務1","服務2"]}`;
         try {
-            out = callHermes(buildPrompt(4000), 300000);
+            out = await callHermes(buildPrompt(4000), 300000);
         }
         catch {
             // 「太多資料」逾時 → 大幅縮短爬蟲內容再試一次
             log(`[analyze] ${lead.company_name} 分析逾時，縮短資料後重試`);
-            out = callHermes(buildPrompt(1200), 300000);
+            out = await callHermes(buildPrompt(1200), 300000);
         }
     }
     else {
@@ -1053,7 +1076,7 @@ maps best to this lead's pain points, and why.
 ${brand_1.BRAND_TONE_GUIDE}
 Output ONLY one JSON object, no other text:
 {"primary":"主要合作方向","pitch":"一句 pitch (港式繁中 + EN mix OK)","reason":"理由","services":["服務1","服務2"]}`;
-        out = callHermes(prompt, 360000); // browser 導航較慢，畀多啲時間
+        out = await callHermes(prompt, 360000); // browser 導航較慢，畀多啲時間
     }
     const c = extractJson(out);
     await db.collection('leads').updateOne({ _id }, {
@@ -1099,7 +1122,7 @@ Output ONLY JSON with subject, body, and summary. Body MUST end with this signat
 ${brand_1.BRAND_SIGNATURE}
 
 {"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）"}`;
-    const c = hermesJson(prompt);
+    const c = await hermesJson(prompt);
     await db.collection('leads').updateOne({ _id }, { $set: { email_draft: c.body, _has_email_draft: true } });
     // 測試模式：強制寄去自己嘅 email；正式上線改返 lead.email
     const testRecipient = process.env.TEST_RECIPIENT_EMAIL || '';
@@ -1201,7 +1224,7 @@ Output ONLY JSON with subject, body, and summary. Body MUST end with this signat
 ${brand_1.BRAND_SIGNATURE}
 
 {"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）"}`;
-    const c = hermesJson(prompt);
+    const c = await hermesJson(prompt);
     const testRecipient = process.env.TEST_RECIPIENT_EMAIL || '';
     await db.collection('email_queue').insertOne({
         email_id: (0, crypto_1.randomBytes)(4).toString('hex'),
@@ -1250,7 +1273,7 @@ Output ONLY JSON with subject, body, and summary. Body MUST end with this signat
 ${brand_1.BRAND_SIGNATURE}
 
 {"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）"}`;
-    const c = hermesJson(prompt);
+    const c = await hermesJson(prompt);
     const testRecipient = process.env.TEST_RECIPIENT_EMAIL || '';
     await db.collection('email_queue').insertOne({
         email_id: (0, crypto_1.randomBytes)(4).toString('hex'),
@@ -1371,7 +1394,7 @@ async function loginWithRetry() {
     }
 }
 async function main() {
-    log(`啟動 → API=${API} skill=${SKILL || 'any'}`);
+    log(`啟動 → API=${API} skill=${SKILL || 'any'} exclude=${SKILL_EXCLUDE || 'none'}`);
     await loginWithRetry();
     const client = new mongodb_1.MongoClient(MONGO);
     await client.connect();

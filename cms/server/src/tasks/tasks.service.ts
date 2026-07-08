@@ -96,6 +96,10 @@ export class TasksService {
   async claimNext(dto: ClaimTaskDto): Promise<TaskDocument | null> {
     const filter: FilterQuery<TaskDocument> = { status: TaskStatus.PENDING };
     if (dto.skill_id) filter.skill_id = dto.skill_id;
+    if (dto.exclude_skills) {
+      const excluded = dto.exclude_skills.split(',').map(s => s.trim()).filter(Boolean);
+      if (excluded.length) filter.skill_id = { ...((filter.skill_id && typeof filter.skill_id === 'string') ? { $eq: filter.skill_id } : {}), $nin: excluded } as any;
+    }
     const task = await this.model
       .findOneAndUpdate(
         filter,

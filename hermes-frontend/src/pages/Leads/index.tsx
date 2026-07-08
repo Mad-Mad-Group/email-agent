@@ -375,6 +375,28 @@ const CircleActionBtn = styled.button<{ $color?: string }>`
   svg { width: 16px; height: 16px; }
 `;
 
+const AutoCheckBtn = styled.button<{ $active?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid ${({ $active }) => $active ? '#16a34a' : '#cbd5e1'};
+  background: ${({ $active }) => $active ? '#f0fdf4' : 'transparent'};
+  color: ${({ $active }) => $active ? '#16a34a' : '#64748b'};
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+  svg { width: 14px; height: 14px; }
+  &:hover {
+    border-color: #16a34a;
+    color: #16a34a;
+    background: #f0fdf4;
+  }
+`;
+
 /* ── Refresh icon ── */
 
 const IconRefresh = () => (
@@ -981,6 +1003,27 @@ const Input = styled.input`
   box-sizing: border-box;
   box-shadow: 0 1px 2px rgba(15,23,42,0.04);
   transition: border-color 0.15s, box-shadow 0.15s;
+  &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.blue};
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12), 0 1px 2px rgba(15,23,42,0.04);
+  }
+`;
+
+const Textarea = styled.textarea`
+  padding: 9px ${({ theme }) => theme.spacing.sm}px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  font-size: 0.8125rem;
+  outline: none;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ theme }) => theme.colors.surface};
+  box-sizing: border-box;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  resize: vertical;
+  min-height: 60px;
+  font-family: inherit;
   &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
   &:focus {
     border-color: ${({ theme }) => theme.colors.blue};
@@ -1965,9 +2008,15 @@ const Leads: React.FC = () => {
     phone: '',
     website: '',
     address: '',
+    source: '',
+    rating: '',
+    industry_tags: '' as string,
+    website_description: '',
   });
   const [replyChecking, setReplyChecking] = useState(false);
   const [replyCheckMsg, setReplyCheckMsg] = useState('');
+  const [autoCheckReplies, setAutoCheckReplies] = useState(false);
+  const autoCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [followupChecking, setFollowupChecking] = useState(false);
   const [followupCheckMsg, setFollowupCheckMsg] = useState('');
   const [demoMode, setDemoMode] = useState(false);
@@ -2022,6 +2071,26 @@ const Leads: React.FC = () => {
       setTimeout(() => setFollowupCheckMsg(''), 5000);
     } finally { setFollowupChecking(false); }
   };
+
+  // ── Auto-check replies every 10s ──
+  useEffect(() => {
+    if (autoCheckReplies) {
+      // 即刻跑一次
+      client.post('/jobs/check-replies/run').catch(() => {});
+      autoCheckRef.current = setInterval(() => {
+        client.post('/jobs/check-replies/run').catch(() => {});
+      }, 10_000);
+    } else if (autoCheckRef.current) {
+      clearInterval(autoCheckRef.current);
+      autoCheckRef.current = null;
+    }
+    return () => {
+      if (autoCheckRef.current) {
+        clearInterval(autoCheckRef.current);
+        autoCheckRef.current = null;
+      }
+    };
+  }, [autoCheckReplies]);
 
   // ponytail: bulk-clear with explicit confirm. We require typing "DELETE"
   // (or at least a window.confirm) so a misclick doesn't wipe the DB. The
@@ -2156,10 +2225,21 @@ const Leads: React.FC = () => {
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
-    createLead.mutate(form as any, {
+    const payload = {
+      ...form,
+      industry_tags: form.industry_tags
+        ? form.industry_tags.split(',').map(s => s.trim()).filter(Boolean)
+        : undefined,
+    };
+    createLead.mutate(payload as any, {
       onSuccess: () => {
+<<<<<<< Updated upstream
         closeAddModal();
         setForm({ company_name: '', email: '', phone: '', website: '', address: '' });
+=======
+        setShowAdd(false);
+        setForm({ company_name: '', email: '', phone: '', website: '', address: '', source: '', rating: '', industry_tags: '', website_description: '' });
+>>>>>>> Stashed changes
       },
     });
   };
@@ -2217,6 +2297,10 @@ const Leads: React.FC = () => {
               <CircleActionBtn $color="#dc2626" aria-label={t('leads.clearAll', { defaultValue: '清空全部' })} onClick={handleClearAll} disabled={clearAllLeads.isPending}>
                 <IconTrash />
               </CircleActionBtn>
+              <AutoCheckBtn $active={autoCheckReplies} onClick={() => setAutoCheckReplies(p => !p)}>
+                <IconCheckCircle />
+                {autoCheckReplies ? '自動檢查中 (10s)' : '自動檢查回覆'}
+              </AutoCheckBtn>
             </HeaderBtns>
             <AddBtnGreen onClick={() => setShowAdd(true)}>
               <IconPlus />
@@ -2461,6 +2545,41 @@ const Leads: React.FC = () => {
                     value={form.address}
                     onChange={e => setForm(f => ({ ...f, address: e.target.value }))}
                     placeholder={t('leads.enterAddress')}
+                  />
+                </FormGroup>
+                <FormRow>
+                  <FormGroup>
+                    <Label>{t('leads.source', { defaultValue: '來源' })}</Label>
+                    <Input
+                      value={form.source}
+                      onChange={e => setForm(f => ({ ...f, source: e.target.value }))}
+                      placeholder={t('leads.enterSource', { defaultValue: '例如 google_maps, referral' })}
+                    />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>{t('leads.rating', { defaultValue: '評分' })}</Label>
+                    <Input
+                      value={form.rating}
+                      onChange={e => setForm(f => ({ ...f, rating: e.target.value }))}
+                      placeholder={t('leads.enterRating', { defaultValue: '例如 4.5' })}
+                    />
+                  </FormGroup>
+                </FormRow>
+                <FormGroup>
+                  <Label>{t('leads.industryTags', { defaultValue: '行業標籤' })}</Label>
+                  <Input
+                    value={form.industry_tags}
+                    onChange={e => setForm(f => ({ ...f, industry_tags: e.target.value }))}
+                    placeholder={t('leads.enterIndustryTags', { defaultValue: '用逗號分隔，例如 教育, 科技' })}
+                  />
+                </FormGroup>
+                <FormGroup>
+                  <Label>{t('leads.description', { defaultValue: '備註 / 公司簡介' })}</Label>
+                  <Textarea
+                    value={form.website_description}
+                    onChange={e => setForm(f => ({ ...f, website_description: e.target.value }))}
+                    placeholder={t('leads.enterDescription', { defaultValue: '關於呢間公司嘅備註或簡介' })}
+                    rows={3}
                   />
                 </FormGroup>
               </ModalBody>

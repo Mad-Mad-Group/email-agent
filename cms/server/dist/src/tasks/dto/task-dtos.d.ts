@@ -9,6 +9,7 @@ export declare class EnqueueTaskDto {
 export declare class ClaimTaskDto {
     agent_id: string;
     skill_id?: string;
+    exclude_skills?: string;
 }
 export declare class CompleteTaskDto {
     result?: Record<string, unknown>;

@@ -1840,6 +1840,8 @@ const SearchPage: React.FC = () => {
     // ponytail: gate re-entrant submits. Button `disabled` is a DOM hint;
     // form onSubmit / Enter-on-input can still fire while mutation is in flight.
     if (search.isPending || !keyword.trim()) return;
+    // 喺 user gesture 內請求通知權限，確保瀏覽器唔會靜靜忽略
+    void ensureNotificationPermission();
     const fullLocation = district === '全區' ? location : `${location} ${district}`;
     const payload: SearchPayload = {
       keyword: keyword.trim(),

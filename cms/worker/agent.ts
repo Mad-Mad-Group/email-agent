@@ -158,6 +158,7 @@ const EMAIL = process.env.AGENT_EMAIL || 'admin@test.com';
 const PASS = process.env.AGENT_PASS || '123456';
 const AGENT_ID = process.env.AGENT_ID || 'WORKER-1';
 const SKILL = process.env.AGENT_SKILL || ''; // 空 = 任何 skill
+const SKILL_EXCLUDE = process.env.AGENT_SKILL_EXCLUDE || ''; // 逗號分隔，排除某啲 skill
 const POLL_MS = Number(process.env.POLL_MS || 2000);
 const MAX_IDLE = Number(process.env.WORKER_MAX_IDLE || 0); // 0 = 永遠
 
@@ -250,6 +251,7 @@ const claim = () =>
   api('/tasks/claim', 'POST', {
     agent_id: AGENT_ID,
     ...(SKILL ? { skill_id: SKILL } : {}),
+    ...(SKILL_EXCLUDE ? { exclude_skills: SKILL_EXCLUDE } : {}),
   }).then((j) => j?.data ?? null);
 const complete = (id: string, result: unknown) =>
   api(`/tasks/${id}/complete`, 'POST', { result });
@@ -1380,7 +1382,7 @@ async function loginWithRetry(): Promise<void> {
 }
 
 async function main() {
-  log(`啟動 → API=${API} skill=${SKILL || 'any'}`);
+  log(`啟動 → API=${API} skill=${SKILL || 'any'} exclude=${SKILL_EXCLUDE || 'none'}`);
   await loginWithRetry();
   const client = new MongoClient(MONGO);
   await client.connect();
