@@ -46,7 +46,7 @@ const Main = styled.main`
   min-width: 0;
   height: 100vh;
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-y: scroll;
 `;
 
 const Content = styled.div`

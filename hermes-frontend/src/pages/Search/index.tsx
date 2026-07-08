@@ -145,20 +145,38 @@ const CardBody = styled.div`padding: 20px;`;
 
 /* ── Unified Search Bar ── */
 
-const UnifiedBar = styled.div`
+const UnifiedBar = styled.div<{ $morphing?: boolean }>`
   display: flex;
   align-items: center;
-  width: 100%;
   border-radius: 999px;
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.surface};
-  box-shadow: 0 2px 12px rgba(15,23,42,0.06);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  border: 1.5px solid ${({ theme, $morphing }) => $morphing ? 'transparent' : theme.colors.border};
+  background: ${({ theme, $morphing }) => $morphing ? 'transparent' : theme.colors.surface};
+  box-shadow: ${({ $morphing }) => $morphing ? 'none' : '0 2px 12px rgba(15,23,42,0.06)'};
   overflow: visible; position: relative;
   z-index: 1;
+
+  /* morph transition */
+  width: ${({ $morphing }) => $morphing ? '104px' : '100%'};
+  height: ${({ $morphing }) => $morphing ? '104px' : 'auto'};
+  margin: ${({ $morphing }) => $morphing ? '0 auto' : '0'};
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              margin 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.3s,
+              background 0.3s,
+              box-shadow 0.3s;
+  justify-content: ${({ $morphing }) => $morphing ? 'center' : 'flex-start'};
+
+  & > *:not(.search-ring) {
+    opacity: ${({ $morphing }) => $morphing ? 0 : 1};
+    pointer-events: ${({ $morphing }) => $morphing ? 'none' : 'auto'};
+    transition: opacity 0.2s;
+    ${({ $morphing }) => $morphing && 'position: absolute; width: 0; overflow: hidden;'}
+  }
+
   &:focus-within {
-    border-color: ${({ theme }) => theme.colors.blue};
-    box-shadow: 0 2px 20px rgba(37,99,235,0.12);
+    border-color: ${({ theme, $morphing }) => $morphing ? 'transparent' : theme.colors.blue};
+    box-shadow: ${({ $morphing }) => $morphing ? 'none' : '0 2px 20px rgba(37,99,235,0.12)'};
   }
 `;
 
@@ -435,6 +453,64 @@ const Spinner = styled.span`
   border: 2px solid currentColor; border-top-color: transparent;
   border-radius: 50%; animation: spin 0.7s linear infinite;
   @keyframes spin { to { transform: rotate(360deg); } }
+`;
+
+/* ── Search Ring (morph target) ── */
+
+const ringRotate = keyframes`
+  to { transform: rotate(360deg); }
+`;
+
+const ringPulse = keyframes`
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(37,99,235,0.3)); }
+  50%      { filter: drop-shadow(0 0 14px rgba(37,99,235,0.5)); }
+`;
+
+const SearchRing = styled.div.attrs({ className: 'search-ring' })<{ $percent?: number }>`
+  width: 100px;
+  height: 100px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: ${ringPulse} 2s ease-in-out infinite;
+
+  svg.ring-svg {
+    position: absolute;
+    inset: 0;
+    animation: ${({ $percent }) => $percent === undefined ? ringRotate : 'none'} 1.2s linear infinite;
+  }
+`;
+
+const RingStage = styled.span`
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.blue};
+  z-index: 1;
+  text-align: center;
+  line-height: 1.3;
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
+const RingCount = styled.span`
+  font-size: 0.8125rem;
+  font-weight: 800;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  z-index: 1;
+  letter-spacing: -0.02em;
+`;
+
+const RingHint = styled.span`
+  display: block;
+  margin-top: 8px;
+  font-size: 0.6875rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  text-align: center;
+  z-index: 1;
 `;
 
 /* ── Results ── */
@@ -1691,8 +1767,8 @@ const SearchPage: React.FC = () => {
         {DOT_CONFIG.map((d, i) => (
           <Dot key={i} $x={d.x} $y={d.y} $size={d.size} $delay={d.delay} $dur={d.dur} />
         ))}
-        {/* Search Form — Unified Bar */}
-        <UnifiedBar as="form" onSubmit={handleSubmit} ref={locRef}>
+        {/* Search Form — Unified Bar (morphs to ring when searching) */}
+        <UnifiedBar as="form" onSubmit={handleSubmit} ref={locRef} $morphing={search.isPending || isPipelineRunning}>
           <BarInput
             type="text"
             placeholder={t('search.keywordPlaceholder')}
@@ -1729,32 +1805,59 @@ const SearchPage: React.FC = () => {
               ))}
             </LocDropdown>
           )}
+          {/* Progress ring overlay */}
+          {(search.isPending || isPipelineRunning) && (
+            <SearchRing className="search-ring" $percent={pipelineProgress?.percent}>
+              <svg className="ring-svg" width="100" height="100" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="44" fill="none" stroke="rgba(37,99,235,0.10)" strokeWidth="4" />
+                <circle
+                  cx="50" cy="50" r="44"
+                  fill="none"
+                  stroke="#2563eb"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeDasharray={`${2 * Math.PI * 44}`}
+                  strokeDashoffset={
+                    pipelineProgress
+                      ? `${2 * Math.PI * 44 * (1 - pipelineProgress.percent / 100)}`
+                      : `${2 * Math.PI * 44 * 0.75}`
+                  }
+                  transform="rotate(-90 50 50)"
+                  style={{ transition: 'stroke-dashoffset 0.4s ease' }}
+                />
+              </svg>
+              {pipelineProgress ? (
+                <>
+                  <RingCount>{pipelineProgress.current}/{pipelineProgress.total}</RingCount>
+                  <RingStage>{STAGE_LABELS[pipelineProgress.stage] || pipelineProgress.stage}</RingStage>
+                </>
+              ) : search.isPending ? (
+                <RingStage>提交中</RingStage>
+              ) : (
+                <RingStage>準備中</RingStage>
+              )}
+            </SearchRing>
+          )}
+          {/* Hint text below morphed ring */}
+          {(search.isPending || isPipelineRunning) && (
+            <RingHint className="search-ring">
+              {pipelineProgress
+                ? `${STAGE_LABELS[pipelineProgress.stage] || pipelineProgress.stage} — ${Math.round(pipelineProgress.percent)}%`
+                : search.isPending ? '正在連線至搜尋引擎…' : '等待管道啟動…'}
+            </RingHint>
+          )}
         </UnifiedBar>
       </GlowWrap>
 
       {/* ── Pipeline progress + results ── */}
       {(search.isPending || isPipelineRunning || pipelineComplete || search.isError) && (
         <div style={{ width: 'calc(100% - 48px)', maxWidth: 760 }}>
-          {/* Status banner */}
-          {search.isPending && (
-            <StatusBanner $type="loading"><Spinner /> 正在提交搜尋請求…</StatusBanner>
-          )}
+          {/* Status banner — loading state handled by ring */}
           {search.isError && (
             <StatusBanner $type="error">搜尋失敗：{(search.error as any)?.message || '未知錯誤'}</StatusBanner>
           )}
-          {isPipelineRunning && (
+          {isPipelineRunning && pipelineLogs.length > 0 && (
             <PipelineSection>
-              <PipelineStageLabel>
-                <Spinner />
-                {pipelineProgress
-                  ? `${STAGE_LABELS[pipelineProgress.stage] || pipelineProgress.stage} (${pipelineProgress.current}/${pipelineProgress.total})`
-                  : '管道處理中…'}
-              </PipelineStageLabel>
-              {pipelineProgress && (
-                <ProgressBarOuter>
-                  <ProgressBarInner $percent={pipelineProgress.percent} />
-                </ProgressBarOuter>
-              )}
               {pipelineLogs.length > 0 && (
                 <PipelineLogFeed ref={pipelineLogRef}>
                   {pipelineLogs.map((log, i) => (

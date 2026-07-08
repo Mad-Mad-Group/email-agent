@@ -236,6 +236,7 @@ const zhCN = {
     enterWebsite: '输入网站',
     enterAddress: '输入地址',
     creating: '创建中...',
+    unit: '位',
     tabPreparing: '准备中',
     tabAwaiting: '等待回复',
     tabReplied: '已回复',

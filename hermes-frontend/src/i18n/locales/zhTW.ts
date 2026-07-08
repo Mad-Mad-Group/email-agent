@@ -237,6 +237,7 @@ const zhTW = {
     enterWebsite: '輸入網站',
     enterAddress: '輸入地址',
     creating: '建立中...',
+    unit: '位',
     tabPreparing: '準備中',
     tabAwaiting: '等待回覆',
     tabReplied: '已回覆',

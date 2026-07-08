@@ -237,6 +237,7 @@ const en = {
     enterWebsite: 'Enter website',
     enterAddress: 'Enter address',
     creating: 'Creating...',
+    unit: '',
     tabPreparing: 'Preparing',
     tabAwaiting: 'Awaiting Reply',
     tabReplied: 'Replied',
