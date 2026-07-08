@@ -178,7 +178,7 @@ const BarChart: React.FC<{ bars: BarData[]; dark?: boolean }> = ({ bars, dark })
           const r = 5;
           return (
             <g key={i} style={{ cursor: 'pointer' }}
-               onMouseMove={(e) => handleMouseMove(e, i)}
+               onMouseMove={(e) => handleMouseMove(e as unknown as React.MouseEvent<SVGSVGElement, MouseEvent>, i)}
                onMouseLeave={() => setHover(null)}>
               <rect x={0} y={pt + gap * i} width={w} height={gap} fill="transparent" />
               <rect x={pl} y={y} width={chartW} height={barH} rx={r} ry={r} fill={dark ? '#334155' : '#f1f5f9'} />
