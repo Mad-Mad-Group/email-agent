@@ -1,14 +1,13 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
-import styled, { keyframes, useTheme } from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail } from '../../api/hooks';
 import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
 import client from '../../api/client';
 import { media } from '../../styles/media';
-import { useDialog } from '../../components';
 
 /* ══════════════════════════════════════
    CMS Leads — Luno Contacts-style UI
@@ -140,15 +139,27 @@ const PageSub = styled.p`
   font-size: 0.8125rem;
 `;
 
-/* ── Header: Stat Cards + Action Bar ── */
+/* ── Header Card (title + buttons + stats in one box) ── */
 
 const HeaderSection = styled.div`
-  padding: ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.xl}px;
+  padding: ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.md}px;
   display: flex;
   flex-direction: column;
   gap: 16px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  ${media.mobile} { padding: ${({ theme }) => theme.spacing.md}px; }
+`;
+
+const HeaderBtns = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  ${media.tabletDown} {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+    gap: 8px;
+  }
 `;
 
 const HeaderFeedback = styled.div`
@@ -170,173 +181,87 @@ const FeedbackMsg = styled.span<{ $error?: boolean }>`
   }
 `;
 
-/* ── Stat cards row (reference image style) ── */
-
-const StatCardsRow = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  ${media.tabletDown} { grid-template-columns: repeat(2, 1fr); }
-  ${media.mobile} { grid-template-columns: 1fr; }
-`;
-
-const StatCard = styled.div<{ $accent?: string }>`
-  position: relative;
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.control}px;
-  padding: 16px 18px;
+const HeaderTop = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-
-  /* short accent bar on left edge */
-  &::before {
-    content: '';
-    position: absolute;
-    left: -1px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 3px;
-    height: 40%;
-    border-radius: 0 3px 3px 0;
-    background: ${({ $accent }) => $accent || '#2563eb'};
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.md}px;
+  flex-wrap: wrap;
+  ${media.tabletDown} {
+    flex-direction: column;
+    text-align: center;
+    gap: 12px;
   }
 `;
 
-const StatCardLabel = styled.div`
-  font-size: 0.75rem;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  font-weight: 500;
-`;
-
-const StatCardValue = styled.div`
-  display: flex;
-  align-items: baseline;
-  gap: 6px;
-`;
-
-const StatCardNumber = styled.span`
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const StatCardUnit = styled.span`
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const StatCardChange = styled.div`
+const ProfileIcon = styled.div`
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.blue};
   display: flex;
   align-items: center;
-  gap: 4px;
-  font-size: 0.7rem;
+  justify-content: center;
+  color: #fff;
+  flex-shrink: 0;
+  svg { width: 28px; height: 28px; }
+  ${media.tabletDown} { width: 44px; height: 44px; svg { width: 22px; height: 22px; } }
 `;
 
-const StatCardDelta = styled.span<{ $up: boolean }>`
-  font-weight: 600;
-  color: ${({ $up }) => $up ? '#16a34a' : '#dc2626'};
-`;
-
-const StatCardChangeSuffix = styled.span`
-  color: ${({ theme }) => theme.colors.textTertiary};
-  font-weight: 400;
-`;
-
-/* ── Action bar (title + buttons) ── */
-
-const ActionBar = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 10px;
-`;
-
-const ActionBarLeft = styled.div`
+const ProfileInfo = styled.div`
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: 2px;
 `;
 
-const ActionBarRight = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-`;
-
-/* ── Primary dropdown button ── */
-
-const DropdownWrap = styled.div`
-  position: relative;
-  display: inline-flex;
-`;
-
-const PrimaryDropBtn = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 18px;
-  border: none;
-  border-radius: 8px 0 0 8px;
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
-  color: #fff;
-  font-size: 0.8125rem;
+const ProfileTitle = styled.h2`
+  margin: 0;
+  font-size: 1.15rem;
   font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: opacity 0.15s;
-  &:hover { opacity: 0.9; }
+  color: ${({ theme }) => theme.colors.textPrimary};
+
+  .count-number {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: ${({ theme }) => theme.colors.blue};
+  }
 `;
 
-const DropdownArrow = styled.button`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 10px;
+const HeaderDivider = styled.hr`
   border: none;
-  border-left: 1px solid rgba(255,255,255,0.3);
-  border-radius: 0 8px 8px 0;
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
-  color: #fff;
-  cursor: pointer;
-  transition: opacity 0.15s;
-  &:hover { opacity: 0.9; }
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  margin: 0;
 `;
 
-const DropdownMenu = styled.div<{ $open: boolean }>`
-  display: ${({ $open }) => $open ? 'flex' : 'none'};
-  flex-direction: column;
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  min-width: 180px;
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.control}px;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-  z-index: 20;
-  overflow: hidden;
-`;
-
-const DropdownItem = styled.button`
+const StatsStrip = styled.div`
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 14px;
-  border: none;
-  background: transparent;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 0.8125rem;
-  cursor: pointer;
-  text-align: left;
-  transition: background 0.12s;
-  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-  svg { flex-shrink: 0; }
+  gap: 0;
+  ${media.mobile} { flex-wrap: wrap; gap: 8px; }
+`;
+
+const StatItem = styled.div<{ $color: string }>`
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 0 20px;
+  border-right: 1px solid ${({ theme }) => theme.colors.border};
+  &:first-child { padding-left: 0; }
+  &:last-child { border-right: none; }
+  ${media.mobile} { border-right: none; padding: 0 12px; }
+`;
+
+const StatNumber = styled.span<{ $color: string }>`
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: ${({ $color }) => $color};
+`;
+
+const StatLabel = styled.span`
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  white-space: nowrap;
 `;
 
 const AddBtn = styled.button`
@@ -369,60 +294,13 @@ const AddBtn = styled.button`
   }
 `;
 
-const AddBtnAmber = styled(AddBtn)`
-  background: linear-gradient(135deg, #d97706, #f59e0b);
-  box-shadow: 0 1px 3px rgba(217,119,6,0.2);
-  &:hover { box-shadow: 0 3px 10px rgba(217,119,6,0.25); }
-`;
-const AddBtnPurple = styled(AddBtn)`
-  background: linear-gradient(135deg, #7c3aed, #8b5cf6);
-  box-shadow: 0 1px 3px rgba(124,58,237,0.2);
-  &:hover { box-shadow: 0 3px 10px rgba(124,58,237,0.25); }
-`;
-const AddBtnOutline = styled(AddBtn)`
-  background: transparent;
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  color: ${({ theme }) => theme.colors.textSecondary};
-  box-shadow: none;
-  &:hover { background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}; box-shadow: none; }
-`;
-const RefreshBtn = styled(AddBtn)`
-  background: transparent;
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  color: ${({ theme }) => theme.colors.textSecondary};
-  box-shadow: none;
-  padding: 7px 10px;
-  &:hover { background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.03)'}; box-shadow: none; }
-`;
 const AddBtnGreen = styled(AddBtn)`
   background: linear-gradient(135deg, #16a34a, #22c55e);
   box-shadow: 0 1px 3px rgba(22,163,74,0.2);
-  &:hover { box-shadow: 0 3px 10px rgba(22,163,74,0.25); }
+  &:hover {
+    box-shadow: 0 3px 10px rgba(22,163,74,0.25);
+  }
 `;
-
-/* ── Header Button Icons ── */
-const IconRefreshSvg = () => (
-  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
-    <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-  </svg>
-);
-const IconMailCheck = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M22 13V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h9"/>
-    <polyline points="22,6 12,13 2,6"/><polyline points="16 18 18 20 22 16"/>
-  </svg>
-);
-const IconForward = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/>
-  </svg>
-);
-const IconLabFlask = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M9 3h6m-5 0v6.5L4 18a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1l-6-8.5V3"/>
-  </svg>
-);
 
 /* ── Tabs Row ── */
 
@@ -430,10 +308,7 @@ const TabsRow = styled.div`
   display: flex;
   align-items: stretch;
   gap: 0;
-  padding-left: ${({ theme }) => theme.spacing.xl}px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   ${media.tabletDown} {
-    padding-left: ${({ theme }) => theme.spacing.md}px;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     &::-webkit-scrollbar { display: none; }
@@ -445,19 +320,19 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 12px 32px;
+  padding: 10px 24px;
   background: transparent;
   border: none;
-  border-bottom: 2px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
+  border-top: 2px solid ${({ $active, $color }) => $active ? ($color || '#2563eb') : 'transparent'};
+  margin-top: -1px;
   cursor: pointer;
   white-space: nowrap;
   position: relative;
-  transition: color 0.15s, border-color 0.15s;
-  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textTertiary};
-  font-size: 0.875rem;
-  font-weight: ${({ $active }) => $active ? 600 : 400};
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
-  ${media.tabletDown} { padding: 10px 14px; flex: 1; justify-content: center; }
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  svg { flex-shrink: 0; opacity: ${({ $active }) => $active ? 1 : 0.5}; }
+  color: ${({ $active, theme }) => $active ? 'inherit' : theme.colors.textTertiary};
+  &:hover { background: rgba(0,0,0,0.02); }
+  ${media.tabletDown} { padding: 8px 14px; flex: 1; justify-content: center; }
 `;
 
 const TabNumber = styled.span<{ $color: string }>`
@@ -467,16 +342,16 @@ const TabNumber = styled.span<{ $color: string }>`
 `;
 
 const TabLabel = styled.span<{ $active?: boolean }>`
-  font-size: inherit;
-  font-weight: inherit;
-  color: inherit;
+  font-size: 0.875rem;
+  font-weight: ${({ $active }) => $active ? 600 : 500};
+  color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textTertiary};
 `;
 
 const SubPillRow = styled.div`
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 10px ${({ theme }) => theme.spacing.xl}px;
+  padding: 10px 24px;
   flex-wrap: wrap;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   position: relative;
@@ -567,8 +442,7 @@ const Card = styled.div`
 
 const TableWrap = styled.div`
   overflow-x: auto;
-  padding: ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.xl}px;
-  ${media.mobile} { padding: ${({ theme }) => theme.spacing.md}px; }
+  padding: ${({ theme }) => theme.spacing.md}px;
 `;
 
 const Table = styled.table`
@@ -582,11 +456,10 @@ const Table = styled.table`
     white-space: nowrap;
   }
   th {
-    font-weight: 700;
+    font-weight: 600;
     text-transform: uppercase;
-    font-size: 0.8rem;
-    letter-spacing: 0.02em;
-    color: ${({ theme }) => theme.colors.textSecondary};
+    font-size: 0.6875rem;
+    color: ${({ theme }) => theme.colors.textTertiary};
     background: ${({ theme }) => theme.colors.canvas};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
     user-select: none;
@@ -713,52 +586,16 @@ const EmptyCell = styled.td`
 
 /* ── Date Group Header ── */
 
-const GROUP_COLORS: Record<string, { bg: string; bgDark: string; fg: string; fgDark: string }> = {
-  '今日':  { bg: '#dbeafe', bgDark: '#1e3a5f', fg: '#2563eb', fgDark: '#93c5fd' },
-  '昨日':  { bg: '#fef3c7', bgDark: '#422006', fg: '#b45309', fgDark: '#fcd34d' },
-  '更早前': { bg: '#f1f5f9', bgDark: '#1e293b', fg: '#64748b', fgDark: '#94a3b8' },
-};
-
-const GroupBar = styled.tr<{ $group: string; $dark?: boolean }>`
+const GroupRow = styled.tr`
   td {
-    padding: 6px 16px;
-    border-bottom: none;
-  }
-`;
-
-const GroupBarInner = styled.div<{ $group: string; $dark?: boolean; $collapsed?: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border-radius: 8px;
-  cursor: pointer;
-  user-select: none;
-  transition: background 0.15s;
-  background: ${({ $group, $dark }) => {
-    const c = GROUP_COLORS[$group] || GROUP_COLORS['更早前'];
-    return $dark ? c.bgDark : c.bg;
-  }};
-  color: ${({ $group, $dark }) => {
-    const c = GROUP_COLORS[$group] || GROUP_COLORS['更早前'];
-    return $dark ? c.fgDark : c.fg;
-  }};
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-
-  &:hover { opacity: 0.85; }
-
-  &::after {
-    content: '';
-    margin-left: auto;
-    width: 0; height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: ${({ $collapsed }) => $collapsed ? 'none' : '5px solid currentColor'};
-    border-bottom: ${({ $collapsed }) => $collapsed ? '5px solid currentColor' : 'none'};
-    opacity: 0.5;
+    padding: 10px 16px 6px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    color: ${({ theme }) => theme.colors.textTertiary};
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   }
 `;
 
@@ -1598,10 +1435,9 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
     }
   };
 
-  const handleReject = async (id: string) => {
-    const reason = await showPrompt('拒絕原因（可空）');
-    if (reason === null) return;
-    reject.mutate({ id, reason: reason || undefined }, {
+  const handleReject = (id: string) => {
+    const reason = window.prompt('拒絕原因（可空）') || undefined;
+    reject.mutate({ id, reason }, {
       onSuccess: () => console.info('已拒絕'),
       onError: () => console.error('拒絕失敗'),
     });
@@ -1711,9 +1547,6 @@ const LIMIT = 10;
 
 const Leads: React.FC = () => {
   const { t } = useTranslation();
-  const { showConfirm, showPrompt } = useDialog();
-  const styledTheme = useTheme() as any;
-  const isDark = styledTheme?.mode === 'dark';
 
   const isNew = (l: Lead) => l.status === 'new' || l.status === null || l.status === undefined;
 
@@ -1782,15 +1615,12 @@ const Leads: React.FC = () => {
     pending: t('leads.setContacted'),
   };
 
-  const [searchParams, setSearchParams] = useSearchParams();
-
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState(() => {
-    const t = searchParams.get('tab');
-    return t && ['preparing', 'awaiting', 'replied'].includes(t) ? t : 'preparing';
-  });
-  const [activeSub, setActiveSub] = useState(() => searchParams.get('sub') || '');
+  const [activeTab, setActiveTab] = useState('preparing');
+  const [activeSub, setActiveSub] = useState('');
+
+  const [searchParams, setSearchParams] = useSearchParams();
   const [showAdd, setShowAdd] = useState(false);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [aboutOpen, setAboutOpen] = useState(false);
@@ -1808,21 +1638,6 @@ const Leads: React.FC = () => {
   const [followupCheckMsg, setFollowupCheckMsg] = useState('');
   const [demoMode, setDemoMode] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown on outside click
-  useEffect(() => {
-    if (!dropdownOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDropdownOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [dropdownOpen]);
 
   // 載入 demo mode 狀態
   useEffect(() => {
@@ -1947,8 +1762,8 @@ const Leads: React.FC = () => {
   // 保留 stats.total 畀 KPI header
   const stats = useMemo(() => ({ total: allLeads.length }), [allLeads]);
 
-  const handleDelete = async (id: string) => {
-    if (await showConfirm(t('leads.confirmDelete'))) {
+  const handleDelete = (id: string) => {
+    if (window.confirm(t('leads.confirmDelete'))) {
       deleteLead.mutate(id, {
         onSuccess: () => console.info('Lead 已刪除'),
         onError: () => console.error('刪除失敗'),
@@ -1987,94 +1802,40 @@ const Leads: React.FC = () => {
     <Page>
         <Card>
         <HeaderSection>
-          {/* Stat cards */}
-          <StatCardsRow>
-            <StatCard $accent="#2563eb">
-              <StatCardLabel>{t('leads.allLeads', { defaultValue: 'All Leads' })}</StatCardLabel>
-              <StatCardValue>
-                <StatCardNumber>{stats.total}</StatCardNumber>
-                <StatCardUnit>{t('leads.leadUnit', { defaultValue: 'Lead' })}</StatCardUnit>
-              </StatCardValue>
-              <StatCardChange>
-                <StatCardDelta $up>+{tabCounts['preparing'] || 0}</StatCardDelta>
-                <StatCardChangeSuffix>{t('leads.inThisMonth', { defaultValue: 'In this Month' })}</StatCardChangeSuffix>
-              </StatCardChange>
-            </StatCard>
-            <StatCard $accent="#d97706">
-              <StatCardLabel>{t('leads.tabPreparing')}</StatCardLabel>
-              <StatCardValue>
-                <StatCardNumber>{tabCounts['preparing'] || 0}</StatCardNumber>
-                <StatCardUnit>{t('leads.leadUnit', { defaultValue: 'Lead' })}</StatCardUnit>
-              </StatCardValue>
-              <StatCardChange>
-                <StatCardDelta $up>+{Math.min(tabCounts['preparing'] || 0, 3)}</StatCardDelta>
-                <StatCardChangeSuffix>{t('leads.inThisMonth', { defaultValue: 'In this Month' })}</StatCardChangeSuffix>
-              </StatCardChange>
-            </StatCard>
-            <StatCard $accent="#f59e0b">
-              <StatCardLabel>{t('leads.tabAwaiting')}</StatCardLabel>
-              <StatCardValue>
-                <StatCardNumber>{tabCounts['awaiting'] || 0}</StatCardNumber>
-                <StatCardUnit>{t('leads.leadUnit', { defaultValue: 'Lead' })}</StatCardUnit>
-              </StatCardValue>
-              <StatCardChange>
-                <StatCardDelta $up={false}>{tabCounts['awaiting'] || 0}</StatCardDelta>
-                <StatCardChangeSuffix>{t('leads.inThisMonth', { defaultValue: 'In this Month' })}</StatCardChangeSuffix>
-              </StatCardChange>
-            </StatCard>
-            <StatCard $accent="#16a34a">
-              <StatCardLabel>{t('leads.tabReplied')}</StatCardLabel>
-              <StatCardValue>
-                <StatCardNumber>{tabCounts['replied'] || 0}</StatCardNumber>
-                <StatCardUnit>{t('leads.leadUnit', { defaultValue: 'Lead' })}</StatCardUnit>
-              </StatCardValue>
-              <StatCardChange>
-                <StatCardDelta $up>+{Math.min(tabCounts['replied'] || 0, 2)}</StatCardDelta>
-                <StatCardChangeSuffix>{t('leads.inThisMonth', { defaultValue: 'In this Month' })}</StatCardChangeSuffix>
-              </StatCardChange>
-            </StatCard>
-          </StatCardsRow>
-
-          {/* Action bar */}
-          <ActionBar>
-            <div />
-            <ActionBarRight>
-              <RefreshBtn onClick={() => refetch()} disabled={isFetching} title={t('common.refresh')}>
-                <IconRefreshSvg />
-              </RefreshBtn>
-              <AddBtnOutline
+          <HeaderTop>
+            <ProfileIcon><IconUsers /></ProfileIcon>
+            <ProfileInfo>
+              <ProfileTitle>
+                {t('leads.totalInSystem', { count: '__N__' }).split('__N__').map((part, i, arr) =>
+                  i < arr.length - 1 ? (
+                    <React.Fragment key={i}>{part}<span className="count-number">{stats.total}</span></React.Fragment>
+                  ) : part
+                )}
+              </ProfileTitle>
+            </ProfileInfo>
+            <HeaderBtns>
+              <AddBtn onClick={handleCheckReplies} disabled={replyChecking}>
+                {replyChecking ? t('leads.checking') : t('leads.checkReplies')}
+              </AddBtn>
+              <AddBtn onClick={handleCheckFollowups} disabled={followupChecking}>
+                {followupChecking ? t('leads.checking') : t('leads.checkFollowups')}
+              </AddBtn>
+              <AddBtn
                 onClick={handleToggleDemo}
                 disabled={demoLoading}
                 style={demoMode ? { background: '#dc2626', color: '#fff', border: 'none' } : {}}
               >
-                <IconLabFlask />
-                {demoMode ? 'Demo ON' : 'Demo'}
-              </AddBtnOutline>
-              <DropdownWrap ref={dropdownRef}>
-                <PrimaryDropBtn onClick={() => setShowAdd(true)}>
-                  <IconPlus />
-                  {t('leads.addLead')}
-                </PrimaryDropBtn>
-                <DropdownArrow onClick={() => setDropdownOpen(o => !o)}>
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                    <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </DropdownArrow>
-                <DropdownMenu $open={dropdownOpen}>
-                  <DropdownItem onClick={() => { setDropdownOpen(false); setShowAdd(true); }}>
-                    <IconPlus /> {t('leads.addLead')}
-                  </DropdownItem>
-                  <DropdownItem onClick={() => { setDropdownOpen(false); handleCheckReplies(); }} disabled={replyChecking}>
-                    <IconMailCheck /> {replyChecking ? t('leads.checking') : t('leads.checkReplies')}
-                  </DropdownItem>
-                  <DropdownItem onClick={() => { setDropdownOpen(false); handleCheckFollowups(); }} disabled={followupChecking}>
-                    <IconForward /> {followupChecking ? t('leads.checking') : t('leads.checkFollowups')}
-                  </DropdownItem>
-                </DropdownMenu>
-              </DropdownWrap>
-            </ActionBarRight>
-          </ActionBar>
-
+                {demoMode ? '⏱ Demo ON (10s)' : '⏱ Demo 模式'}
+              </AddBtn>
+              <AddBtn onClick={() => refetch()} disabled={isFetching} title="重新整理">
+                {isFetching ? '⟳ 刷新中…' : '⟳ 刷新'}
+              </AddBtn>
+              <AddBtnGreen onClick={() => setShowAdd(true)}>
+                <IconPlus />
+                {t('leads.addLead')}
+              </AddBtnGreen>
+            </HeaderBtns>
+          </HeaderTop>
           {(replyCheckMsg || followupCheckMsg) && (
             <HeaderFeedback>
               {replyCheckMsg && <FeedbackMsg key={replyCheckMsg} $error={replyCheckMsg.startsWith('觸發失敗')}>{replyCheckMsg}</FeedbackMsg>}
@@ -2084,22 +1845,20 @@ const Leads: React.FC = () => {
         </HeaderSection>
         {/* Tabs */}
         <TabsRow>
-          {TABS.map(tab => {
-            const isActive = activeTab === tab.key;
-            return (
-              <TabItem
-                key={tab.key}
-                $active={isActive}
-                $color={tab.color}
-                onClick={() => handleTabClick(tab.key)}
-              >
-                <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke={tab.color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: isActive ? 0.7 : 0.35, flexShrink: 0 }}>
-                  <path d={TAB_ICONS[tab.icon] || ''} />
-                </svg>
-                <TabLabel $active={isActive}>{tab.label}</TabLabel>
-              </TabItem>
-            );
-          })}
+          {TABS.map(tab => (
+            <TabItem
+              key={tab.key}
+              $active={activeTab === tab.key}
+              $color={tab.color}
+              onClick={() => handleTabClick(tab.key)}
+            >
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke={tab.color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+                <path d={TAB_ICONS[tab.icon] || ''} />
+              </svg>
+              <TabNumber $color={tab.color}>{tabCounts[tab.key] || 0}</TabNumber>
+              <TabLabel $active={activeTab === tab.key}>{tab.label}</TabLabel>
+            </TabItem>
+          ))}
         </TabsRow>
 
         <SubPillRow>
@@ -2177,27 +1936,11 @@ const Leads: React.FC = () => {
                       const group = getDateGroup(lead._imported_at);
                       const showHeader = group !== lastGroup;
                       if (showHeader) lastGroup = group;
-                      const isCollapsed = collapsedGroups[group];
                       return (
                         <React.Fragment key={lead._id}>
                           {showHeader && (
-                            <GroupBar $group={group} $dark={isDark}>
-                              <td colSpan={6}>
-                                <GroupBarInner
-                                  $group={group}
-                                  $dark={isDark}
-                                  $collapsed={isCollapsed}
-                                  onClick={() => setCollapsedGroups(prev => ({ ...prev, [group]: !prev[group] }))}
-                                >
-                                  {group}
-                                  <span style={{ fontWeight: 400, fontSize: '0.7rem', opacity: 0.7 }}>
-                                    {leads.filter(l => getDateGroup(l._imported_at) === group).length}
-                                  </span>
-                                </GroupBarInner>
-                              </td>
-                            </GroupBar>
+                            <GroupRow><td colSpan={6}>{group}</td></GroupRow>
                           )}
-                          {!isCollapsed && (
                           <TRow $even={i % 2 === 1} style={{ cursor: 'pointer' }} onClick={() => setSelectedLead(lead)}>
                         <td>
                           <StatusBadge $status={lead.status ?? 'new'}>{lead.status ?? 'new'}</StatusBadge>
@@ -2244,7 +1987,6 @@ const Leads: React.FC = () => {
                           </ActionBtn>
                         </td>
                       </TRow>
-                          )}
                         </React.Fragment>
                       );
                     });
@@ -2448,11 +2190,11 @@ const Leads: React.FC = () => {
                 )}
 
                 {selectedLead._replied && (() => {
-                  const cat = getReplyBadge(selectedLead, t) || { text: t('leads.replied'), bg: '#e0e7ff', fg: '#4338ca' };
+                  const cat = getReplyBadge(selectedLead, t) || { text: '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
                   return (
                     <>
                       <div style={{ height: 8 }} />
-                      <DpSectionTitle>{t('leads.reply')}</DpSectionTitle>
+                      <DpSectionTitle>回覆資訊</DpSectionTitle>
                       <DpGrid>
                         <DpField>
                           <DpFieldLabel>分類</DpFieldLabel>
