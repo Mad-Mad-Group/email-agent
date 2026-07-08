@@ -1956,7 +1956,7 @@ const Leads: React.FC = () => {
                         </td>
                         <td>
                           {(() => {
-                            const badge = getReplyBadge(lead);
+                            const badge = getReplyBadge(lead, t);
                             return <ReplyBadge $bg={badge.bg} $fg={badge.fg}>{badge.text}</ReplyBadge>;
                           })()}
                         </td>
@@ -2172,7 +2172,7 @@ const Leads: React.FC = () => {
                   )}
                   {selectedLead._replied && (
                     <DpTimelineItem $active>
-                      {t('leads.receivedReply', { text: getReplyBadge(selectedLead)?.text || t('leads.replied') })}
+                      {t('leads.receivedReply', { text: getReplyBadge(selectedLead, t)?.text || t('leads.replied') })}
                     </DpTimelineItem>
                   )}
                 </DpTimeline>
@@ -2190,7 +2190,7 @@ const Leads: React.FC = () => {
                 )}
 
                 {selectedLead._replied && (() => {
-                  const cat = getReplyBadge(selectedLead) || { text: '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
+                  const cat = getReplyBadge(selectedLead, t) || { text: '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
                   return (
                     <>
                       <div style={{ height: 8 }} />
