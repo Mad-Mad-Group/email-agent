@@ -1895,6 +1895,7 @@ const SearchPage: React.FC = () => {
               value={keyword}
               onChange={(e: React.ChangeEvent<HTMLInputElement>) => setKeyword(e.target.value)}
               required
+              autoFocus
             />
             <LocBadge type="button" onClick={() => setShowLocPicker(p => !p)}>
               <LocFlag>HK</LocFlag>

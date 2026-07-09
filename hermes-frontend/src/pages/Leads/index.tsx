@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
-import styled, { keyframes, useTheme } from 'styled-components';
+import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail, useClearAllLeads } from '../../api/hooks';
 import { Lead } from '../../api/leads';
@@ -377,11 +377,26 @@ const CircleActionBtn = styled.button<{ $color?: string }>`
 
 /* ── Refresh icon ── */
 
-const IconRefresh = () => (
-  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M13.5 8a5.5 5.5 0 0 1-9.72 3.5M2.5 8a5.5 5.5 0 0 1 9.72-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-    <path d="M13.5 3v3.5H10M2.5 13v-3.5H6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
+const spinFloat = keyframes`
+  0%   { transform: translateY(0) rotate(0deg); }
+  50%  { transform: translateY(-3px) rotate(180deg); }
+  100% { transform: translateY(0) rotate(360deg); }
+`;
+
+const RefreshIconWrap = styled.span<{ $spinning?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  ${({ $spinning }) => $spinning && css`animation: ${spinFloat} 0.8s ease-in-out infinite;`}
+`;
+
+const IconRefresh = ({ spinning }: { spinning?: boolean }) => (
+  <RefreshIconWrap $spinning={spinning}>
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M13.5 8a5.5 5.5 0 0 1-9.72 3.5M2.5 8a5.5 5.5 0 0 1 9.72-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M13.5 3v3.5H10M2.5 13v-3.5H6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  </RefreshIconWrap>
 );
 
 const StatsStrip = styled.div`
@@ -627,7 +642,7 @@ const Table = styled.table`
   th {
     font-weight: 700;
     text-transform: uppercase;
-    font-size: 0.8rem;
+    font-size: 0.875rem;
     color: ${({ theme }) => theme.colors.textSecondary};
     letter-spacing: 0.02em;
     background: ${({ theme }) => theme.colors.canvas};
@@ -706,9 +721,9 @@ const NameText = styled.div`
 
 const StatusBadge = styled.span<{ $status?: string }>`
   display: inline-block;
-  padding: 3px 12px;
+  padding: 4px 14px;
   border-radius: 99px;
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   text-transform: capitalize;
   ${({ $status, theme }) => {
@@ -757,6 +772,23 @@ const ActionBtn = styled.button<{ $color: string }>`
     background: ${({ $color }) => $color};
     color: #fff;
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  }
+`;
+
+const DeleteIconBtn = styled.button`
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  cursor: pointer;
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: color 0.15s, transform 0.15s;
+  &:hover {
+    color: #dc2626;
+    transform: translateY(-1px);
   }
 `;
 
@@ -1570,9 +1602,9 @@ const getReplyBadge = (lead: Lead, t: (k: string, opts?: any) => string) => {
 
 const ReplyBadge = styled.span<{ $bg: string; $fg: string }>`
   display: inline-block;
-  padding: 3px 10px;
+  padding: 4px 12px;
   border-radius: 99px;
-  font-size: 0.6875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   background: ${({ $bg }) => $bg};
   color: ${({ $fg }) => $fg};
@@ -1660,7 +1692,12 @@ const EmailBodyContent = styled.div`
   border: 1px solid ${({ theme }) => theme.mode === 'dark' ? theme.colors.border : '#e8e0d4'};
   box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
   max-width: 100%;
+  max-height: 260px;
+  overflow-y: auto;
   overflow-x: hidden;
+  &::-webkit-scrollbar { width: 5px; }
+  &::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
+  &::-webkit-scrollbar-track { background: transparent; }
 `;
 const EmailCardMeta = styled.div`
   margin-top: 6px;
@@ -1782,7 +1819,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
               {typeTag && <ReplyBadge $bg={typeTag.bg} $fg={typeTag.fg}>{typeTag.text}</ReplyBadge>}
               <ReplyBadge $bg={statusColor.bg} $fg={statusColor.fg}>{d.status || 'pending'}</ReplyBadge>
               <EmailCardDate>
-                {d.created_at ? new Date(d.created_at).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : ''}
+                {d.created_at ? new Date(d.created_at).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : ''}
               </EmailCardDate>
               <div style={{ flex: 1 }} />
               {d.status === 'pending' && (
@@ -2212,7 +2249,7 @@ const Leads: React.FC = () => {
                 <IconSparkle />
               </CircleActionBtn>
               <CircleActionBtn $color="#64748b" aria-label={t('leads.refresh', { defaultValue: '刷新' })} onClick={() => refetch()} disabled={isFetching}>
-                <IconRefresh />
+                <IconRefresh spinning={isFetching} />
               </CircleActionBtn>
               <CircleActionBtn $color="#dc2626" aria-label={t('leads.clearAll', { defaultValue: '清空全部' })} onClick={handleClearAll} disabled={clearAllLeads.isPending}>
                 <IconTrash />
@@ -2375,16 +2412,12 @@ const Leads: React.FC = () => {
                               <IconArrowRight />
                             </ActionBtn>
                           )}
-                          <ActionBtn $color="#d97706" title="View" onClick={(e) => { e.stopPropagation(); setSelectedLead(lead); }}>
-                            <IconEye />
-                          </ActionBtn>
-                          <ActionBtn
-                            $color="#dc2626"
+                          <DeleteIconBtn
                             title="Delete"
                             onClick={(e) => { e.stopPropagation(); handleDelete(lead._id); }}
                           >
-                            <IconTrash />
-                          </ActionBtn>
+                            <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M2.5 4.5h11M5.5 4.5V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1.5M12 4.5l-.5 8.5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1L4 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </DeleteIconBtn>
                         </td>
                       </TRow>
                         </React.Fragment>
@@ -2600,30 +2633,30 @@ const Leads: React.FC = () => {
                 <DpTabCard>
                 <DpTimeline>
                   <DpTimelineItem>
-                    <DpTimelineTime>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : '—'}</DpTimelineTime>
+                    <DpTimelineTime>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
                     <DpTimelineDot $active />
                     <DpTimelineText $active>{t('leads.discoveredVia', { source: selectedLead.source || 'unknown' })}</DpTimelineText>
                   </DpTimelineItem>
                   <DpTimelineItem>
-                    <DpTimelineTime>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : '—'}</DpTimelineTime>
+                    <DpTimelineTime>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
                     <DpTimelineDot $active />
                     <DpTimelineText $active>{t('leads.addedToPool')}</DpTimelineText>
                   </DpTimelineItem>
                   <DpTimelineItem>
-                    <DpTimelineTime>{selectedLead.status !== 'new' && selectedLead.updatedAt ? new Date(selectedLead.updatedAt).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : '—'}</DpTimelineTime>
+                    <DpTimelineTime>{selectedLead.status !== 'new' && selectedLead.updatedAt ? new Date(selectedLead.updatedAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
                     <DpTimelineDot $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'} />
                     <DpTimelineText $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'}>{selectedLead.status === 'new' ? t('leads.awaitingReview') : t('leads.markedAsPending')}</DpTimelineText>
                   </DpTimelineItem>
                   {(selectedLead.status === 'contacted') && (
                     <DpTimelineItem>
-                      <DpTimelineTime>{selectedLead.updatedAt ? new Date(selectedLead.updatedAt).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : '—'}</DpTimelineTime>
+                      <DpTimelineTime>{selectedLead.updatedAt ? new Date(selectedLead.updatedAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
                       <DpTimelineDot $active />
                       <DpTimelineText $active>{t('leads.contactedStep')}</DpTimelineText>
                     </DpTimelineItem>
                   )}
                   {selectedLead._replied && (
                     <DpTimelineItem>
-                      <DpTimelineTime>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric' }) : '—'}</DpTimelineTime>
+                      <DpTimelineTime>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
                       <DpTimelineDot $active />
                       <DpTimelineText $active>{t('leads.receivedReply', { text: getReplyBadge(selectedLead, t)?.text || t('leads.replied') })}</DpTimelineText>
                     </DpTimelineItem>
