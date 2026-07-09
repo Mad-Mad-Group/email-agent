@@ -2154,6 +2154,13 @@ const Leads: React.FC = () => {
   // 攞可攞到嘅全部 leads（backend DTO 限 limit ≤ 100）。
   // status/search filtering client side 做。
   const { data, isLoading, error, refetch, isFetching } = useLeads({ page: 1, limit: 100 });
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    const minWait = new Promise(r => setTimeout(r, 1000));
+    await Promise.all([refetch(), minWait]);
+    setRefreshing(false);
+  }, [refetch]);
 
   const deleteLead = useDeleteLead();
   const changeStatus = useChangeLeadStatus();
@@ -2323,8 +2330,8 @@ const Leads: React.FC = () => {
               <CircleActionBtn $color="#f59e0b" aria-label={t('leads.checkFollowups', { defaultValue: '檢查跟進' })} onClick={handleCheckFollowups} disabled={followupChecking}>
                 <IconSparkle />
               </CircleActionBtn>
-              <CircleActionBtn $color="#64748b" aria-label={t('leads.refresh', { defaultValue: '刷新' })} onClick={() => refetch()} disabled={isFetching}>
-                <IconRefresh spinning={isFetching} />
+              <CircleActionBtn $color="#64748b" aria-label={t('leads.refresh', { defaultValue: '刷新' })} onClick={handleRefresh} disabled={refreshing}>
+                <IconRefresh spinning={refreshing} />
               </CircleActionBtn>
               <CircleActionBtn $color="#dc2626" aria-label={t('leads.clearAll', { defaultValue: '清空全部' })} onClick={handleClearAll} disabled={clearAllLeads.isPending}>
                 <IconTrash />
