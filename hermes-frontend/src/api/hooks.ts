@@ -94,6 +94,15 @@ export const useChangeLeadStatus = () => {
 export const useScrapeLead = () =>
   useMutation({ mutationFn: (id: string) => leadsApi.scrape(id) });
 
+export const useReprocessLead = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, stage }: { id: string; stage: string }) =>
+      leadsApi.reprocess(id, stage),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
+  });
+};
+
 /* ── Email Queue ── */
 
 export const useEmailQueue = (params?: EmailListParams) =>

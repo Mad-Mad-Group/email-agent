@@ -8,6 +8,8 @@ export declare class JobsController {
         refreshed: number;
     } | {
         task_id: string;
+    } | {
+        enqueued: number;
     }>;
     toggleDemoMode(): {
         demoMode: boolean;

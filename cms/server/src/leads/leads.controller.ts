@@ -1,9 +1,11 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
   HttpCode,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -20,6 +22,8 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { TasksService } from '../tasks/tasks.service';
+import { SKILL } from '../tasks/dto/task-status.enum';
 
 interface JwtUser {
   userId: string;
@@ -33,12 +37,22 @@ function isAdmin(user: JwtUser): boolean {
   return user.role === 'admin' || user.role === 'super_admin';
 }
 
+const STAGE_SKILL_MAP: Record<string, string> = {
+  enrich: SKILL.ANALYZE,
+  analyze: SKILL.ANALYZE,
+  draft: SKILL.EMAIL_DRAFT,
+  send: SKILL.EMAIL_SEND,
+};
+
 @ApiTags('Leads 搵客管理')
 @ApiBearerAuth()
 @Controller('leads')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class LeadsController {
-  constructor(private readonly leads: LeadsService) {}
+  constructor(
+    private readonly leads: LeadsService,
+    private readonly tasks: TasksService,
+  ) {}
 
   @Get()
   async list(@Query() query: ListLeadsQueryDto, @CurrentUser() user: JwtUser) {
@@ -72,6 +86,30 @@ export class LeadsController {
   @Post(':id/mark-interested')
   async markInterested(@Param('id') id: string, @CurrentUser() user: JwtUser) {
     return this.leads.markInterested(id, isAdmin(user) ? undefined : user.userId);
+  }
+
+  /** POST /leads/:id/reprocess?stage=enrich|analyze|draft|send */
+  @Post(':id/reprocess')
+  async reprocess(
+    @Param('id') id: string,
+    @Query('stage') stage: string,
+    @CurrentUser() user: JwtUser,
+  ) {
+    const skillId = STAGE_SKILL_MAP[stage];
+    if (!skillId) {
+      throw new BadRequestException(
+        `Invalid stage: ${stage}. Valid: enrich, analyze, draft, send`,
+      );
+    }
+    const lead = await this.leads.findOne(id, isAdmin(user) ? undefined : user.userId);
+    if (!lead) throw new NotFoundException('Lead not found');
+
+    const task = await this.tasks.enqueue({
+      skill_id: skillId,
+      title: `[手動重跑] ${stage} — ${(lead as any).company_name || id}`,
+      params: { lead_object_id: id, user_id: user.userId, manual_reprocess: true },
+    });
+    return { task_id: task.task_id, stage, lead_id: id };
   }
 
   @Delete(':id')

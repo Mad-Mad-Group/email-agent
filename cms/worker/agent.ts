@@ -33,14 +33,21 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
  * --yolo = 非互動自動批准工具（開 browser 唔卡）。
  */
 function callHermes(prompt: string, timeoutMs = 300_000): Promise<string> {
+  const t0 = Date.now();
   return new Promise((resolve, reject) => {
     execFile('hermes', ['-z', prompt, '--yolo'], {
       encoding: 'utf8',
       timeout: timeoutMs,
       maxBuffer: 16 * 1024 * 1024,
     }, (err, stdout) => {
-      if (err) reject(err);
-      else resolve(stdout);
+      const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+      if (err) {
+        console.log(`[hermes] ✗ ${elapsed}s — error: ${err.message?.slice(0, 200)}`);
+        reject(err);
+      } else {
+        console.log(`[hermes] ✓ ${elapsed}s — ${stdout.length} chars — preview: ${stdout.slice(0, 300).replace(/\n/g, '⏎')}`);
+        resolve(stdout);
+      }
     });
   });
 }
@@ -161,6 +168,7 @@ const SKILL = process.env.AGENT_SKILL || ''; // 空 = 任何 skill
 const SKILL_EXCLUDE = process.env.AGENT_SKILL_EXCLUDE || ''; // 逗號分隔，排除某啲 skill
 const POLL_MS = Number(process.env.POLL_MS || 2000);
 const MAX_IDLE = Number(process.env.WORKER_MAX_IDLE || 0); // 0 = 永遠
+const CONCURRENCY = Math.max(1, Number(process.env.CONCURRENCY || 1)); // 每個 worker 同時處理幾多個 task
 
 let token = '';
 const log = (...a: unknown[]) => console.log(`[agent ${AGENT_ID}]`, ...a);
@@ -436,6 +444,7 @@ ${BRAND_SIGNATURE}
     await db.collection('email_queue').insertOne({
       email_id: randomBytes(4).toString('hex'),
       lead_id: lead.lead_id,
+      user_id: lead.user_id || undefined,
       company_name: lead.company_name,
       to_email: lead.email,
       subject,
@@ -761,12 +770,16 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
 [{"name":"Example School","website":"https://example.com","email":"info@example.com"}]`;
 
     let arr: any[];
+    const searchT0 = Date.now();
     try {
       arr = await hermesJson(prompt, { array: true, timeout: 300_000 });
     } catch (e: any) {
-      log(`  [search] 第 ${round} 輪 hermes 失敗: ${e?.message ?? e}`);
+      const searchElapsed = ((Date.now() - searchT0) / 1000).toFixed(1);
+      log(`  [search] 第 ${round} 輪 hermes 失敗 (${searchElapsed}s): ${e?.message ?? e}`);
       break;
     }
+    const searchElapsed = ((Date.now() - searchT0) / 1000).toFixed(1);
+    log(`  [search] hermes 回應 (${searchElapsed}s)：${arr.length} 筆結果 → ${JSON.stringify(arr).slice(0, 300)}`);
 
     let newThisRound = 0;
     for (const r of arr.slice(0, still_need)) {
@@ -775,7 +788,12 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
       // 記住呢個名，下輪排除
       excludeNames.push(r.name);
 
-      // ⚠️ 暫時停用 DB 去重（要快 + 想見到所有結果；去重會 skip → 做多幾輪更慢）。日後可重開。
+      // DB 去重：同 website 或同 company_name 已存在就 skip
+      const dupFilter: any[] = [{ company_name: r.name }];
+      if (r.website) dupFilter.push({ website: r.website });
+      const dup = await db.collection('leads').findOne({ $or: dupFilter, _deleted_at: null });
+      if (dup) { totalSkipped++; continue; }
+
       const res = await db.collection('leads').insertOne({
         lead_id: randomBytes(8).toString('hex'),
         company_name: r.name,
@@ -1213,6 +1231,7 @@ ${BRAND_SIGNATURE}
   await db.collection('email_queue').insertOne({
     email_id: randomBytes(4).toString('hex'),
     lead_id: lead.lead_id,
+    user_id: lead.user_id || undefined,
     company_name: lead.company_name,
     to_email: testRecipient || lead.email,
     subject: c.subject,
@@ -1316,6 +1335,7 @@ ${BRAND_SIGNATURE}
   await db.collection('email_queue').insertOne({
     email_id: randomBytes(4).toString('hex'),
     lead_id: lead.lead_id,
+    user_id: lead.user_id || undefined,
     company_name: lead.company_name,
     to_email: testRecipient || lead.email,
     subject: c.subject,
@@ -1368,6 +1388,7 @@ ${BRAND_SIGNATURE}
   await db.collection('email_queue').insertOne({
     email_id: randomBytes(4).toString('hex'),
     lead_id: lead.lead_id,
+    user_id: lead.user_id || undefined,
     company_name: lead.company_name,
     to_email: testRecipient || lead.email,
     subject: c.subject,
@@ -1405,8 +1426,9 @@ async function doSend(p: any, db: Db) {
     );
   if (!eq) return { sent: false, note: '冇待發 email' };
 
-  // 未開真發 → 保持 pending，等人手 approve
+  // 未開真發 → 保持 pending，等人手 approve；但標 _email_sent 防 gap-filler 重複派
   if (process.env.ENABLE_REAL_SEND !== 'true') {
+    await db.collection('leads').updateOne({ _id }, { $set: { _email_sent: true } });
     return { sent: false, note: 'real send 停用（ENABLE_REAL_SEND=true 先發），email 保持 pending 等人手審批' };
   }
 
@@ -1493,8 +1515,41 @@ async function loginWithRetry(): Promise<void> {
   }
 }
 
+async function handleTask(task: any, db: any): Promise<void> {
+  const p = task.params || {};
+  log(`══ 收到任務 ══`);
+  log(`  task_id:  ${task.task_id}`);
+  log(`  skill:    ${task.skill_id}`);
+  log(`  title:    ${task.title ?? '—'}`);
+  log(`  user_id:  ${p.user_id ?? '—'}`);
+  log(`  lead_id:  ${p.lead_object_id ?? '—'}`);
+  log(`  mode:     ${p.mode ?? p.pipeline_stage ?? '—'}`);
+  log(`  params:   ${JSON.stringify(p)}`);
+  try {
+    const result = await handle(task, db);
+    await complete(task.task_id, result);
+    await sseNotify('task_update', { id: task.task_id, action: 'completed' });
+    log(`✓ 完成 ${task.task_id}`, JSON.stringify(result));
+  } catch (e: any) {
+    log(`✗ ${task.task_id} 失敗:`, e?.message ?? e);
+    try {
+      await failTask(task.task_id, e?.message ?? String(e));
+      await notify(db, `任務失敗：${task.title || task.task_id}`, {
+        message: e?.message ?? String(e),
+        type: 'task',
+        ref_id: task.task_id,
+        user_id: task.params?.user_id,
+      });
+      await sseNotify('task_update', { id: task.task_id, action: 'failed' });
+      await sseNotify('notification', { title: `任務失敗：${task.title || task.task_id}`, type: 'task' });
+    } catch (e2: any) {
+      log(`⚠ failTask 都失敗咗 (${task.task_id}) — task 留喺 running，等 reap-stalled-tasks cron requeue:`, e2?.message ?? e2);
+    }
+  }
+}
+
 async function main() {
-  log(`啟動 → API=${API} skill=${SKILL || 'any'} exclude=${SKILL_EXCLUDE || 'none'}`);
+  log(`啟動 → API=${API} skill=${SKILL || 'any'} exclude=${SKILL_EXCLUDE || 'none'} concurrency=${CONCURRENCY}`);
   await loginWithRetry();
   const client = new MongoClient(MONGO);
   await client.connect();
@@ -1502,12 +1557,19 @@ async function main() {
 
   let idle = 0;
   let running = true;
+  let inFlight = 0; // 正在處理嘅 task 數量
   process.on('SIGINT', () => {
     log('收到 SIGINT，停緊…');
     running = false;
   });
 
   while (running) {
+    // 已滿載，等一個 slot 空出
+    if (inFlight >= CONCURRENCY) {
+      await sleep(POLL_MS);
+      continue;
+    }
+
     let task: any = null;
     try {
       task = await claim();
@@ -1518,7 +1580,7 @@ async function main() {
     }
     if (!task) {
       idle++;
-      if (MAX_IDLE && idle >= MAX_IDLE) {
+      if (MAX_IDLE && idle >= MAX_IDLE && inFlight === 0) {
         log(`連續 ${idle} 次冇 task，停止`);
         break;
       }
@@ -1526,31 +1588,15 @@ async function main() {
       continue;
     }
     idle = 0;
-    log(`接到 ${task.task_id} (${task.skill_id}) ${task.title ?? ''}`);
-    try {
-      const result = await handle(task, db);
-      await complete(task.task_id, result);
-      await sseNotify('task_update', { id: task.task_id, action: 'completed' });
-      log(`✓ 完成 ${task.task_id}`, JSON.stringify(result));
-    } catch (e: any) {
-      log(`✗ ${task.task_id} 失敗:`, e?.message ?? e);
-      // ⚠️ failTask 失敗唔可以 propagate 出去，否則會 process.exit(1)。
-      // 內部再 try/catch，將 "fail 失敗" 變 warn log，繼續 loop
-      // (DB 入面個 task 仲 stay 在 running，stale-minutes cron 之後會 requeue)。
-      try {
-        await failTask(task.task_id, e?.message ?? String(e));
-        await notify(db, `任務失敗：${task.title || task.task_id}`, {
-          message: e?.message ?? String(e),
-          type: 'task',
-          ref_id: task.task_id,
-          user_id: task.params?.user_id,
-        });
-        await sseNotify('task_update', { id: task.task_id, action: 'failed' });
-        await sseNotify('notification', { title: `任務失敗：${task.title || task.task_id}`, type: 'task' });
-      } catch (e2: any) {
-        log(`⚠ failTask 都失敗咗 (${task.task_id}) — task 留喺 running，等 reap-stalled-tasks cron requeue:`, e2?.message ?? e2);
-      }
-    }
+    inFlight++;
+    // 唔 await — fire and forget，令 loop 可以立即 claim 下一個
+    handleTask(task, db).finally(() => { inFlight--; });
+  }
+
+  // 等所有進行中嘅 task 完成
+  while (inFlight > 0) {
+    log(`等待 ${inFlight} 個進行中嘅 task 完成…`);
+    await sleep(1000);
   }
 
   await client.close();

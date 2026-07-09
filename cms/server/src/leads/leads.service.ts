@@ -134,7 +134,7 @@ export class LeadsService {
 
   /**
    * 由 Search/Scraper 寫入新 lead。
-   * 會自動生成 lead_id、去重（同 company_name + source 已存在就 skip 回 null）。
+   * 去重：同 website 或同 company_name 已存在就 skip 回 null。
    */
   async createFromSearch(data: {
     company_name: string;
@@ -146,8 +146,9 @@ export class LeadsService {
     google_maps_url?: string;
     category?: string;
   }): Promise<LeadDocument | null> {
-    const exists = await this.leadModel
-      .exists({ company_name: data.company_name, source: data.source });
+    const orConds: Record<string, unknown>[] = [{ company_name: data.company_name }];
+    if (data.website) orConds.push({ website: data.website });
+    const exists = await this.leadModel.exists({ $or: orConds, _deleted_at: null });
     if (exists) return null; // 去重
 
     const lead = await this.leadModel.create({

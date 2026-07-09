@@ -2,10 +2,14 @@ import { EmailQueueService } from './email-queue.service';
 import { ListEmailQueueQueryDto } from './dto/list-email-queue-query.dto';
 import { EditEmailDto } from './dto/edit-email.dto';
 import { RejectEmailDto } from './dto/reject-email.dto';
+interface JwtUser {
+    userId: string;
+    role: string;
+}
 export declare class EmailQueueController {
     private readonly svc;
     constructor(svc: EmailQueueService);
-    list(q: ListEmailQueueQueryDto): Promise<{
+    list(q: ListEmailQueueQueryDto, user: JwtUser): Promise<{
         items: (import("mongoose").FlattenMaps<import("mongoose").Document<unknown, {}, import("./schemas/email-queue.schema").EmailQueueItem, {}, {}> & import("./schemas/email-queue.schema").EmailQueueItem & {
             _id: import("mongoose").Types.ObjectId;
         } & {
@@ -43,3 +47,4 @@ export declare class EmailQueueController {
         __v: number;
     }>;
 }
+export {};

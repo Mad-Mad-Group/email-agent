@@ -12,7 +12,7 @@ export declare class EmailQueueService {
     private readonly leads?;
     private readonly sse?;
     constructor(model: Model<EmailQueueDocument>, sender: EmailSender, leads?: LeadsService | undefined, sse?: SseService | undefined);
-    findAll(q: ListEmailQueueQueryDto): Promise<{
+    findAll(q: ListEmailQueueQueryDto, userId?: string): Promise<{
         items: (import("mongoose").FlattenMaps<import("mongoose").Document<unknown, {}, EmailQueueItem, {}, {}> & EmailQueueItem & {
             _id: Types.ObjectId;
         } & {

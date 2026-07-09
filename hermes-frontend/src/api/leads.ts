@@ -88,4 +88,7 @@ export const leadsApi = {
 
   scrape: (id: string) =>
     client.post(`/leads/${id}/scrape`),
+
+  reprocess: (id: string, stage: string) =>
+    client.post(`/leads/${id}/reprocess?stage=${stage}`),
 };

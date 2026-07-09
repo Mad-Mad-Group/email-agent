@@ -25,13 +25,23 @@ const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../common/guards/roles.guard");
 const roles_decorator_1 = require("../common/decorators/roles.decorator");
 const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
+const tasks_service_1 = require("../tasks/tasks.service");
+const task_status_enum_1 = require("../tasks/dto/task-status.enum");
 function isAdmin(user) {
     return user.role === 'admin' || user.role === 'super_admin';
 }
+const STAGE_SKILL_MAP = {
+    enrich: task_status_enum_1.SKILL.ANALYZE,
+    analyze: task_status_enum_1.SKILL.ANALYZE,
+    draft: task_status_enum_1.SKILL.EMAIL_DRAFT,
+    send: task_status_enum_1.SKILL.EMAIL_SEND,
+};
 let LeadsController = class LeadsController {
     leads;
-    constructor(leads) {
+    tasks;
+    constructor(leads, tasks) {
         this.leads = leads;
+        this.tasks = tasks;
     }
     async list(query, user) {
         return this.leads.findAll(query, isAdmin(user) ? undefined : user.userId);
@@ -50,6 +60,21 @@ let LeadsController = class LeadsController {
     }
     async markInterested(id, user) {
         return this.leads.markInterested(id, isAdmin(user) ? undefined : user.userId);
+    }
+    async reprocess(id, stage, user) {
+        const skillId = STAGE_SKILL_MAP[stage];
+        if (!skillId) {
+            throw new common_1.BadRequestException(`Invalid stage: ${stage}. Valid: enrich, analyze, draft, send`);
+        }
+        const lead = await this.leads.findOne(id, isAdmin(user) ? undefined : user.userId);
+        if (!lead)
+            throw new common_1.NotFoundException('Lead not found');
+        const task = await this.tasks.enqueue({
+            skill_id: skillId,
+            title: `[手動重跑] ${stage} — ${lead.company_name || id}`,
+            params: { lead_object_id: id, user_id: user.userId, manual_reprocess: true },
+        });
+        return { task_id: task.task_id, stage, lead_id: id };
     }
     async remove(id, user) {
         await this.leads.remove(id, isAdmin(user) ? undefined : user.userId);
@@ -118,6 +143,16 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "markInterested", null);
 __decorate([
+    (0, common_1.Post)(':id/reprocess'),
+    openapi.ApiResponse({ status: 201 }),
+    __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, common_1.Query)('stage')),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, String, Object]),
+    __metadata("design:returntype", Promise)
+], LeadsController.prototype, "reprocess", null);
+__decorate([
     (0, common_1.Delete)(':id'),
     (0, common_1.HttpCode)(200),
     openapi.ApiResponse({ status: 200 }),
@@ -141,6 +176,7 @@ exports.LeadsController = LeadsController = __decorate([
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('leads'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
-    __metadata("design:paramtypes", [leads_service_1.LeadsService])
+    __metadata("design:paramtypes", [leads_service_1.LeadsService,
+        tasks_service_1.TasksService])
 ], LeadsController);
 //# sourceMappingURL=leads.controller.js.map

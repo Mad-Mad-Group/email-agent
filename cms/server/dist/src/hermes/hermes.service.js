@@ -24,6 +24,7 @@ const task_status_enum_1 = require("../tasks/dto/task-status.enum");
 const sse_service_1 = require("../sse/sse.service");
 const campaign_schema_1 = require("./schemas/campaign.schema");
 const email_service_1 = require("../email/email.service");
+const MAX_STAGE_RETRIES = 2;
 const STAGE_SKILL = {
     search: task_status_enum_1.SKILL.SEARCH,
     enrich: task_status_enum_1.SKILL.ANALYZE,
@@ -146,11 +147,24 @@ let HermesService = class HermesService {
         if (!campaign || campaign.status !== 'running')
             return;
         const errorMsg = task.error || 'unknown error';
+        const retryCount = params.retry_count || 0;
+        if (retryCount < MAX_STAGE_RETRIES) {
+            const attempt = retryCount + 1;
+            this.sse.emit(sse_service_1.SseEvent.HERMES_LOG, {
+                runId: campaignId,
+                level: 'warn',
+                stage,
+                message: `Stage [${stage}] 失敗（第 ${attempt}/${MAX_STAGE_RETRIES} 次重試）：${errorMsg}`,
+            });
+            const { campaign_id, pipeline_stage, retry_count: _rc, ...rest } = params;
+            await this.enqueueStage(stage, campaignId, { ...rest, retry_count: attempt });
+            return;
+        }
         this.sse.emit(sse_service_1.SseEvent.HERMES_LOG, {
             runId: campaignId,
             level: 'error',
             stage,
-            message: `Stage [${stage}] 失敗，跳過此 lead：${errorMsg}`,
+            message: `Stage [${stage}] 重試 ${MAX_STAGE_RETRIES} 次仍失敗，跳過此 lead：${errorMsg}`,
         });
         if (stage === 'search') {
             await this.finish(campaign, `搜尋失敗：${errorMsg}`);

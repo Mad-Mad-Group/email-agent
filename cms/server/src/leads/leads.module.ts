@@ -4,14 +4,16 @@ import { Lead, LeadSchema } from './schemas/lead.schema';
 import { LeadsService } from './leads.service';
 import { LeadsController } from './leads.controller';
 import { SseModule } from '../sse/sse.module';
+import { TasksModule } from '../tasks/tasks.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Lead.name, schema: LeadSchema }]),
-    SseModule, // 提供 SseService 俾 LeadsService inject
+    SseModule,
+    TasksModule,
   ],
   controllers: [LeadsController],
   providers: [LeadsService],
-  exports: [LeadsService], // Hermes / Search / Email Draft 都要用
+  exports: [LeadsService],
 })
 export class LeadsModule {}
