@@ -15,6 +15,10 @@ export class Notification {
   @Prop({ trim: true })
   message?: string;
 
+  /** 所屬用戶 */
+  @Prop({ type: String, index: true })
+  user_id?: string;
+
   /** 通知類型：lead / email / campaign / task / system */
   @Prop({ type: String, default: 'system', index: true })
   type: 'lead' | 'email' | 'campaign' | 'task' | 'system';
@@ -25,6 +29,10 @@ export class Notification {
 
   @Prop({ type: Boolean, default: false, index: true })
   read: boolean;
+
+  /** 前端「刪除」= 隱藏，唔係真刪 */
+  @Prop({ type: Boolean, default: false })
+  hidden: boolean;
 
   @Prop({ type: String })
   created_at: string;

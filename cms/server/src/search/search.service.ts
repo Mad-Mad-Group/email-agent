@@ -11,7 +11,7 @@ import { SearchDto } from './dto/search.dto';
 export class SearchService {
   constructor(private readonly tasks: TasksService) {}
 
-  async run(dto: SearchDto) {
+  async run(dto: SearchDto, userId?: string) {
     // 防 spam：相同 keyword + location 仲有 task 未做完，或 60 秒內啱啱派過 →
     // 唔重複派，直接回返嗰個 task（避免 spam 撳制塞爆 queue + 燒 Hermes quota）。
     const dup = await this.tasks.findActiveOrRecent(
@@ -29,6 +29,7 @@ export class SearchService {
         keyword: dto.keyword,
         location: dto.location,
         target_count: dto.targetCount,
+        user_id: userId,
       },
     });
     return { task_id: task.task_id, status: task.status };

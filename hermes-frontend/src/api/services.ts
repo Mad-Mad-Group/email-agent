@@ -131,3 +131,30 @@ export const uploadsApi = {
 export const jobsApi = {
   run: (name: string) => client.post(`/jobs/${name}/run`),
 };
+
+/* ── Verified Emails ── */
+
+export interface VerifiedEmailItem {
+  _id: string;
+  email: string;
+  company_name: string;
+  domain: string;
+  source_user_id: string;
+  source_lead_id?: string;
+  verification_method: string;
+  reply_count: number;
+  match_count: number;
+  status: string;
+  notes?: string;
+  created_at?: string;
+}
+
+export const verifiedEmailsApi = {
+  list: (params?: { page?: number; limit?: number; search?: string; status?: string; verification_method?: string }) =>
+    client.get('/verified-emails', { params }),
+  stats: () => client.get('/verified-emails/stats'),
+  create: (data: { email: string; company_name: string; notes?: string }) =>
+    client.post('/verified-emails', data),
+  remove: (id: string) => client.delete(`/verified-emails/${id}`),
+  exportUrl: () => `${client.defaults.baseURL}/verified-emails/export`,
+};

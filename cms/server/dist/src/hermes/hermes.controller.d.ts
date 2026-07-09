@@ -1,9 +1,15 @@
 import { HermesService } from './hermes.service';
 import { RunHermesDto } from './dto/run-hermes.dto';
+interface JwtUser {
+    userId: string;
+    email: string;
+    role: string;
+    permissions: string[];
+}
 export declare class HermesController {
     private readonly hermes;
     constructor(hermes: HermesService);
-    run(dto: RunHermesDto): Promise<{
+    run(dto: RunHermesDto, user: JwtUser): Promise<{
         campaign_id: string;
         first_task: string;
     }>;
@@ -15,3 +21,4 @@ export declare class HermesController {
         _id: import("mongoose").Types.ObjectId;
     }>) | null>;
 }
+export {};

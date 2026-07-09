@@ -30,4 +30,10 @@ export const notificationsApi = {
 
   markAllRead: () =>
     client.post('/notifications/mark-all-read'),
+
+  dismiss: (id: string) =>
+    client.delete(`/notifications/${id}`),
+
+  dismissAll: () =>
+    client.post('/notifications/dismiss-all'),
 };

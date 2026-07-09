@@ -2,9 +2,10 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { media } from '../../styles/media';
 import { useUsers } from '../../api/hooks';
-import { UserItem } from '../../api/services';
+import { UserItem, usersApi } from '../../api/services';
 
 /* ══════════════════════════════════════
    CMS Users — LUNO Contacts-style UI
@@ -367,42 +368,6 @@ const DpSectionTitle = styled.h3`
   letter-spacing: 0.03em;
 `;
 
-const DpActivityList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding-left: 12px;
-  border-left: 2px solid ${({ theme }) => theme.colors.border};
-`;
-
-const DpActivityItem = styled.div`
-  position: relative;
-  padding: 8px 0 8px 16px;
-  font-size: 0.8125rem;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: -18px;
-    top: 14px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: ${({ theme }) => theme.colors.blue};
-    border: 2px solid ${({ theme }) => theme.colors.surface};
-  }
-`;
-
-const DpActivityTime = styled.span`
-  font-size: 0.6875rem;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  white-space: nowrap;
-  margin-left: 12px;
-`;
 
 const DpPermGrid = styled.div`
   display: flex;
@@ -453,37 +418,29 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   &:hover { opacity: 0.85; }
 `;
 
-/* ── Mock activity log data ── */
+/* ── Edit form input ── */
 
-interface ActivityEntry {
-  action: string;
-  time: string;
-}
+const DpInput = styled.input`
+  padding: 6px 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ theme }) => theme.colors.canvas};
+  outline: none;
+  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+`;
 
-const MOCK_ACTIVITY: Record<string, ActivityEntry[]> = {};
-
-function getActivityLog(userId: string): ActivityEntry[] {
-  if (MOCK_ACTIVITY[userId]) return MOCK_ACTIVITY[userId];
-  const actions = [
-    'Logged in', 'Updated settings', 'Exported leads', 'Changed password',
-    'Viewed dashboard', 'Added new lead', 'Updated profile', 'Generated report',
-    'Invited team member', 'Archived old contacts',
-  ];
-  const log: ActivityEntry[] = [];
-  for (let i = 0; i < 5; i++) {
-    const hrs = i * 4 + Math.floor(Math.random() * 4);
-    log.push({
-      action: actions[(userId.charCodeAt(0) + i) % actions.length],
-      time: `${hrs}h ago`,
-    });
-  }
-  MOCK_ACTIVITY[userId] = log;
-  return log;
-}
-
-/* ── All possible permissions for display ── */
-
-const ALL_PERMISSIONS = ['read', 'write', 'delete', 'export', 'manage_users', 'admin'];
+const DpSelect = styled.select`
+  padding: 6px 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ theme }) => theme.colors.canvas};
+  outline: none;
+  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+`;
 
 /* ── Helpers ── */
 
@@ -523,13 +480,34 @@ const TABS: { key: RoleFilter; label: string }[] = [
 
 const Users: React.FC = () => {
   const { t } = useTranslation();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useUsers();
   const users: UserItem[] = (data as any)?.users ?? (Array.isArray(data) ? data : []);
 
   const [activeTab, setActiveTab] = useState<RoleFilter>('all');
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', email: '', role: '' });
 
-  const handleCloseDetail = useCallback(() => setSelectedUser(null), []);
+  const updateUser = useMutation({
+    mutationFn: ({ id, data: d }: { id: string; data: Record<string, unknown> }) => usersApi.update(id, d),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setEditing(false);
+      setSelectedUser(null);
+    },
+  });
+
+  const handleCloseDetail = useCallback(() => { setSelectedUser(null); setEditing(false); }, []);
+  const handleStartEdit = useCallback(() => {
+    if (!selectedUser) return;
+    setEditForm({ name: selectedUser.name, email: selectedUser.email, role: selectedUser.role });
+    setEditing(true);
+  }, [selectedUser]);
+  const handleSaveEdit = useCallback(() => {
+    if (!selectedUser) return;
+    updateUser.mutate({ id: selectedUser._id, data: editForm });
+  }, [selectedUser, editForm, updateUser]);
 
   const translatedTabs = useMemo(() => [
     { key: 'all' as RoleFilter, label: t('users.allUsers') },
@@ -666,61 +644,73 @@ const Users: React.FC = () => {
             </DpHeader>
 
             <DpBody>
-              {/* Info Section */}
-              <DpGrid>
-                <DpField>
-                  <DpFieldLabel>Email</DpFieldLabel>
-                  <DpFieldValue>{selectedUser.email}</DpFieldValue>
-                </DpField>
-                <DpField>
-                  <DpFieldLabel>Role</DpFieldLabel>
-                  <DpFieldValue style={{ textTransform: 'capitalize' }}>{selectedUser.role}</DpFieldValue>
-                </DpField>
-                <DpField>
-                  <DpFieldLabel>Status</DpFieldLabel>
-                  <DpFieldValue style={{ color: '#2563eb' }}>Active</DpFieldValue>
-                </DpField>
-                <DpField>
-                  <DpFieldLabel>Join Date</DpFieldLabel>
-                  <DpFieldValue>{formatDate(selectedUser.createdAt)}</DpFieldValue>
-                </DpField>
-                <DpField>
-                  <DpFieldLabel>Last Active</DpFieldLabel>
-                  <DpFieldValue>Today</DpFieldValue>
-                </DpField>
-              </DpGrid>
+              {editing ? (
+                /* ── Edit Mode ── */
+                <DpGrid>
+                  <DpField>
+                    <DpFieldLabel>Name</DpFieldLabel>
+                    <DpInput value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
+                  </DpField>
+                  <DpField>
+                    <DpFieldLabel>Email</DpFieldLabel>
+                    <DpInput value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} />
+                  </DpField>
+                  <DpField>
+                    <DpFieldLabel>Role</DpFieldLabel>
+                    <DpSelect value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}>
+                      <option value="staff">Staff</option>
+                      <option value="admin">Admin</option>
+                      <option value="super_admin">Super Admin</option>
+                    </DpSelect>
+                  </DpField>
+                </DpGrid>
+              ) : (
+                <>
+                  {/* ── View Mode ── */}
+                  <DpGrid>
+                    <DpField>
+                      <DpFieldLabel>Email</DpFieldLabel>
+                      <DpFieldValue>{selectedUser.email}</DpFieldValue>
+                    </DpField>
+                    <DpField>
+                      <DpFieldLabel>Role</DpFieldLabel>
+                      <DpFieldValue style={{ textTransform: 'capitalize' }}>{selectedUser.role}</DpFieldValue>
+                    </DpField>
+                    <DpField>
+                      <DpFieldLabel>Join Date</DpFieldLabel>
+                      <DpFieldValue>{formatDate(selectedUser.createdAt)}</DpFieldValue>
+                    </DpField>
+                  </DpGrid>
 
-              {/* Activity Log Section */}
-              <div>
-                <DpSectionTitle>Activity Log</DpSectionTitle>
-                <DpActivityList style={{ marginTop: 10 }}>
-                  {getActivityLog(selectedUser._id).map((entry, idx) => (
-                    <DpActivityItem key={idx}>
-                      <span>{entry.action}</span>
-                      <DpActivityTime>{entry.time}</DpActivityTime>
-                    </DpActivityItem>
-                  ))}
-                </DpActivityList>
-              </div>
-
-              {/* Permissions Section */}
-              <div>
-                <DpSectionTitle>Permissions</DpSectionTitle>
-                <DpPermGrid style={{ marginTop: 10 }}>
-                  {ALL_PERMISSIONS.map(perm => (
-                    <DpPermBadge key={perm} $active={(selectedUser.permissions ?? []).includes(perm)}>
-                      {perm}
-                    </DpPermBadge>
-                  ))}
-                </DpPermGrid>
-              </div>
+                  {/* Permissions Section */}
+                  {(selectedUser.permissions ?? []).length > 0 && (
+                    <div>
+                      <DpSectionTitle>Permissions</DpSectionTitle>
+                      <DpPermGrid style={{ marginTop: 10 }}>
+                        {(selectedUser.permissions ?? []).map(perm => (
+                          <DpPermBadge key={perm} $active>{perm}</DpPermBadge>
+                        ))}
+                      </DpPermGrid>
+                    </div>
+                  )}
+                </>
+              )}
             </DpBody>
 
             <DpFooter>
               <DpFooterStatus>
                 Member since {formatDate(selectedUser.createdAt)}
               </DpFooterStatus>
-              <DpActionBtn $variant="primary">編輯</DpActionBtn>
+              {editing ? (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <DpActionBtn onClick={() => setEditing(false)}>取消</DpActionBtn>
+                  <DpActionBtn $variant="primary" onClick={handleSaveEdit} disabled={updateUser.isPending}>
+                    {updateUser.isPending ? '儲存中...' : '儲存'}
+                  </DpActionBtn>
+                </div>
+              ) : (
+                <DpActionBtn $variant="primary" onClick={handleStartEdit}>編輯</DpActionBtn>
+              )}
             </DpFooter>
           </DpPanel>
         </>,

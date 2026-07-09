@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { leadsApi, LeadListParams } from './leads';
 import { emailQueueApi, EmailListParams } from './emailQueue';
 import { notificationsApi } from './notifications';
-import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi, AgentSkillStats } from './services';
+import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi, AgentSkillStats, verifiedEmailsApi } from './services';
 import { authApi } from './auth';
 
 /* ── Auth ── */
@@ -12,6 +12,23 @@ export const useMe = () =>
     queryKey: ['auth', 'me'],
     queryFn: () => authApi.me().then(r => r.data),
     retry: false,
+  });
+
+export const useUpdateProfile = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name?: string; email?: string }) =>
+      authApi.updateProfile(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['auth', 'me'] });
+    },
+  });
+};
+
+export const useChangePassword = () =>
+  useMutation({
+    mutationFn: ({ oldPassword, newPassword }: { oldPassword: string; newPassword: string }) =>
+      authApi.changePassword(oldPassword, newPassword),
   });
 
 /* ── Leads ── */
@@ -318,6 +335,61 @@ export const useMarkAllNotificationsRead = () => {
     mutationFn: () => notificationsApi.markAllRead(),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
+export const useDismissNotification = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => notificationsApi.dismiss(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
+export const useDismissAllNotifications = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => notificationsApi.dismissAll(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
+/* ── Verified Emails ── */
+
+export const useVerifiedEmails = (params?: { page?: number; limit?: number; search?: string; status?: string; verification_method?: string }) =>
+  useQuery({
+    queryKey: ['verified-emails', params],
+    queryFn: () => verifiedEmailsApi.list(params).then(r => r.data),
+  });
+
+export const useVerifiedEmailStats = () =>
+  useQuery({
+    queryKey: ['verified-emails', 'stats'],
+    queryFn: () => verifiedEmailsApi.stats().then(r => r.data),
+  });
+
+export const useCreateVerifiedEmail = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { email: string; company_name: string; notes?: string }) =>
+      verifiedEmailsApi.create(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['verified-emails'] });
+    },
+  });
+};
+
+export const useDeleteVerifiedEmail = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => verifiedEmailsApi.remove(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['verified-emails'] });
     },
   });
 };

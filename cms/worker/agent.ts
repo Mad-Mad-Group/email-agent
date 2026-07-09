@@ -181,7 +181,7 @@ async function sseNotify(type: string, data: Record<string, unknown>): Promise<v
 async function notify(
   db: Db,
   title: string,
-  opts: { message?: string; type?: 'lead' | 'email' | 'campaign' | 'task' | 'system'; ref_id?: string } = {},
+  opts: { message?: string; type?: 'lead' | 'email' | 'campaign' | 'task' | 'system'; ref_id?: string; user_id?: string } = {},
 ) {
   try {
     await db.collection('notifications').insertOne({
@@ -189,6 +189,7 @@ async function notify(
       message: opts.message,
       type: opts.type ?? 'system',
       ref_id: opts.ref_id,
+      user_id: opts.user_id,
       read: false,
       created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
     });
@@ -584,6 +585,82 @@ async function doReplyCheck(_p: any, db: Db) {
       },
     );
 
+    // ── Verified Email Pool：自動驗證邏輯 ──
+    // 排除 auto_reply，只計人工回覆
+    if (a.category !== 'auto_reply' && m.lead.email) {
+      try {
+        // 計算呢個 email 嘅總回覆次數（包括今次）
+        const replyCount = await db.collection('leads').countDocuments({
+          email: m.lead.email,
+          _replied: true,
+          _reply_category: { $ne: 'auto_reply' },
+        });
+
+        let shouldVerify = false;
+        let method: 'auto_reply_count' | 'ai_check' = 'auto_reply_count';
+
+        if (replyCount >= 2) {
+          // ≥2 次人工回覆 → 自動 verify
+          shouldVerify = true;
+          method = 'auto_reply_count';
+        } else if (replyCount === 1) {
+          // 第 1 次回覆 → AI 判斷係咪人工寫嘅
+          const aiPrompt = `判斷以下 email 回覆係人工寫嘅定係自動回覆（auto-reply / out-of-office / 系統通知）。
+
+主題：${m.subject}
+內容：${(m.text || '').slice(0, 2000)}
+
+回一個 JSON：{"is_human": true/false, "reason": "一句解釋"}`;
+          try {
+            const aiResult = await hermesJson(aiPrompt, { timeout: 120_000 });
+            if (aiResult.is_human === true) {
+              shouldVerify = true;
+              method = 'ai_check';
+              log(`  → AI 判斷為人工回覆：${aiResult.reason}`);
+            } else {
+              log(`  → AI 判斷為自動回覆：${aiResult.reason}`);
+            }
+          } catch {
+            log(`  → AI 判斷失敗，跳過 verify`);
+          }
+        }
+
+        if (shouldVerify) {
+          try {
+            await api('/verified-emails', 'POST', {
+              email: m.lead.email,
+              company_name: m.lead.company_name || '',
+              source_lead_id: String(m.lead._id),
+            });
+            // 用內部 API 改成 autoVerify（帶 method）
+            await db.collection('verified_emails').updateOne(
+              { email: m.lead.email, company_name: m.lead.company_name || '' },
+              {
+                $set: {
+                  verification_method: method,
+                  reply_count: replyCount,
+                  source_user_id: m.lead.user_id || '',
+                  source_lead_id: String(m.lead._id),
+                  domain: (m.lead.email as string).split('@')[1] || '',
+                  status: 'active',
+                },
+                $setOnInsert: {
+                  match_count: 0,
+                  created_at: new Date(),
+                },
+              },
+              { upsert: true },
+            );
+            log(`  → ✓ Verified email: ${m.lead.email} (${method}, replies=${replyCount})`);
+          } catch (e: any) {
+            log(`  → verified email 寫入失敗：${e?.message ?? e}`);
+          }
+        }
+      } catch (e: any) {
+        log(`  → verified email check 失敗：${e?.message ?? e}`);
+      }
+    }
+
     // meeting 回覆 → 自動建行事曆事件（用回覆中提及的時間，否則預設下星期一 10:00）
     if (a.category === 'meeting') {
       let meetingStart: Date;
@@ -711,9 +788,41 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
         status: null,
         _status: 'unverified',
         _imported_at: nowIso(),
+        user_id: p.user_id || undefined,
       });
       ids.push(res.insertedId.toString());
       await sseNotify('lead_update', { id: res.insertedId.toString(), action: 'created' });
+
+      // ── Verified Email Pool：匹配共用池 ──
+      if (r.name) {
+        try {
+          const verifiedEmails = await db.collection('verified_emails').find({
+            company_name: new RegExp(`^${r.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+            status: 'active',
+          }).toArray();
+          if (verifiedEmails.length > 0) {
+            const ve = verifiedEmails[0];
+            await db.collection('leads').updateOne(
+              { _id: res.insertedId },
+              {
+                $set: {
+                  _verified_email: ve.email,
+                  _verified_email_source: 'pool',
+                  _verified_email_method: ve.verification_method,
+                  _verified_email_reply_count: ve.reply_count,
+                },
+              },
+            );
+            // 更新 match_count
+            await db.collection('verified_emails').updateOne(
+              { _id: ve._id },
+              { $inc: { match_count: 1 } },
+            );
+            log(`  → ✓ Pool match: ${r.name} → ${ve.email} (${ve.verification_method})`);
+          }
+        } catch { /* pool 查詢失敗唔影響主流程 */ }
+      }
+
       newThisRound++;
     }
 
@@ -731,6 +840,7 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
     await notify(db, `搜尋完成：搵到 ${ids.length} 個新 lead`, {
       message: `關鍵字「${p.keyword}」在「${p.location}」搵到 ${ids.length} 個新結果，跳過 ${totalSkipped} 個重複`,
       type: 'lead',
+      user_id: p.user_id,
     });
     await sseNotify('notification', { title: `搜尋完成：搵到 ${ids.length} 個新 lead`, type: 'lead' });
   }
@@ -1116,6 +1226,7 @@ ${BRAND_SIGNATURE}
     message: `主題：${c.subject}`,
     type: 'email',
     ref_id: lead.lead_id,
+    user_id: lead.user_id,
   });
   await sseNotify('email_update', { id: lead.lead_id, action: 'created', status: 'pending' });
   await sseNotify('notification', { title: `新草稿：${lead.company_name}`, type: 'email' });
@@ -1359,6 +1470,7 @@ async function doSend(p: any, db: Db) {
     message: `已發送至 ${to}`,
     type: 'email',
     ref_id: lead.lead_id,
+    user_id: lead.user_id,
   });
   await sseNotify('email_update', { id: eq._id.toString(), action: 'status_changed', status: 'sent' });
   await sseNotify('lead_update', { id: _id.toString(), action: 'status_changed', status: 'contacted' });
@@ -1431,6 +1543,7 @@ async function main() {
           message: e?.message ?? String(e),
           type: 'task',
           ref_id: task.task_id,
+          user_id: task.params?.user_id,
         });
         await sseNotify('task_update', { id: task.task_id, action: 'failed' });
         await sseNotify('notification', { title: `任務失敗：${task.title || task.task_id}`, type: 'task' });

@@ -61,7 +61,7 @@ let HermesService = class HermesService {
             void this.onTaskFailed(task).catch((e) => this.log('error', task, `orchestrator fail-handler error: ${e?.message ?? e}`));
         });
     }
-    async run(dto) {
+    async run(dto, userId) {
         const campaignId = `CAMP-${(0, crypto_1.randomBytes)(4).toString('hex')}`;
         const now = new Date().toISOString();
         await this.campaigns.create({
@@ -80,6 +80,7 @@ let HermesService = class HermesService {
             keyword: dto.keyword,
             location: dto.location,
             target_count: dto.targetCount,
+            user_id: userId,
         });
         this.sse.emit(sse_service_1.SseEvent.HERMES_LOG, {
             runId: campaignId,
@@ -108,8 +109,9 @@ let HermesService = class HermesService {
             campaign._updated_at = new Date().toISOString();
             await campaign.save();
             this.progress(campaignId, 'search→enrich', 0, leadIds.length);
+            const userId = params.user_id;
             for (const leadId of leadIds) {
-                await this.enqueueStage('enrich', campaignId, { lead_object_id: leadId });
+                await this.enqueueStage('enrich', campaignId, { lead_object_id: leadId, user_id: userId });
             }
             if (leadIds.length === 0)
                 await this.finish(campaign, '搜尋 0 結果');
@@ -119,6 +121,7 @@ let HermesService = class HermesService {
         if (next) {
             await this.enqueueStage(next, campaignId, {
                 lead_object_id: params.lead_object_id,
+                user_id: params.user_id,
             });
         }
         else {

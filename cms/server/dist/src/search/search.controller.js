@@ -20,33 +20,32 @@ const search_service_1 = require("./search.service");
 const search_dto_1 = require("./dto/search.dto");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../common/guards/roles.guard");
-const permissions_guard_1 = require("../common/guards/permissions.guard");
-const permission_decorator_1 = require("../common/decorators/permission.decorator");
+const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
 let SearchController = class SearchController {
     search;
     constructor(search) {
         this.search = search;
     }
-    async run(dto) {
-        return this.search.run(dto);
+    async run(dto, user) {
+        return this.search.run(dto, user.userId);
     }
 };
 exports.SearchController = SearchController;
 __decorate([
     (0, common_1.Post)(),
     (0, common_1.HttpCode)(200),
-    (0, permission_decorator_1.Permission)('search.run'),
     openapi.ApiResponse({ status: 200, type: Object }),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [search_dto_1.SearchDto]),
+    __metadata("design:paramtypes", [search_dto_1.SearchDto, Object]),
     __metadata("design:returntype", Promise)
 ], SearchController.prototype, "run", null);
 exports.SearchController = SearchController = __decorate([
     (0, swagger_1.ApiTags)('Search 搜尋'),
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('search'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard, permissions_guard_1.PermissionsGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [search_service_1.SearchService])
 ], SearchController);
 //# sourceMappingURL=search.controller.js.map

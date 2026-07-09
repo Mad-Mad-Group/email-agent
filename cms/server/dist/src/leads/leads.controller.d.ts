@@ -3,10 +3,16 @@ import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { ListLeadsQueryDto } from './dto/list-leads-query.dto';
 import { UpdateLeadStatusDto } from './dto/update-lead-status.dto';
+interface JwtUser {
+    userId: string;
+    email: string;
+    role: string;
+    permissions: string[];
+}
 export declare class LeadsController {
     private readonly leads;
     constructor(leads: LeadsService);
-    list(query: ListLeadsQueryDto): Promise<{
+    list(query: ListLeadsQueryDto, user: JwtUser): Promise<{
         items: (import("mongoose").FlattenMaps<import("mongoose").Document<unknown, {}, import("./schemas/lead.schema").Lead, {}, {}> & import("./schemas/lead.schema").Lead & {
             _id: import("mongoose").Types.ObjectId;
         } & {
@@ -18,35 +24,36 @@ export declare class LeadsController {
         page: number;
         limit: number;
     }>;
-    get(id: string): Promise<import("mongoose").Document<unknown, {}, import("./schemas/lead.schema").Lead, {}, {}> & import("./schemas/lead.schema").Lead & {
+    get(id: string, user: JwtUser): Promise<import("mongoose").Document<unknown, {}, import("./schemas/lead.schema").Lead, {}, {}> & import("./schemas/lead.schema").Lead & {
         _id: import("mongoose").Types.ObjectId;
     } & {
         __v: number;
     }>;
-    create(dto: CreateLeadDto): Promise<import("mongoose").Document<unknown, {}, import("./schemas/lead.schema").Lead, {}, {}> & import("./schemas/lead.schema").Lead & {
+    create(dto: CreateLeadDto, user: JwtUser): Promise<import("mongoose").Document<unknown, {}, import("./schemas/lead.schema").Lead, {}, {}> & import("./schemas/lead.schema").Lead & {
         _id: import("mongoose").Types.ObjectId;
     } & {
         __v: number;
     }>;
-    update(id: string, dto: UpdateLeadDto): Promise<import("mongoose").Document<unknown, {}, import("./schemas/lead.schema").Lead, {}, {}> & import("./schemas/lead.schema").Lead & {
+    update(id: string, dto: UpdateLeadDto, user: JwtUser): Promise<import("mongoose").Document<unknown, {}, import("./schemas/lead.schema").Lead, {}, {}> & import("./schemas/lead.schema").Lead & {
         _id: import("mongoose").Types.ObjectId;
     } & {
         __v: number;
     }>;
-    changeStatus(id: string, dto: UpdateLeadStatusDto): Promise<import("mongoose").Document<unknown, {}, import("./schemas/lead.schema").Lead, {}, {}> & import("./schemas/lead.schema").Lead & {
+    changeStatus(id: string, dto: UpdateLeadStatusDto, user: JwtUser): Promise<import("mongoose").Document<unknown, {}, import("./schemas/lead.schema").Lead, {}, {}> & import("./schemas/lead.schema").Lead & {
         _id: import("mongoose").Types.ObjectId;
     } & {
         __v: number;
     }>;
-    markInterested(id: string): Promise<import("mongoose").Document<unknown, {}, import("./schemas/lead.schema").Lead, {}, {}> & import("./schemas/lead.schema").Lead & {
+    markInterested(id: string, user: JwtUser): Promise<import("mongoose").Document<unknown, {}, import("./schemas/lead.schema").Lead, {}, {}> & import("./schemas/lead.schema").Lead & {
         _id: import("mongoose").Types.ObjectId;
     } & {
         __v: number;
     }>;
-    remove(id: string): Promise<{
+    remove(id: string, user: JwtUser): Promise<{
         id: string;
     }>;
     clearAll(): Promise<{
         deleted: number;
     }>;
 }
+export {};

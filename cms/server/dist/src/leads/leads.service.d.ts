@@ -9,8 +9,8 @@ export declare class LeadsService {
     private readonly leadModel;
     private readonly sse?;
     constructor(leadModel: Model<LeadDocument>, sse?: SseService | undefined);
-    create(dto: CreateLeadDto): Promise<LeadDocument>;
-    findAll(q: ListLeadsQueryDto): Promise<{
+    create(dto: CreateLeadDto, userId?: string): Promise<LeadDocument>;
+    findAll(q: ListLeadsQueryDto, userId?: string): Promise<{
         items: (import("mongoose").FlattenMaps<import("mongoose").Document<unknown, {}, Lead, {}, {}> & Lead & {
             _id: Types.ObjectId;
         } & {
@@ -22,10 +22,10 @@ export declare class LeadsService {
         page: number;
         limit: number;
     }>;
-    findOne(id: string): Promise<LeadDocument>;
-    update(id: string, dto: UpdateLeadDto): Promise<LeadDocument>;
-    changeStatus(id: string, dto: UpdateLeadStatusDto): Promise<LeadDocument>;
-    markInterested(id: string): Promise<import("mongoose").Document<unknown, {}, Lead, {}, {}> & Lead & {
+    findOne(id: string, userId?: string): Promise<LeadDocument>;
+    update(id: string, dto: UpdateLeadDto, userId?: string): Promise<LeadDocument>;
+    changeStatus(id: string, dto: UpdateLeadStatusDto, userId?: string): Promise<LeadDocument>;
+    markInterested(id: string, userId?: string): Promise<import("mongoose").Document<unknown, {}, Lead, {}, {}> & Lead & {
         _id: Types.ObjectId;
     } & {
         __v: number;
@@ -47,7 +47,7 @@ export declare class LeadsService {
         services?: string[];
     }): Promise<LeadDocument>;
     markContactedByLeadId(leadId: string): Promise<void>;
-    remove(id: string): Promise<void>;
+    remove(id: string, userId?: string): Promise<void>;
     clearAll(): Promise<number>;
     private nowStamp;
     private escapeRegex;

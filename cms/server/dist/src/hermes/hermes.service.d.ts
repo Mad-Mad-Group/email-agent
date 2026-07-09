@@ -16,7 +16,7 @@ export declare class HermesService implements OnModuleInit {
     private readonly config;
     constructor(campaigns: Model<CampaignDocument>, tasks: TasksService, taskEvents: TaskEvents, sse: SseService, email: EmailService, config: ConfigService);
     onModuleInit(): void;
-    run(dto: RunHermesDto): Promise<{
+    run(dto: RunHermesDto, userId?: string): Promise<{
         campaign_id: string;
         first_task: string;
     }>;

@@ -18,7 +18,7 @@ let SearchService = class SearchService {
     constructor(tasks) {
         this.tasks = tasks;
     }
-    async run(dto) {
+    async run(dto, userId) {
         const dup = await this.tasks.findActiveOrRecent(task_status_enum_1.SKILL.SEARCH, { keyword: dto.keyword, location: dto.location }, 60_000);
         if (dup) {
             return { task_id: dup.task_id, status: dup.status, deduped: true };
@@ -30,6 +30,7 @@ let SearchService = class SearchService {
                 keyword: dto.keyword,
                 location: dto.location,
                 target_count: dto.targetCount,
+                user_id: userId,
             },
         });
         return { task_id: task.task_id, status: task.status };

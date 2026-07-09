@@ -23,33 +23,36 @@ const list_leads_query_dto_1 = require("./dto/list-leads-query.dto");
 const update_lead_status_dto_1 = require("./dto/update-lead-status.dto");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../common/guards/roles.guard");
-const permissions_guard_1 = require("../common/guards/permissions.guard");
-const permission_decorator_1 = require("../common/decorators/permission.decorator");
+const roles_decorator_1 = require("../common/decorators/roles.decorator");
+const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
+function isAdmin(user) {
+    return user.role === 'admin' || user.role === 'super_admin';
+}
 let LeadsController = class LeadsController {
     leads;
     constructor(leads) {
         this.leads = leads;
     }
-    async list(query) {
-        return this.leads.findAll(query);
+    async list(query, user) {
+        return this.leads.findAll(query, isAdmin(user) ? undefined : user.userId);
     }
-    async get(id) {
-        return this.leads.findOne(id);
+    async get(id, user) {
+        return this.leads.findOne(id, isAdmin(user) ? undefined : user.userId);
     }
-    async create(dto) {
-        return this.leads.create(dto);
+    async create(dto, user) {
+        return this.leads.create(dto, user.userId);
     }
-    async update(id, dto) {
-        return this.leads.update(id, dto);
+    async update(id, dto, user) {
+        return this.leads.update(id, dto, isAdmin(user) ? undefined : user.userId);
     }
-    async changeStatus(id, dto) {
-        return this.leads.changeStatus(id, dto);
+    async changeStatus(id, dto, user) {
+        return this.leads.changeStatus(id, dto, isAdmin(user) ? undefined : user.userId);
     }
-    async markInterested(id) {
-        return this.leads.markInterested(id);
+    async markInterested(id, user) {
+        return this.leads.markInterested(id, isAdmin(user) ? undefined : user.userId);
     }
-    async remove(id) {
-        await this.leads.remove(id);
+    async remove(id, user) {
+        await this.leads.remove(id, isAdmin(user) ? undefined : user.userId);
         return { id };
     }
     async clearAll() {
@@ -60,74 +63,74 @@ let LeadsController = class LeadsController {
 exports.LeadsController = LeadsController;
 __decorate([
     (0, common_1.Get)(),
-    (0, permission_decorator_1.Permission)('leads.view'),
     openapi.ApiResponse({ status: 200 }),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [list_leads_query_dto_1.ListLeadsQueryDto]),
+    __metadata("design:paramtypes", [list_leads_query_dto_1.ListLeadsQueryDto, Object]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "list", null);
 __decorate([
     (0, common_1.Get)(':id'),
-    (0, permission_decorator_1.Permission)('leads.view'),
     openapi.ApiResponse({ status: 200, type: Object }),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "get", null);
 __decorate([
     (0, common_1.Post)(),
-    (0, permission_decorator_1.Permission)('leads.create'),
     openapi.ApiResponse({ status: 201, type: Object }),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_lead_dto_1.CreateLeadDto]),
+    __metadata("design:paramtypes", [create_lead_dto_1.CreateLeadDto, Object]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(':id'),
-    (0, permission_decorator_1.Permission)('leads.update'),
     openapi.ApiResponse({ status: 200, type: Object }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_lead_dto_1.UpdateLeadDto]),
+    __metadata("design:paramtypes", [String, update_lead_dto_1.UpdateLeadDto, Object]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "update", null);
 __decorate([
     (0, common_1.Patch)(':id/status'),
-    (0, permission_decorator_1.Permission)('leads.update'),
     openapi.ApiResponse({ status: 200, type: Object }),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, update_lead_status_dto_1.UpdateLeadStatusDto]),
+    __metadata("design:paramtypes", [String, update_lead_status_dto_1.UpdateLeadStatusDto, Object]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "changeStatus", null);
 __decorate([
     (0, common_1.Post)(':id/mark-interested'),
-    (0, permission_decorator_1.Permission)('leads.update'),
     openapi.ApiResponse({ status: 201, type: Object }),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "markInterested", null);
 __decorate([
     (0, common_1.Delete)(':id'),
     (0, common_1.HttpCode)(200),
-    (0, permission_decorator_1.Permission)('leads.delete'),
     openapi.ApiResponse({ status: 200 }),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], LeadsController.prototype, "remove", null);
 __decorate([
     (0, common_1.Delete)(),
     (0, common_1.HttpCode)(200),
-    (0, permission_decorator_1.Permission)('leads.delete'),
+    (0, roles_decorator_1.Roles)('super_admin'),
     openapi.ApiResponse({ status: 200 }),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", []),
@@ -137,7 +140,7 @@ exports.LeadsController = LeadsController = __decorate([
     (0, swagger_1.ApiTags)('Leads 搵客管理'),
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('leads'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard, permissions_guard_1.PermissionsGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [leads_service_1.LeadsService])
 ], LeadsController);
 //# sourceMappingURL=leads.controller.js.map

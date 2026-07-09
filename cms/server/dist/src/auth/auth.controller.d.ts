@@ -21,11 +21,11 @@ export declare class AuthController {
     register(registerDto: RegisterDto): Promise<{
         access_token: string;
         user: {
-            id: import("mongoose").Types.ObjectId;
-            email: string;
-            name: string;
-            role: string;
-            permissions: string[];
+            id: any;
+            email: any;
+            name: any;
+            role: any;
+            permissions: any;
         };
     }>;
     getProfile(user: any): Promise<import("../users/schemas/user.schema").User>;

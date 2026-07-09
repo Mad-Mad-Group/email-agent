@@ -20,15 +20,14 @@ const hermes_service_1 = require("./hermes.service");
 const run_hermes_dto_1 = require("./dto/run-hermes.dto");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../common/guards/roles.guard");
-const permissions_guard_1 = require("../common/guards/permissions.guard");
-const permission_decorator_1 = require("../common/decorators/permission.decorator");
+const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
 let HermesController = class HermesController {
     hermes;
     constructor(hermes) {
         this.hermes = hermes;
     }
-    async run(dto) {
-        return this.hermes.run(dto);
+    async run(dto, user) {
+        return this.hermes.run(dto, user.userId);
     }
     async campaign(id) {
         return this.hermes.getCampaign(id);
@@ -38,16 +37,15 @@ exports.HermesController = HermesController;
 __decorate([
     (0, common_1.Post)('run'),
     (0, common_1.HttpCode)(200),
-    (0, permission_decorator_1.Permission)('hermes.run'),
     openapi.ApiResponse({ status: 200 }),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [run_hermes_dto_1.RunHermesDto]),
+    __metadata("design:paramtypes", [run_hermes_dto_1.RunHermesDto, Object]),
     __metadata("design:returntype", Promise)
 ], HermesController.prototype, "run", null);
 __decorate([
     (0, common_1.Get)('campaigns/:id'),
-    (0, permission_decorator_1.Permission)('hermes.run'),
     openapi.ApiResponse({ status: 200, type: Object }),
     __param(0, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -58,7 +56,7 @@ exports.HermesController = HermesController = __decorate([
     (0, swagger_1.ApiTags)('Hermes Pipeline 指揮'),
     (0, swagger_1.ApiBearerAuth)(),
     (0, common_1.Controller)('hermes'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard, permissions_guard_1.PermissionsGuard),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [hermes_service_1.HermesService])
 ], HermesController);
 //# sourceMappingURL=hermes.controller.js.map

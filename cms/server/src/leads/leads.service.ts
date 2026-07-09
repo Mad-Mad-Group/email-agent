@@ -28,9 +28,10 @@ export class LeadsService {
     @Optional() private readonly sse?: SseService,
   ) {}
 
-  async create(dto: CreateLeadDto): Promise<LeadDocument> {
+  async create(dto: CreateLeadDto, userId?: string): Promise<LeadDocument> {
     const lead = await this.leadModel.create({
       ...dto,
+      ...(userId ? { user_id: userId } : {}),
       status: null, // null = NEW（同 Python 一致）
       _status: 'unverified',
     });
@@ -38,9 +39,13 @@ export class LeadsService {
     return lead;
   }
 
-  /** 分頁列表（排除 soft-deleted）。controller 再包成 {status,data,total,page} */
-  async findAll(q: ListLeadsQueryDto) {
+  /**
+   * 分頁列表（排除 soft-deleted）。controller 再包成 {status,data,total,page}
+   * @param userId 傳入時只回傳該用戶嘅 leads；undefined = 回傳全部（admin 用）
+   */
+  async findAll(q: ListLeadsQueryDto, userId?: string) {
     const filter: FilterQuery<LeadDocument> = { _deleted_at: null };
+    if (userId) filter.user_id = userId;
 
     if (q.status) {
       // NEW 喺 DB 係 null，要特別處理
@@ -71,17 +76,17 @@ export class LeadsService {
     return { items, total, page, limit };
   }
 
-  async findOne(id: string): Promise<LeadDocument> {
+  async findOne(id: string, userId?: string): Promise<LeadDocument> {
     this.assertObjectId(id);
-    const lead = await this.leadModel
-      .findOne({ _id: id, _deleted_at: null })
-      .exec();
+    const filter: FilterQuery<LeadDocument> = { _id: id, _deleted_at: null };
+    if (userId) filter.user_id = userId;
+    const lead = await this.leadModel.findOne(filter).exec();
     if (!lead) throw new NotFoundException('Lead not found');
     return lead;
   }
 
-  async update(id: string, dto: UpdateLeadDto): Promise<LeadDocument> {
-    const lead = await this.findOne(id);
+  async update(id: string, dto: UpdateLeadDto, userId?: string): Promise<LeadDocument> {
+    const lead = await this.findOne(id, userId);
     // 只 assign 有值嘅欄位，避免 undefined 覆寫現有資料
     const clean = Object.fromEntries(
       Object.entries(dto).filter(([, v]) => v !== undefined),
@@ -96,8 +101,9 @@ export class LeadsService {
   async changeStatus(
     id: string,
     dto: UpdateLeadStatusDto,
+    userId?: string,
   ): Promise<LeadDocument> {
-    const lead = await this.findOne(id);
+    const lead = await this.findOne(id, userId);
     const current = normalizeStatus(lead.status);
 
     if (!canTransition(current, dto.status)) {
@@ -122,8 +128,8 @@ export class LeadsService {
   }
 
   /** mark-interested：推入 pending */
-  markInterested(id: string) {
-    return this.changeStatus(id, { status: LeadStatus.PENDING });
+  markInterested(id: string, userId?: string) {
+    return this.changeStatus(id, { status: LeadStatus.PENDING }, userId);
   }
 
   /**
@@ -206,8 +212,8 @@ export class LeadsService {
   }
 
   /** soft delete（additive _deleted_at 標記，Python 會忽略）*/
-  async remove(id: string): Promise<void> {
-    const lead = await this.findOne(id);
+  async remove(id: string, userId?: string): Promise<void> {
+    const lead = await this.findOne(id, userId);
     lead._deleted_at = this.nowStamp();
     await lead.save();
     this.sse?.emit(SseEvent.LEAD_UPDATE, { id: lead.id, action: 'deleted' });

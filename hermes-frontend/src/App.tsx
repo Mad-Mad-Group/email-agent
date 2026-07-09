@@ -20,6 +20,8 @@ import TasksPage from './pages/Tasks';
 import UsersPage from './pages/Users';
 import SettingsPage from './pages/Settings';
 import AgentPanel from './pages/AgentPanel';
+import VerifiedEmailsPage from './pages/VerifiedEmails';
+import UserInfoPage from './pages/UserInfo';
 import { DialogProvider } from './components';
 import './i18n';
 
@@ -28,6 +30,13 @@ const ProtectedRoute: React.FC = () => {
   const { token, loading } = useAuth();
   if (loading) return null;
   return token ? <Outlet /> : <Navigate to="/login" replace />;
+};
+
+/** Admin-only route wrapper — redirects non-admin to /dashboard */
+const AdminRoute: React.FC = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  return isAdmin ? <Outlet /> : <Navigate to="/dashboard" replace />;
 };
 
 const queryClient = new QueryClient({
@@ -93,8 +102,10 @@ function App() {
                   <Route path="/cms-email-queue" element={<EmailQueue />} />
                   <Route path="/cms-tasks" element={<TasksPage />} />
                   <Route path="/cms-users" element={<UsersPage />} />
-                  <Route path="/cms-agents" element={<AgentPanel />} />
                   <Route path="/cms-settings" element={<SettingsPage />} />
+                  <Route path="/cms-agents" element={<AgentPanel />} />
+                  <Route path="/cms-verified-emails" element={<VerifiedEmailsPage />} />
+                  <Route path="/cms-user-info" element={<UserInfoPage />} />
                   {/* RESOURCES */}
                   <Route path="/auth-404" element={<Placeholder />} />
                   <Route path="/auth-403" element={<Placeholder />} />

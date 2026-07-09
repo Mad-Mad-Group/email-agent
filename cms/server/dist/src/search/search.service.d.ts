@@ -3,7 +3,7 @@ import { SearchDto } from './dto/search.dto';
 export declare class SearchService {
     private readonly tasks;
     constructor(tasks: TasksService);
-    run(dto: SearchDto): Promise<{
+    run(dto: SearchDto, userId?: string): Promise<{
         task_id: string;
         status: string;
         deduped: boolean;

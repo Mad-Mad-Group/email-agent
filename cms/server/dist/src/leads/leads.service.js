@@ -27,17 +27,20 @@ let LeadsService = class LeadsService {
         this.leadModel = leadModel;
         this.sse = sse;
     }
-    async create(dto) {
+    async create(dto, userId) {
         const lead = await this.leadModel.create({
             ...dto,
+            ...(userId ? { user_id: userId } : {}),
             status: null,
             _status: 'unverified',
         });
         this.sse?.emit(sse_service_1.SseEvent.LEAD_UPDATE, { id: lead.id, action: 'created' });
         return lead;
     }
-    async findAll(q) {
+    async findAll(q, userId) {
         const filter = { _deleted_at: null };
+        if (userId)
+            filter.user_id = userId;
         if (q.status) {
             filter.status =
                 q.status === lead_status_enum_1.LeadStatus.NEW ? { $in: [null, 'new'] } : q.status;
@@ -66,25 +69,26 @@ let LeadsService = class LeadsService {
         ]);
         return { items, total, page, limit };
     }
-    async findOne(id) {
+    async findOne(id, userId) {
         this.assertObjectId(id);
-        const lead = await this.leadModel
-            .findOne({ _id: id, _deleted_at: null })
-            .exec();
+        const filter = { _id: id, _deleted_at: null };
+        if (userId)
+            filter.user_id = userId;
+        const lead = await this.leadModel.findOne(filter).exec();
         if (!lead)
             throw new common_1.NotFoundException('Lead not found');
         return lead;
     }
-    async update(id, dto) {
-        const lead = await this.findOne(id);
+    async update(id, dto, userId) {
+        const lead = await this.findOne(id, userId);
         const clean = Object.fromEntries(Object.entries(dto).filter(([, v]) => v !== undefined));
         Object.assign(lead, clean);
         await lead.save();
         this.sse?.emit(sse_service_1.SseEvent.LEAD_UPDATE, { id: lead.id, action: 'updated' });
         return lead;
     }
-    async changeStatus(id, dto) {
-        const lead = await this.findOne(id);
+    async changeStatus(id, dto, userId) {
+        const lead = await this.findOne(id, userId);
         const current = (0, lead_status_enum_1.normalizeStatus)(lead.status);
         if (!(0, lead_status_enum_1.canTransition)(current, dto.status)) {
             throw new common_1.BadRequestException(`Invalid status transition: ${current} → ${dto.status}`);
@@ -102,8 +106,8 @@ let LeadsService = class LeadsService {
         });
         return lead;
     }
-    markInterested(id) {
-        return this.changeStatus(id, { status: lead_status_enum_1.LeadStatus.PENDING });
+    markInterested(id, userId) {
+        return this.changeStatus(id, { status: lead_status_enum_1.LeadStatus.PENDING }, userId);
     }
     async createFromSearch(data) {
         const exists = await this.leadModel
@@ -156,8 +160,8 @@ let LeadsService = class LeadsService {
             status: lead_status_enum_1.LeadStatus.CONTACTED,
         });
     }
-    async remove(id) {
-        const lead = await this.findOne(id);
+    async remove(id, userId) {
+        const lead = await this.findOne(id, userId);
         lead._deleted_at = this.nowStamp();
         await lead.save();
         this.sse?.emit(sse_service_1.SseEvent.LEAD_UPDATE, { id: lead.id, action: 'deleted' });

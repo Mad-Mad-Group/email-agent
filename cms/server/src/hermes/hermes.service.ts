@@ -62,7 +62,7 @@ export class HermesService implements OnModuleInit {
   }
 
   /** 啟動一條 pipeline */
-  async run(dto: RunHermesDto) {
+  async run(dto: RunHermesDto, userId?: string) {
     const campaignId = `CAMP-${randomBytes(4).toString('hex')}`;
     const now = new Date().toISOString();
     await this.campaigns.create({
@@ -82,6 +82,7 @@ export class HermesService implements OnModuleInit {
       keyword: dto.keyword,
       location: dto.location,
       target_count: dto.targetCount,
+      user_id: userId,
     });
 
     this.sse.emit(SseEvent.HERMES_LOG, {
@@ -116,8 +117,9 @@ export class HermesService implements OnModuleInit {
       await campaign.save();
 
       this.progress(campaignId, 'search→enrich', 0, leadIds.length);
+      const userId = params.user_id as string | undefined;
       for (const leadId of leadIds) {
-        await this.enqueueStage('enrich', campaignId, { lead_object_id: leadId });
+        await this.enqueueStage('enrich', campaignId, { lead_object_id: leadId, user_id: userId });
       }
       if (leadIds.length === 0) await this.finish(campaign, '搜尋 0 結果');
       return;
@@ -128,6 +130,7 @@ export class HermesService implements OnModuleInit {
     if (next) {
       await this.enqueueStage(next, campaignId, {
         lead_object_id: params.lead_object_id,
+        user_id: params.user_id,
       });
     } else {
       // send 完 = 一條鏈完（用 $inc 原子操作，支援多 worker 併發）

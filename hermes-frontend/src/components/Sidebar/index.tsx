@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled, { css, keyframes } from 'styled-components';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { media } from '../../styles/media';
+import { useAuth } from '../../contexts/AuthContext';
 
 /* ── LUNO SVG Icons ── */
 
@@ -146,10 +147,25 @@ const IconSettings = () => (
   </svg>
 );
 
+const IconUserInfo = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+    <path opacity="0.5" d="M2 13c0-2.21 2.686-4 6-4s6 1.79 6 4v1H2v-1z" />
+  </svg>
+);
+
 const IconAgent = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="currentColor" viewBox="0 0 16 16">
     <path d="M6 12.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5ZM3 8.062C3 6.76 4.235 5.765 5.53 5.886a26.58 26.58 0 0 0 4.94 0C11.765 5.765 13 6.76 13 8.062v1.157a.933.933 0 0 1-.765.935c-.845.147-2.34.346-4.235.346-1.895 0-3.39-.2-4.235-.346A.933.933 0 0 1 3 9.219V8.062Z" />
     <path opacity="0.5" d="M8.5 1.866a1 1 0 1 0-1 0V3h-2A4.5 4.5 0 0 0 1 7.5V8a1 1 0 0 0 1 1h1v.938l.4 5.05a1.5 1.5 0 0 0 1.493 1.362h6.214a1.5 1.5 0 0 0 1.493-1.362l.4-5.05V9h1a1 1 0 0 0 1-1v-.5A4.5 4.5 0 0 0 10.5 3h-2V1.866Z" />
+  </svg>
+);
+
+const IconVerifiedEmail = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M2.5 1A1.5 1.5 0 0 0 1 2.5v11A1.5 1.5 0 0 0 2.5 15h3.05a3.5 3.5 0 0 1-.713-1H2.5a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 .5.5V5h1V2.5A1.5 1.5 0 0 0 13.5 1h-11z" />
+    <path opacity="0.5" d="M16 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm-3.97-1.03a.75.75 0 0 0-1.06 1.06l1 1a.75.75 0 0 0 1.06 0l2-2a.75.75 0 0 0-1.06-1.06L12.5 7.44l-.47-.47z" />
+    <path d="M4.5 4a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zm0 2a.5.5 0 0 0 0 1h3.5a.5.5 0 0 0 0-1H4.5z" />
   </svg>
 );
 
@@ -549,6 +565,13 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, collapsed = false }) => {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login', { replace: true });
+  };
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     applications: location.pathname.startsWith('/app-'),
     account: location.pathname.startsWith('/account'),
@@ -599,9 +622,11 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
         <li><MLink to="/cms-search"><IconSearch /><span>{t('nav.leadSearch')}</span></MLink></li>
         <li><MLink to="/cms-leads"><IconLeads /><span>{t('nav.leadPool')}</span></MLink></li>
         {/* <li><MLink to="/cms-tasks"><IconTasks /><span>{t('nav.workflows')}</span></MLink></li> */}
+        <li><MLink to="/cms-verified-emails"><IconVerifiedEmail /><span>Verified Emails</span></MLink></li>
         <li><MLink to="/cms-agents"><IconAgent /><span>{t('nav.agents')}</span></MLink></li>
         <li><MLink to="/cms-users"><IconUsers /><span>{t('nav.team')}</span></MLink></li>
         <li><MLink to="/cms-settings"><IconSettings /><span>{t('nav.settings')}</span></MLink></li>
+        <li><MLink to="/cms-user-info"><IconUserInfo /><span>個人資料</span></MLink></li>
       </MenuList>
       </ScrollArea>
 
@@ -614,7 +639,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
           <FooterBtn title={t('nav.myNotes')}><IconNotes /></FooterBtn>
         </FooterItem>
         <FooterItem>
-          <FooterBtn title={t('nav.signOut')}><IconSignOut /></FooterBtn>
+          <FooterBtn title={t('nav.signOut')} onClick={handleLogout}><IconSignOut /></FooterBtn>
         </FooterItem>
       </FooterLinks>
     </Wrapper>

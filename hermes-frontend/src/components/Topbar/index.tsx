@@ -7,7 +7,7 @@ import { useThemeMode } from '../../contexts/ThemeModeContext';
 import { leadsApi, Lead } from '../../api/leads';
 import { emailQueueApi, EmailItem } from '../../api/emailQueue';
 import { tasksApi, TaskItem } from '../../api/services';
-import { useNotifications, useUnreadCount, useMarkNotificationRead, useMarkAllNotificationsRead } from '../../api/hooks';
+import { useNotifications, useUnreadCount, useMarkNotificationRead, useMarkAllNotificationsRead, useDismissNotification, useDismissAllNotifications } from '../../api/hooks';
 import { NotificationItem } from '../../api/notifications';
 
 interface TopbarProps {
@@ -477,6 +477,22 @@ const NotifEmpty = styled.div`
   color: ${({ theme }) => theme.colors.textTertiary};
 `;
 
+const NotifDismissBtn = styled.button`
+  background: none;
+  border: none;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  padding: 2px 4px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s, color 0.15s;
+  ${NotifItemRow}:hover & { opacity: 1; }
+  &:hover { color: #dc2626; background: rgba(220, 38, 38, 0.08); }
+`;
+
 const LangWrapper = styled.div`
   position: relative;
   &:hover > div { display: flex; }
@@ -656,6 +672,8 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
   const { data: notifData } = useNotifications({ limit: 20 });
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
+  const dismissOne = useDismissNotification();
+  const dismissAll = useDismissAllNotifications();
 
   const notifications: NotificationItem[] = (notifData as any)?.data ?? [];
   const unread = (typeof unreadCount === 'number' ? unreadCount : 0);
@@ -935,6 +953,9 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
               {unread > 0 && (
                 <NotifMarkAllBtn onClick={() => markAllRead.mutate()}>全部已讀</NotifMarkAllBtn>
               )}
+              {notifications.length > 0 && (
+                <NotifMarkAllBtn onClick={() => dismissAll.mutate()} style={{ color: '#dc2626' }}>清除全部</NotifMarkAllBtn>
+              )}
               <NotifCloseBtn onClick={() => setNotifOpen(false)}>&times;</NotifCloseBtn>
             </div>
           </NotifPanelHeader>
@@ -954,6 +975,10 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
                     {n.message && <NotifMsg>{n.message}</NotifMsg>}
                     <NotifTime>{formatTimeAgo(n.created_at)}</NotifTime>
                   </NotifContent>
+                  <NotifDismissBtn
+                    title="刪除"
+                    onClick={(e) => { e.stopPropagation(); dismissOne.mutate(n._id); }}
+                  >&times;</NotifDismissBtn>
                 </NotifItemRow>
               ))
             )}
