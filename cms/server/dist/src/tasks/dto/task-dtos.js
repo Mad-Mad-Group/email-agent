@@ -48,6 +48,7 @@ __decorate([
 class ClaimTaskDto {
     agent_id;
     skill_id;
+    exclude_skills;
 }
 exports.ClaimTaskDto = ClaimTaskDto;
 __decorate([
@@ -59,6 +60,11 @@ __decorate([
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], ClaimTaskDto.prototype, "skill_id", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], ClaimTaskDto.prototype, "exclude_skills", void 0);
 class CompleteTaskDto {
     result;
 }

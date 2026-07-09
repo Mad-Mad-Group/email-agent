@@ -22,6 +22,8 @@ export class ClaimTaskDto {
   @IsString() agent_id: string;
   /** 只 claim 某 skill 嘅 task（唔傳 = 任何）*/
   @IsOptional() @IsString() skill_id?: string;
+  /** 排除某啲 skill 嘅 task（逗號分隔，例如 "S4" 或 "S3,S4"）*/
+  @IsOptional() @IsString() exclude_skills?: string;
 }
 
 export class CompleteTaskDto {
