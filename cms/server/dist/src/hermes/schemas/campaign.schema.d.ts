@@ -5,6 +5,7 @@ export declare class Campaign {
     keyword?: string;
     location?: string;
     target_count?: number;
+    mode?: string;
     status: string;
     pipeline_stage?: string;
     lead_ids: string[];

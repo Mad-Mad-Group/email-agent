@@ -245,6 +245,18 @@ const LocOption = styled.button<{ $active?: boolean }>`
   &:hover { background: ${({ $active }) => $active ? '#1e293b' : '#f1f5f9'}; }
 `;
 
+const ModeToggle = styled.button<{ $active?: boolean }>`
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 10px; margin: 0 2px;
+  border: 1.5px solid ${({ $active }) => $active ? '#f97316' : 'rgba(148,163,184,0.3)'};
+  border-radius: 20px; font-size: 0.7rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap; flex-shrink: 0;
+  background: ${({ $active }) => $active ? 'rgba(249,115,22,0.12)' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#f97316' : theme.colors.textSecondary};
+  transition: all 0.15s;
+  &:hover { border-color: #f97316; color: #f97316; }
+`;
+
 const HK_DISTRICTS = [
   '全區', '中西區', '灣仔', '東區', '南區',
   '油尖旺', '深水埗', '九龍城', '黃大仙', '觀塘',
@@ -1394,6 +1406,7 @@ const SearchPage: React.FC = () => {
   const [district, setDistrict] = useState(saved.dist);
   const [showLocPicker, setShowLocPicker] = useState(false);
   const [targetCount, setTargetCount] = useState(saved.tc);
+  const [searchMode, setSearchMode] = useState<'normal' | 'old_website'>('normal');
   const navigate = useNavigate();
   const locRef = useRef<HTMLFormElement>(null);
 
@@ -1634,6 +1647,7 @@ const SearchPage: React.FC = () => {
       keyword: keyword.trim(),
       location: fullLocation.trim(),
       targetCount,
+      mode: searchMode,
     };
     // ponytail: persist form so a refresh during the pipeline restores inputs.
     try {
@@ -1686,6 +1700,14 @@ const SearchPage: React.FC = () => {
               required
               autoFocus
             />
+            <ModeToggle
+              type="button"
+              $active={searchMode === 'old_website'}
+              onClick={() => setSearchMode(m => m === 'normal' ? 'old_website' : 'normal')}
+              title={searchMode === 'old_website' ? '搜尋舊網站模式（點擊切換回普通）' : '點擊切換到舊網站搜尋模式'}
+            >
+              {searchMode === 'old_website' ? '🕸 舊網站' : '📍 普通'}
+            </ModeToggle>
             <LocBadge type="button" onClick={() => setShowLocPicker(p => !p)}>
               <LocFlag>HK</LocFlag>
               {district === '全區' ? '全區' : district}

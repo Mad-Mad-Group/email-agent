@@ -65,11 +65,13 @@ let HermesService = class HermesService {
     async run(dto, userId) {
         const campaignId = `CAMP-${(0, crypto_1.randomBytes)(4).toString('hex')}`;
         const now = new Date().toISOString();
+        const mode = dto.mode || 'normal';
         await this.campaigns.create({
             campaign_id: campaignId,
             keyword: dto.keyword,
             location: dto.location,
             target_count: dto.targetCount,
+            mode,
             status: 'running',
             pipeline_stage: 'search',
             lead_ids: [],
@@ -81,6 +83,7 @@ let HermesService = class HermesService {
             keyword: dto.keyword,
             location: dto.location,
             target_count: dto.targetCount,
+            mode,
             user_id: userId,
         });
         this.sse.emit(sse_service_1.SseEvent.HERMES_LOG, {

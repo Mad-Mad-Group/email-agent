@@ -2186,6 +2186,8 @@ const Leads: React.FC = () => {
   }, [usersData]);
 
   const [clearMsg, setClearMsg] = useState('');
+  const [oldWebsiteOnly, setOldWebsiteOnly] = useState(false);
+  const [sortByTech, setSortByTech] = useState(false);
 
   const apiLeads: Lead[] = data?.data ?? [];
   // ponytail: was `[...MOCK_LEADS, ...apiLeads]` — removed mock per request;
@@ -2232,10 +2234,18 @@ const Leads: React.FC = () => {
   const curTab = TABS.find(t => t.key === activeTab) || TABS[0];
   const tabFiltered = searchFiltered.filter(l => curTab.filter(l, activeSub));
 
+  // 舊網站 filter + tech_score 排序
+  const techFiltered = oldWebsiteOnly
+    ? tabFiltered.filter(l => ((l as any)._tech_score ?? 0) >= 50)
+    : tabFiltered;
+  const techSorted = sortByTech
+    ? [...techFiltered].sort((a, b) => ((b as any)._tech_score ?? 0) - ((a as any)._tech_score ?? 0))
+    : techFiltered;
+
   // Client-side pagination
-  const total = tabFiltered.length;
+  const total = techSorted.length;
   const totalPages = Math.ceil(total / LIMIT);
-  const leads = tabFiltered.slice((page - 1) * LIMIT, page * LIMIT);
+  const leads = techSorted.slice((page - 1) * LIMIT, page * LIMIT);
 
   // 每個 tab 嘅 count（用全量數據計，唔受 search 影響）
   const tabCounts = useMemo(() => {
@@ -2414,6 +2424,38 @@ const Leads: React.FC = () => {
               onChange={e => { setSearch(e.target.value); setPage(1); }}
             />
           </SearchWrap>
+          <button
+            onClick={() => { setOldWebsiteOnly(v => !v); setPage(1); }}
+            style={{
+              padding: '4px 12px',
+              borderRadius: 14,
+              border: oldWebsiteOnly ? '1.5px solid #dc2626' : '1px solid #d1d5db',
+              background: oldWebsiteOnly ? '#fef2f2' : '#fff',
+              color: oldWebsiteOnly ? '#dc2626' : '#6b7280',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {oldWebsiteOnly ? '✕ 舊網站' : '🔍 只顯示舊網站'}
+          </button>
+          <button
+            onClick={() => { setSortByTech(v => !v); setPage(1); }}
+            style={{
+              padding: '4px 12px',
+              borderRadius: 14,
+              border: sortByTech ? '1.5px solid #f59e0b' : '1px solid #d1d5db',
+              background: sortByTech ? '#fffbeb' : '#fff',
+              color: sortByTech ? '#d97706' : '#6b7280',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {sortByTech ? '✕ 按評分排' : '↓ 按技術評分排序'}
+          </button>
         </SubPillRow>
           <TableWrap>
             <Table>
@@ -2422,7 +2464,12 @@ const Leads: React.FC = () => {
                   <th>{t('leads.status')}</th>
                   <th>{t('leads.name')} <IconSortArrow /></th>
                   <th>{t('leads.reply')}</th>
+<<<<<<< Updated upstream
                   {isAdmin && <th>{t('leads.sourceUser')}</th>}
+=======
+                  {isAdmin && <th>{t('leads.sourceUser') || '來源用戶'}</th>}
+                  <th style={{ textAlign: 'center' }}>技術評分</th>
+>>>>>>> Stashed changes
                   <th>{t('leads.importedAt')}</th>
                   <th>{t('leads.action')}</th>
                 </tr>
@@ -2430,7 +2477,7 @@ const Leads: React.FC = () => {
               <tbody>
                 {error ? (
                   <tr>
-                    <EmptyCell colSpan={isAdmin ? 6 : 5}>
+                    <EmptyCell colSpan={isAdmin ? 7 : 6}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
                         <strong style={{ color: '#dc2626' }}>{t('common.error')}</strong>
                         <span style={{ color: '#7f8c8d', fontSize: 13 }}>
@@ -2455,9 +2502,9 @@ const Leads: React.FC = () => {
                     </EmptyCell>
                   </tr>
                 ) : isLoading ? (
-                  <tr><EmptyCell colSpan={isAdmin ? 6 : 5}>{t('leads.loading')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={isAdmin ? 7 : 6}>{t('leads.loading')}</EmptyCell></tr>
                 ) : leads.length === 0 ? (
-                  <tr><EmptyCell colSpan={isAdmin ? 6 : 5}>{t('leads.noLeads')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={isAdmin ? 7 : 6}>{t('leads.noLeads')}</EmptyCell></tr>
                 ) : (
                   (() => {
                     let lastGroup = '';
@@ -2472,7 +2519,7 @@ const Leads: React.FC = () => {
                         <React.Fragment key={lead._id}>
                           {showHeader && (
                             <GroupBar $group={group} $dark={isDark}>
-                              <td colSpan={isAdmin ? 6 : 5}>
+                              <td colSpan={isAdmin ? 7 : 6}>
                                 <GroupBarInner
                                   $group={group}
                                   $dark={isDark}
@@ -2508,6 +2555,26 @@ const Leads: React.FC = () => {
                             {lead.user_id ? (userMap[lead.user_id] || lead.user_id.slice(0, 8)) : '—'}
                           </td>
                         )}
+                        <td style={{ textAlign: 'center' }}>
+                          {(lead as any)._tech_score != null ? (() => {
+                            const s = (lead as any)._tech_score as number;
+                            const bg = s >= 50 ? '#dc2626' : s >= 25 ? '#f59e0b' : '#22c55e';
+                            const label = s >= 50 ? '舊' : s >= 25 ? '普通' : '新';
+                            return (
+                              <span style={{
+                                display: 'inline-block',
+                                padding: '2px 8px',
+                                borderRadius: 12,
+                                fontSize: '0.7rem',
+                                fontWeight: 600,
+                                color: '#fff',
+                                background: bg,
+                              }}>
+                                {s} {label}
+                              </span>
+                            );
+                          })() : <span style={{ color: '#cbd5e1', fontSize: '0.75rem' }}>—</span>}
+                        </td>
                         <td>{(() => {
                           const g = getDateGroup(lead._imported_at);
                           if (g === '今日' || g === '昨日') return g;

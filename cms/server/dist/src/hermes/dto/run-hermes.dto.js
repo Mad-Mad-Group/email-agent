@@ -17,8 +17,9 @@ class RunHermesDto {
     keyword;
     location;
     targetCount = 5;
+    mode;
     static _OPENAPI_METADATA_FACTORY() {
-        return { keyword: { required: true, type: () => String }, location: { required: true, type: () => String }, targetCount: { required: true, type: () => Object, default: 5, minimum: 1, maximum: 20 } };
+        return { keyword: { required: true, type: () => String }, location: { required: true, type: () => String }, targetCount: { required: true, type: () => Object, default: 5, minimum: 1, maximum: 20 }, mode: { required: false, enum: ["normal", "old_website"] } };
     }
 }
 exports.RunHermesDto = RunHermesDto;
@@ -38,4 +39,9 @@ __decorate([
     (0, class_validator_1.Max)(20),
     __metadata("design:type", Object)
 ], RunHermesDto.prototype, "targetCount", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], RunHermesDto.prototype, "mode", void 0);
 //# sourceMappingURL=run-hermes.dto.js.map
