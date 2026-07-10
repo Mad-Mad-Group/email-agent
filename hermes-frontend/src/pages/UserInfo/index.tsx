@@ -263,12 +263,6 @@ const UserInfoPage: React.FC = () => {
 
   return (
     <Page>
-      <div>
-        <Breadcrumb><li>{t('userInfo.breadcrumbCms')}</li><li>{t('userInfo.breadcrumbProfile')}</li></Breadcrumb>
-        <PageTitle>{t('userInfo.title')}</PageTitle>
-        <PageSub>{t('userInfo.subtitle')}</PageSub>
-      </div>
-
       {/* ── Hero profile card ── */}
       <HeroCard>
         <HeroBody>

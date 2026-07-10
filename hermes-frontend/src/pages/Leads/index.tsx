@@ -2422,7 +2422,7 @@ const Leads: React.FC = () => {
                   <th>{t('leads.status')}</th>
                   <th>{t('leads.name')} <IconSortArrow /></th>
                   <th>{t('leads.reply')}</th>
-                  {isAdmin && <th>{t('leads.sourceUser') || '來源用戶'}</th>}
+                  {isAdmin && <th>{t('leads.sourceUser')}</th>}
                   <th>{t('leads.importedAt')}</th>
                   <th>{t('leads.action')}</th>
                 </tr>

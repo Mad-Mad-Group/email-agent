@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import styled, { css, keyframes } from 'styled-components';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -169,10 +170,11 @@ const IconVerifiedEmail = () => (
   </svg>
 );
 
-const IconSignOut = () => (
+/* Door + arrow logout icon */
+const IconLogout = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="currentColor" viewBox="0 0 16 16">
-    <path d="M7.5 1v7h1V1h-1z" />
-    <path opacity="0.5" d="M3 8.812a4.999 4.999 0 0 1 2.578-4.375l-.485-.874A6 6 0 1 0 14 8a6 6 0 0 0-4.907-5.437l-.485.874A4.999 4.999 0 0 1 13 8.812 5 5 0 1 1 3 8.812z" />
+    <path d="M6 12.5a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-8a.5.5 0 0 0-.5.5v2a.5.5 0 0 1-1 0v-2A1.5 1.5 0 0 1 6.5 2h8A1.5 1.5 0 0 1 16 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 5 12.5v-2a.5.5 0 0 1 1 0v2z" />
+    <path opacity="0.5" d="M.146 8.354a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L1.707 7.5H10.5a.5.5 0 0 1 0 1H1.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3z" />
   </svg>
 );
 
@@ -541,6 +543,10 @@ const FooterBtn = styled.a`
     svg { animation: ${iconFloat} 0.6s ease-in-out; }
   }
 
+  &.active {
+    color: var(--primary, #0ea5e9);
+  }
+
   ${media.mobile} {
     padding: 10px;
     svg {
@@ -551,6 +557,126 @@ const FooterBtn = styled.a`
 
   [data-collapsed="true"] & {
     padding: 10px 4px;
+  }
+`;
+
+/* ── Logout Confirmation Dialog ── */
+const logoutFadeIn = keyframes`
+  from { opacity: 0; }
+  to   { opacity: 1; }
+`;
+
+const LogoutOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ${logoutFadeIn} 0.15s ease;
+`;
+
+const LogoutDialog = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: 16px;
+  padding: 28px 32px 24px;
+  width: min(360px, 90vw);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+  text-align: center;
+  animation: ${logoutFadeIn} 0.2s ease;
+`;
+
+const LogoutIconWrap = styled.div`
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.red}12;
+  color: ${({ theme }) => theme.colors.red};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  svg { width: 24px; height: 24px; }
+`;
+
+const LogoutTitle = styled.h3`
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const LogoutDesc = styled.p`
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  line-height: 1.5;
+`;
+
+const LogoutActions = styled.div`
+  display: flex;
+  gap: 10px;
+`;
+
+const LogoutCancelBtn = styled.button`
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+`;
+
+const LogoutConfirmBtn = styled.button`
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: ${({ theme }) => theme.colors.red};
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  &:hover { opacity: 0.9; }
+`;
+
+/* ── Tooltip for footer buttons ── */
+const FooterTooltip = styled.div`
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.canvas};
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+`;
+
+const FooterBtnWrap = styled.div`
+  position: relative;
+  flex: 1;
+  text-align: center;
+
+  &:hover ${FooterTooltip} {
+    opacity: 1;
+  }
+
+  [data-collapsed="true"] & {
+    flex: none;
+    width: 100%;
   }
 `;
 
@@ -568,7 +694,9 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
   const navigate = useNavigate();
   const { logout } = useAuth();
 
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const handleLogout = () => {
+    setShowLogoutDialog(false);
     logout();
     navigate('/login', { replace: true });
   };
@@ -625,23 +753,50 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
         <li><MLink to="/cms-verified-emails"><IconVerifiedEmail /><span>{t('nav.verifiedEmails')}</span></MLink></li>
         <li><MLink to="/cms-agents"><IconAgent /><span>{t('nav.agents')}</span></MLink></li>
         <li><MLink to="/cms-users"><IconUsers /><span>{t('nav.team')}</span></MLink></li>
-        <li><MLink to="/cms-settings"><IconSettings /><span>{t('nav.settings')}</span></MLink></li>
-        <li><MLink to="/cms-user-info"><IconUserInfo /><span>{t('nav.userInfo')}</span></MLink></li>
       </MenuList>
       </ScrollArea>
 
       {/* Footer icons */}
       <FooterLinks>
-        <FooterItem>
-          <FooterBtn title={t('nav.mySchedule')}><IconSchedule /></FooterBtn>
-        </FooterItem>
-        <FooterItem>
-          <FooterBtn title={t('nav.myNotes')}><IconNotes /></FooterBtn>
-        </FooterItem>
-        <FooterItem>
-          <FooterBtn title={t('nav.signOut')} onClick={handleLogout}><IconSignOut /></FooterBtn>
-        </FooterItem>
+        <FooterBtnWrap>
+          <FooterBtn as={NavLink} to="/cms-user-info" title={t('nav.userInfo')}>
+            <IconUserInfo />
+          </FooterBtn>
+          <FooterTooltip>{t('nav.userInfo')}</FooterTooltip>
+        </FooterBtnWrap>
+        <FooterBtnWrap>
+          <FooterBtn as={NavLink} to="/cms-settings" title={t('nav.settings')}>
+            <IconSettings />
+          </FooterBtn>
+          <FooterTooltip>{t('nav.settings')}</FooterTooltip>
+        </FooterBtnWrap>
+        <FooterBtnWrap>
+          <FooterBtn title={t('nav.signOut')} onClick={() => setShowLogoutDialog(true)}>
+            <IconLogout />
+          </FooterBtn>
+          <FooterTooltip>{t('nav.signOut')}</FooterTooltip>
+        </FooterBtnWrap>
       </FooterLinks>
+
+      {/* Logout confirmation dialog */}
+      {showLogoutDialog && createPortal(
+        <LogoutOverlay onClick={() => setShowLogoutDialog(false)}>
+          <LogoutDialog onClick={(e) => e.stopPropagation()}>
+            <LogoutIconWrap><IconLogout /></LogoutIconWrap>
+            <LogoutTitle>{t('nav.signOut')}</LogoutTitle>
+            <LogoutDesc>{t('nav.logoutConfirm')}</LogoutDesc>
+            <LogoutActions>
+              <LogoutCancelBtn onClick={() => setShowLogoutDialog(false)}>
+                {t('common.cancel')}
+              </LogoutCancelBtn>
+              <LogoutConfirmBtn onClick={handleLogout}>
+                {t('nav.signOut')}
+              </LogoutConfirmBtn>
+            </LogoutActions>
+          </LogoutDialog>
+        </LogoutOverlay>,
+        document.body
+      )}
     </Wrapper>
   );
 };

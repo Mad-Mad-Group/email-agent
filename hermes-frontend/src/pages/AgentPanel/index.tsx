@@ -1,20 +1,20 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import styled, { keyframes, css, useTheme } from 'styled-components';
-import { PageHeader, Button, StatusBadge, Table } from '../../components';
+// Components used in floating panel only
 import { useAgentStats, useNotifications, useSettings, useTasks } from '../../api/hooks';
 import type { AgentSkillStats } from '../../api/services';
 import type { NotificationItem } from '../../api/notifications';
 import { media } from '../../styles/media';
 import IsometricWorld from './IsometricWorld';
 
-/* ── Skill → Agent name mapping ── */
-const SKILL_META: Record<string, { name: string; type: string }> = {
-  S1: { name: 'Lead Scraper', type: '搜尋引擎' },
-  S2: { name: 'Lead Analyzer', type: '分析 & Enrich' },
-  S3: { name: 'Email Drafter', type: '草稿生成' },
-  S4: { name: 'Email Sender', type: '郵件發送' },
+/* ── Skill → i18n key mapping ── */
+const SKILL_I18N: Record<string, { nameKey: string; typeKey: string }> = {
+  S1: { nameKey: 'agents.s1Name', typeKey: 'agents.s1Type' },
+  S2: { nameKey: 'agents.s2Name', typeKey: 'agents.s2Type' },
+  S3: { nameKey: 'agents.s3Name', typeKey: 'agents.s3Type' },
+  S4: { nameKey: 'agents.s4Name', typeKey: 'agents.s4Type' },
 };
 
 const NOTIF_EVENT_MAP: Record<string, string> = {
@@ -56,312 +56,574 @@ function formatTime(iso: string): string {
 }
 
 /* ══════════════════════════════════════
-   Agent Panel — Left/Right split layout
+   Agent Panel — Full-screen pixel world
+   with overlaid game-style UI
    ══════════════════════════════════════ */
 
-const AgentContainer = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-`;
-
-/* ── Main split: Isometric left, content right ── */
-const SplitLayout = styled.div`
-  display: grid;
-  grid-template-columns: 4fr 6fr;
-  gap: 12px;
-  align-items: start;
-
-  ${media.tablet} {
-    grid-template-columns: 280px 1fr;
-    gap: 16px;
-  }
-  ${media.mobile} {
-    grid-template-columns: 1fr;
-    gap: 16px;
-  }
-`;
-
-const LeftPane = styled.div`
-  position: sticky;
-  top: 80px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-
-  ${media.mobile} {
-    position: static;
-  }
-`;
-
-const RightPane = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  min-width: 0;
-`;
-
-/* ── Agent color map ── */
+/* ── Agent color map (farm palette) ── */
 const AGENT_COLORS: Record<string, { accent: string; bg1: string; bg2: string; fg: string; fgDark: string }> = {
-  S1: { accent: '#0ea5e9', bg1: '#ecfeff', bg2: '#cffafe', fg: '#0369a1', fgDark: '#67e8f9' },
-  S2: { accent: '#8b5cf6', bg1: '#faf5ff', bg2: '#ede9fe', fg: '#5b21b6', fgDark: '#c4b5fd' },
-  S3: { accent: '#f59e0b', bg1: '#fffbeb', bg2: '#fef3c7', fg: '#92400e', fgDark: '#fbbf24' },
-  S4: { accent: '#22c55e', bg1: '#f0fdf4', bg2: '#dcfce7', fg: '#14532d', fgDark: '#4ade80' },
+  S1: { accent: '#f97316', bg1: '#fff7ed', bg2: '#ffedd5', fg: '#9a3412', fgDark: '#fb923c' },  /* Fox — warm orange */
+  S2: { accent: '#64748b', bg1: '#f8fafc', bg2: '#f1f5f9', fg: '#1e293b', fgDark: '#94a3b8' },  /* Cow — slate */
+  S3: { accent: '#ef4444', bg1: '#fef2f2', bg2: '#fee2e2', fg: '#991b1b', fgDark: '#f87171' },  /* Chicken — red comb */
+  S4: { accent: '#22c55e', bg1: '#f0fdf4', bg2: '#dcfce7', fg: '#14532d', fgDark: '#4ade80' },  /* Duck — green head */
 };
 
-/* ── Robot watermark SVG ── */
-const IconRobot = () => (
-  <svg width="100%" height="100%" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="3" y="8" width="18" height="12" rx="2"/><circle cx="9" cy="14" r="1.5"/><circle cx="15" cy="14" r="1.5"/>
-    <path d="M12 2v4"/><circle cx="12" cy="2" r="1"/><path d="M3 14H1m22 0h-2"/>
-  </svg>
-);
-
-/* ── Segmented Ring Gauge (Image 1 style) ── */
-const RingGauge: React.FC<{ pct: number; color: string; size?: number; label: string }> = ({ pct, color, size = 80, label }) => {
-  const r = (size - 10) / 2;
-  const circ = 2 * Math.PI * r;
-  const segments = 24;
-  const gapRatio = 0.25;
-  const segLen = circ / segments;
-  const dash = segLen * (1 - gapRatio);
-  const gap = segLen * gapRatio;
-  const filled = circ * (pct / 100);
-  return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ flexShrink: 0 }}>
-      {/* track */}
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke="currentColor" strokeOpacity={0.1} strokeWidth={5}
-        strokeDasharray={`${dash} ${gap}`}
-        strokeLinecap="round"
-        transform={`rotate(-90 ${size / 2} ${size / 2})`} />
-      {/* filled */}
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none"
-        stroke={color} strokeWidth={5}
-        strokeDasharray={`${dash} ${gap}`}
-        strokeDashoffset={circ - filled}
-        strokeLinecap="round"
-        transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        style={{ transition: 'stroke-dashoffset 0.6s ease' }} />
-      {/* center label */}
-      <text x={size / 2} y={size / 2 - 2} textAnchor="middle" dominantBaseline="central"
-        fontSize="10" fontWeight="600" fill={color}>{label}</text>
-      <text x={size / 2} y={size / 2 + 11} textAnchor="middle"
-        fontSize="9" fill="currentColor" opacity="0.5">{pct}%</text>
-    </svg>
-  );
+const FEED_COLORS: Record<string, { accent: string; icon: string }> = {
+  scrape: { accent: '#16a34a', icon: '🌱' },
+  email:  { accent: '#0ea5e9', icon: '✉️' },
+  qualify: { accent: '#d97706', icon: '⚡' },
 };
 
-/* ── Agent mini-cards (LUNO-style: left bar + gradient + watermark + ring gauge) ── */
-const AgentStrip = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
-  ${media.mobile} { grid-template-columns: 1fr; }
-`;
+const SOURCE_LABELS: Record<string, string> = {
+  lead: 'Lead',
+  email: 'Email',
+  task: 'Task',
+  campaign: 'Campaign',
+  system: 'System',
+};
 
-const AgentMiniCard = styled.div<{ $accent: string; $bg1: string; $bg2: string }>`
+/* ── Agent label positions (percentage-based, on farm field) ── */
+const AGENT_POSITIONS: Record<string, { top: string; left: string }> = {
+  S1: { top: '42%', left: '4%' },   /* Fox in flower field (left) */
+  S2: { top: '36%', left: '28%' },  /* Cow grazing (center-left) */
+  S3: { top: '44%', left: '50%' },  /* Chicken pecking (center-right) */
+  S4: { top: '38%', left: '70%' },  /* Duck near pond (right) */
+};
+
+/* ── Agent sprite images (farm animals) ── */
+const AGENT_SPRITES: Record<string, { idle: string; frames: number }> = {
+  S1: { idle: '/assets/pixel-world/sprites/fox-idle.png', frames: 6 },
+  S2: { idle: '/assets/pixel-world/sprites/cow-idle.png', frames: 5 },
+  S3: { idle: '/assets/pixel-world/sprites/chicken-idle.png', frames: 5 },
+  S4: { idle: '/assets/pixel-world/sprites/duck-idle.png', frames: 4 },
+};
+
+/* ── Scene container: full-screen with relative positioning ── */
+const SceneContainer = styled.div`
   position: relative;
-  background: linear-gradient(135deg, ${({ $bg1 }) => $bg1}, ${({ $bg2 }) => $bg2});
-  border-left: 4px solid ${({ $accent }) => $accent};
-  border-radius: 14px;
-  padding: 14px 14px 12px;
+  width: 100%;
+  min-height: 500px;
+  height: calc(100vh - 80px);
   overflow: hidden;
-  transition: transform 0.18s, box-shadow 0.18s;
-  &:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.10); }
+  border-radius: 12px;
 `;
 
-const AgentWatermark = styled.div<{ $color: string }>`
-  position: absolute; right: -4px; bottom: -6px;
-  width: 52px; height: 52px; opacity: 0.08;
+/* ── IsometricWorld fills entire background ── */
+const WorldBackground = styled.div`
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+`;
+
+/* ── Title bar overlay — top-left ── */
+const TitleBar = styled.div`
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+  user-select: none;
+`;
+
+const TitleText = styled.span`
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: #fff;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  text-transform: uppercase;
+`;
+
+const livePulse = keyframes`
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+`;
+
+const LiveBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  background: rgba(34, 197, 94, 0.25);
+  border: 1px solid rgba(34, 197, 94, 0.5);
+  border-radius: 4px;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: #4ade80;
+  animation: ${livePulse} 2s ease-in-out infinite;
+
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #22c55e;
+    box-shadow: 0 0 6px #22c55e;
+  }
+`;
+
+/* ── Agent floating labels — game-style name tags with sprite ── */
+const labelAppear = keyframes`
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
+
+const idleBounce = keyframes`
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+`;
+
+/* ── Per-agent movement animations ── */
+const foxWander = keyframes`
+  0%   { transform: translate(0, 0) scaleX(1); }
+  20%  { transform: translate(40px, -8px) scaleX(1); }
+  35%  { transform: translate(70px, 5px) scaleX(1); }
+  50%  { transform: translate(50px, -15px) scaleX(-1); }
+  70%  { transform: translate(15px, 8px) scaleX(-1); }
+  85%  { transform: translate(-10px, -5px) scaleX(-1); }
+  100% { transform: translate(0, 0) scaleX(1); }
+`;
+
+const cowGraze = keyframes`
+  0%, 60%, 100% { transform: translateY(0) rotate(0deg); }
+  65%  { transform: translateY(6px) rotate(3deg); }
+  75%  { transform: translateY(8px) rotate(2deg); }
+  80%  { transform: translateY(6px) rotate(4deg); }
+  90%  { transform: translateY(3px) rotate(1deg); }
+`;
+
+const chickenPeck = keyframes`
+  0%, 40%, 100% { transform: translateY(0) rotate(0deg); }
+  42% { transform: translateY(5px) rotate(8deg); }
+  44% { transform: translateY(2px) rotate(0deg); }
+  46% { transform: translateY(6px) rotate(10deg); }
+  48% { transform: translateY(0) rotate(0deg); }
+  70%, 72% { transform: translate(8px, 0) scaleX(-1); }
+  74%, 76% { transform: translate(8px, 5px) scaleX(-1) rotate(8deg); }
+  78% { transform: translate(8px, 0) scaleX(-1) rotate(0deg); }
+  85% { transform: translate(0, 0) scaleX(1); }
+`;
+
+const duckSwim = keyframes`
+  0%   { transform: translate(0, 0) scaleX(1); }
+  15%  { transform: translate(20px, 3px) scaleX(1); }
+  30%  { transform: translate(45px, -2px) scaleX(1); }
+  50%  { transform: translate(55px, 4px) scaleX(-1); }
+  70%  { transform: translate(25px, -3px) scaleX(-1); }
+  85%  { transform: translate(5px, 2px) scaleX(-1); }
+  100% { transform: translate(0, 0) scaleX(1); }
+`;
+
+const AGENT_ANIMATIONS: Record<string, ReturnType<typeof keyframes>> = {
+  S1: foxWander,
+  S2: cowGraze,
+  S3: chickenPeck,
+  S4: duckSwim,
+};
+
+const AGENT_ANIM_DURATION: Record<string, number> = {
+  S1: 12,
+  S2: 6,
+  S3: 5,
+  S4: 14,
+};
+
+const AgentLabelWrap = styled.div<{ $top: string; $left: string }>`
+  position: absolute;
+  top: ${({ $top }) => $top};
+  left: ${({ $left }) => $left};
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  animation: ${labelAppear} 0.4s ease backwards;
+  user-select: none;
+
+  &:hover > div:last-child {
+    transform: translateY(-2px);
+    background: rgba(0, 0, 0, 0.82);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+`;
+
+/* Wrapper that carries the per-agent movement animation */
+const SpriteMotion = styled.div<{ $anim: ReturnType<typeof keyframes>; $dur: number }>`
+  animation: ${({ $anim }) => $anim} ${({ $dur }) => $dur}s ease-in-out infinite;
+`;
+
+const SpriteCanvas = styled.div<{ $src: string; $frames: number; $frameSize: number }>`
+  width: ${({ $frameSize }) => $frameSize}px;
+  height: ${({ $frameSize }) => $frameSize}px;
+  background-image: url(${({ $src }) => $src});
+  background-size: ${({ $frames, $frameSize }) => $frames * $frameSize}px ${({ $frameSize }) => $frameSize}px;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  animation: ${idleBounce} 2s ease-in-out infinite;
+  filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25));
+`;
+
+/* ── Decorative interaction elements ── */
+const eggAppear = keyframes`
+  0%, 50%, 100% { opacity: 0; transform: scale(0); }
+  55% { opacity: 1; transform: scale(1.2); }
+  60%, 90% { opacity: 1; transform: scale(1); }
+  95% { opacity: 0; transform: scale(0.8); }
+`;
+
+const ripple = keyframes`
+  0%, 100% { transform: scale(0.8); opacity: 0; }
+  20% { transform: scale(1); opacity: 0.5; }
+  50% { transform: scale(1.5); opacity: 0.3; }
+  80% { transform: scale(2); opacity: 0; }
+`;
+
+const flowerPick = keyframes`
+  0%, 70%, 100% { opacity: 0; transform: translateY(0) scale(0); }
+  25% { opacity: 1; transform: translateY(-12px) scale(1); }
+  40% { opacity: 1; transform: translateY(-20px) scale(0.8); }
+  55% { opacity: 0.5; transform: translateY(-30px) scale(0.5); }
+`;
+
+const grassMunch = keyframes`
+  0%, 55%, 100% { opacity: 0; }
+  60% { opacity: 1; transform: translate(0, 0) scale(1); }
+  70% { opacity: 0.8; transform: translate(2px, -3px) scale(0.8); }
+  80% { opacity: 0.4; transform: translate(4px, -8px) scale(0.5); }
+  85% { opacity: 0; }
+`;
+
+const EggDeco = styled.div`
+  position: absolute;
+  bottom: -2px;
+  right: -20px;
+  width: 14px;
+  height: 18px;
+  background: #FFF8E7;
+  border: 2px solid #E8D5B0;
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  animation: ${eggAppear} 5s ease-in-out infinite;
+  pointer-events: none;
+  image-rendering: auto;
+`;
+
+const Ripple = styled.div<{ $delay: number; $left: number }>`
+  position: absolute;
+  bottom: -8px;
+  left: ${({ $left }) => $left}px;
+  width: 16px;
+  height: 6px;
+  border: 1.5px solid rgba(100, 180, 255, 0.5);
+  border-radius: 50%;
+  background: transparent;
+  animation: ${ripple} 3s ease-out ${({ $delay }) => $delay}s infinite;
+  pointer-events: none;
+`;
+
+const FlowerParticle = styled.div<{ $delay: number; $color: string; $left: number }>`
+  position: absolute;
+  top: 10px;
+  left: ${({ $left }) => $left}px;
+  width: 8px;
+  height: 8px;
+  background: ${({ $color }) => $color};
+  border-radius: 50%;
+  animation: ${flowerPick} 12s ease-out ${({ $delay }) => $delay}s infinite;
+  pointer-events: none;
+`;
+
+const GrassBit = styled.div<{ $delay: number }>`
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: 6px;
+  height: 4px;
+  background: #5a9e3e;
+  border-radius: 2px;
+  animation: ${grassMunch} 6s ease ${({ $delay }) => $delay}s infinite;
+  pointer-events: none;
+`;
+
+const AgentLabel = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  border-radius: 6px;
+  transition: transform 0.18s, background 0.18s, box-shadow 0.18s;
+  white-space: nowrap;
+
+  ${media.mobile} {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+`;
+
+const LabelStatusDot = styled.span<{ $isRunning: boolean; $accent: string }>`
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: ${({ $isRunning, $accent }) => $isRunning ? $accent : '#6b7280'};
+  ${({ $isRunning, $accent }) => $isRunning && css`
+    box-shadow: 0 0 6px ${$accent}, 0 0 2px ${$accent};
+  `}
+`;
+
+const LabelName = styled.span`
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1;
+`;
+
+const LabelType = styled.span<{ $color: string }>`
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 10px;
   color: ${({ $color }) => $color};
+  opacity: 0.9;
+  line-height: 1;
 `;
 
-const AgentCardTop = styled.div`
+/* ── Activity feed overlay — right edge ── */
+const ActivityPanel = styled.div<{ $open: boolean }>`
+  position: absolute;
+  top: 15%;
+  right: 0;
+  z-index: 10;
+  width: 280px;
+  height: 70%;
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 15, 25, 0.75);
+  backdrop-filter: blur(8px);
+  border-radius: 8px 0 0 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-right: none;
+  transform: translateX(${({ $open }) => $open ? '0' : 'calc(100% - 36px)'});
+  transition: transform 0.3s ease;
+  overflow: hidden;
+
+  ${media.mobile} {
+    width: 240px;
+  }
+`;
+
+const ActivityHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 12px 14px 8px;
+  flex-shrink: 0;
 `;
 
-const AgentName = styled.h4<{ $fg?: string }>`
-  font-size: 13px;
+const ActivityTitle = styled.span`
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 12px;
   font-weight: 700;
-  margin: 0;
-  color: ${({ $fg, theme }) => $fg || theme.colors.textPrimary};
+  letter-spacing: 2px;
+  color: #f59e0b;
+  text-shadow: 0 0 8px rgba(245, 158, 11, 0.3);
+  text-transform: uppercase;
 `;
 
-const AgentMeta = styled.div<{ $fg?: string }>`
-  font-size: 11px;
-  color: ${({ $fg, theme }) => $fg || theme.colors.textSecondary};
-  line-height: 1.6;
-  font-family: 'JetBrains Mono', 'Fira Code', monospace;
-`;
+const ActivityToggle = styled.button<{ $open: boolean }>`
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.15s, background 0.15s;
+  transform: rotate(${({ $open }) => $open ? '0' : '180deg'});
+  transition: transform 0.3s, color 0.15s;
 
-/* ── Pipeline + Stats row ── */
-const StatsRow = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  ${media.mobile} { grid-template-columns: 1fr; }
-`;
-
-const PanelCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border-radius: 14px;
-  padding: 10px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
-`;
-
-const PanelTitle = styled.h4`
-  font-size: 13px;
-  font-weight: 600;
-  margin: 0 0 8px;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const waveAnim = keyframes`
-  0%   { background-position-x: 0; }
-  100% { background-position-x: 40px; }
-`;
-
-const ProgressBarContainer = styled.div`
-  background: ${({ theme }) => theme.colors.canvas};
-  border-radius: 8px;
-  height: 10px;
-  overflow: hidden;
-  margin-bottom: 12px;
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
-`;
-
-const ProgressBarFill = styled.div<{ width: number; $accent?: string }>`
-  height: 100%;
-  width: ${({ width }) => width}%;
-  background: linear-gradient(90deg, ${({ $accent, theme }) => $accent || theme.colors.blue}, ${({ $accent, theme }) => $accent || theme.colors.blue}cc);
-  border-radius: 8px;
-  transition: width 0.5s ease;
-  position: relative;
-  /* wave top edge */
-  background-image: repeating-linear-gradient(
-    90deg,
-    transparent,
-    transparent 8px,
-    rgba(255,255,255,0.15) 8px,
-    rgba(255,255,255,0.15) 12px,
-    transparent 12px,
-    transparent 20px
-  );
-  background-size: 40px 100%;
-  animation: ${waveAnim} 1.5s linear infinite;
-`;
-
-const StatsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-`;
-
-const StatItem = styled.div`
-  text-align: center;
-  padding: 6px;
-  background: ${({ theme }) => theme.colors.canvas};
-  border-radius: 8px;
-`;
-
-const StatValue = styled.div`
-  font-size: 16px;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.blue};
-`;
-
-const StatLabel = styled.div`
-  font-size: 10px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  margin-top: 1px;
-`;
-
-/* ── Activity Feed (compact) ── */
-/* ── Kanban / Masonry Activity Feed (Image 3 style) ── */
-
-const FeedList = styled.div`
-  columns: 2;
-  column-gap: 10px;
-
-  @media (max-width: 640px) {
-    columns: 1;
+  &:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.1);
   }
 `;
 
-const FEED_COLORS: Record<string, { accent: string; bg: string }> = {
-  scrape: { accent: '#16a34a', bg: '#dcfce720' },
-  email:  { accent: '#0ea5e9', bg: '#cffafe20' },
-  qualify: { accent: '#d97706', bg: '#fef3c720' },
-};
+const ActivityScroll = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 14px 14px;
 
-const FeedCard = styled.div<{ $event: string }>`
-  break-inside: avoid;
-  margin-bottom: 10px;
-  padding: 10px 12px;
-  border-radius: 10px;
-  background: ${({ $event, theme }) => {
-    const c = FEED_COLORS[$event] || FEED_COLORS.qualify;
-    return theme.mode === 'dark' ? `${c.accent}12` : c.bg;
-  }};
-  border-left: 3px solid ${({ $event }) => (FEED_COLORS[$event] || FEED_COLORS.qualify).accent};
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 2px;
+  }
+`;
+
+const ActivityEntry = styled.div`
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  line-height: 1.5;
+
+  &:last-child {
+    border-bottom: none;
+  }
+`;
+
+const EntryTime = styled.span`
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.4);
+  margin-right: 8px;
+`;
+
+const EntryAgent = styled.span<{ $color: string }>`
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-weight: 700;
+  color: ${({ $color }) => $color};
+  margin-right: 6px;
+  font-size: 12px;
+`;
+
+const EntryMessage = styled.span`
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 12px;
+`;
+
+const ActivityEmpty = styled.div`
+  padding: 20px 0;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.3);
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+`;
+
+/* ── Stats bar overlay — bottom-center ── */
+const StatsBar = styled.div`
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 8px 20px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  user-select: none;
+`;
+
+const StatChip = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+`;
+
+const StatNumber = styled.span<{ $color?: string }>`
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-weight: 700;
+  font-size: 15px;
+  color: ${({ $color }) => $color || '#fff'};
+`;
+
+/* ── Gear overlay button — bottom-right ── */
+const GearIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+    <circle cx="8" cy="8" r="2.5"/>
+    <path d="M8 1.5v1.2M8 13.3v1.2M1.5 8h1.2M13.3 8h1.2M3.4 3.4l.85.85M11.75 11.75l.85.85M3.4 12.6l.85-.85M11.75 4.25l.85-.85"/>
+  </svg>
+);
+
+const GearOverlayBtn = styled.button`
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  width: 38px;
+  height: 38px;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.18s;
+
+  &:hover {
+    color: #fff;
+    background: rgba(0, 0, 0, 0.8);
+    border-color: rgba(255, 255, 255, 0.25);
+  }
+`;
+
+/* ── Config overlay — appears above gear button ── */
+const ConfigOverlay = styled.div`
+  position: absolute;
+  bottom: 64px;
+  right: 16px;
+  z-index: 10;
   display: flex;
   flex-direction: column;
   gap: 4px;
-  transition: transform 0.15s, box-shadow 0.15s;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-  }
+  padding: 10px 14px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(10px);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  min-width: 200px;
 `;
 
-const FeedCardTime = styled.span`
+const ConfigOverlayItem = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  &:last-child { border-bottom: none; }
+`;
+
+const ConfigOverlayLabel = styled.span`
   font-size: 10px;
-  font-family: 'JetBrains Mono', monospace;
-  color: ${({ theme }) => theme.colors.textTertiary};
+  color: rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
 `;
 
-const FeedCardTitle = styled.span`
+const ConfigOverlayValue = styled.span`
   font-size: 12px;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  line-height: 1.3;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
 `;
 
-const FeedCardBody = styled.span`
-  font-size: 11px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  line-height: 1.4;
-`;
-
-const FeedTag = styled.span<{ $event: string }>`
-  display: inline-block;
-  font-size: 9px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  align-self: flex-start;
-  color: ${({ $event }) => (FEED_COLORS[$event] || FEED_COLORS.qualify).accent};
-  background: ${({ $event }) => (FEED_COLORS[$event] || FEED_COLORS.qualify).accent}18;
-`;
-
-/* ── Left pane: quick stats beneath world ── */
-const QuickStats = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border-radius: 14px;
-  padding: 14px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
-`;
-
-/* ── Floating Timeline Panel (Nominee-status style) ── */
+/* ── Floating Timeline Panel (kept intact) ── */
 
 const fadeIn = keyframes`
   from { opacity: 0; }
@@ -449,7 +711,7 @@ const TimelineBody = styled.div`
   flex: 1;
 `;
 
-/* ── Horizontal Stepper Pipeline (Image 2 style) ── */
+/* ── Horizontal Stepper Pipeline ── */
 
 const StepperWrap = styled.div`
   display: flex;
@@ -499,7 +761,7 @@ const StepConnector = styled.div<{ $done?: boolean; $color?: string }>`
   flex: 1;
   height: 3px;
   min-width: 28px;
-  margin-top: 17px; /* center on the 36px circle */
+  margin-top: 17px;
   border-radius: 2px;
   background: ${({ $done, $color, theme }) =>
     $done
@@ -578,23 +840,51 @@ const ProgressLabel = styled.span`
   color: ${({ theme }) => theme.colors.green};
 `;
 
-/* ── Clickable card wrapper ── */
-const ClickableCard = styled(AgentMiniCard)`
-  cursor: pointer;
-  &:active { transform: translateY(0); }
-`;
+
+/* ── Sprite frame animator ── */
+const SpriteAnimator: React.FC<{
+  src: string;
+  frameCount: number;
+  frameSize: number;
+  scale?: number;
+  fps?: number;
+}> = ({ src, frameCount, frameSize, scale = 2, fps = 4 }) => {
+  const [frame, setFrame] = useState(0);
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      setFrame((f) => (f + 1) % frameCount);
+    }, 1000 / fps);
+    return () => clearInterval(id);
+  }, [frameCount, fps]);
+
+  const displaySize = frameSize * scale;
+
+  return (
+    <SpriteCanvas
+      $src={src}
+      $frames={frameCount}
+      $frameSize={displaySize}
+      style={{
+        backgroundPosition: `-${frame * displaySize}px 0`,
+        backgroundSize: `${frameCount * displaySize}px ${displaySize}px`,
+      }}
+    />
+  );
+};
 
 const AgentPanel: React.FC = () => {
   const { t } = useTranslation();
   const theme = useTheme() as any;
-  const dark = theme.mode === 'dark';
   const { data: statsRaw } = useAgentStats();
   const { data: notifsRaw } = useNotifications({ limit: 10 });
   const { data: settingsRaw } = useSettings();
   const { data: tasksRaw } = useTasks();
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
+  const [showConfig, setShowConfig] = useState(false);
+  const [feedOpen, setFeedOpen] = useState(true);
 
-  /* ── Agent cards from task stats ── */
+  /* ── Agent data from task stats ── */
   const statsArr: AgentSkillStats[] = Array.isArray(statsRaw) ? statsRaw : [];
   const agentCards = ['S1', 'S2', 'S3', 'S4'].map((skill) => {
     const s = statsArr.find((x) => x._id === skill);
@@ -606,14 +896,21 @@ const AgentPanel: React.FC = () => {
     const status = running > 0 ? 'running' : completed > 0 ? 'idle' : 'idle';
     return {
       skill,
-      name: SKILL_META[skill]?.name ?? skill,
-      type: SKILL_META[skill]?.type ?? '',
+      name: t(SKILL_I18N[skill]?.nameKey ?? '') || skill,
+      type: t(SKILL_I18N[skill]?.typeKey ?? ''),
       completed,
+      failed,
       rate,
       status,
       lastRun: s?.last_run ? formatTimeAgo(s.last_run) : '—',
     };
   });
+
+  /* ── Aggregate stats for bottom bar ── */
+  const totalCompleted = agentCards.reduce((sum, ag) => sum + ag.completed, 0);
+  const totalFailed = agentCards.reduce((sum, ag) => sum + ag.failed, 0);
+  const totalTasks = totalCompleted + totalFailed;
+  const completionRate = totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
 
   /* ── Activity feed from notifications ── */
   const notifications: NotificationItem[] = (notifsRaw as any)?.data ?? [];
@@ -626,17 +923,11 @@ const AgentPanel: React.FC = () => {
     Object.assign(settingsMap, settingsRaw);
   }
 
-  const configColumns = [
-    { key: 'setting', label: t('agents.configSetting') },
-    { key: 'value', label: t('agents.configValue') },
-    { key: 'status', label: t('common.status') },
-  ];
-
   const configData = [
-    { setting: t('agents.config.searchDepth'), value: settingsMap['search_depth'] ?? '3', status: 'active' },
-    { setting: t('agents.config.emailBatch'), value: settingsMap['email_batch'] ?? '50', status: 'active' },
-    { setting: t('agents.config.qualifyThreshold'), value: settingsMap['qualify_threshold'] ?? '0.7', status: 'active' },
-    { setting: t('agents.config.scrapeInterval'), value: settingsMap['scrape_interval'] ?? '30min', status: settingsMap['scrape_interval'] ? 'active' : 'paused' },
+    { setting: t('agents.config.searchDepth'), value: settingsMap['search_depth'] ?? '3' },
+    { setting: t('agents.config.emailBatch'), value: settingsMap['email_batch'] ?? '50' },
+    { setting: t('agents.config.qualifyThreshold'), value: settingsMap['qualify_threshold'] ?? '0.7' },
+    { setting: t('agents.config.scrapeInterval'), value: settingsMap['scrape_interval'] ?? '30min' },
   ];
 
   /* ── Recent tasks for timeline (filtered by selected skill) ── */
@@ -647,99 +938,156 @@ const AgentPanel: React.FC = () => {
 
   const handleClose = useCallback(() => setSelectedSkill(null), []);
 
+  /* ── Determine feed entry color by notification type ── */
+  const getAgentColor = (type: string): string => {
+    const ev = NOTIF_EVENT_MAP[type] || 'qualify';
+    return FEED_COLORS[ev]?.accent || '#d97706';
+  };
+
   return (
-    <AgentContainer>
-      <div style={{ marginBottom: '-16px' }}>
-      <PageHeader title={t('agents.title')} subtitle={t('agents.subtitle')}>
-        <Button variant="default">{t('agents.pauseAll')}</Button>
-        <Button variant="primary">{t('agents.runPipeline')}</Button>
-      </PageHeader>
-      </div>
+    <SceneContainer>
+      {/* ── Background: IsometricWorld fills entire scene ── */}
+      <WorldBackground>
+        <IsometricWorld />
+      </WorldBackground>
 
-      <SplitLayout>
-        <LeftPane>
-          <IsometricWorld />
-        </LeftPane>
+      {/* ── Title bar overlay — top-left ── */}
+      <TitleBar>
+        <TitleText>HERMES FARM</TitleText>
+        <LiveBadge>LIVE</LiveBadge>
+      </TitleBar>
 
-        <RightPane>
-          {/* Agent cards — real stats */}
-          <AgentStrip>
-            {agentCards.map((ag) => {
-              const c = AGENT_COLORS[ag.skill] ?? AGENT_COLORS.S1;
+      {/* ── Agent floating labels with sprites — scattered across the scene ── */}
+      {agentCards.map((ag) => {
+        const c = AGENT_COLORS[ag.skill] ?? AGENT_COLORS.S1;
+        const pos = AGENT_POSITIONS[ag.skill];
+        const sprite = AGENT_SPRITES[ag.skill];
+        const isRunning = ag.status === 'running';
+        const motionAnim = AGENT_ANIMATIONS[ag.skill] ?? foxWander;
+        const motionDur = AGENT_ANIM_DURATION[ag.skill] ?? 10;
+        return (
+          <AgentLabelWrap
+            key={ag.skill}
+            $top={pos.top}
+            $left={pos.left}
+            style={{ animationDelay: `${['S1','S2','S3','S4'].indexOf(ag.skill) * 0.08}s` }}
+            onClick={() => setSelectedSkill(ag.skill)}
+          >
+            <SpriteMotion $anim={motionAnim} $dur={motionDur}>
+              {sprite && (
+                <SpriteAnimator
+                  src={sprite.idle}
+                  frameCount={sprite.frames}
+                  frameSize={48}
+                  scale={4}
+                  fps={5}
+                />
+              )}
+              {/* Fox — flower particles float up while picking */}
+              {ag.skill === 'S1' && (
+                <>
+                  <FlowerParticle $delay={1} $color="#ff9ec4" $left={-10} />
+                  <FlowerParticle $delay={4} $color="#ffe066" $left={20} />
+                  <FlowerParticle $delay={7} $color="#c4a0ff" $left={40} />
+                </>
+              )}
+              {/* Cow — grass bits fly up while eating */}
+              {ag.skill === 'S2' && (
+                <>
+                  <GrassBit $delay={0} />
+                  <GrassBit $delay={0.3} />
+                </>
+              )}
+              {/* Chicken — egg appears periodically */}
+              {ag.skill === 'S3' && <EggDeco />}
+              {/* Duck — water ripples underneath */}
+              {ag.skill === 'S4' && (
+                <>
+                  <Ripple $delay={0} $left={10} />
+                  <Ripple $delay={1} $left={30} />
+                  <Ripple $delay={2} $left={50} />
+                </>
+              )}
+            </SpriteMotion>
+            <AgentLabel>
+              <LabelStatusDot $isRunning={isRunning} $accent={c.accent} />
+              <LabelName>{ag.name}</LabelName>
+              <LabelType $color={c.fgDark}>{ag.type}</LabelType>
+            </AgentLabel>
+          </AgentLabelWrap>
+        );
+      })}
+
+      {/* ── Activity feed overlay — right edge ── */}
+      <ActivityPanel $open={feedOpen}>
+        <ActivityHeader>
+          <ActivityTitle>{feedOpen ? 'ACTIVITY LOG' : ''}</ActivityTitle>
+          <ActivityToggle $open={feedOpen} onClick={() => setFeedOpen((v) => !v)} title={feedOpen ? 'Collapse' : 'Expand'}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 4l-4 4 4 4"/></svg>
+          </ActivityToggle>
+        </ActivityHeader>
+        {feedOpen && (
+          <ActivityScroll>
+            {notifications.length === 0 && (
+              <ActivityEmpty>{t('agents.noActivity')}</ActivityEmpty>
+            )}
+            {notifications.slice(0, 30).map((n) => {
+              const srcLabel = SOURCE_LABELS[n.type] || 'System';
+              const ev = NOTIF_EVENT_MAP[n.type] || 'qualify';
+              const color = FEED_COLORS[ev]?.accent || '#d97706';
+              const icon = FEED_COLORS[ev]?.icon || '⚡';
               return (
-                <ClickableCard
-                  key={ag.skill}
-                  onClick={() => setSelectedSkill(ag.skill)}
-                  $accent={c.accent}
-                  $bg1={dark ? 'rgba(30,41,59,0.85)' : c.bg1}
-                  $bg2={dark ? 'rgba(30,41,59,0.65)' : c.bg2}
-                >
-                  <AgentCardTop>
-                    <AgentName $fg={dark ? c.fgDark : c.fg}>{ag.name}</AgentName>
-                    <StatusBadge status={ag.status as any} />
-                  </AgentCardTop>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
-                    <RingGauge pct={ag.rate} color={c.accent} size={72} label={ag.skill} />
-                    <AgentMeta $fg={dark ? c.fgDark : c.fg}>
-                      {t('agents.tasksCompleted')}: {ag.completed}<br />
-                      {t('agents.lastRun')}: {ag.lastRun}
-                    </AgentMeta>
-                  </div>
-                  <AgentWatermark $color={c.accent}><IconRobot /></AgentWatermark>
-                </ClickableCard>
+                <ActivityEntry key={n._id}>
+                  <EntryTime>{formatTime(n.created_at)}</EntryTime>
+                  <EntryAgent $color={color}>{icon} {srcLabel}</EntryAgent>
+                  <EntryMessage>{n.title || n.message}</EntryMessage>
+                </ActivityEntry>
               );
             })}
-          </AgentStrip>
+          </ActivityScroll>
+        )}
+      </ActivityPanel>
 
-          {/* Activity Feed — real notifications */}
-          <PanelCard>
-            <PanelTitle>{t('agents.activityFeed')}</PanelTitle>
-            <FeedList>
-              {notifications.length === 0 && (
-                <FeedCardBody style={{ padding: '12px 0', opacity: 0.5 }}>暫無活動記錄</FeedCardBody>
-              )}
-              {notifications.slice(0, 8).map((n) => {
-                const ev = NOTIF_EVENT_MAP[n.type] || 'qualify';
-                return (
-                  <FeedCard key={n._id} $event={ev}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <FeedTag $event={ev}>{n.type || 'system'}</FeedTag>
-                      <FeedCardTime>{formatTime(n.created_at)}</FeedCardTime>
-                    </div>
-                    <FeedCardTitle>{n.title}</FeedCardTitle>
-                    {n.message && <FeedCardBody>{n.message}</FeedCardBody>}
-                  </FeedCard>
-                );
-              })}
-            </FeedList>
-          </PanelCard>
+      {/* ── Stats bar overlay — bottom-center ── */}
+      <StatsBar>
+        <StatChip>
+          Tasks <StatNumber>{totalTasks}</StatNumber>
+        </StatChip>
+        <StatChip>
+          Done <StatNumber $color="#4ade80">{totalCompleted}</StatNumber>
+        </StatChip>
+        <StatChip>
+          Failed <StatNumber $color="#f87171">{totalFailed}</StatNumber>
+        </StatChip>
+        <StatChip>
+          Rate <StatNumber $color="#fbbf24">{completionRate}%</StatNumber>
+        </StatChip>
+      </StatsBar>
 
-          {/* Config table */}
-          <PanelCard>
-            <PanelTitle>{t('agents.configTitle')}</PanelTitle>
-            <Table
-              columns={configColumns}
-              data={configData}
-              renderCell={(key, value, row) => {
-                if (key === 'status') {
-                  return <StatusBadge status={row.status === 'active' ? 'approved' : 'pending'} />;
-                }
-                return value;
-              }}
-            />
-          </PanelCard>
-        </RightPane>
-      </SplitLayout>
+      {/* ── Config gear overlay — bottom-right ── */}
+      {showConfig && (
+        <ConfigOverlay>
+          {configData.map((item) => (
+            <ConfigOverlayItem key={item.setting}>
+              <ConfigOverlayLabel>{item.setting}</ConfigOverlayLabel>
+              <ConfigOverlayValue>{item.value}</ConfigOverlayValue>
+            </ConfigOverlayItem>
+          ))}
+        </ConfigOverlay>
+      )}
+      <GearOverlayBtn onClick={() => setShowConfig((v) => !v)} title={t('agents.configTitle')}>
+        <GearIcon />
+      </GearOverlayBtn>
 
-      {/* ── Floating Timeline: recent tasks for this skill ── */}
+      {/* ── Floating Timeline: recent tasks for this skill (portal, unchanged) ── */}
       {selectedSkill && createPortal(
         <>
           <Overlay onClick={handleClose} />
           <FloatingPanel>
             <PanelHeader>
               <PanelHeaderLeft>
-                <PanelHeaderTitle>{SKILL_META[selectedSkill]?.name ?? selectedSkill}</PanelHeaderTitle>
-                <PanelHeaderSub>{SKILL_META[selectedSkill]?.type ?? ''} · {selectedSkill}</PanelHeaderSub>
+                <PanelHeaderTitle>{t(SKILL_I18N[selectedSkill]?.nameKey ?? '') || selectedSkill}</PanelHeaderTitle>
+                <PanelHeaderSub>{t(SKILL_I18N[selectedSkill]?.typeKey ?? '')} · {selectedSkill}</PanelHeaderSub>
               </PanelHeaderLeft>
               <CloseBtn onClick={handleClose} title="Close"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
             </PanelHeader>
@@ -811,7 +1159,7 @@ const AgentPanel: React.FC = () => {
         </>,
         document.body
       )}
-    </AgentContainer>
+    </SceneContainer>
   );
 };
 
