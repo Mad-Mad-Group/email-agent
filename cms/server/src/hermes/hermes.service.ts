@@ -68,11 +68,13 @@ export class HermesService implements OnModuleInit {
   async run(dto: RunHermesDto, userId?: string) {
     const campaignId = `CAMP-${randomBytes(4).toString('hex')}`;
     const now = new Date().toISOString();
+    const mode = dto.mode || 'normal';
     await this.campaigns.create({
       campaign_id: campaignId,
       keyword: dto.keyword,
       location: dto.location,
       target_count: dto.targetCount,
+      mode,
       status: 'running',
       pipeline_stage: 'search',
       lead_ids: [],
@@ -85,6 +87,7 @@ export class HermesService implements OnModuleInit {
       keyword: dto.keyword,
       location: dto.location,
       target_count: dto.targetCount,
+      mode,
       user_id: userId,
     });
 

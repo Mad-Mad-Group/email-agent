@@ -53,6 +53,7 @@ export interface SearchPayload {
   keyword: string;
   location: string;
   targetCount: number;
+  mode?: 'normal' | 'old_website';
 }
 
 export const searchApi = {

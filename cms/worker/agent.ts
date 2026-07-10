@@ -755,7 +755,30 @@ async function doSearch(p: any, db: Db) {
     const excludeClause = excludeNames.length > 0
       ? `\nEXCLUDE these businesses (already found): ${excludeNames.join(', ')}\n`
       : '';
-    const prompt = `You are a business research assistant. Your job is to find real businesses using your browser.
+
+    const isOldWebsiteMode = p.mode === 'old_website';
+
+    const prompt = isOldWebsiteMode
+      ? `You are a business research assistant specialising in finding companies with OUTDATED websites. Your job is to use Google Search with advanced operators (dorks) to find businesses that still use old web technology.
+
+TASK: Find up to ${still_need} businesses related to "${p.keyword}" in ${p.location} that have OLD, outdated websites.
+${excludeClause}
+INSTRUCTIONS:
+1. Open your browser and go to Google Search. You have a stealth browser that handles captchas automatically.
+2. Try these Google dork searches one by one until you find enough results:
+   - "${p.keyword}" "${p.location}" "best viewed in" OR "optimized for" OR "designed for 800x600"
+   - "${p.keyword}" "${p.location}" inurl:index.htm OR inurl:default.asp OR inurl:home.html
+   - "${p.keyword}" "${p.location}" "visitor counter" OR "hit counter" OR "web counter"
+   - "${p.keyword}" "${p.location}" "last updated" OR "last modified" OR "© 200" OR "© 199"
+   - "${p.keyword}" "${p.location}" "under construction" OR "guestbook" OR "webmaster"
+   - "${p.keyword}" "${p.location}" "powered by FrontPage" OR "made with Dreamweaver"
+3. For each business found: open their website to confirm it looks outdated (old design, table layouts, no mobile support, etc.), then get: name, website, and EMAIL. If the site looks modern, SKIP it.
+4. Use "" for any field you cannot find. Only include businesses with genuinely outdated websites.
+5. If you find no results, return an empty array: []
+
+RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
+[{"name":"Example Co","website":"https://example.com","email":"info@example.com"}]`
+      : `You are a business research assistant. Your job is to find real businesses using your browser.
 
 TASK: Find up to ${still_need} real "${p.keyword}" businesses in ${p.location}.
 ${excludeClause}
@@ -800,8 +823,9 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
         email: r.email || '', // 主力攞 email（outreach 用）
         website: r.website,
         address: r.address || '', // 電話唔再要；address 有就存，冇就留空
-        source: 'google_maps',
+        source: isOldWebsiteMode ? 'google_dork' : 'google_maps',
         _via: 'hermes',
+        _search_mode: p.mode || 'normal',
         search_query: `${p.keyword} ${p.location}`,
         status: null,
         _status: 'unverified',
@@ -883,6 +907,7 @@ interface ScrapeResult {
   description: string;   // 公司簡介
   services: string[];     // 服務/產品列表
   pageTexts: string[];    // 各頁面嘅純文字（供 AI 分析用）
+  rawHtmlHome: string;    // 首頁 raw HTML（供 tech score 用）
 }
 
 /**
@@ -926,6 +951,7 @@ async function scrapeWebsite(url: string): Promise<ScrapeResult> {
   let description = '';
   const services: string[] = [];
 
+  let rawHtmlHome = '';
   const base = url.replace(/\/+$/, '');
   const pagesToTry = [
     { url: base, type: 'home' },
@@ -963,6 +989,7 @@ async function scrapeWebsite(url: string): Promise<ScrapeResult> {
     if (r.status !== 'fulfilled' || !r.value) continue;
     const { html, type } = r.value;
     try {
+      if (type === 'home') rawHtmlHome = html;
       const text = htmlToText(html);
       pageTexts.push(`[${type}] ${text}`);
 
@@ -1018,7 +1045,71 @@ async function scrapeWebsite(url: string): Promise<ScrapeResult> {
     description,
     services: [...new Set(services)].slice(0, 10),
     pageTexts,
+    rawHtmlHome,
   };
+}
+
+/**
+ * 網站技術評分 — 分析 HTML 判斷網站有幾舊。
+ * 回傳 0-100（越高越舊），同一個 details 物件列出偵測到嘅指標。
+ */
+function scoreTech(html: string): { score: number; details: Record<string, boolean> } {
+  if (!html) return { score: 0, details: {} };
+  const h = html.slice(0, 200_000); // 限制分析量
+  const lower = h.toLowerCase();
+
+  const checks: [string, boolean, number][] = [
+    // [指標名, 是否命中, 分數]
+    // ── HTML 舊標籤 ──
+    ['table_layout',    (lower.match(/<table/g) || []).length >= 3, 15],
+    ['font_tag',        /<font[\s>]/i.test(h), 12],
+    ['center_tag',      /<center[\s>]/i.test(h), 8],
+    ['marquee_tag',     /<marquee[\s>]/i.test(h), 10],
+    ['frameset',        /<frameset[\s>]/i.test(h), 15],
+    ['iframe_layout',   (lower.match(/<iframe/g) || []).length >= 2, 8],
+
+    // ── DOCTYPE / HTML 版本 ──
+    ['no_doctype',      !/<!doctype/i.test(h.slice(0, 500)), 10],
+    ['html4_xhtml',     /<!doctype[^>]*(html\s*4|xhtml)/i.test(h.slice(0, 500)), 10],
+
+    // ── 缺少 responsive ──
+    ['no_viewport',     !/<meta[^>]*viewport/i.test(h), 15],
+    ['fixed_width',     /width\s*:\s*(960|1024|800|1000|1280)px/i.test(h), 8],
+
+    // ── 舊技術 ──
+    ['flash_object',    /<(?:object|embed)[^>]*(?:\.swf|flash)/i.test(h), 15],
+    ['old_generator',   /<meta[^>]*generator[^>]*(?:frontpage|dreamweaver|wordpress\s*[1-3]\.|joomla\s*1\.|drupal\s*[5-6])/i.test(h), 12],
+    ['no_https',        false, 0], // 由外部判斷
+
+    // ── JavaScript ──
+    ['old_jquery',      /jquery[.\-]?1\./i.test(h), 6],
+    ['document_write',  /document\.write\s*\(/i.test(h), 5],
+    ['no_modern_js',    !/react|vue|angular|next|nuxt|svelte|webpack|vite/i.test(h), 3],
+
+    // ── CSS ──
+    ['inline_styles',   (lower.match(/style\s*=/g) || []).length >= 15, 5],
+    ['no_modern_css',   !/flexbox|flex:|grid-template|@media/i.test(h), 5],
+
+    // ── 圖片格式 ──
+    ['gif_nav',         (lower.match(/\.gif["'>\s]/g) || []).length >= 5, 6],
+    ['image_map',       /<map[\s>]/i.test(h), 8],
+
+    // ── 其他 ──
+    ['visitor_counter', /counter|hit.*count|訪客|visitor.*count/i.test(h), 8],
+    ['last_modified',   /<meta[^>]*last-modified[^>]*200[0-9]/i.test(h), 5],
+    ['copyright_old',   /©\s*(?:19[89]\d|200[0-9])\b/.test(h) && !/©\s*202[3-9]/.test(h), 8],
+  ];
+
+  const details: Record<string, boolean> = {};
+  let raw = 0;
+  for (const [name, hit, pts] of checks) {
+    details[name] = hit;
+    if (hit) raw += pts;
+  }
+
+  // cap at 100
+  const score = Math.min(100, raw);
+  return { score, details };
 }
 
 /** S2 enrich → 三層策略：爬蟲 → Hermes browser → domain fallback */
@@ -1101,6 +1192,20 @@ Output ONLY JSON, empty string if not found:
     }
   }
 
+  // ── 網站技術評分 ──
+  if (scraped?.rawHtmlHome) {
+    // 額外判斷 HTTPS
+    const isHttp = lead.website && /^http:\/\//i.test(lead.website);
+    const tech = scoreTech(scraped.rawHtmlHome);
+    if (isHttp) { tech.details.no_https = true; tech.score = Math.min(100, tech.score + 10); }
+    set._tech_score = tech.score;
+    set._tech_details = tech.details;
+    const oldFlags: string[] = Object.entries(tech.details)
+      .filter(([, v]) => v)
+      .map(([k]) => k);
+    log(`  技術評分: ${tech.score}/100 — ${oldFlags.join(', ') || '(現代網站)'}`);
+  }
+
   await db.collection('leads').updateOne({ _id }, { $set: set });
   await sseNotify('lead_update', { id: _id.toString(), action: 'updated', status: 'enriched' });
   return {
@@ -1109,6 +1214,7 @@ Output ONLY JSON, empty string if not found:
     found: { email: foundEmail, phone: foundPhone, address: foundAddress },
     scraped_desc: !!scraped?.description,
     scraped_services: scraped?.services.length ?? 0,
+    tech_score: set._tech_score ?? null,
   };
 }
 

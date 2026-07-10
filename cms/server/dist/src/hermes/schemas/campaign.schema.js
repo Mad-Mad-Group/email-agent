@@ -16,6 +16,7 @@ let Campaign = class Campaign {
     keyword;
     location;
     target_count;
+    mode;
     status;
     pipeline_stage;
     lead_ids;
@@ -40,6 +41,10 @@ __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", Number)
 ], Campaign.prototype, "target_count", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", String)
+], Campaign.prototype, "mode", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ type: String, default: 'running', index: true }),
     __metadata("design:type", String)
