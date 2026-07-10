@@ -18,6 +18,15 @@ import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
 import { Permission } from '../common/decorators/permission.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+
+interface JwtUser {
+  userId: string;
+  role: string;
+}
+function isAdmin(u: JwtUser): boolean {
+  return u.role === 'admin' || u.role === 'super_admin';
+}
 
 @ApiTags('Email Queue 郵件審批')
 @ApiBearerAuth()
@@ -28,8 +37,8 @@ export class EmailQueueController {
 
   @Get()
   @Permission('emails.view')
-  async list(@Query() q: ListEmailQueueQueryDto) {
-    return this.svc.findAll(q);
+  async list(@Query() q: ListEmailQueueQueryDto, @CurrentUser() user: JwtUser) {
+    return this.svc.findAll(q, isAdmin(user) ? undefined : user.userId);
   }
 
   @Get(':id')

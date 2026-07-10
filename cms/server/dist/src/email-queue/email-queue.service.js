@@ -32,8 +32,10 @@ let EmailQueueService = class EmailQueueService {
         this.leads = leads;
         this.sse = sse;
     }
-    async findAll(q) {
+    async findAll(q, userId) {
         const filter = {};
+        if (userId)
+            filter.user_id = userId;
         if (q.status)
             filter.status = q.status;
         if (q.search) {

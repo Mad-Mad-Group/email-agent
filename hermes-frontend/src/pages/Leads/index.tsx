@@ -3,7 +3,9 @@ import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail, useClearAllLeads } from '../../api/hooks';
+import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail, useClearAllLeads, useReprocessLead, useMe } from '../../api/hooks';
+import { useQuery } from '@tanstack/react-query';
+import { usersApi } from '../../api/services';
 import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
 import client from '../../api/client';
@@ -2166,6 +2168,23 @@ const Leads: React.FC = () => {
   const changeStatus = useChangeLeadStatus();
   const createLead = useCreateLead();
   const clearAllLeads = useClearAllLeads();
+  const reprocessLead = useReprocessLead();
+
+  // Admin: 顯示來源用戶欄
+  const { data: me } = useMe();
+  const isAdmin = me?.role === 'admin' || me?.role === 'super_admin';
+  const { data: usersData } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => usersApi.list({ page: 1, limit: 200 }).then(r => r.data),
+    enabled: isAdmin,
+  });
+  const userMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    const list = (usersData as any)?.data ?? (usersData as any) ?? [];
+    if (Array.isArray(list)) list.forEach((u: any) => { if (u._id) map[u._id] = u.name || u.email; });
+    return map;
+  }, [usersData]);
+
   const [clearMsg, setClearMsg] = useState('');
 
   const apiLeads: Lead[] = data?.data ?? [];
@@ -2403,6 +2422,7 @@ const Leads: React.FC = () => {
                   <th>{t('leads.status')}</th>
                   <th>{t('leads.name')} <IconSortArrow /></th>
                   <th>{t('leads.reply')}</th>
+                  {isAdmin && <th>{t('leads.sourceUser') || '來源用戶'}</th>}
                   <th>{t('leads.importedAt')}</th>
                   <th>{t('leads.action')}</th>
                 </tr>
@@ -2410,7 +2430,7 @@ const Leads: React.FC = () => {
               <tbody>
                 {error ? (
                   <tr>
-                    <EmptyCell colSpan={5}>
+                    <EmptyCell colSpan={isAdmin ? 6 : 5}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
                         <strong style={{ color: '#dc2626' }}>{t('common.error')}</strong>
                         <span style={{ color: '#7f8c8d', fontSize: 13 }}>
@@ -2435,9 +2455,9 @@ const Leads: React.FC = () => {
                     </EmptyCell>
                   </tr>
                 ) : isLoading ? (
-                  <tr><EmptyCell colSpan={5}>{t('leads.loading')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={isAdmin ? 6 : 5}>{t('leads.loading')}</EmptyCell></tr>
                 ) : leads.length === 0 ? (
-                  <tr><EmptyCell colSpan={5}>{t('leads.noLeads')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={isAdmin ? 6 : 5}>{t('leads.noLeads')}</EmptyCell></tr>
                 ) : (
                   (() => {
                     let lastGroup = '';
@@ -2452,7 +2472,7 @@ const Leads: React.FC = () => {
                         <React.Fragment key={lead._id}>
                           {showHeader && (
                             <GroupBar $group={group} $dark={isDark}>
-                              <td colSpan={5}>
+                              <td colSpan={isAdmin ? 6 : 5}>
                                 <GroupBarInner
                                   $group={group}
                                   $dark={isDark}
@@ -2483,6 +2503,11 @@ const Leads: React.FC = () => {
                             return <ReplyBadge $bg={badge.bg} $fg={badge.fg}>{badge.text}</ReplyBadge>;
                           })()}
                         </td>
+                        {isAdmin && (
+                          <td style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                            {lead.user_id ? (userMap[lead.user_id] || lead.user_id.slice(0, 8)) : '—'}
+                          </td>
+                        )}
                         <td>{(() => {
                           const g = getDateGroup(lead._imported_at);
                           if (g === '今日' || g === '昨日') return g;
@@ -2845,6 +2870,21 @@ const Leads: React.FC = () => {
               )}
             </DpColCenter>
           </DpBody>
+          <DpFooter>
+            {(['enrich', 'analyze', 'draft', 'send'] as const).map(stage => (
+              <DpActionBtn
+                key={stage}
+                $variant="primary"
+                onClick={() => {
+                  reprocessLead.mutate({ id: selectedLead._id, stage });
+                }}
+                style={{ textTransform: 'capitalize' }}
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ marginRight: 4 }}><path d="M13.5 8a5.5 5.5 0 0 1-9.72 3.5M2.5 8a5.5 5.5 0 0 1 9.72-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M13.5 3v3.5H10M2.5 13v-3.5H6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                重跑 {stage}
+              </DpActionBtn>
+            ))}
+          </DpFooter>
         </DpPanel>
         </DpOverlay>,
         document.body

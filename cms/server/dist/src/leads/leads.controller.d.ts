@@ -3,6 +3,7 @@ import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { ListLeadsQueryDto } from './dto/list-leads-query.dto';
 import { UpdateLeadStatusDto } from './dto/update-lead-status.dto';
+import { TasksService } from '../tasks/tasks.service';
 interface JwtUser {
     userId: string;
     email: string;
@@ -11,7 +12,8 @@ interface JwtUser {
 }
 export declare class LeadsController {
     private readonly leads;
-    constructor(leads: LeadsService);
+    private readonly tasks;
+    constructor(leads: LeadsService, tasks: TasksService);
     list(query: ListLeadsQueryDto, user: JwtUser): Promise<{
         items: (import("mongoose").FlattenMaps<import("mongoose").Document<unknown, {}, import("./schemas/lead.schema").Lead, {}, {}> & import("./schemas/lead.schema").Lead & {
             _id: import("mongoose").Types.ObjectId;
@@ -48,6 +50,11 @@ export declare class LeadsController {
         _id: import("mongoose").Types.ObjectId;
     } & {
         __v: number;
+    }>;
+    reprocess(id: string, stage: string, user: JwtUser): Promise<{
+        task_id: string;
+        stage: string;
+        lead_id: string;
     }>;
     remove(id: string, user: JwtUser): Promise<{
         id: string;

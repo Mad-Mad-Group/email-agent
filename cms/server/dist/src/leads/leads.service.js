@@ -110,8 +110,10 @@ let LeadsService = class LeadsService {
         return this.changeStatus(id, { status: lead_status_enum_1.LeadStatus.PENDING }, userId);
     }
     async createFromSearch(data) {
-        const exists = await this.leadModel
-            .exists({ company_name: data.company_name, source: data.source });
+        const orConds = [{ company_name: data.company_name }];
+        if (data.website)
+            orConds.push({ website: data.website });
+        const exists = await this.leadModel.exists({ $or: orConds, _deleted_at: null });
         if (exists)
             return null;
         const lead = await this.leadModel.create({

@@ -13,6 +13,7 @@ const lead_schema_1 = require("./schemas/lead.schema");
 const leads_service_1 = require("./leads.service");
 const leads_controller_1 = require("./leads.controller");
 const sse_module_1 = require("../sse/sse.module");
+const tasks_module_1 = require("../tasks/tasks.module");
 let LeadsModule = class LeadsModule {
 };
 exports.LeadsModule = LeadsModule;
@@ -21,6 +22,7 @@ exports.LeadsModule = LeadsModule = __decorate([
         imports: [
             mongoose_1.MongooseModule.forFeature([{ name: lead_schema_1.Lead.name, schema: lead_schema_1.LeadSchema }]),
             sse_module_1.SseModule,
+            tasks_module_1.TasksModule,
         ],
         controllers: [leads_controller_1.LeadsController],
         providers: [leads_service_1.LeadsService],

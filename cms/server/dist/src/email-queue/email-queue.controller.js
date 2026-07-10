@@ -24,13 +24,17 @@ const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../common/guards/roles.guard");
 const permissions_guard_1 = require("../common/guards/permissions.guard");
 const permission_decorator_1 = require("../common/decorators/permission.decorator");
+const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
+function isAdmin(u) {
+    return u.role === 'admin' || u.role === 'super_admin';
+}
 let EmailQueueController = class EmailQueueController {
     svc;
     constructor(svc) {
         this.svc = svc;
     }
-    async list(q) {
-        return this.svc.findAll(q);
+    async list(q, user) {
+        return this.svc.findAll(q, isAdmin(user) ? undefined : user.userId);
     }
     async get(id) {
         return this.svc.findOne(id);
@@ -54,8 +58,9 @@ __decorate([
     (0, permission_decorator_1.Permission)('emails.view'),
     openapi.ApiResponse({ status: 200 }),
     __param(0, (0, common_1.Query)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [list_email_queue_query_dto_1.ListEmailQueueQueryDto]),
+    __metadata("design:paramtypes", [list_email_queue_query_dto_1.ListEmailQueueQueryDto, Object]),
     __metadata("design:returntype", Promise)
 ], EmailQueueController.prototype, "list", null);
 __decorate([

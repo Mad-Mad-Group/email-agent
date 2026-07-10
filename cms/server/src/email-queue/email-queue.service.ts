@@ -34,8 +34,9 @@ export class EmailQueueService {
     @Optional() private readonly sse?: SseService,
   ) {}
 
-  async findAll(q: ListEmailQueueQueryDto) {
+  async findAll(q: ListEmailQueueQueryDto, userId?: string) {
     const filter: FilterQuery<EmailQueueDocument> = {};
+    if (userId) filter.user_id = userId;
     if (q.status) filter.status = q.status;
     if (q.search) {
       const rx = new RegExp(this.escapeRegex(q.search), 'i');

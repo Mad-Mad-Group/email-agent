@@ -12,6 +12,9 @@ import { Campaign, CampaignDocument } from './schemas/campaign.schema';
 import { RunHermesDto } from './dto/run-hermes.dto';
 import { EmailService } from '../email/email.service';
 
+/** 每個 stage 最多重試幾次 */
+const MAX_STAGE_RETRIES = 2;
+
 /** 每個 pipeline stage：用咩 skill + 下一個 stage 係咩 */
 const STAGE_SKILL: Record<string, string> = {
   search: SKILL.SEARCH, // S1
@@ -152,7 +155,7 @@ export class HermesService implements OnModuleInit {
     }
   }
 
-  /** 某個 stage 失敗 → 跳過該 lead 嘅剩餘 stages，繼續其他 lead */
+  /** 某個 stage 失敗 → 先重試（最多 MAX_STAGE_RETRIES 次），超過先跳過 */
   private async onTaskFailed(task: TaskDocument) {
     const params = (task.params ?? {}) as Record<string, any>;
     const campaignId = params.campaign_id as string | undefined;
@@ -165,21 +168,37 @@ export class HermesService implements OnModuleInit {
     if (!campaign || campaign.status !== 'running') return;
 
     const errorMsg = (task as any).error || 'unknown error';
+    const retryCount = (params.retry_count as number) || 0;
+
+    // ── 重試邏輯：未超過上限就重新 enqueue 同一個 stage ──
+    if (retryCount < MAX_STAGE_RETRIES) {
+      const attempt = retryCount + 1;
+      this.sse.emit(SseEvent.HERMES_LOG, {
+        runId: campaignId,
+        level: 'warn',
+        stage,
+        message: `Stage [${stage}] 失敗（第 ${attempt}/${MAX_STAGE_RETRIES} 次重試）：${errorMsg}`,
+      });
+      // 重新 enqueue，帶上 retry_count + 原有 params
+      const { campaign_id, pipeline_stage, retry_count: _rc, ...rest } = params;
+      await this.enqueueStage(stage, campaignId, { ...rest, retry_count: attempt });
+      return;
+    }
+
+    // ── 超過重試上限 → 跳過 ──
     this.sse.emit(SseEvent.HERMES_LOG, {
       runId: campaignId,
       level: 'error',
       stage,
-      message: `Stage [${stage}] 失敗，跳過此 lead：${errorMsg}`,
+      message: `Stage [${stage}] 重試 ${MAX_STAGE_RETRIES} 次仍失敗，跳過此 lead：${errorMsg}`,
     });
 
     if (stage === 'search') {
-      // search 失敗 = 成條 pipeline 冇嘢做
       await this.finish(campaign, `搜尋失敗：${errorMsg}`);
       return;
     }
 
     // per-lead stage 失敗：當呢個 lead 做完（跳過），check 是否全部 lead 都完咗
-    // 用 $inc 原子操作，支援多 worker 併發
     const updated = await this.campaigns.findOneAndUpdate(
       { campaign_id: campaignId, status: 'running' },
       { $inc: { done_count: 1 }, $set: { _updated_at: new Date().toISOString() } },

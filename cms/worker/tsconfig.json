@@ -13,5 +13,5 @@
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["agent.ts", "brand.ts"]
+  "include": ["agent.ts", "brand.ts", "leader.ts"]
 }

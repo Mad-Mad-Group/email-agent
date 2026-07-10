@@ -59,16 +59,22 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  * --yolo = 非互動自動批准工具（開 browser 唔卡）。
  */
 function callHermes(prompt, timeoutMs = 300000) {
+    const t0 = Date.now();
     return new Promise((resolve, reject) => {
         (0, child_process_1.execFile)('hermes', ['-z', prompt, '--yolo'], {
             encoding: 'utf8',
             timeout: timeoutMs,
             maxBuffer: 16 * 1024 * 1024,
         }, (err, stdout) => {
-            if (err)
+            const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+            if (err) {
+                console.log(`[hermes] ✗ ${elapsed}s — error: ${err.message?.slice(0, 200)}`);
                 reject(err);
-            else
+            }
+            else {
+                console.log(`[hermes] ✓ ${elapsed}s — ${stdout.length} chars — preview: ${stdout.slice(0, 300).replace(/\n/g, '⏎')}`);
                 resolve(stdout);
+            }
         });
     });
 }
@@ -230,6 +236,7 @@ const SKILL = process.env.AGENT_SKILL || ''; // 空 = 任何 skill
 const SKILL_EXCLUDE = process.env.AGENT_SKILL_EXCLUDE || ''; // 逗號分隔，排除某啲 skill
 const POLL_MS = Number(process.env.POLL_MS || 2000);
 const MAX_IDLE = Number(process.env.WORKER_MAX_IDLE || 0); // 0 = 永遠
+const CONCURRENCY = Math.max(1, Number(process.env.CONCURRENCY || 1)); // 每個 worker 同時處理幾多個 task
 let token = '';
 const log = (...a) => console.log(`[agent ${AGENT_ID}]`, ...a);
 const nowIso = () => new Date().toISOString();
@@ -252,6 +259,7 @@ async function notify(db, title, opts = {}) {
             message: opts.message,
             type: opts.type ?? 'system',
             ref_id: opts.ref_id,
+            user_id: opts.user_id,
             read: false,
             created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
         });
@@ -495,6 +503,7 @@ ${brand_1.BRAND_SIGNATURE}
         await db.collection('email_queue').insertOne({
             email_id: (0, crypto_1.randomBytes)(4).toString('hex'),
             lead_id: lead.lead_id,
+            user_id: lead.user_id || undefined,
             company_name: lead.company_name,
             to_email: lead.email,
             subject,
@@ -636,6 +645,79 @@ async function doReplyCheck(_p, db) {
                 _reply_at: nowIso(),
             },
         });
+        // ── Verified Email Pool：自動驗證邏輯 ──
+        // 排除 auto_reply，只計人工回覆
+        if (a.category !== 'auto_reply' && m.lead.email) {
+            try {
+                // 計算呢個 email 嘅總回覆次數（包括今次）
+                const replyCount = await db.collection('leads').countDocuments({
+                    email: m.lead.email,
+                    _replied: true,
+                    _reply_category: { $ne: 'auto_reply' },
+                });
+                let shouldVerify = false;
+                let method = 'auto_reply_count';
+                if (replyCount >= 2) {
+                    // ≥2 次人工回覆 → 自動 verify
+                    shouldVerify = true;
+                    method = 'auto_reply_count';
+                }
+                else if (replyCount === 1) {
+                    // 第 1 次回覆 → AI 判斷係咪人工寫嘅
+                    const aiPrompt = `判斷以下 email 回覆係人工寫嘅定係自動回覆（auto-reply / out-of-office / 系統通知）。
+
+主題：${m.subject}
+內容：${(m.text || '').slice(0, 2000)}
+
+回一個 JSON：{"is_human": true/false, "reason": "一句解釋"}`;
+                    try {
+                        const aiResult = await hermesJson(aiPrompt, { timeout: 120000 });
+                        if (aiResult.is_human === true) {
+                            shouldVerify = true;
+                            method = 'ai_check';
+                            log(`  → AI 判斷為人工回覆：${aiResult.reason}`);
+                        }
+                        else {
+                            log(`  → AI 判斷為自動回覆：${aiResult.reason}`);
+                        }
+                    }
+                    catch {
+                        log(`  → AI 判斷失敗，跳過 verify`);
+                    }
+                }
+                if (shouldVerify) {
+                    try {
+                        await api('/verified-emails', 'POST', {
+                            email: m.lead.email,
+                            company_name: m.lead.company_name || '',
+                            source_lead_id: String(m.lead._id),
+                        });
+                        // 用內部 API 改成 autoVerify（帶 method）
+                        await db.collection('verified_emails').updateOne({ email: m.lead.email, company_name: m.lead.company_name || '' }, {
+                            $set: {
+                                verification_method: method,
+                                reply_count: replyCount,
+                                source_user_id: m.lead.user_id || '',
+                                source_lead_id: String(m.lead._id),
+                                domain: m.lead.email.split('@')[1] || '',
+                                status: 'active',
+                            },
+                            $setOnInsert: {
+                                match_count: 0,
+                                created_at: new Date(),
+                            },
+                        }, { upsert: true });
+                        log(`  → ✓ Verified email: ${m.lead.email} (${method}, replies=${replyCount})`);
+                    }
+                    catch (e) {
+                        log(`  → verified email 寫入失敗：${e?.message ?? e}`);
+                    }
+                }
+            }
+            catch (e) {
+                log(`  → verified email check 失敗：${e?.message ?? e}`);
+            }
+        }
         // meeting 回覆 → 自動建行事曆事件（用回覆中提及的時間，否則預設下星期一 10:00）
         if (a.category === 'meeting') {
             let meetingStart;
@@ -730,20 +812,32 @@ INSTRUCTIONS:
 RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
 [{"name":"Example School","website":"https://example.com","email":"info@example.com"}]`;
         let arr;
+        const searchT0 = Date.now();
         try {
             arr = await hermesJson(prompt, { array: true, timeout: 300000 });
         }
         catch (e) {
-            log(`  [search] 第 ${round} 輪 hermes 失敗: ${e?.message ?? e}`);
+            const searchElapsed = ((Date.now() - searchT0) / 1000).toFixed(1);
+            log(`  [search] 第 ${round} 輪 hermes 失敗 (${searchElapsed}s): ${e?.message ?? e}`);
             break;
         }
+        const searchElapsed = ((Date.now() - searchT0) / 1000).toFixed(1);
+        log(`  [search] hermes 回應 (${searchElapsed}s)：${arr.length} 筆結果 → ${JSON.stringify(arr).slice(0, 300)}`);
         let newThisRound = 0;
         for (const r of arr.slice(0, still_need)) {
             if (!r?.name)
                 continue;
             // 記住呢個名，下輪排除
             excludeNames.push(r.name);
-            // ⚠️ 暫時停用 DB 去重（要快 + 想見到所有結果；去重會 skip → 做多幾輪更慢）。日後可重開。
+            // DB 去重：同 website 或同 company_name 已存在就 skip
+            const dupFilter = [{ company_name: r.name }];
+            if (r.website)
+                dupFilter.push({ website: r.website });
+            const dup = await db.collection('leads').findOne({ $or: dupFilter, _deleted_at: null });
+            if (dup) {
+                totalSkipped++;
+                continue;
+            }
             const res = await db.collection('leads').insertOne({
                 lead_id: (0, crypto_1.randomBytes)(8).toString('hex'),
                 company_name: r.name,
@@ -756,9 +850,34 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
                 status: null,
                 _status: 'unverified',
                 _imported_at: nowIso(),
+                user_id: p.user_id || undefined,
             });
             ids.push(res.insertedId.toString());
             await sseNotify('lead_update', { id: res.insertedId.toString(), action: 'created' });
+            // ── Verified Email Pool：匹配共用池 ──
+            if (r.name) {
+                try {
+                    const verifiedEmails = await db.collection('verified_emails').find({
+                        company_name: new RegExp(`^${r.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'),
+                        status: 'active',
+                    }).toArray();
+                    if (verifiedEmails.length > 0) {
+                        const ve = verifiedEmails[0];
+                        await db.collection('leads').updateOne({ _id: res.insertedId }, {
+                            $set: {
+                                _verified_email: ve.email,
+                                _verified_email_source: 'pool',
+                                _verified_email_method: ve.verification_method,
+                                _verified_email_reply_count: ve.reply_count,
+                            },
+                        });
+                        // 更新 match_count
+                        await db.collection('verified_emails').updateOne({ _id: ve._id }, { $inc: { match_count: 1 } });
+                        log(`  → ✓ Pool match: ${r.name} → ${ve.email} (${ve.verification_method})`);
+                    }
+                }
+                catch { /* pool 查詢失敗唔影響主流程 */ }
+            }
             newThisRound++;
         }
         const foundThisRound = newThisRound + totalSkipped; // hermes 返回咗幾多個（唔理重複）
@@ -773,6 +892,7 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
         await notify(db, `搜尋完成：搵到 ${ids.length} 個新 lead`, {
             message: `關鍵字「${p.keyword}」在「${p.location}」搵到 ${ids.length} 個新結果，跳過 ${totalSkipped} 個重複`,
             type: 'lead',
+            user_id: p.user_id,
         });
         await sseNotify('notification', { title: `搜尋完成：搵到 ${ids.length} 個新 lead`, type: 'lead' });
     }
@@ -1129,6 +1249,7 @@ ${brand_1.BRAND_SIGNATURE}
     await db.collection('email_queue').insertOne({
         email_id: (0, crypto_1.randomBytes)(4).toString('hex'),
         lead_id: lead.lead_id,
+        user_id: lead.user_id || undefined,
         company_name: lead.company_name,
         to_email: testRecipient || lead.email,
         subject: c.subject,
@@ -1142,6 +1263,7 @@ ${brand_1.BRAND_SIGNATURE}
         message: `主題：${c.subject}`,
         type: 'email',
         ref_id: lead.lead_id,
+        user_id: lead.user_id,
     });
     await sseNotify('email_update', { id: lead.lead_id, action: 'created', status: 'pending' });
     await sseNotify('notification', { title: `新草稿：${lead.company_name}`, type: 'email' });
@@ -1229,6 +1351,7 @@ ${brand_1.BRAND_SIGNATURE}
     await db.collection('email_queue').insertOne({
         email_id: (0, crypto_1.randomBytes)(4).toString('hex'),
         lead_id: lead.lead_id,
+        user_id: lead.user_id || undefined,
         company_name: lead.company_name,
         to_email: testRecipient || lead.email,
         subject: c.subject,
@@ -1278,6 +1401,7 @@ ${brand_1.BRAND_SIGNATURE}
     await db.collection('email_queue').insertOne({
         email_id: (0, crypto_1.randomBytes)(4).toString('hex'),
         lead_id: lead.lead_id,
+        user_id: lead.user_id || undefined,
         company_name: lead.company_name,
         to_email: testRecipient || lead.email,
         subject: c.subject,
@@ -1309,8 +1433,9 @@ async function doSend(p, db) {
         .findOne({ lead_id: lead.lead_id, status: 'pending' }, { sort: { created_at: -1 } });
     if (!eq)
         return { sent: false, note: '冇待發 email' };
-    // 未開真發 → 保持 pending，等人手 approve
+    // 未開真發 → 保持 pending，等人手 approve；但標 _email_sent 防 gap-filler 重複派
     if (process.env.ENABLE_REAL_SEND !== 'true') {
+        await db.collection('leads').updateOne({ _id }, { $set: { _email_sent: true } });
         return { sent: false, note: 'real send 停用（ENABLE_REAL_SEND=true 先發），email 保持 pending 等人手審批' };
     }
     // 真發：經 SMTP（nodemailer），一律寄去 TEST_RECIPIENT
@@ -1372,6 +1497,7 @@ async function doSend(p, db) {
         message: `已發送至 ${to}`,
         type: 'email',
         ref_id: lead.lead_id,
+        user_id: lead.user_id,
     });
     await sseNotify('email_update', { id: eq._id.toString(), action: 'status_changed', status: 'sent' });
     await sseNotify('lead_update', { id: _id.toString(), action: 'status_changed', status: 'contacted' });
@@ -1393,19 +1519,59 @@ async function loginWithRetry() {
         }
     }
 }
+async function handleTask(task, db) {
+    const p = task.params || {};
+    log(`══ 收到任務 ══`);
+    log(`  task_id:  ${task.task_id}`);
+    log(`  skill:    ${task.skill_id}`);
+    log(`  title:    ${task.title ?? '—'}`);
+    log(`  user_id:  ${p.user_id ?? '—'}`);
+    log(`  lead_id:  ${p.lead_object_id ?? '—'}`);
+    log(`  mode:     ${p.mode ?? p.pipeline_stage ?? '—'}`);
+    log(`  params:   ${JSON.stringify(p)}`);
+    try {
+        const result = await handle(task, db);
+        await complete(task.task_id, result);
+        await sseNotify('task_update', { id: task.task_id, action: 'completed' });
+        log(`✓ 完成 ${task.task_id}`, JSON.stringify(result));
+    }
+    catch (e) {
+        log(`✗ ${task.task_id} 失敗:`, e?.message ?? e);
+        try {
+            await failTask(task.task_id, e?.message ?? String(e));
+            await notify(db, `任務失敗：${task.title || task.task_id}`, {
+                message: e?.message ?? String(e),
+                type: 'task',
+                ref_id: task.task_id,
+                user_id: task.params?.user_id,
+            });
+            await sseNotify('task_update', { id: task.task_id, action: 'failed' });
+            await sseNotify('notification', { title: `任務失敗：${task.title || task.task_id}`, type: 'task' });
+        }
+        catch (e2) {
+            log(`⚠ failTask 都失敗咗 (${task.task_id}) — task 留喺 running，等 reap-stalled-tasks cron requeue:`, e2?.message ?? e2);
+        }
+    }
+}
 async function main() {
-    log(`啟動 → API=${API} skill=${SKILL || 'any'} exclude=${SKILL_EXCLUDE || 'none'}`);
+    log(`啟動 → API=${API} skill=${SKILL || 'any'} exclude=${SKILL_EXCLUDE || 'none'} concurrency=${CONCURRENCY}`);
     await loginWithRetry();
     const client = new mongodb_1.MongoClient(MONGO);
     await client.connect();
     const db = client.db();
     let idle = 0;
     let running = true;
+    let inFlight = 0; // 正在處理嘅 task 數量
     process.on('SIGINT', () => {
         log('收到 SIGINT，停緊…');
         running = false;
     });
     while (running) {
+        // 已滿載，等一個 slot 空出
+        if (inFlight >= CONCURRENCY) {
+            await sleep(POLL_MS);
+            continue;
+        }
         let task = null;
         try {
             task = await claim();
@@ -1417,7 +1583,7 @@ async function main() {
         }
         if (!task) {
             idle++;
-            if (MAX_IDLE && idle >= MAX_IDLE) {
+            if (MAX_IDLE && idle >= MAX_IDLE && inFlight === 0) {
                 log(`連續 ${idle} 次冇 task，停止`);
                 break;
             }
@@ -1425,32 +1591,14 @@ async function main() {
             continue;
         }
         idle = 0;
-        log(`接到 ${task.task_id} (${task.skill_id}) ${task.title ?? ''}`);
-        try {
-            const result = await handle(task, db);
-            await complete(task.task_id, result);
-            await sseNotify('task_update', { id: task.task_id, action: 'completed' });
-            log(`✓ 完成 ${task.task_id}`, JSON.stringify(result));
-        }
-        catch (e) {
-            log(`✗ ${task.task_id} 失敗:`, e?.message ?? e);
-            // ⚠️ failTask 失敗唔可以 propagate 出去，否則會 process.exit(1)。
-            // 內部再 try/catch，將 "fail 失敗" 變 warn log，繼續 loop
-            // (DB 入面個 task 仲 stay 在 running，stale-minutes cron 之後會 requeue)。
-            try {
-                await failTask(task.task_id, e?.message ?? String(e));
-                await notify(db, `任務失敗：${task.title || task.task_id}`, {
-                    message: e?.message ?? String(e),
-                    type: 'task',
-                    ref_id: task.task_id,
-                });
-                await sseNotify('task_update', { id: task.task_id, action: 'failed' });
-                await sseNotify('notification', { title: `任務失敗：${task.title || task.task_id}`, type: 'task' });
-            }
-            catch (e2) {
-                log(`⚠ failTask 都失敗咗 (${task.task_id}) — task 留喺 running，等 reap-stalled-tasks cron requeue:`, e2?.message ?? e2);
-            }
-        }
+        inFlight++;
+        // 唔 await — fire and forget，令 loop 可以立即 claim 下一個
+        handleTask(task, db).finally(() => { inFlight--; });
+    }
+    // 等所有進行中嘅 task 完成
+    while (inFlight > 0) {
+        log(`等待 ${inFlight} 個進行中嘅 task 完成…`);
+        await sleep(1000);
     }
     await client.close();
     log('已停止');
