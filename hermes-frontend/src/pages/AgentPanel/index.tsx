@@ -82,12 +82,12 @@ const SOURCE_LABELS: Record<string, string> = {
   system: 'System',
 };
 
-/* ── Agent label positions (percentage-based, on farm field) ── */
+/* ── Agent label positions (zoned layout) ── */
 const AGENT_POSITIONS: Record<string, { top: string; left: string }> = {
-  S1: { top: '42%', left: '4%' },   /* Fox in flower field (left) */
-  S2: { top: '36%', left: '28%' },  /* Cow grazing (center-left) */
-  S3: { top: '44%', left: '50%' },  /* Chicken pecking (center-right) */
-  S4: { top: '38%', left: '70%' },  /* Duck near pond (right) */
+  S1: { top: '30%', left: '2%' },   /* Fox — top-left corner */
+  S2: { top: '46%', left: '5%' },   /* Cow — left pasture */
+  S3: { top: '36%', left: '72%' },  /* Chicken — right field */
+  S4: { top: '58%', left: '35%' },  /* Duck — river */
 };
 
 /* ── Agent sprite images (farm animals) ── */
@@ -183,60 +183,79 @@ const idleBounce = keyframes`
   50%      { transform: translateY(-3px); }
 `;
 
-/* ── Per-agent movement animations ── */
-const foxWander = keyframes`
-  0%   { transform: translate(0, 0) scaleX(1); }
-  20%  { transform: translate(40px, -8px) scaleX(1); }
-  35%  { transform: translate(70px, 5px) scaleX(1); }
-  50%  { transform: translate(50px, -15px) scaleX(-1); }
-  70%  { transform: translate(15px, 8px) scaleX(-1); }
-  85%  { transform: translate(-10px, -5px) scaleX(-1); }
-  100% { transform: translate(0, 0) scaleX(1); }
+/* ── Natural animal movement animations ── */
+const foxDart = keyframes`
+  0%, 100% { transform: translate(0, 0) scaleX(1); }
+  15% { transform: translate(18px, -6px) scaleX(1); }
+  30% { transform: translate(30px, 0) scaleX(1); }
+  45% { transform: translate(20px, 4px) scaleX(-1); }
+  60% { transform: translate(5px, -2px) scaleX(-1); }
+  80% { transform: translate(-8px, 3px) scaleX(1); }
 `;
 
 const cowGraze = keyframes`
-  0%, 60%, 100% { transform: translateY(0) rotate(0deg); }
-  65%  { transform: translateY(6px) rotate(3deg); }
-  75%  { transform: translateY(8px) rotate(2deg); }
-  80%  { transform: translateY(6px) rotate(4deg); }
-  90%  { transform: translateY(3px) rotate(1deg); }
+  0%, 100% { transform: translateY(0); }
+  20% { transform: translateY(3px); }
+  40% { transform: translateY(5px); }
+  60% { transform: translateY(3px); }
+  80% { transform: translateY(1px); }
 `;
 
 const chickenPeck = keyframes`
-  0%, 40%, 100% { transform: translateY(0) rotate(0deg); }
-  42% { transform: translateY(5px) rotate(8deg); }
-  44% { transform: translateY(2px) rotate(0deg); }
-  46% { transform: translateY(6px) rotate(10deg); }
-  48% { transform: translateY(0) rotate(0deg); }
-  70%, 72% { transform: translate(8px, 0) scaleX(-1); }
-  74%, 76% { transform: translate(8px, 5px) scaleX(-1) rotate(8deg); }
-  78% { transform: translate(8px, 0) scaleX(-1) rotate(0deg); }
-  85% { transform: translate(0, 0) scaleX(1); }
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  10% { transform: translate(2px, 3px) rotate(5deg); }
+  20% { transform: translate(0, 0) rotate(0deg); }
+  40% { transform: translate(-3px, 4px) rotate(-4deg); }
+  50% { transform: translate(0, 0) rotate(0deg); }
+  70% { transform: translate(4px, 3px) rotate(3deg); }
+  80% { transform: translate(0, 0) rotate(0deg); }
 `;
 
 const duckSwim = keyframes`
   0%   { transform: translate(0, 0) scaleX(1); }
-  15%  { transform: translate(20px, 3px) scaleX(1); }
-  30%  { transform: translate(45px, -2px) scaleX(1); }
-  50%  { transform: translate(55px, 4px) scaleX(-1); }
-  70%  { transform: translate(25px, -3px) scaleX(-1); }
-  85%  { transform: translate(5px, 2px) scaleX(-1); }
+  20%  { transform: translate(30px, 2px) scaleX(1); }
+  40%  { transform: translate(55px, -1px) scaleX(1); }
+  50%  { transform: translate(60px, 0) scaleX(-1); }
+  70%  { transform: translate(35px, 2px) scaleX(-1); }
+  90%  { transform: translate(5px, -1px) scaleX(-1); }
   100% { transform: translate(0, 0) scaleX(1); }
 `;
 
 const AGENT_ANIMATIONS: Record<string, ReturnType<typeof keyframes>> = {
-  S1: foxWander,
+  S1: foxDart,
   S2: cowGraze,
   S3: chickenPeck,
   S4: duckSwim,
 };
 
 const AGENT_ANIM_DURATION: Record<string, number> = {
-  S1: 12,
-  S2: 6,
-  S3: 5,
-  S4: 14,
+  S1: 6,
+  S2: 5,
+  S3: 3,
+  S4: 12,
 };
+
+/* ── Decorative extra animals (no labels, natural groups) ── */
+const DECO_ANIMALS: Array<{
+  sprite: string; frames: number; top: string; left: string;
+  anim: ReturnType<typeof keyframes>; dur: number; scale: number; delay: number; flip?: boolean;
+}> = [
+  /* Extra cows — spread across left pasture */
+  { sprite: '/assets/pixel-world/sprites/cow-idle.png', frames: 5, top: '40%', left: '18%', anim: cowGraze, dur: 6, scale: 3, delay: 1 },
+  { sprite: '/assets/pixel-world/sprites/cow-idle.png', frames: 5, top: '50%', left: '28%', anim: cowGraze, dur: 7, scale: 3.5, delay: 2, flip: true },
+  { sprite: '/assets/pixel-world/sprites/cow-idle.png', frames: 5, top: '44%', left: '38%', anim: cowGraze, dur: 5.5, scale: 3, delay: 0.5 },
+  /* Extra chickens — spread across right field */
+  { sprite: '/assets/pixel-world/sprites/chicken-idle.png', frames: 5, top: '34%', left: '80%', anim: chickenPeck, dur: 2.5, scale: 2.5, delay: 0.3 },
+  { sprite: '/assets/pixel-world/sprites/chicken-idle.png', frames: 5, top: '42%', left: '65%', anim: chickenPeck, dur: 3.5, scale: 2.5, delay: 1.5, flip: true },
+  { sprite: '/assets/pixel-world/sprites/chicken-idle.png', frames: 5, top: '38%', left: '88%', anim: chickenPeck, dur: 2.8, scale: 2, delay: 0.8 },
+  /* Extra foxes — corners */
+  { sprite: '/assets/pixel-world/sprites/fox-idle.png', frames: 6, top: '76%', left: '85%', anim: foxDart, dur: 7, scale: 2.5, delay: 2, flip: true },
+  { sprite: '/assets/pixel-world/sprites/fox-idle.png', frames: 6, top: '74%', left: '2%', anim: foxDart, dur: 8, scale: 2.5, delay: 3 },
+  /* Extra ducks — river area */
+  { sprite: '/assets/pixel-world/sprites/duck-idle.png', frames: 4, top: '60%', left: '22%', anim: duckSwim, dur: 14, scale: 2.5, delay: 1 },
+  { sprite: '/assets/pixel-world/sprites/duck-idle.png', frames: 4, top: '62%', left: '52%', anim: duckSwim, dur: 11, scale: 2.5, delay: 3, flip: true },
+  { sprite: '/assets/pixel-world/sprites/duck-idle.png', frames: 4, top: '58%', left: '60%', anim: duckSwim, dur: 13, scale: 2, delay: 5 },
+];
 
 const AgentLabelWrap = styled.div<{ $top: string; $left: string }>`
   position: absolute;
@@ -261,6 +280,7 @@ const AgentLabelWrap = styled.div<{ $top: string; $left: string }>`
 /* Wrapper that carries the per-agent movement animation */
 const SpriteMotion = styled.div<{ $anim: ReturnType<typeof keyframes>; $dur: number }>`
   animation: ${({ $anim }) => $anim} ${({ $dur }) => $dur}s ease-in-out infinite;
+  position: relative;
 `;
 
 const SpriteCanvas = styled.div<{ $src: string; $frames: number; $frameSize: number }>`
@@ -276,85 +296,14 @@ const SpriteCanvas = styled.div<{ $src: string; $frames: number; $frameSize: num
   filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25));
 `;
 
-/* ── Decorative interaction elements ── */
-const eggAppear = keyframes`
-  0%, 50%, 100% { opacity: 0; transform: scale(0); }
-  55% { opacity: 1; transform: scale(1.2); }
-  60%, 90% { opacity: 1; transform: scale(1); }
-  95% { opacity: 0; transform: scale(0.8); }
-`;
-
-const ripple = keyframes`
-  0%, 100% { transform: scale(0.8); opacity: 0; }
-  20% { transform: scale(1); opacity: 0.5; }
-  50% { transform: scale(1.5); opacity: 0.3; }
-  80% { transform: scale(2); opacity: 0; }
-`;
-
-const flowerPick = keyframes`
-  0%, 70%, 100% { opacity: 0; transform: translateY(0) scale(0); }
-  25% { opacity: 1; transform: translateY(-12px) scale(1); }
-  40% { opacity: 1; transform: translateY(-20px) scale(0.8); }
-  55% { opacity: 0.5; transform: translateY(-30px) scale(0.5); }
-`;
-
-const grassMunch = keyframes`
-  0%, 55%, 100% { opacity: 0; }
-  60% { opacity: 1; transform: translate(0, 0) scale(1); }
-  70% { opacity: 0.8; transform: translate(2px, -3px) scale(0.8); }
-  80% { opacity: 0.4; transform: translate(4px, -8px) scale(0.5); }
-  85% { opacity: 0; }
-`;
-
-const EggDeco = styled.div`
+/* ── Decorative animal wrapper (no label, just sprite) ── */
+const DecoAnimalWrap = styled.div<{ $top: string; $left: string; $flip?: boolean }>`
   position: absolute;
-  bottom: -2px;
-  right: -20px;
-  width: 14px;
-  height: 18px;
-  background: #FFF8E7;
-  border: 2px solid #E8D5B0;
-  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
-  animation: ${eggAppear} 5s ease-in-out infinite;
+  top: ${({ $top }) => $top};
+  left: ${({ $left }) => $left};
+  z-index: 3;
   pointer-events: none;
-  image-rendering: auto;
-`;
-
-const Ripple = styled.div<{ $delay: number; $left: number }>`
-  position: absolute;
-  bottom: -8px;
-  left: ${({ $left }) => $left}px;
-  width: 16px;
-  height: 6px;
-  border: 1.5px solid rgba(100, 180, 255, 0.5);
-  border-radius: 50%;
-  background: transparent;
-  animation: ${ripple} 3s ease-out ${({ $delay }) => $delay}s infinite;
-  pointer-events: none;
-`;
-
-const FlowerParticle = styled.div<{ $delay: number; $color: string; $left: number }>`
-  position: absolute;
-  top: 10px;
-  left: ${({ $left }) => $left}px;
-  width: 8px;
-  height: 8px;
-  background: ${({ $color }) => $color};
-  border-radius: 50%;
-  animation: ${flowerPick} 12s ease-out ${({ $delay }) => $delay}s infinite;
-  pointer-events: none;
-`;
-
-const GrassBit = styled.div<{ $delay: number }>`
-  position: absolute;
-  bottom: 0;
-  left: 50%;
-  width: 6px;
-  height: 4px;
-  background: #5a9e3e;
-  border-radius: 2px;
-  animation: ${grassMunch} 6s ease ${({ $delay }) => $delay}s infinite;
-  pointer-events: none;
+  ${({ $flip }) => $flip && 'transform: scaleX(-1);'}
 `;
 
 const AgentLabel = styled.div`
@@ -957,14 +906,23 @@ const AgentPanel: React.FC = () => {
         <LiveBadge>LIVE</LiveBadge>
       </TitleBar>
 
-      {/* ── Agent floating labels with sprites — scattered across the scene ── */}
+      {/* ── Decorative animals (extra animals per zone, no labels) ── */}
+      {DECO_ANIMALS.map((d, i) => (
+        <DecoAnimalWrap key={`deco-${i}`} $top={d.top} $left={d.left} $flip={d.flip}>
+          <SpriteMotion $anim={d.anim} $dur={d.dur} style={{ animationDelay: `${d.delay}s` }}>
+            <SpriteAnimator src={d.sprite} frameCount={d.frames} frameSize={48} scale={d.scale} fps={4} />
+          </SpriteMotion>
+        </DecoAnimalWrap>
+      ))}
+
+      {/* ── Main agent animals with labels ── */}
       {agentCards.map((ag) => {
         const c = AGENT_COLORS[ag.skill] ?? AGENT_COLORS.S1;
         const pos = AGENT_POSITIONS[ag.skill];
         const sprite = AGENT_SPRITES[ag.skill];
         const isRunning = ag.status === 'running';
-        const motionAnim = AGENT_ANIMATIONS[ag.skill] ?? foxWander;
-        const motionDur = AGENT_ANIM_DURATION[ag.skill] ?? 10;
+        const motionAnim = AGENT_ANIMATIONS[ag.skill] ?? foxDart;
+        const motionDur = AGENT_ANIM_DURATION[ag.skill] ?? 8;
         return (
           <AgentLabelWrap
             key={ag.skill}
@@ -982,31 +940,6 @@ const AgentPanel: React.FC = () => {
                   scale={4}
                   fps={5}
                 />
-              )}
-              {/* Fox — flower particles float up while picking */}
-              {ag.skill === 'S1' && (
-                <>
-                  <FlowerParticle $delay={1} $color="#ff9ec4" $left={-10} />
-                  <FlowerParticle $delay={4} $color="#ffe066" $left={20} />
-                  <FlowerParticle $delay={7} $color="#c4a0ff" $left={40} />
-                </>
-              )}
-              {/* Cow — grass bits fly up while eating */}
-              {ag.skill === 'S2' && (
-                <>
-                  <GrassBit $delay={0} />
-                  <GrassBit $delay={0.3} />
-                </>
-              )}
-              {/* Chicken — egg appears periodically */}
-              {ag.skill === 'S3' && <EggDeco />}
-              {/* Duck — water ripples underneath */}
-              {ag.skill === 'S4' && (
-                <>
-                  <Ripple $delay={0} $left={10} />
-                  <Ripple $delay={1} $left={30} />
-                  <Ripple $delay={2} $left={50} />
-                </>
               )}
             </SpriteMotion>
             <AgentLabel>
