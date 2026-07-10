@@ -302,6 +302,40 @@ const StatCard = styled.div<{ $accent: string }>`
   }
 `;
 
+const StatCardWatermark = styled.span<{ $color: string }>`
+  position: absolute;
+  right: 10px;
+  bottom: 6px;
+  opacity: 0.08;
+  pointer-events: none;
+  color: ${({ $color }) => $color};
+  line-height: 0;
+`;
+
+/* Watermark SVG icons for stat cards */
+const WmUsers = ({ size = 44 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" />
+    <path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+const WmEdit = ({ size = 44 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+  </svg>
+);
+const WmClock = ({ size = 44 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+  </svg>
+);
+const WmCheck = ({ size = 44 }: { size?: number }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" />
+  </svg>
+);
+
 const StatCardLabel = styled.span`
   font-size: 0.8125rem;
   font-weight: 600;
@@ -520,14 +554,14 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 12px 32px;
+  padding: 10px 24px;
   background: transparent;
   border: none;
   border-bottom: 2px solid ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) : 'transparent'};
   cursor: pointer;
   white-space: nowrap;
   position: relative;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
   svg { flex-shrink: 0; opacity: ${({ $active }) => $active ? 0.7 : 0.35}; }
   color: ${({ $active, theme }) => $active ? 'inherit' : theme.colors.textTertiary};
@@ -2328,6 +2362,7 @@ const Leads: React.FC = () => {
                 <StatCardNumber $color="#64748b">{stats.total}</StatCardNumber>
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
               </StatCardValue>
+              <StatCardWatermark $color="#64748b"><WmUsers /></StatCardWatermark>
             </StatCard>
             <StatCard $accent="#0ea5e9">
               <StatCardLabel>{t('leads.tabPreparing')}</StatCardLabel>
@@ -2335,6 +2370,7 @@ const Leads: React.FC = () => {
                 <StatCardNumber $color="#0ea5e9">{tabCounts['preparing'] || 0}</StatCardNumber>
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
               </StatCardValue>
+              <StatCardWatermark $color="#0ea5e9"><WmEdit /></StatCardWatermark>
             </StatCard>
             <StatCard $accent="#ca8a04">
               <StatCardLabel>{t('leads.tabAwaiting')}</StatCardLabel>
@@ -2342,6 +2378,7 @@ const Leads: React.FC = () => {
                 <StatCardNumber $color="#ca8a04">{tabCounts['awaiting'] || 0}</StatCardNumber>
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
               </StatCardValue>
+              <StatCardWatermark $color="#ca8a04"><WmClock /></StatCardWatermark>
             </StatCard>
             <StatCard $accent="#16a34a">
               <StatCardLabel>{t('leads.tabReplied')}</StatCardLabel>
@@ -2349,6 +2386,7 @@ const Leads: React.FC = () => {
                 <StatCardNumber $color="#16a34a">{tabCounts['replied'] || 0}</StatCardNumber>
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
               </StatCardValue>
+              <StatCardWatermark $color="#16a34a"><WmCheck /></StatCardWatermark>
             </StatCard>
           </StatCardsRow>
           <HeaderTop style={{ justifyContent: 'space-between' }}>

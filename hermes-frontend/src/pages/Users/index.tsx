@@ -94,25 +94,59 @@ const CardBody = styled.div`padding: ${({ theme }) => theme.spacing.md}px;`;
 
 /* ── Profile Header Card ── */
 
-const ProfileHeader = styled.div`
-  display: flex; align-items: center; gap: ${({ theme }) => theme.spacing.md}px;
-  padding: ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.md}px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  ${media.mobile} { flex-direction: column; align-items: flex-start; }
+const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: ${({ theme }) => theme.spacing.md}px;
+  margin-bottom: ${({ theme }) => theme.spacing.md}px;
+  ${media.mobile} { grid-template-columns: repeat(2, 1fr); }
 `;
 
-const ProfileIcon = styled.div`
-  width: 56px; height: 56px; border-radius: 50%;
-  background: ${({ theme }) => theme.colors.blue};
+const StatCard2 = styled.div<{ $color: string }>`
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  padding: 20px;
+  display: flex; align-items: center; gap: 14px;
+  position: relative;
+  overflow: hidden;
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 4px;
+    background: ${({ $color }) => $color};
+    border-radius: ${({ theme }) => theme.radii.card}px 0 0 ${({ theme }) => theme.radii.card}px;
+  }
+`;
+
+const StatCardIcon = styled.div<{ $color: string }>`
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  background: ${({ $color }) => $color}12;
+  color: ${({ $color }) => $color};
   display: flex; align-items: center; justify-content: center;
-  color: #fff; flex-shrink: 0;
-  svg { width: 28px; height: 28px; }
+  flex-shrink: 0;
+  svg { width: 20px; height: 20px; }
 `;
 
-const ProfileInfo = styled.div`
+const StatCardInfo = styled.div`
   flex: 1;
-  h2 { margin: 0; font-size: 1.05rem; font-weight: 600; color: ${({ theme }) => theme.colors.textPrimary}; }
-  p { margin: 4px 0 0; font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; }
+`;
+
+const StatCardValue = styled.div<{ $color: string }>`
+  font-size: 1.5rem; font-weight: 700;
+  color: ${({ $color }) => $color};
+  line-height: 1;
+`;
+
+const StatCardLabel = styled.div`
+  font-size: 0.75rem; font-weight: 500;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 `;
 
 /* ── Tabs ── */
@@ -123,18 +157,18 @@ const TabBar = styled.div`
   ${media.mobile} { gap: 0; }
 `;
 
-const Tab = styled.button<{ $active?: boolean }>`
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
+const Tab = styled.button<{ $active?: boolean; $color?: string }>`
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 24px;
   border: none;
-  background: ${({ $active }) => $active
-    ? 'transparent'
-    : 'transparent'};
+  background: transparent;
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-  color: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.textTertiary};
-  border-bottom: 2px solid ${({ $active, theme }) => $active ? theme.colors.blue : 'transparent'};
+  color: ${({ $active, $color, theme }) => $active ? ($color || theme.colors.blue) : theme.colors.textTertiary};
+  border-bottom: 2px solid ${({ $active, $color, theme }) => $active ? ($color || theme.colors.blue) : 'transparent'};
   margin-bottom: -1px; white-space: nowrap;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; background: rgba(0,0,0,0.02); }
+  svg { flex-shrink: 0; opacity: ${({ $active }) => $active ? 0.7 : 0.35}; }
 `;
 
 const TabCount = styled.span<{ $active?: boolean }>`
@@ -465,16 +499,42 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+/* ── Tab Icons ── */
+
+const TabIconAll = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+
+const TabIconAdmin = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+
+const TabIconManager = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+  </svg>
+);
+
+const TabIconUser = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+const TAB_ICONS: Record<string, React.FC> = {
+  all: TabIconAll,
+  admin: TabIconAdmin,
+  manager: TabIconManager,
+  user: TabIconUser,
+};
+
 /* ── Tab definitions ── */
 
 type RoleFilter = 'all' | 'admin' | 'manager' | 'user';
-
-const TABS: { key: RoleFilter; label: string }[] = [
-  { key: 'all', label: 'All Users' },
-  { key: 'admin', label: 'Admins' },
-  { key: 'manager', label: 'Managers' },
-  { key: 'user', label: 'Users' },
-];
 
 /* ── Component ── */
 
@@ -510,10 +570,10 @@ const Users: React.FC = () => {
   }, [selectedUser, editForm, updateUser]);
 
   const translatedTabs = useMemo(() => [
-    { key: 'all' as RoleFilter, label: t('users.allUsers') },
-    { key: 'admin' as RoleFilter, label: t('users.admins') },
-    { key: 'manager' as RoleFilter, label: t('users.managers') },
-    { key: 'user' as RoleFilter, label: t('users.users') },
+    { key: 'all' as RoleFilter, label: t('users.allUsers'), color: '#0ea5e9' },
+    { key: 'admin' as RoleFilter, label: t('users.admins'), color: '#0369a1' },
+    { key: 'manager' as RoleFilter, label: t('users.managers'), color: '#d97706' },
+    { key: 'user' as RoleFilter, label: t('users.users'), color: '#22c55e' },
   ], [t]);
 
   /* Filtered list based on active tab */
@@ -532,15 +592,38 @@ const Users: React.FC = () => {
 
   return (
     <Page>
-      {/* Profile Header Card (Luno Contacts style) */}
+      <StatsGrid>
+        <StatCard2 $color="#0ea5e9">
+          <StatCardIcon $color="#0ea5e9"><TabIconAll /></StatCardIcon>
+          <StatCardInfo>
+            <StatCardValue $color="#0ea5e9">{roleCounts.all}</StatCardValue>
+            <StatCardLabel>{t('users.allUsers')}</StatCardLabel>
+          </StatCardInfo>
+        </StatCard2>
+        <StatCard2 $color="#0369a1">
+          <StatCardIcon $color="#0369a1"><TabIconAdmin /></StatCardIcon>
+          <StatCardInfo>
+            <StatCardValue $color="#0369a1">{roleCounts.admin}</StatCardValue>
+            <StatCardLabel>{t('users.admins')}</StatCardLabel>
+          </StatCardInfo>
+        </StatCard2>
+        <StatCard2 $color="#d97706">
+          <StatCardIcon $color="#d97706"><TabIconManager /></StatCardIcon>
+          <StatCardInfo>
+            <StatCardValue $color="#d97706">{roleCounts.manager}</StatCardValue>
+            <StatCardLabel>{t('users.managers')}</StatCardLabel>
+          </StatCardInfo>
+        </StatCard2>
+        <StatCard2 $color="#22c55e">
+          <StatCardIcon $color="#22c55e"><TabIconUser /></StatCardIcon>
+          <StatCardInfo>
+            <StatCardValue $color="#22c55e">{roleCounts.user}</StatCardValue>
+            <StatCardLabel>{t('users.users')}</StatCardLabel>
+          </StatCardInfo>
+        </StatCard2>
+      </StatsGrid>
+
       <Card>
-        <ProfileHeader>
-          <ProfileIcon><TeamIcon /></ProfileIcon>
-          <ProfileInfo>
-            <h2>{t('users.teamOverview')}</h2>
-            <p>{t('users.membersSummary', { count: users.length, admin: roleCounts.admin, manager: roleCounts.manager, user: roleCounts.user })}</p>
-          </ProfileInfo>
-        </ProfileHeader>
 
         {/* Tabs */}
         <TabBar>
@@ -548,10 +631,12 @@ const Users: React.FC = () => {
             <Tab
               key={tab.key}
               $active={activeTab === tab.key}
+              $color={tab.color}
               onClick={() => setActiveTab(tab.key)}
             >
+              {(() => { const Icon = TAB_ICONS[tab.key]; return Icon ? <Icon /> : null; })()}
               {tab.label}
-              <TabCount>{roleCounts[tab.key]}</TabCount>
+              <TabCount $active={activeTab === tab.key}>{roleCounts[tab.key]}</TabCount>
             </Tab>
           ))}
         </TabBar>

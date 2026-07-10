@@ -36,6 +36,16 @@ const Card = styled.div`
 
 const HeroCard = styled(Card)`
   padding: ${({ theme }) => theme.spacing.lg}px;
+  position: relative;
+  overflow: hidden;
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, var(--primary, #0ea5e9), #38bdf8, #7dd3fc);
+    border-radius: ${({ theme }) => theme.radii.card}px ${({ theme }) => theme.radii.card}px 0 0;
+  }
 `;
 
 const HeroBody = styled.div`
@@ -45,7 +55,7 @@ const HeroBody = styled.div`
 
 const Avatar = styled.div`
   width: 64px; height: 64px;
-  border-radius: ${({ theme }) => theme.radii.card}px;
+  border-radius: 50%;
   background: var(--primary, #0ea5e9);
   color: #fff;
   display: flex; align-items: center; justify-content: center;
@@ -72,10 +82,13 @@ const HeroMeta = styled.div`
 const MetaChip = styled.span<{ $color?: string; $bg?: string }>`
   display: inline-flex; align-items: center; gap: 5px;
   padding: 3px 12px;
-  border-radius: 20px;
-  font-size: 0.75rem; font-weight: 500;
+  border-radius: 99px;
+  font-size: 0.6875rem; font-weight: 600;
   background: ${({ $bg }) => $bg ?? 'rgba(107,114,128,0.08)'};
   color: ${({ $color }) => $color ?? '#6b7280'};
+  border: 1px solid ${({ $bg }) => $bg ? `${$bg}55` : 'rgba(107,114,128,0.12)'};
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  text-transform: capitalize;
 `;
 
 /* ── Settings Layout (LUNO style: left tabs + right content) ── */
@@ -107,13 +120,13 @@ const TabItem = styled.button<{ $active?: boolean }>`
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  color: ${({ $active, theme }) => $active ? 'var(--primary, #0ea5e9)' : theme.colors.textSecondary};
+  color: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.textSecondary};
   transition: color 0.15s, background 0.15s;
   text-align: left;
   position: relative;
 
-  ${({ $active }) => $active && css`
-    background: rgba(14,165,233,0.06);
+  ${({ $active, theme }) => $active && css`
+    background: ${theme.mode === 'dark' ? 'rgba(14,165,233,0.12)' : 'rgba(14,165,233,0.06)'};
     font-weight: 600;
     &::before {
       content: '';
@@ -121,13 +134,13 @@ const TabItem = styled.button<{ $active?: boolean }>`
       left: 0; top: 8px; bottom: 8px;
       width: 3px;
       border-radius: 0 3px 3px 0;
-      background: var(--primary, #0ea5e9);
+      background: ${theme.colors.blue};
     }
   `}
 
   &:hover {
-    color: var(--primary, #0ea5e9);
-    background: rgba(14,165,233,0.04);
+    color: ${({ theme }) => theme.colors.blue};
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(14,165,233,0.08)' : 'rgba(14,165,233,0.04)'};
   }
 
   & + & {
@@ -200,7 +213,7 @@ const Input = styled.input`
   font-size: 0.875rem;
   outline: none;
   transition: border-color 0.15s;
-  &:focus { border-color: var(--primary, #0ea5e9); }
+  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 `;
 
@@ -210,29 +223,29 @@ const BtnRow = styled.div`
 
 const SaveBtn = styled.button`
   padding: 10px 24px;
-  background: var(--primary, #0ea5e9);
+  background: ${({ theme }) => theme.colors.blue};
   color: #fff;
   border: none;
-  border-radius: ${({ theme }) => theme.radii.control}px;
+  border-radius: 8px;
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s;
-  &:hover { opacity: 0.9; }
+  &:hover { opacity: 0.85; }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
 const DiscardBtn = styled.button`
   padding: 10px 24px;
-  background: transparent;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
   color: ${({ theme }) => theme.colors.textSecondary};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.control}px;
+  border: none;
+  border-radius: 8px;
   font-size: 0.8125rem;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s;
-  &:hover { background: ${({ theme }) => theme.colors.canvas}; }
+  transition: opacity 0.15s;
+  &:hover { opacity: 0.85; }
 `;
 
 const ErrorMsg = styled.div`
@@ -244,6 +257,28 @@ const PwHint = styled.div`
 `;
 
 /* ── SVG Icons ── */
+
+/* ── Role Icons (inline SVG) ── */
+
+const RoleIconSuperAdmin = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" />
+  </svg>
+);
+
+const RoleIconAdmin = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+
+const RoleIconStaff = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+/* ── Tab Icons ── */
 
 const ProfileIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -288,10 +323,10 @@ const UserInfoPage: React.FC = () => {
   const user = (me as any)?.data ?? me;
   const role = user?.role ?? 'staff';
 
-  const ROLE_MAP: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-    super_admin: { label: t('userInfo.roleSuper'), color: '#dc2626', bg: 'rgba(220,38,38,0.08)', icon: '👑' },
-    admin:       { label: t('userInfo.roleAdmin'), color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)',  icon: '🛡️' },
-    staff:       { label: t('userInfo.roleStaff'), color: '#6b7280', bg: 'rgba(107,114,128,0.08)', icon: '👤' },
+  const ROLE_MAP: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
+    super_admin: { label: t('userInfo.roleSuper'), color: '#e87561', bg: 'rgba(232,117,97,0.08)', icon: <RoleIconSuperAdmin /> },
+    admin:       { label: t('userInfo.roleAdmin'), color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)',  icon: <RoleIconAdmin /> },
+    staff:       { label: t('userInfo.roleStaff'), color: '#6b7280', bg: 'rgba(107,114,128,0.08)', icon: <RoleIconStaff /> },
   };
 
   const roleInfo = ROLE_MAP[role] ?? ROLE_MAP.staff;
@@ -392,16 +427,16 @@ const UserInfoPage: React.FC = () => {
                 <PwHint>{t('userInfo.pwHint') || 'Minimum 6 characters'}</PwHint>
                 <FormGroup>
                   <Label>{t('userInfo.labelOldPw')}</Label>
-                  <Input type="password" value={oldPw} onChange={e => setOldPw(e.target.value)} placeholder={t('userInfo.placeholderOldPw')} />
+                  <Input type="password" autoComplete="off" value={oldPw} onChange={e => setOldPw(e.target.value)} placeholder={t('userInfo.placeholderOldPw')} />
                 </FormGroup>
                 <FormRow>
                   <FormGroup>
                     <Label>{t('userInfo.labelNewPw')}</Label>
-                    <Input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder={t('userInfo.placeholderNewPw')} />
+                    <Input type="password" autoComplete="new-password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder={t('userInfo.placeholderNewPw')} />
                   </FormGroup>
                   <FormGroup>
                     <Label>{t('userInfo.labelConfirmPw')}</Label>
-                    <Input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder={t('userInfo.placeholderConfirmPw')} />
+                    <Input type="password" autoComplete="new-password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder={t('userInfo.placeholderConfirmPw')} />
                   </FormGroup>
                 </FormRow>
                 {pwError && <ErrorMsg>{pwError}</ErrorMsg>}
