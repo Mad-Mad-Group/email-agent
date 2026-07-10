@@ -145,7 +145,7 @@ const CardBody = styled.div`padding: 20px;`;
 
 /* ── Unified Search Bar ── */
 
-const UnifiedBar = styled.div<{ $morphing?: boolean }>`
+const UnifiedBar = styled.div<{ $morphing?: boolean; $glow?: boolean }>`
   display: flex;
   align-items: center;
   border-radius: 999px;
@@ -178,14 +178,35 @@ const UnifiedBar = styled.div<{ $morphing?: boolean }>`
     border-color: ${({ theme, $morphing }) => $morphing ? 'transparent' : theme.colors.blue};
     box-shadow: ${({ $morphing }) => $morphing ? 'none' : '0 2px 20px rgba(37,99,235,0.12)'};
   }
+
+  ${({ $glow, $morphing }) => $glow && !$morphing && css`
+    border-color: transparent;
+    box-shadow: 0 0 10px rgba(255,107,107,0.2), 0 0 20px rgba(72,219,251,0.12), 0 0 30px rgba(255,159,243,0.08);
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 999px;
+      padding: 2px;
+      background: conic-gradient(#ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff, #ff6b6b);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: ${haloHue} 3s linear infinite;
+      pointer-events: none;
+    }
+    &:focus-within {
+      box-shadow: 0 0 14px rgba(255,107,107,0.25), 0 0 24px rgba(72,219,251,0.15), 0 0 36px rgba(255,159,243,0.1);
+    }
+  `}
 `;
 
 const BarInput = styled.input`
   flex: 1; min-width: 0;
   border: none; outline: none;
-  padding: 18px 0 18px 28px;
+  padding: 18px 0 18px 12px;
   font-size: 1.05rem;
-  ${media.mobile} { padding: 14px 0 14px 18px; font-size: 0.9375rem; }
+  ${media.mobile} { padding: 14px 0 14px 10px; font-size: 0.9375rem; }
   background: transparent;
   color: ${({ theme }) => theme.colors.textPrimary};
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
@@ -193,23 +214,31 @@ const BarInput = styled.input`
 
 const LocBadge = styled.button`
   display: flex; align-items: center; gap: 5px;
-  padding: 6px 12px; margin: 0 4px;
+  padding: 6px 10px; margin: 0 4px;
   border: none; border-radius: 999px;
-  background: #0f172a; color: #fbbf24;
-  font-size: 0.6875rem; font-weight: 700;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 0.8125rem; font-weight: 600;
   cursor: pointer; white-space: nowrap; flex-shrink: 0;
-  transition: background 0.15s, box-shadow 0.15s;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
-  &:hover { background: #1e293b; box-shadow: 0 2px 8px rgba(251,191,36,0.2); }
+  transition: color 0.15s, background 0.15s;
   position: relative;
+  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; background: rgba(0,0,0,0.03); }
+  &::after {
+    content: ''; display: inline-block;
+    width: 4px; height: 4px; margin-left: 1px;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: translateY(-1px) rotate(45deg);
+    opacity: 0.35;
+  }
 `;
 
-const LocFlag = styled.span`
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 18px; height: 18px; border-radius: 4px;
-  background: #fbbf24; color: #0f172a;
-  font-size: 0.5rem; font-weight: 800; letter-spacing: -0.02em;
-`;
+const MapPinIcon = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+    <path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6C3.5 9.5 8 14.5 8 14.5S12.5 9.5 12.5 6C12.5 3.5 10.5 1.5 8 1.5Z"/>
+    <circle cx="8" cy="6" r="1.5"/>
+  </svg>
+);
 
 const BarSearchBtn = styled.button`
   display: flex; align-items: center; justify-content: center;
@@ -239,22 +268,62 @@ const LocOption = styled.button<{ $active?: boolean }>`
   padding: 6px 10px; border: none;
   border-radius: 8px; font-size: 0.75rem; font-weight: 500;
   cursor: pointer; white-space: nowrap;
-  background: ${({ $active }) => $active ? '#1e293b' : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#fbbf24' : theme.colors.textSecondary};
+  background: ${({ $active }) => $active ? '#e0f2fe' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#0369a1' : theme.colors.textSecondary};
   transition: background 0.12s;
-  &:hover { background: ${({ $active }) => $active ? '#1e293b' : '#f1f5f9'}; }
+  &:hover { background: ${({ $active }) => $active ? '#e0f2fe' : '#f1f5f9'}; }
 `;
 
-const ModeToggle = styled.button<{ $active?: boolean }>`
-  display: flex; align-items: center; gap: 4px;
-  padding: 4px 10px; margin: 0 2px;
-  border: 1.5px solid ${({ $active }) => $active ? '#f97316' : 'rgba(148,163,184,0.3)'};
-  border-radius: 20px; font-size: 0.7rem; font-weight: 600;
-  cursor: pointer; white-space: nowrap; flex-shrink: 0;
-  background: ${({ $active }) => $active ? 'rgba(249,115,22,0.12)' : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#f97316' : theme.colors.textSecondary};
-  transition: all 0.15s;
-  &:hover { border-color: #f97316; color: #f97316; }
+const haloHue = keyframes`
+  from { filter: hue-rotate(0deg); }
+  to { filter: hue-rotate(360deg); }
+`;
+
+const ModePill = styled.div`
+  display: flex; align-items: center;
+  border-radius: 24px; padding: 3px;
+  background: ${({ theme }) => theme.colors.surfaceMuted || '#f1f5f9'};
+  margin: 5px 0 5px 5px; flex-shrink: 0;
+  position: relative;
+  align-self: stretch;
+`;
+
+const ModeThumb = styled.div<{ $right: boolean }>`
+  position: absolute;
+  top: 3px; bottom: 3px; left: 3px;
+  width: calc(50% - 3px);
+  border-radius: 21px;
+  background: ${({ $right }) => $right ? '#1a1a2e' : '#0ea5e9'};
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s;
+  transform: translateX(${({ $right }) => $right ? '100%' : '0'});
+  z-index: 0;
+
+  ${({ $right }) => $right && css`
+    box-shadow: 0 0 8px rgba(255,107,107,0.3), 0 0 14px rgba(72,219,251,0.15);
+    &::before {
+      content: '';
+      position: absolute;
+      inset: -2px;
+      border-radius: 999px;
+      padding: 2px;
+      background: conic-gradient(#ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff, #ff6b6b);
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      animation: ${haloHue} 3s linear infinite;
+      pointer-events: none;
+    }
+  `}
+`;
+
+const ModeOption = styled.button<{ $active: boolean }>`
+  position: relative; z-index: 1;
+  padding: 10px 14px; border: none; border-radius: 21px;
+  background: transparent;
+  font-size: 0.75rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+  color: ${({ $active }) => $active ? '#fff' : 'inherit'};
+  transition: color 0.25s;
 `;
 
 const HK_DISTRICTS = [
@@ -331,70 +400,65 @@ const FieldGroup = styled.div`
   gap: 2px;
 `;
 
-/* 数字框 */
+/* 数字圆圈 */
 const NumberWrap = styled.div`
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0;
+  justify-content: center;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: transparent;
   flex-shrink: 0;
+  margin: 0 6px;
+  gap: 0;
   position: relative;
   &::after {
     content: '';
     position: absolute;
-    bottom: -12px;
-    left: 26px;
+    bottom: -10px;
+    left: 50%;
     transform: translateX(-50%);
-    width: 80px;
-    height: 60px;
+    width: 72px;
+    height: 56px;
     border-radius: 50%;
     background: radial-gradient(ellipse at 50% 50%, rgba(37,99,235,0.10) 0%, rgba(37,99,235,0.05) 25%, rgba(37,99,235,0.02) 45%, rgba(37,99,235,0.005) 65%, transparent 85%);
     filter: blur(4px);
     pointer-events: none;
+    z-index: -1;
   }
 `;
 
 const NumberInput = styled.input`
-  width: 52px;
-  padding: 6px 0;
-  border: none;
-  border-radius: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
-  text-align: center;
+  width: 28px; padding: 0;
+  border: none; border-radius: 0;
+  font-size: 0.8125rem; font-weight: 700;
+  text-align: center; line-height: 1;
   outline: none;
   color: ${({ theme }) => theme.colors.textPrimary};
   background: transparent;
   -moz-appearance: textfield;
   &::-webkit-inner-spin-button,
   &::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-  &:focus { border-bottom-color: ${({ theme }) => theme.colors.blue}; }
-`;
-
-const NumArrows = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-left: 4px;
 `;
 
 const NumArrowBtn = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 18px;
-  height: 16px;
-  border: none;
-  border-radius: 3px;
+  display: flex; align-items: center; justify-content: center;
+  width: 24px; height: 12px;
+  border: none; border-radius: 2px;
   background: transparent;
   color: ${({ theme }) => theme.colors.textTertiary};
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.15s, background 0.15s;
-  &:hover {
-    color: ${({ theme }) => theme.colors.blue};
-    background: ${({ theme }) => theme.colors.surfaceMuted};
-  }
+  cursor: pointer; padding: 0;
+  transition: color 0.15s;
+  &:hover { color: ${({ theme }) => theme.colors.blue}; }
 `;
+
+const ChevronUp = () => (
+  <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 5L5 1L9 5"/></svg>
+);
+const ChevronDown = () => (
+  <svg width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1L5 5L9 1"/></svg>
+);
 
 /* A/B 分隔 */
 const Separator = styled.div`
@@ -1691,7 +1755,12 @@ const SearchPage: React.FC = () => {
         {DOT_CONFIG.map((d, i) => (
           <Dot key={i} $x={d.x} $y={d.y} $size={d.size} $delay={d.delay} $dur={d.dur} />
         ))}
-        <UnifiedBar as="form" onSubmit={handleSubmit} ref={locRef} $morphing={search.isPending || isPipelineRunning}>
+        <UnifiedBar as="form" onSubmit={handleSubmit} ref={locRef} $morphing={search.isPending || isPipelineRunning} $glow={searchMode === 'old_website'}>
+            <ModePill>
+              <ModeThumb $right={searchMode === 'old_website'} />
+              <ModeOption type="button" $active={searchMode === 'normal'} onClick={() => setSearchMode('normal')}>{t('search.modeNormal')}</ModeOption>
+              <ModeOption type="button" $active={searchMode === 'old_website'} onClick={() => setSearchMode('old_website')}>{t('search.modeOldSite')}</ModeOption>
+            </ModePill>
             <BarInput
               type="text"
               placeholder={t('search.keywordPlaceholder')}
@@ -1700,19 +1769,12 @@ const SearchPage: React.FC = () => {
               required
               autoFocus
             />
-            <ModeToggle
-              type="button"
-              $active={searchMode === 'old_website'}
-              onClick={() => setSearchMode(m => m === 'normal' ? 'old_website' : 'normal')}
-              title={searchMode === 'old_website' ? '搜尋舊網站模式（點擊切換回普通）' : '點擊切換到舊網站搜尋模式'}
-            >
-              {searchMode === 'old_website' ? '🕸 舊網站' : '📍 普通'}
-            </ModeToggle>
             <LocBadge type="button" onClick={() => setShowLocPicker(p => !p)}>
-              <LocFlag>HK</LocFlag>
-              {district === '全區' ? '全區' : district}
+              <MapPinIcon />
+              {district === '全區' ? t('search.allDistricts') : district}
             </LocBadge>
-            <NumberWrap style={{ marginRight: 4 }}>
+            <NumberWrap>
+              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(200, c + 5))}><ChevronUp /></NumArrowBtn>
               <NumberInput
                 type="number"
                 min={1}
@@ -1720,10 +1782,7 @@ const SearchPage: React.FC = () => {
                 value={targetCount}
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTargetCount(Math.max(1, Math.min(200, Number(e.target.value) || 1)))}
               />
-              <NumArrows>
-                <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(200, c + 5))}>▲</NumArrowBtn>
-                <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.max(1, c - 5))}>▼</NumArrowBtn>
-              </NumArrows>
+              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.max(1, c - 5))}><ChevronDown /></NumArrowBtn>
             </NumberWrap>
             <BarSearchBtn type="submit" disabled={search.isPending || !keyword.trim()}>
               {search.isPending ? <Spinner /> : <SearchBtnIcon />}
@@ -1732,7 +1791,7 @@ const SearchPage: React.FC = () => {
               <LocDropdown>
                 {HK_DISTRICTS.map(d => (
                   <LocOption key={d} $active={district === d} onClick={() => { setDistrict(d); setShowLocPicker(false); }}>
-                    {d}
+                    {d === '全區' ? t('search.allDistricts') : d}
                   </LocOption>
                 ))}
               </LocDropdown>

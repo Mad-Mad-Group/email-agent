@@ -425,6 +425,9 @@ const en = {
     ratingAbove: '★ ≥',
     ratingAll: 'All',
     noFilterResults: 'No results match the filter criteria.',
+    modeNormal: 'Normal',
+    modeOldSite: 'Old Site',
+    allDistricts: 'All HK',
   },
   tasks: {
     searchPlaceholder: 'Search tasks...',

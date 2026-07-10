@@ -425,6 +425,9 @@ const zhTW = {
     ratingAbove: '★ ≥',
     ratingAll: '不限',
     noFilterResults: '沒有符合篩選條件的結果',
+    modeNormal: '普通',
+    modeOldSite: '舊網站',
+    allDistricts: '全港',
   },
   tasks: {
     searchPlaceholder: '搜尋任務...',

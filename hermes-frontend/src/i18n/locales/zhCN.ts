@@ -392,6 +392,9 @@ const zhCN = {
     ratingAbove: '★ ≥',
     ratingAll: '不限',
     noFilterResults: '没有符合筛选条件的结果',
+    modeNormal: '普通',
+    modeOldSite: '旧网站',
+    allDistricts: '全港',
   },
   tasks: {
     searchPlaceholder: '搜索任务...',
