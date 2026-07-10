@@ -1462,13 +1462,15 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   cursor: pointer;
   white-space: nowrap;
   transition: opacity 0.15s;
-  border: 1px solid ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.15)' : `${theme.colors.accent}33`};
+  border: 1px solid ${({ $variant, theme }) =>
+    $variant === 'danger' ? (theme.mode === 'dark' ? 'rgba(239,68,68,0.4)' : `${theme.colors.red}55`) :
+    theme.mode === 'dark' ? 'rgba(255,255,255,0.15)' : `${theme.colors.accent}33`};
   background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? (theme.mode === 'dark' ? 'rgba(255,255,255,0.08)' : `${theme.colors.red}0f`) :
+    $variant === 'danger' ? (theme.mode === 'dark' ? 'rgba(239,68,68,0.18)' : '#fef2f2') :
     $variant === 'primary' ? (theme.mode === 'dark' ? 'rgba(255,255,255,0.15)' : `${theme.colors.accent}1a`) :
     'transparent'};
   color: ${({ $variant, theme }) =>
-    $variant === 'danger' ? theme.colors.red :
+    $variant === 'danger' ? (theme.mode === 'dark' ? '#fca5a5' : '#dc2626') :
     theme.colors.accent};
   &:hover { opacity: 0.85; }
 `;
@@ -1685,7 +1687,7 @@ const EmailCard = styled.div<{ $expanded?: boolean }>`
   box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.03);
   max-width: 100%;
   position: relative;
-  overflow: hidden;
+  overflow: visible;
 
   /* Paper fold corner */
   &::after {
@@ -1737,8 +1739,6 @@ const EmailBodyContent = styled.div`
   border: 1px solid ${({ theme }) => theme.mode === 'dark' ? theme.colors.border : '#e8e0d4'};
   box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
   max-width: 100%;
-  max-height: 260px;
-  overflow-y: auto;
   overflow-x: hidden;
   &::-webkit-scrollbar { width: 5px; }
   &::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
