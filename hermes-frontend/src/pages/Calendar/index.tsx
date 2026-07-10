@@ -38,6 +38,22 @@ const MainArea = styled.div`
   position: relative;
 `;
 
+const AgendaPanel = styled.div`
+  width: 280px;
+  flex-shrink: 0;
+  padding: 16px 20px;
+  align-self: flex-start;
+  position: sticky;
+  top: 16px;
+  background: ${({ theme }: any) => theme.colors.surface};
+  border-radius: 14px;
+  box-shadow: ${({ theme }: any) => theme.shadows.card};
+  ${media.mobile} {
+    width: 100%;
+    position: static;
+  }
+`;
+
 const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
   border-radius: 14px;
@@ -779,14 +795,31 @@ const Calendar: React.FC = () => {
     });
   };
 
-  // Upcoming events (next 3 future events)
+  // Today's agenda — events on today's date
+  const todayAgenda = useMemo(() => {
+    return filteredEvents.filter(e => {
+      if (e.rawStart) {
+        return e.rawStart.getFullYear() === today.getFullYear() &&
+               e.rawStart.getMonth() === today.getMonth() &&
+               e.rawStart.getDate() === today.getDate();
+      }
+      return month === today.getMonth() && year === today.getFullYear() && e.day === today.getDate();
+    }).sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+  }, [filteredEvents, today, month, year]);
+
+  // Upcoming events (next 3 future events, excluding today)
   const upcoming = useMemo(() => {
-    const now = new Date();
     return filteredEvents
-      .filter(e => !e.past)
+      .filter(e => {
+        if (e.rawStart) {
+          const t = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+          return e.rawStart.getTime() > t.getTime() + 86400000 - 1;
+        }
+        return !e.past && e.day > today.getDate();
+      })
       .sort((a, b) => (a.day - b.day))
       .slice(0, 3);
-  }, [filteredEvents]);
+  }, [filteredEvents, today]);
 
   const toggleFilter = (key: string) => {
     setTypeFilters(prev => ({ ...prev, [key]: !prev[key] }));
@@ -847,72 +880,6 @@ const Calendar: React.FC = () => {
   return (
     <Page>
       <CalLayout>
-        {/* ── Left Sidebar ── */}
-        <Sidebar>
-          {/* Mini Calendar */}
-          <SideCard>
-            <MiniNavRow>
-              <MiniNavBtn onClick={() => {
-                if (month === 0) { setYear(year - 1); setMonth(11); }
-                else setMonth(month - 1);
-              }}>&lt;</MiniNavBtn>
-              <MiniNavTitle>{MONTHS_SHORT[month]} {year}</MiniNavTitle>
-              <MiniNavBtn onClick={() => {
-                if (month === 11) { setYear(year + 1); setMonth(0); }
-                else setMonth(month + 1);
-              }}>&gt;</MiniNavBtn>
-            </MiniNavRow>
-            <MiniCalGrid>
-              {DAY_NAMES.map(d => <MiniCalHead key={d}>{d.charAt(0)}</MiniCalHead>)}
-              {miniCells.map((c, i) => (
-                <MiniCalDay
-                  key={i}
-                  $today={isToday(c.date)}
-                  $other={!c.current}
-                  $inWeek={viewMode === 'week' && isInWeek(c.date)}
-                  onClick={() => handleMiniDayClick(c.date)}
-                >
-                  {c.date.getDate()}
-                </MiniCalDay>
-              ))}
-            </MiniCalGrid>
-          </SideCard>
-
-          {/* Event Type Filters */}
-          <SideCard>
-            <SideTitle>Event type</SideTitle>
-            {(['meeting', 'follow_up', 'deadline', 'other'] as const).map(key => (
-              <FilterRow key={key} onClick={() => toggleFilter(key)}>
-                <FilterDot $color={EVENT_TYPE_DOT_COLORS[key]} />
-                <span>{EVENT_TYPE_LABELS[key]}</span>
-                <FilterToggle $on={typeFilters[key]} />
-              </FilterRow>
-            ))}
-          </SideCard>
-
-          {/* Upcoming */}
-          <SideCard>
-            <SideTitle>Upcoming</SideTitle>
-            {upcoming.length === 0 && (
-              <UpcomingMeta style={{ padding: '8px 0' }}>No upcoming events</UpcomingMeta>
-            )}
-            {upcoming.map((ev, i) => (
-              <UpcomingItem key={i}>
-                <UpcomingDot $color={EVENT_TYPE_DOT_COLORS[ev.eventType] || '#0ea5e9'} />
-                <UpcomingInfo>
-                  <UpcomingTitle>{ev.title}</UpcomingTitle>
-                  <UpcomingMeta>
-                    {MONTHS_SHORT[month]} {ev.day} · {ev.time || 'All day'}
-                  </UpcomingMeta>
-                </UpcomingInfo>
-                <UpcomingTag $color={EVENT_TYPE_DOT_COLORS[ev.eventType] || '#0ea5e9'}>
-                  {EVENT_TYPE_LABELS[ev.eventType]}
-                </UpcomingTag>
-              </UpcomingItem>
-            ))}
-          </SideCard>
-        </Sidebar>
-
         {/* ── Main Calendar Area ── */}
         <MainArea>
           <SpiralCalCard>
@@ -1050,6 +1017,30 @@ const Calendar: React.FC = () => {
             );
           })()}
         </MainArea>
+
+        {/* 今日議程 — 月曆模式右側顯示 */}
+        {viewMode === 'month' && (
+          <AgendaPanel>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+              <span style={{ fontSize: '1rem', fontWeight: 600 }}>今日議程</span>
+              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                {today.getMonth() + 1}/{today.getDate()}（{DAY_NAMES[today.getDay()]})
+              </span>
+            </div>
+            {todayAgenda.length > 0 ? (
+              <DayEventList>
+                {todayAgenda.map((ev, i) => (
+                  <DayEventItem key={i} $color={EVENT_TYPE_DOT_COLORS[ev.eventType]} $past={ev.past}>
+                    <DayEventTime>{ev.time || '全日'}</DayEventTime>
+                    <DayEventTitle>{ev.title}</DayEventTitle>
+                  </DayEventItem>
+                ))}
+              </DayEventList>
+            ) : (
+              <DayEmptyText>今日暫無事項</DayEmptyText>
+            )}
+          </AgendaPanel>
+        )}
       </CalLayout>
 
       {/* Footer */}
