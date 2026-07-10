@@ -195,18 +195,19 @@ const LocBadge = styled.button`
   display: flex; align-items: center; gap: 5px;
   padding: 6px 12px; margin: 0 4px;
   border: none; border-radius: 999px;
-  background: #fef2f2; color: #b91c1c;
+  background: #0f172a; color: #fbbf24;
   font-size: 0.6875rem; font-weight: 700;
   cursor: pointer; white-space: nowrap; flex-shrink: 0;
-  transition: background 0.15s;
-  &:hover { background: #fee2e2; }
+  transition: background 0.15s, box-shadow 0.15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+  &:hover { background: #1e293b; box-shadow: 0 2px 8px rgba(251,191,36,0.2); }
   position: relative;
 `;
 
 const LocFlag = styled.span`
   display: inline-flex; align-items: center; justify-content: center;
   width: 18px; height: 18px; border-radius: 4px;
-  background: #dc2626; color: #fff;
+  background: #fbbf24; color: #0f172a;
   font-size: 0.5rem; font-weight: 800; letter-spacing: -0.02em;
 `;
 
@@ -238,10 +239,10 @@ const LocOption = styled.button<{ $active?: boolean }>`
   padding: 6px 10px; border: none;
   border-radius: 8px; font-size: 0.75rem; font-weight: 500;
   cursor: pointer; white-space: nowrap;
-  background: ${({ $active }) => $active ? '#fee2e2' : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#dc2626' : theme.colors.textSecondary};
+  background: ${({ $active }) => $active ? '#1e293b' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? '#fbbf24' : theme.colors.textSecondary};
   transition: background 0.12s;
-  &:hover { background: ${({ $active }) => $active ? '#fee2e2' : '#f1f5f9'}; }
+  &:hover { background: ${({ $active }) => $active ? '#1e293b' : '#f1f5f9'}; }
 `;
 
 const HK_DISTRICTS = [
@@ -1031,223 +1032,96 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'default' }>`
   &:hover { opacity: 0.85; }
 `;
 
-/* ── Results + Browser split ── */
+/* ── Pipeline Stepper ── */
 
-const SplitRow = styled.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  align-items: start;
-  ${media.mobile} { grid-template-columns: 1fr; }
+const PIPELINE_STAGES = ['search', 'enrich', 'analyze', 'draft', 'send'] as const;
+const PIPELINE_STAGE_NUMS: Record<string, number> = {
+  search: 1, enrich: 2, analyze: 3, draft: 4, send: 5,
+};
+const PIPELINE_STAGE_LABELS_SHORT: Record<string, string> = {
+  search: '搜尋', enrich: '充實', analyze: '分析', draft: '撰寫', send: '發送',
+};
+
+const stepPulse = keyframes`
+  0%, 100% { box-shadow: 0 0 0 0 rgba(14,165,233,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(14,165,233,0); }
 `;
 
-const ResultPane = styled.div`
-  min-width: 0;
-`;
-
-/* ── Browser Preview ── */
-
-const BrowserFrame = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border-radius: 14px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
-  overflow: hidden;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-`;
-
-const BrowserChrome = styled.div`
-  background: #f0f0f0;
-  padding: 6px 10px;
+const StepperWrap = styled.div`
   display: flex;
-  align-items: center;
-  gap: 8px;
-  border-bottom: 1px solid #cbd5e1;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0;
+  padding: 12px 0 4px;
+  width: 100%;
 `;
 
-const BrowserDots = styled.div`
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
-  span {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-  }
-`;
-
-const BrowserAddressBar = styled.div`
-  flex: 1;
-  background: #fff;
-  border: 1px solid #cbd5e1;
-  border-radius: 4px;
-  padding: 3px 8px;
-  font-size: 10px;
-  color: #94a3b8;
-  font-family: 'JetBrains Mono', monospace;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
-const BrowserTabs = styled.div`
-  display: flex;
-  gap: 1px;
-  padding: 4px 10px 0;
-  background: #e8e8e8;
-`;
-
-const BrowserTab = styled.div<{ $active?: boolean }>`
-  padding: 4px 12px;
-  font-size: 9px;
-  border-radius: 4px 4px 0 0;
-  background: ${({ $active }) => $active ? '#f0f0f0' : '#cbd5e1'};
-  color: ${({ $active }) => $active ? '#1e293b' : '#94a3b8'};
-  font-weight: ${({ $active }) => $active ? 600 : 400};
-  max-width: 120px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-`;
-
-const BrowserBody = styled.div`
-  height: 260px;
-  background: #fff;
-  overflow: hidden;
-  position: relative;
-  font-size: 11px;
-`;
-
-const blinkCursor = keyframes`
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0; }
-`;
-
-const scanLine = keyframes`
-  0% { top: 0; }
-  100% { top: 100%; }
-`;
-
-const ScanOverlay = styled.div`
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 2px;
-  background: rgba(37,99,235,0.15);
-  animation: ${scanLine} 3s ease-in-out infinite;
-  z-index: 2;
-  pointer-events: none;
-`;
-
-/* Mock Google Maps results page */
-const MockPage = styled.div`
-  padding: 10px;
+const StepItem = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 6px;
-`;
-
-const MockSearchBar = styled.div`
-  display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 8px;
-  background: #f8f8f8;
-  border: 1px solid #cbd5e1;
-  border-radius: 20px;
-  margin-bottom: 4px;
+  min-width: 64px;
 `;
 
-const MockSearchIcon = styled.span`
-  font-size: 10px;
-  color: #999;
-`;
-
-const MockSearchText = styled.span`
-  font-size: 10px;
-  color: #1e293b;
-  font-weight: 500;
-`;
-
-const MockResult = styled.div<{ $highlighted?: boolean }>`
-  padding: 6px 8px;
-  border-radius: 4px;
-  border-left: 2px solid transparent;
-  ${({ $highlighted }) => $highlighted && css`
-    background: rgba(37,99,235,0.08);
-    border-left-color: #0ea5e9;
+const StepCircle = styled.div<{ $state: 'done' | 'active' | 'pending' }>`
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: all 0.3s;
+  background: ${({ $state }) =>
+    $state === 'done' ? '#22c55e' :
+    $state === 'active' ? '#0ea5e9' :
+    '#e2e8f0'};
+  color: ${({ $state }) => $state === 'pending' ? '#94a3b8' : '#fff'};
+  ${({ $state }) => $state === 'active' && css`
+    animation: ${stepPulse} 2s ease-in-out infinite;
   `}
 `;
 
-const MockResultName = styled.div`
-  font-size: 10px;
+const StepLine = styled.div<{ $done: boolean }>`
+  flex: 1;
+  height: 3px;
+  min-width: 28px;
+  max-width: 72px;
+  margin-top: 20px;
+  border-radius: 2px;
+  background: ${({ $done }) => $done ? '#22c55e' : '#e2e8f0'};
+  transition: background 0.3s;
+`;
+
+const StepLabel = styled.div<{ $state: 'done' | 'active' | 'pending' }>`
+  font-size: 0.8125rem;
   font-weight: 600;
-  color: #1a0dab;
+  text-align: center;
+  color: ${({ $state }) =>
+    $state === 'active' ? '#0ea5e9' :
+    $state === 'done' ? '#22c55e' :
+    '#94a3b8'};
+  transition: color 0.3s;
 `;
 
-const MockResultMeta = styled.div`
-  font-size: 9px;
-  color: #94a3b8;
-  margin-top: 1px;
-`;
-
-const MockResultSnippet = styled.div`
-  font-size: 9px;
-  color: #475569;
-  margin-top: 2px;
-`;
-
-const MockStars = styled.span`
-  color: #f4b400;
-  font-size: 8px;
-`;
-
-/* Agent activity log */
-const AgentLog = styled.div`
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
-  padding: 8px 10px;
-  max-height: 120px;
-  overflow-y: auto;
-  background: ${({ theme }) => theme.colors.canvas};
-`;
-
-const AgentLogTitle = styled.div`
-  font-size: 10px;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  margin-bottom: 4px;
+const LeadCounter = styled.div`
   display: flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
+  gap: 6px;
+  padding: 4px 0 8px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
-const pulseAgent = keyframes`
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
-`;
-
-const AgentDot = styled.span`
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #16a34a;
-  animation: ${pulseAgent} 1.5s ease-in-out infinite;
-`;
-
-const LogLine = styled.div`
-  font-size: 9px;
-  font-family: 'JetBrains Mono', monospace;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  padding: 1px 0;
-  line-height: 1.5;
-`;
-
-const LogTime = styled.span`
-  color: ${({ theme }) => theme.colors.blue};
-  margin-right: 6px;
-`;
-
-const LogUrl = styled.span`
+const LeadCountNum = styled.span`
   color: #0ea5e9;
+  font-size: 1rem;
+  font-weight: 700;
 `;
 
 /* ── Pipeline Progress ── */
@@ -1498,93 +1372,6 @@ function renderStars(rating: number): string {
   const half = rating - full >= 0.3 ? 1 : 0;
   return '★'.repeat(full) + (half ? '½' : '') + '☆'.repeat(5 - full - half);
 }
-
-/* ── Mock browser data ── */
-const MOCK_MAP_RESULTS = [
-  { name: '宏達水電行', rating: '4.5', reviews: 128, addr: '台北市信義區松仁路100號', phone: '02-2720-xxxx' },
-  { name: '永豐水電工程', rating: '4.2', reviews: 85, addr: '台北市大安區復興南路200號', phone: '02-2705-xxxx' },
-  { name: '大同水電維修', rating: '4.8', reviews: 203, addr: '台北市中山區南京東路50號', phone: '02-2562-xxxx' },
-  { name: '建成水電服務', rating: '3.9', reviews: 42, addr: '台北市萬華區西園路88號', phone: '02-2302-xxxx' },
-  { name: '信義水電急修', rating: '4.6', reviews: 156, addr: '台北市松山區八德路300號', phone: '02-2579-xxxx' },
-];
-
-const MOCK_LOG_LINES = [
-  { time: '10:32:01', msg: '開始搜尋', url: 'google.com/maps' },
-  { time: '10:32:03', msg: '載入搜尋結果', url: 'google.com/maps/search/水電工+台北市' },
-  { time: '10:32:05', msg: '擷取商家資料', url: '宏達水電行 — 電話、地址、評分' },
-  { time: '10:32:08', msg: '擷取商家資料', url: '永豐水電工程 — 電話、地址、評分' },
-  { time: '10:32:11', msg: '擷取商家資料', url: '大同水電維修 — 電話、地址、評分' },
-  { time: '10:32:14', msg: '翻頁載入更多', url: 'google.com/maps — 第2頁' },
-  { time: '10:32:17', msg: '擷取商家資料', url: '建成水電服務 — 電話、地址、評分' },
-  { time: '10:32:20', msg: '擷取商家資料', url: '信義水電急修 — 電話、地址、評分' },
-];
-
-/* ── Browser Preview Component ── */
-const BrowserPreview: React.FC<{ keyword: string; location: string }> = ({ keyword, location }) => {
-  const [highlightIdx, setHighlightIdx] = useState(0);
-  const [logCount, setLogCount] = useState(3);
-  const logRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const t1 = setInterval(() => setHighlightIdx(i => (i + 1) % MOCK_MAP_RESULTS.length), 2500);
-    const t2 = setInterval(() => setLogCount(c => Math.min(c + 1, MOCK_LOG_LINES.length)), 2000);
-    return () => { clearInterval(t1); clearInterval(t2); };
-  }, []);
-
-  useEffect(() => {
-    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
-  }, [logCount]);
-
-  const displayKeyword = keyword || '水電工';
-  const displayLocation = location || '台北市';
-
-  return (
-    <BrowserFrame>
-      <BrowserTabs>
-        <BrowserTab $active>Google Maps</BrowserTab>
-        <BrowserTab>搜尋結果</BrowserTab>
-      </BrowserTabs>
-      <BrowserChrome>
-        <BrowserDots>
-          <span style={{ background: '#ff5f57' }} />
-          <span style={{ background: '#febc2e' }} />
-          <span style={{ background: '#28c840' }} />
-        </BrowserDots>
-        <BrowserAddressBar>
-          google.com/maps/search/{displayKeyword}+{displayLocation}
-        </BrowserAddressBar>
-      </BrowserChrome>
-      <BrowserBody>
-        <ScanOverlay />
-        <MockPage>
-          <MockSearchBar>
-            <MockSearchIcon>🔍</MockSearchIcon>
-            <MockSearchText>{displayKeyword} {displayLocation}</MockSearchText>
-          </MockSearchBar>
-          {MOCK_MAP_RESULTS.map((r, i) => (
-            <MockResult key={i} $highlighted={i === highlightIdx}>
-              <MockResultName>{r.name}</MockResultName>
-              <MockResultMeta>
-                <MockStars>{'★'.repeat(Math.floor(Number(r.rating)))}{'☆'.repeat(5 - Math.floor(Number(r.rating)))}</MockStars>
-                {' '}{r.rating} ({r.reviews}) · {r.addr}
-              </MockResultMeta>
-              {i === highlightIdx && <MockResultSnippet>📞 {r.phone} — Agent 正在擷取此商家資料...</MockResultSnippet>}
-            </MockResult>
-          ))}
-        </MockPage>
-      </BrowserBody>
-      <AgentLog ref={logRef}>
-        <AgentLogTitle><AgentDot /> Scraper Agent 活動日誌</AgentLogTitle>
-        {MOCK_LOG_LINES.slice(0, logCount).map((line, i) => (
-          <LogLine key={i}>
-            <LogTime>[{line.time}]</LogTime>
-            {line.msg} — <LogUrl>{line.url}</LogUrl>
-          </LogLine>
-        ))}
-      </AgentLog>
-    </BrowserFrame>
-  );
-};
 
 const SearchPage: React.FC = () => {
   const { t } = useTranslation();
@@ -1978,8 +1765,40 @@ const SearchPage: React.FC = () => {
           {search.isError && (
             <StatusBanner $type="error">搜尋失敗：{(search.error as any)?.message || '未知錯誤'}</StatusBanner>
           )}
-          {isPipelineRunning && pipelineLogs.length > 0 && (
+          {isPipelineRunning && (
             <PipelineSection>
+              {/* Stepper */}
+              <StepperWrap>
+                {PIPELINE_STAGES.map((stage, i) => {
+                  const currentIdx = pipelineProgress
+                    ? PIPELINE_STAGES.indexOf(pipelineProgress.stage as typeof PIPELINE_STAGES[number])
+                    : -1;
+                  const state: 'done' | 'active' | 'pending' =
+                    i < currentIdx ? 'done' :
+                    i === currentIdx ? 'active' :
+                    'pending';
+                  return (
+                    <React.Fragment key={stage}>
+                      {i > 0 && <StepLine $done={i <= currentIdx} />}
+                      <StepItem>
+                        <StepCircle $state={state}>
+                          {state === 'done' ? '✓' : PIPELINE_STAGE_NUMS[stage]}
+                        </StepCircle>
+                        <StepLabel $state={state}>{PIPELINE_STAGE_LABELS_SHORT[stage]}</StepLabel>
+                      </StepItem>
+                    </React.Fragment>
+                  );
+                })}
+              </StepperWrap>
+
+              {/* Lead counter */}
+              {pipelineProgress && pipelineProgress.total > 0 && (
+                <LeadCounter>
+                  已找到 <LeadCountNum>{pipelineProgress.current}</LeadCountNum> / {pipelineProgress.total} 筆
+                </LeadCounter>
+              )}
+
+              {/* Log feed */}
               {pipelineLogs.length > 0 && (
                 <PipelineLogFeed ref={pipelineLogRef}>
                   {pipelineLogs.map((log, i) => (

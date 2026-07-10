@@ -82,12 +82,12 @@ const SOURCE_LABELS: Record<string, string> = {
   system: 'System',
 };
 
-/* ── Agent label positions (zoned layout) ── */
+/* ── Agent label positions (ground starts ~58%) ── */
 const AGENT_POSITIONS: Record<string, { top: string; left: string }> = {
-  S1: { top: '30%', left: '2%' },   /* Fox — top-left corner */
-  S2: { top: '46%', left: '5%' },   /* Cow — left pasture */
-  S3: { top: '36%', left: '72%' },  /* Chicken — right field */
-  S4: { top: '58%', left: '35%' },  /* Duck — river */
+  S1: { top: '58%', left: '15%' },  /* Fox — left ground */
+  S2: { top: '62%', left: '32%' },  /* Cow — center-left pasture */
+  S3: { top: '56%', left: '72%' },  /* Chicken — right field */
+  S4: { top: '70%', left: '38%' },  /* Duck — river */
 };
 
 /* ── Agent sprite images (farm animals) ── */
@@ -183,42 +183,64 @@ const idleBounce = keyframes`
   50%      { transform: translateY(-3px); }
 `;
 
-/* ── Natural animal movement animations ── */
+/* ── Animal movement: stop 4s → move 1s → stop 4s → return 1s (10s cycle) ── */
+const beeFloat = keyframes`
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(30px, -14px); }
+  50% { transform: translate(55px, -6px); }
+  75% { transform: translate(22px, -20px); }
+`;
+
+const sheepWalk = keyframes`
+  0%, 40% { transform: translate(0, 0); }
+  50% { transform: translate(-50px, 5px); }
+  50.1%, 90% { transform: translate(-50px, 5px); }
+  100% { transform: translate(0, 0); }
+`;
+
+const bunnyHop = keyframes`
+  0%, 40% { transform: translate(0, 0); }
+  43% { transform: translate(25px, -12px); }
+  46% { transform: translate(50px, 0); }
+  50% { transform: translate(75px, 0); }
+  50.1%, 90% { transform: translate(75px, 0); }
+  94% { transform: translate(50px, -12px); }
+  97% { transform: translate(25px, 0); }
+  100% { transform: translate(0, 0); }
+`;
+
 const foxDart = keyframes`
-  0%, 100% { transform: translate(0, 0) scaleX(1); }
-  15% { transform: translate(18px, -6px) scaleX(1); }
-  30% { transform: translate(30px, 0) scaleX(1); }
-  45% { transform: translate(20px, 4px) scaleX(-1); }
-  60% { transform: translate(5px, -2px) scaleX(-1); }
-  80% { transform: translate(-8px, 3px) scaleX(1); }
+  0%, 40% { transform: translate(0, 0); }
+  50% { transform: translate(85px, -6px); }
+  50.1%, 90% { transform: translate(85px, -6px); }
+  100% { transform: translate(0, 0); }
 `;
 
 const cowGraze = keyframes`
-  0%, 100% { transform: translateY(0); }
-  20% { transform: translateY(3px); }
-  40% { transform: translateY(5px); }
-  60% { transform: translateY(3px); }
-  80% { transform: translateY(1px); }
+  0%, 40% { transform: translate(0, 0); }
+  50% { transform: translate(65px, 4px); }
+  50.1%, 90% { transform: translate(65px, 4px); }
+  100% { transform: translate(0, 0); }
 `;
 
 const chickenPeck = keyframes`
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  10% { transform: translate(2px, 3px) rotate(5deg); }
-  20% { transform: translate(0, 0) rotate(0deg); }
-  40% { transform: translate(-3px, 4px) rotate(-4deg); }
-  50% { transform: translate(0, 0) rotate(0deg); }
-  70% { transform: translate(4px, 3px) rotate(3deg); }
-  80% { transform: translate(0, 0) rotate(0deg); }
+  0%, 40% { transform: translate(0, 0); }
+  50% { transform: translate(55px, 3px); }
+  50.1%, 90% { transform: translate(55px, 3px); }
+  100% { transform: translate(0, 0); }
 `;
 
 const duckSwim = keyframes`
-  0%   { transform: translate(0, 0) scaleX(1); }
-  20%  { transform: translate(30px, 2px) scaleX(1); }
-  40%  { transform: translate(55px, -1px) scaleX(1); }
-  50%  { transform: translate(60px, 0) scaleX(-1); }
-  70%  { transform: translate(35px, 2px) scaleX(-1); }
-  90%  { transform: translate(5px, -1px) scaleX(-1); }
+  0%, 40% { transform: translate(0, 0) scaleX(1); }
+  50% { transform: translate(75px, 2px) scaleX(1); }
+  50.1%, 90% { transform: translate(75px, 2px) scaleX(-1); }
   100% { transform: translate(0, 0) scaleX(1); }
+`;
+
+/* Gentle idle bob for non-running agents */
+const gentleIdle = keyframes`
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(2px); }
 `;
 
 const AGENT_ANIMATIONS: Record<string, ReturnType<typeof keyframes>> = {
@@ -229,32 +251,33 @@ const AGENT_ANIMATIONS: Record<string, ReturnType<typeof keyframes>> = {
 };
 
 const AGENT_ANIM_DURATION: Record<string, number> = {
-  S1: 6,
-  S2: 5,
-  S3: 3,
+  S1: 10,
+  S2: 10,
+  S3: 10,
   S4: 12,
 };
 
-/* ── Decorative extra animals (no labels, natural groups) ── */
+/* ── Decorative animals: cow×2, sheep×2, chicken×2, bunny×2, bee×3 ── */
 const DECO_ANIMALS: Array<{
-  sprite: string; frames: number; top: string; left: string;
+  sprite: string; frames: number; frameSize: number; top: string; left: string;
   anim: ReturnType<typeof keyframes>; dur: number; scale: number; delay: number; flip?: boolean;
 }> = [
-  /* Extra cows — spread across left pasture */
-  { sprite: '/assets/pixel-world/sprites/cow-idle.png', frames: 5, top: '40%', left: '18%', anim: cowGraze, dur: 6, scale: 3, delay: 1 },
-  { sprite: '/assets/pixel-world/sprites/cow-idle.png', frames: 5, top: '50%', left: '28%', anim: cowGraze, dur: 7, scale: 3.5, delay: 2, flip: true },
-  { sprite: '/assets/pixel-world/sprites/cow-idle.png', frames: 5, top: '44%', left: '38%', anim: cowGraze, dur: 5.5, scale: 3, delay: 0.5 },
-  /* Extra chickens — spread across right field */
-  { sprite: '/assets/pixel-world/sprites/chicken-idle.png', frames: 5, top: '34%', left: '80%', anim: chickenPeck, dur: 2.5, scale: 2.5, delay: 0.3 },
-  { sprite: '/assets/pixel-world/sprites/chicken-idle.png', frames: 5, top: '42%', left: '65%', anim: chickenPeck, dur: 3.5, scale: 2.5, delay: 1.5, flip: true },
-  { sprite: '/assets/pixel-world/sprites/chicken-idle.png', frames: 5, top: '38%', left: '88%', anim: chickenPeck, dur: 2.8, scale: 2, delay: 0.8 },
-  /* Extra foxes — corners */
-  { sprite: '/assets/pixel-world/sprites/fox-idle.png', frames: 6, top: '76%', left: '85%', anim: foxDart, dur: 7, scale: 2.5, delay: 2, flip: true },
-  { sprite: '/assets/pixel-world/sprites/fox-idle.png', frames: 6, top: '74%', left: '2%', anim: foxDart, dur: 8, scale: 2.5, delay: 3 },
-  /* Extra ducks — river area */
-  { sprite: '/assets/pixel-world/sprites/duck-idle.png', frames: 4, top: '60%', left: '22%', anim: duckSwim, dur: 14, scale: 2.5, delay: 1 },
-  { sprite: '/assets/pixel-world/sprites/duck-idle.png', frames: 4, top: '62%', left: '52%', anim: duckSwim, dur: 11, scale: 2.5, delay: 3, flip: true },
-  { sprite: '/assets/pixel-world/sprites/duck-idle.png', frames: 4, top: '58%', left: '60%', anim: duckSwim, dur: 13, scale: 2, delay: 5 },
+  /* Cows ×2 — center pasture (away from trees) */
+  { sprite: '/assets/pixel-world/sprites/cow-idle.png', frames: 5, frameSize: 48, top: '66%', left: '36%', anim: cowGraze, dur: 10, scale: 2.5, delay: 0 },
+  { sprite: '/assets/pixel-world/sprites/cow-idle.png', frames: 5, frameSize: 48, top: '74%', left: '48%', anim: cowGraze, dur: 12, scale: 2.5, delay: 3, flip: true },
+  /* Sheep ×2 — center-left */
+  { sprite: '/assets/pixel-world/sprites/sheep-idle.png', frames: 5, frameSize: 48, top: '70%', left: '55%', anim: sheepWalk, dur: 11, scale: 2.5, delay: 1 },
+  { sprite: '/assets/pixel-world/sprites/sheep-idle.png', frames: 5, frameSize: 48, top: '76%', left: '42%', anim: sheepWalk, dur: 13, scale: 2.5, delay: 5, flip: true },
+  /* Chickens ×2 — right field */
+  { sprite: '/assets/pixel-world/sprites/chicken-idle.png', frames: 5, frameSize: 48, top: '63%', left: '78%', anim: chickenPeck, dur: 10, scale: 2, delay: 0.5 },
+  { sprite: '/assets/pixel-world/sprites/chicken-idle.png', frames: 5, frameSize: 48, top: '70%', left: '65%', anim: chickenPeck, dur: 11, scale: 2, delay: 2, flip: true },
+  /* Bunnies ×2 — scattered */
+  { sprite: '/assets/pixel-world/sprites/bunny-idle.png', frames: 4, frameSize: 48, top: '78%', left: '52%', anim: bunnyHop, dur: 12, scale: 2, delay: 0 },
+  { sprite: '/assets/pixel-world/sprites/bunny-idle.png', frames: 4, frameSize: 48, top: '80%', left: '88%', anim: bunnyHop, dur: 14, scale: 2, delay: 6, flip: true },
+  /* Bees ×3 — sky */
+  { sprite: '/assets/pixel-world/sprites/bee-idle.png', frames: 4, frameSize: 16, top: '12%', left: '25%', anim: beeFloat, dur: 8, scale: 3, delay: 0 },
+  { sprite: '/assets/pixel-world/sprites/bee-idle.png', frames: 4, frameSize: 16, top: '18%', left: '55%', anim: beeFloat, dur: 9, scale: 2.5, delay: 2 },
+  { sprite: '/assets/pixel-world/sprites/bee-idle.png', frames: 4, frameSize: 16, top: '8%', left: '80%', anim: beeFloat, dur: 7, scale: 2.5, delay: 4 },
 ];
 
 const AgentLabelWrap = styled.div<{ $top: string; $left: string }>`
@@ -281,6 +304,10 @@ const AgentLabelWrap = styled.div<{ $top: string; $left: string }>`
 const SpriteMotion = styled.div<{ $anim: ReturnType<typeof keyframes>; $dur: number }>`
   animation: ${({ $anim }) => $anim} ${({ $dur }) => $dur}s ease-in-out infinite;
   position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
 `;
 
 const SpriteCanvas = styled.div<{ $src: string; $frames: number; $frameSize: number }>`
@@ -307,25 +334,22 @@ const DecoAnimalWrap = styled.div<{ $top: string; $left: string; $flip?: boolean
 `;
 
 const AgentLabel = styled.div`
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(8px);
-  border-radius: 6px;
+  align-self: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  border-radius: 4px;
   transition: transform 0.18s, background 0.18s, box-shadow 0.18s;
   white-space: nowrap;
-
-  ${media.mobile} {
-    padding: 4px 8px;
-    gap: 4px;
-  }
+  width: fit-content;
 `;
 
 const LabelStatusDot = styled.span<{ $isRunning: boolean; $accent: string }>`
-  width: 7px;
-  height: 7px;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
   flex-shrink: 0;
   background: ${({ $isRunning, $accent }) => $isRunning ? $accent : '#6b7280'};
@@ -336,7 +360,7 @@ const LabelStatusDot = styled.span<{ $isRunning: boolean; $accent: string }>`
 
 const LabelName = styled.span`
   font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-  font-size: 13px;
+  font-size: 10px;
   font-weight: 700;
   color: #fff;
   line-height: 1;
@@ -348,6 +372,70 @@ const LabelType = styled.span<{ $color: string }>`
   color: ${({ $color }) => $color};
   opacity: 0.9;
   line-height: 1;
+`;
+
+const AgentStatusTag = styled.span<{ $running: boolean }>`
+  font-size: 10px;
+  line-height: 1;
+`;
+
+/* ── Left-top status panel — agent avatars + status ── */
+const StatusPanel = styled.div`
+  position: absolute;
+  top: 56px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+`;
+
+const StatusRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 5px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.08);
+  }
+`;
+
+const StatusAvatar = styled.div<{ $src: string }>`
+  width: 24px;
+  height: 24px;
+  background-image: url(${({ $src }) => $src});
+  background-size: auto 24px;
+  background-position: 0 0;
+  background-repeat: no-repeat;
+  image-rendering: pixelated;
+  flex-shrink: 0;
+`;
+
+const StatusName = styled.span`
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  min-width: 48px;
+`;
+
+const StatusBadge = styled.span<{ $running: boolean }>`
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: ${({ $running }) => $running ? 'rgba(34,197,94,0.2)' : 'rgba(148,163,184,0.15)'};
+  color: ${({ $running }) => $running ? '#4ade80' : '#94a3b8'};
+  white-space: nowrap;
 `;
 
 /* ── Activity feed overlay — right edge ── */
@@ -403,7 +491,7 @@ const ActivityToggle = styled.button<{ $open: boolean }>`
   justify-content: center;
   border-radius: 4px;
   transition: color 0.15s, background 0.15s;
-  transform: rotate(${({ $open }) => $open ? '0' : '180deg'});
+  transform: rotate(${({ $open }) => $open ? '180deg' : '0'});
   transition: transform 0.3s, color 0.15s;
 
   &:hover {
@@ -570,6 +658,78 @@ const ConfigOverlayValue = styled.span`
   font-weight: 600;
   color: #fff;
   font-family: 'JetBrains Mono', monospace;
+`;
+
+/* ── Farmer NPC — bottom-left, clickable with speech bubble ── */
+const farmerBounce = keyframes`
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+`;
+
+const bubblePop = keyframes`
+  0% { opacity: 0; transform: translate(-50%, 4px) scale(0.8); }
+  15% { opacity: 1; transform: translate(-50%, 0) scale(1.02); }
+  25% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  85% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -6px) scale(0.95); }
+`;
+
+const FarmerWrap = styled.div`
+  position: absolute;
+  bottom: 1%;
+  left: 36%;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+  animation: ${farmerBounce} 3s ease-in-out infinite;
+
+  &:hover {
+    filter: brightness(1.15);
+  }
+`;
+
+const FarmerBubble = styled.div`
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-bottom: 4px;
+  padding: 6px 10px;
+  background: rgba(10, 10, 20, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  white-space: nowrap;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #f87171;
+  text-shadow: 0 0 6px rgba(248,113,113,0.4);
+  animation: ${bubblePop} 3.5s ease forwards;
+  pointer-events: none;
+  image-rendering: pixelated;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgba(10, 10, 20, 0.85);
+  }
+`;
+
+const FarmerLabel = styled.div`
+  margin-top: 2px;
+  padding: 2px 8px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fbbf24;
 `;
 
 /* ── Floating Timeline Panel (kept intact) ── */
@@ -832,6 +992,7 @@ const AgentPanel: React.FC = () => {
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [showConfig, setShowConfig] = useState(false);
   const [feedOpen, setFeedOpen] = useState(true);
+  const [farmerTalk, setFarmerTalk] = useState(0); // increment to trigger bubble
 
   /* ── Agent data from task stats ── */
   const statsArr: AgentSkillStats[] = Array.isArray(statsRaw) ? statsRaw : [];
@@ -906,23 +1067,40 @@ const AgentPanel: React.FC = () => {
         <LiveBadge>LIVE</LiveBadge>
       </TitleBar>
 
+      {/* ── Status panel — top-left, below title ── */}
+      <StatusPanel>
+        {agentCards.map((ag) => {
+          const sprite = AGENT_SPRITES[ag.skill];
+          const isRunning = ag.status === 'running';
+          return (
+            <StatusRow key={ag.skill} onClick={() => setSelectedSkill(ag.skill)}>
+              <StatusAvatar $src={sprite?.idle ?? ''} />
+              <StatusName>{ag.name}</StatusName>
+              <StatusBadge $running={isRunning}>
+                {isRunning ? '開工了' : '休息中'}
+              </StatusBadge>
+            </StatusRow>
+          );
+        })}
+      </StatusPanel>
+
       {/* ── Decorative animals (extra animals per zone, no labels) ── */}
       {DECO_ANIMALS.map((d, i) => (
         <DecoAnimalWrap key={`deco-${i}`} $top={d.top} $left={d.left} $flip={d.flip}>
           <SpriteMotion $anim={d.anim} $dur={d.dur} style={{ animationDelay: `${d.delay}s` }}>
-            <SpriteAnimator src={d.sprite} frameCount={d.frames} frameSize={48} scale={d.scale} fps={4} />
+            <SpriteAnimator src={d.sprite} frameCount={d.frames} frameSize={d.frameSize} scale={d.scale} fps={d.frameSize === 16 ? 6 : 4} />
           </SpriteMotion>
         </DecoAnimalWrap>
       ))}
 
-      {/* ── Main agent animals with labels ── */}
+      {/* ── Main agent animals with labels (label + status above sprite, all follow movement) ── */}
       {agentCards.map((ag) => {
         const c = AGENT_COLORS[ag.skill] ?? AGENT_COLORS.S1;
         const pos = AGENT_POSITIONS[ag.skill];
         const sprite = AGENT_SPRITES[ag.skill];
         const isRunning = ag.status === 'running';
-        const motionAnim = AGENT_ANIMATIONS[ag.skill] ?? foxDart;
-        const motionDur = AGENT_ANIM_DURATION[ag.skill] ?? 8;
+        const motionAnim = isRunning ? (AGENT_ANIMATIONS[ag.skill] ?? foxDart) : gentleIdle;
+        const motionDur = isRunning ? (AGENT_ANIM_DURATION[ag.skill] ?? 10) : 3;
         return (
           <AgentLabelWrap
             key={ag.skill}
@@ -932,32 +1110,51 @@ const AgentPanel: React.FC = () => {
             onClick={() => setSelectedSkill(ag.skill)}
           >
             <SpriteMotion $anim={motionAnim} $dur={motionDur}>
+              <AgentLabel>
+                <LabelStatusDot $isRunning={isRunning} $accent={c.accent} />
+                <LabelName>{ag.name}</LabelName>
+                <AgentStatusTag $running={isRunning}>
+                  {isRunning ? '⚡' : '💤'}
+                </AgentStatusTag>
+              </AgentLabel>
               {sprite && (
                 <SpriteAnimator
                   src={sprite.idle}
                   frameCount={sprite.frames}
                   frameSize={48}
                   scale={4}
-                  fps={5}
+                  fps={isRunning ? 5 : 2}
                 />
               )}
             </SpriteMotion>
-            <AgentLabel>
-              <LabelStatusDot $isRunning={isRunning} $accent={c.accent} />
-              <LabelName>{ag.name}</LabelName>
-              <LabelType $color={c.fgDark}>{ag.type}</LabelType>
-            </AgentLabel>
           </AgentLabelWrap>
         );
       })}
 
+      {/* ── Farmer NPC — bottom-left corner ── */}
+      <FarmerWrap onClick={() => setFarmerTalk((v) => v + 1)}>
+        {farmerTalk > 0 && (
+          <FarmerBubble key={farmerTalk}>
+            💢 加油努力！不然把你們送去M記！
+          </FarmerBubble>
+        )}
+        <SpriteAnimator
+          src="/assets/pixel-world/sprites/farmer-idle.png"
+          frameCount={4}
+          frameSize={80}
+          scale={4.5}
+          fps={3}
+        />
+        <FarmerLabel>農場主</FarmerLabel>
+      </FarmerWrap>
+
       {/* ── Activity feed overlay — right edge ── */}
       <ActivityPanel $open={feedOpen}>
         <ActivityHeader>
-          <ActivityTitle>{feedOpen ? 'ACTIVITY LOG' : ''}</ActivityTitle>
           <ActivityToggle $open={feedOpen} onClick={() => setFeedOpen((v) => !v)} title={feedOpen ? 'Collapse' : 'Expand'}>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 4l-4 4 4 4"/></svg>
           </ActivityToggle>
+          <ActivityTitle>{feedOpen ? 'ACTIVITY LOG' : ''}</ActivityTitle>
         </ActivityHeader>
         {feedOpen && (
           <ActivityScroll>

@@ -35,6 +35,7 @@ const Sidebar = styled.div`
 const MainArea = styled.div`
   flex: 1;
   min-width: 0;
+  position: relative;
 `;
 
 const Card = styled.div`
@@ -511,43 +512,67 @@ const UpcomingTag = styled.span<{ $color: string }>`
   margin-top: 2px;
 `;
 
-/* ── Day Detail Panel ── */
+/* ── Day Detail Panel (right-side slide-out) ── */
 
-const DayDetailWrap = styled(Card)` padding: 20px 24px; `;
+const dpSlideIn = keyframes`
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+`;
+
+const DayDetailWrap = styled(Card)`
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 33.333%;
+  min-width: 240px;
+  max-height: 100%;
+  padding: 16px 14px;
+  animation: ${dpSlideIn} 0.25s ease-out;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  overflow-y: auto;
+  z-index: 5;
+  box-shadow: -4px 0 16px rgba(0,0,0,0.08);
+  ${media.mobile} {
+    width: 100%;
+    min-width: auto;
+    position: relative;
+    box-shadow: none;
+  }
+`;
 const DayDetailHeader = styled.div`
   display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
 `;
 const DayDetailTitle = styled.h3`
-  margin: 0; font-size: 1rem; font-weight: 600; color: ${({ theme }) => theme.colors.textPrimary};
+  margin: 0; font-size: 0.95rem; font-weight: 600; color: ${({ theme }) => theme.colors.textPrimary};
 `;
 const DayDetailClose = styled.button`
   background: transparent; border: none; cursor: pointer;
-  width: 36px; height: 36px; border-radius: 50%;
+  width: 32px; height: 32px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   color: ${({ theme }) => theme.colors.blue};
   flex-shrink: 0; transition: all 0.15s;
   &:hover { background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'}; }
 `;
-const DayEventList = styled.div` display: flex; flex-direction: column; gap: 10px; `;
+const DayEventList = styled.div` display: flex; flex-direction: column; gap: 8px; `;
 const DayEventItem = styled.div<{ $color?: string; $past?: boolean }>`
-  display: flex; align-items: flex-start; gap: 12px;
-  padding: 12px 16px; border-radius: 8px;
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 10px 12px; border-radius: 8px;
   background: ${({ theme }) => theme.colors.surfaceMuted};
-  border-left: 4px solid ${({ $past, $color }) => $past ? '#b8cfb8' : ($color || '#0ea5e9')};
+  border-left: 3px solid ${({ $past, $color }) => $past ? '#b8cfb8' : ($color || '#0ea5e9')};
   opacity: ${({ $past }) => $past ? 0.6 : 1};
   transition: transform 0.1s;
   &:hover { transform: translateX(2px); }
 `;
 const DayEventTime = styled.span`
-  font-size: 0.8125rem; font-weight: 600; color: ${({ theme }) => theme.colors.textSecondary};
-  min-width: 50px; flex-shrink: 0;
+  font-size: 0.75rem; font-weight: 600; color: ${({ theme }) => theme.colors.textSecondary};
+  min-width: 40px; flex-shrink: 0;
 `;
 const DayEventTitle = styled.span`
-  font-size: 0.875rem; font-weight: 500; color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 0.8125rem; font-weight: 500; color: ${({ theme }) => theme.colors.textPrimary};
 `;
 const DayEmptyText = styled.div`
   text-align: center; padding: 24px 0;
-  font-size: 0.875rem; color: ${({ theme }) => theme.colors.textTertiary};
+  font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary};
 `;
 
 /* ── Data ── */
@@ -995,37 +1020,37 @@ const Calendar: React.FC = () => {
               </WeekGrid>
             )}
           </SpiralCalCard>
+
+          {/* Day Detail — right-side overlay panel (month view) */}
+          {viewMode === 'month' && selectedDay !== null && (() => {
+            const dayEvents = filteredEvents.filter(e => e.day === selectedDay);
+            return (
+              <DayDetailWrap key={selectedDay}>
+                <DayDetailHeader>
+                  <DayDetailTitle>{MONTHS_SHORT[month]} {selectedDay} 日程</DayDetailTitle>
+                  <DayDetailClose onClick={() => setSelectedDay(null)}>
+                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+                      <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+                    </svg>
+                  </DayDetailClose>
+                </DayDetailHeader>
+                {dayEvents.length > 0 ? (
+                  <DayEventList>
+                    {dayEvents.map((ev, i) => (
+                      <DayEventItem key={i} $color={EVENT_TYPE_DOT_COLORS[ev.eventType]} $past={ev.past}>
+                        <DayEventTime>{ev.time || '全日'}</DayEventTime>
+                        <DayEventTitle>{ev.title}</DayEventTitle>
+                      </DayEventItem>
+                    ))}
+                  </DayEventList>
+                ) : (
+                  <DayEmptyText>當日冇日程</DayEmptyText>
+                )}
+              </DayDetailWrap>
+            );
+          })()}
         </MainArea>
       </CalLayout>
-
-      {/* Day Detail (month view) */}
-      {viewMode === 'month' && selectedDay !== null && (() => {
-        const dayEvents = filteredEvents.filter(e => e.day === selectedDay);
-        return (
-          <DayDetailWrap>
-            <DayDetailHeader>
-              <DayDetailTitle>{MONTHS[month]} {selectedDay}, {year} 日程</DayDetailTitle>
-              <DayDetailClose onClick={() => setSelectedDay(null)}>
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                  <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-                </svg>
-              </DayDetailClose>
-            </DayDetailHeader>
-            {dayEvents.length > 0 ? (
-              <DayEventList>
-                {dayEvents.map((ev, i) => (
-                  <DayEventItem key={i} $color={EVENT_TYPE_DOT_COLORS[ev.eventType]} $past={ev.past}>
-                    <DayEventTime>{ev.time || '全日'}</DayEventTime>
-                    <DayEventTitle>{ev.title}</DayEventTitle>
-                  </DayEventItem>
-                ))}
-              </DayEventList>
-            ) : (
-              <DayEmptyText>當日冇日程</DayEmptyText>
-            )}
-          </DayDetailWrap>
-        );
-      })()}
 
       {/* Footer */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', fontSize: '0.75rem', color: '#88a890' }}>
