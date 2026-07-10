@@ -7,6 +7,7 @@ import { SseService } from '../sse/sse.service';
 import { Campaign, CampaignDocument } from './schemas/campaign.schema';
 import { RunHermesDto } from './dto/run-hermes.dto';
 import { EmailService } from '../email/email.service';
+import { UsersService } from '../users/users.service';
 export declare class HermesService implements OnModuleInit {
     private readonly campaigns;
     private readonly tasks;
@@ -14,7 +15,8 @@ export declare class HermesService implements OnModuleInit {
     private readonly sse;
     private readonly email;
     private readonly config;
-    constructor(campaigns: Model<CampaignDocument>, tasks: TasksService, taskEvents: TaskEvents, sse: SseService, email: EmailService, config: ConfigService);
+    private readonly users;
+    constructor(campaigns: Model<CampaignDocument>, tasks: TasksService, taskEvents: TaskEvents, sse: SseService, email: EmailService, config: ConfigService, users: UsersService);
     onModuleInit(): void;
     run(dto: RunHermesDto, userId?: string): Promise<{
         campaign_id: string;
@@ -24,6 +26,7 @@ export declare class HermesService implements OnModuleInit {
     private onTaskFailed;
     private enqueueStage;
     private finish;
+    private maybeNotifyCompletion;
     private notifyCompletion;
     getCampaign(id: string): Promise<(import("mongoose").FlattenMaps<import("mongoose").Document<unknown, {}, Campaign, {}, {}> & Campaign & {
         _id: import("mongoose").Types.ObjectId;

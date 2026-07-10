@@ -9,6 +9,10 @@ export declare class User {
     created_at: Date;
     updated_at: Date;
     deleted_at: Date;
+    notification_prefs: {
+        email_on_complete: boolean;
+        browser_on_complete: boolean;
+    };
     resetToken: string;
     resetTokenExpiry: Date;
 }

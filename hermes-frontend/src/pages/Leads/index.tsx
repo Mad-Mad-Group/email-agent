@@ -2464,12 +2464,8 @@ const Leads: React.FC = () => {
                   <th>{t('leads.status')}</th>
                   <th>{t('leads.name')} <IconSortArrow /></th>
                   <th>{t('leads.reply')}</th>
-<<<<<<< Updated upstream
-                  {isAdmin && <th>{t('leads.sourceUser')}</th>}
-=======
                   {isAdmin && <th>{t('leads.sourceUser') || '來源用戶'}</th>}
                   <th style={{ textAlign: 'center' }}>技術評分</th>
->>>>>>> Stashed changes
                   <th>{t('leads.importedAt')}</th>
                   <th>{t('leads.action')}</th>
                 </tr>

@@ -20,6 +20,7 @@ let User = class User {
     created_at;
     updated_at;
     deleted_at;
+    notification_prefs;
     resetToken;
     resetTokenExpiry;
 };
@@ -56,6 +57,13 @@ __decorate([
     (0, mongoose_1.Prop)({ default: null }),
     __metadata("design:type", Date)
 ], User.prototype, "deleted_at", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({
+        type: Object,
+        default: { email_on_complete: false, browser_on_complete: false },
+    }),
+    __metadata("design:type", Object)
+], User.prototype, "notification_prefs", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ default: null }),
     __metadata("design:type", String)

@@ -30,4 +30,15 @@ export declare class UsersService {
     setResetToken(id: string, token: string, expiry: Date): Promise<void>;
     findByResetToken(token: string): Promise<UserDocument | null>;
     clearResetToken(id: string): Promise<void>;
+    getNotificationPrefs(id: string): Promise<import("mongoose").FlattenMaps<{
+        email_on_complete: boolean;
+        browser_on_complete: boolean;
+    }>>;
+    updateNotificationPrefs(id: string, prefs: {
+        email_on_complete?: boolean;
+        browser_on_complete?: boolean;
+    }): Promise<import("mongoose").FlattenMaps<{
+        email_on_complete: boolean;
+        browser_on_complete: boolean;
+    }>>;
 }

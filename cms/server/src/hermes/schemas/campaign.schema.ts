@@ -19,6 +19,7 @@ export class Campaign {
   @Prop() location?: string;
   @Prop() target_count?: number;
   @Prop() mode?: string;
+  @Prop({ index: true }) user_id?: string;
 
   /** running | completed | failed */
   @Prop({ type: String, default: 'running', index: true }) status: string;

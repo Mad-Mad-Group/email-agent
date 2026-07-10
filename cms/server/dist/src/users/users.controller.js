@@ -12,7 +12,7 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.UsersController = void 0;
+exports.UsersController = exports.UserPrefsController = void 0;
 const openapi = require("@nestjs/swagger");
 const common_1 = require("@nestjs/common");
 const swagger_1 = require("@nestjs/swagger");
@@ -21,6 +21,47 @@ const update_user_dto_1 = require("./dto/update-user.dto");
 const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../common/guards/roles.guard");
 const roles_decorator_1 = require("../common/decorators/roles.decorator");
+const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
+let UserPrefsController = class UserPrefsController {
+    usersService;
+    constructor(usersService) {
+        this.usersService = usersService;
+    }
+    async getNotificationPrefs(user) {
+        const u = await this.usersService.findById(user.userId);
+        if (!u)
+            throw new common_1.NotFoundException('User not found');
+        return u.notification_prefs ?? { email_on_complete: false, browser_on_complete: false };
+    }
+    async updateNotificationPrefs(user, body) {
+        return this.usersService.updateNotificationPrefs(user.userId, body);
+    }
+};
+exports.UserPrefsController = UserPrefsController;
+__decorate([
+    (0, common_1.Get)('notification-prefs'),
+    openapi.ApiResponse({ status: 200, type: Object }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", Promise)
+], UserPrefsController.prototype, "getNotificationPrefs", null);
+__decorate([
+    (0, common_1.Patch)('notification-prefs'),
+    openapi.ApiResponse({ status: 200, type: Object }),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", Promise)
+], UserPrefsController.prototype, "updateNotificationPrefs", null);
+exports.UserPrefsController = UserPrefsController = __decorate([
+    (0, swagger_1.ApiTags)('Users 通知偏好'),
+    (0, swagger_1.ApiBearerAuth)(),
+    (0, common_1.Controller)('users/me'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    __metadata("design:paramtypes", [users_service_1.UsersService])
+], UserPrefsController);
 let UsersController = class UsersController {
     usersService;
     constructor(usersService) {

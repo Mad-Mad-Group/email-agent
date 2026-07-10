@@ -24,6 +24,7 @@ const task_status_enum_1 = require("../tasks/dto/task-status.enum");
 const sse_service_1 = require("../sse/sse.service");
 const campaign_schema_1 = require("./schemas/campaign.schema");
 const email_service_1 = require("../email/email.service");
+const users_service_1 = require("../users/users.service");
 const MAX_STAGE_RETRIES = 2;
 const STAGE_SKILL = {
     search: task_status_enum_1.SKILL.SEARCH,
@@ -46,13 +47,15 @@ let HermesService = class HermesService {
     sse;
     email;
     config;
-    constructor(campaigns, tasks, taskEvents, sse, email, config) {
+    users;
+    constructor(campaigns, tasks, taskEvents, sse, email, config, users) {
         this.campaigns = campaigns;
         this.tasks = tasks;
         this.taskEvents = taskEvents;
         this.sse = sse;
         this.email = email;
         this.config = config;
+        this.users = users;
     }
     onModuleInit() {
         this.taskEvents.completed$.subscribe((task) => {
@@ -72,6 +75,7 @@ let HermesService = class HermesService {
             location: dto.location,
             target_count: dto.targetCount,
             mode,
+            user_id: userId,
             status: 'running',
             pipeline_stage: 'search',
             lead_ids: [],
@@ -198,12 +202,28 @@ let HermesService = class HermesService {
             stage: 'complete',
             message: `Pipeline 完成（${why}）`,
         });
-        void this.notifyCompletion(campaign, why).catch((e) => this.sse.emit(sse_service_1.SseEvent.HERMES_LOG, {
+        void this.maybeNotifyCompletion(campaign, why).catch((e) => this.sse.emit(sse_service_1.SseEvent.HERMES_LOG, {
             runId: campaign.campaign_id,
             level: 'warn',
             stage: 'notify',
             message: `Email 通知失敗：${e?.message ?? e}`,
         }));
+    }
+    async maybeNotifyCompletion(campaign, why) {
+        if (campaign.user_id) {
+            try {
+                const prefs = await this.users.getNotificationPrefs(campaign.user_id);
+                if (!prefs.email_on_complete)
+                    return;
+            }
+            catch {
+                return;
+            }
+        }
+        else {
+            return;
+        }
+        await this.notifyCompletion(campaign, why);
     }
     async notifyCompletion(campaign, why) {
         const to = this.config.get('SMTP_TO') || 's1165449@s.eduhk.hk';
@@ -253,6 +273,7 @@ exports.HermesService = HermesService = __decorate([
         task_events_1.TaskEvents,
         sse_service_1.SseService,
         email_service_1.EmailService,
-        config_1.ConfigService])
+        config_1.ConfigService,
+        users_service_1.UsersService])
 ], HermesService);
 //# sourceMappingURL=hermes.service.js.map

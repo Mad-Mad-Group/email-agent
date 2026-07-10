@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { leadsApi, LeadListParams } from './leads';
 import { emailQueueApi, EmailListParams } from './emailQueue';
 import { notificationsApi } from './notifications';
-import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi, AgentSkillStats, verifiedEmailsApi } from './services';
+import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi, AgentSkillStats, verifiedEmailsApi, notificationPrefsApi } from './services';
 import { authApi } from './auth';
 
 /* ── Auth ── */
@@ -399,6 +399,25 @@ export const useDeleteVerifiedEmail = () => {
     mutationFn: (id: string) => verifiedEmailsApi.remove(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['verified-emails'] });
+    },
+  });
+};
+
+/* ── Notification Preferences ── */
+
+export const useNotificationPrefs = () =>
+  useQuery({
+    queryKey: ['notification-prefs'],
+    queryFn: () => notificationPrefsApi.get().then(r => r.data),
+  });
+
+export const useUpdateNotificationPrefs = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (prefs: { email_on_complete?: boolean; browser_on_complete?: boolean }) =>
+      notificationPrefsApi.update(prefs),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notification-prefs'] });
     },
   });
 };
