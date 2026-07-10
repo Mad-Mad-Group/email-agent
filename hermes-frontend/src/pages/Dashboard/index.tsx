@@ -113,10 +113,10 @@ const BarChartTooltip = styled.div<{ $x: number; $y: number; $visible: boolean }
   position: absolute;
   left: ${({ $x }) => $x}px; top: ${({ $y }) => $y}px;
   transform: translate(-50%, -100%);
-  background: #1e293b; color: #fff; font-size: 0.6875rem; font-weight: 600;
+  background: #14261a; color: #fff; font-size: 0.6875rem; font-weight: 600;
   padding: 4px 10px; border-radius: 8px; pointer-events: none; white-space: nowrap;
   opacity: ${({ $visible }) => $visible ? 1 : 0}; transition: opacity 0.12s; z-index: 10; white-space: pre-line; text-align: center;
-  &::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: #1e293b; }
+  &::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: #14261a; }
 `;
 const BarChartWrap = styled.div`
   position: relative; padding: 8px; border-radius: 8px;
@@ -167,8 +167,8 @@ const BarChart: React.FC<{ bars: BarData[]; dark?: boolean }> = ({ bars, dark })
           const x = pl + (tick / maxVal) * chartW;
           return (
             <g key={`tick${i}`}>
-              <line x1={x} y1={pt} x2={x} y2={pt + chartH} stroke={dark ? '#334155' : '#e2e8f0'} strokeWidth="0.5" strokeDasharray={i === 0 ? undefined : '3,3'} />
-              <text x={x} y={pt + chartH + 14} textAnchor="middle" fill={dark ? '#64748b' : '#94a3b8'} fontSize="8" fontWeight="400">{tick}</text>
+              <line x1={x} y1={pt} x2={x} y2={pt + chartH} stroke={dark ? '#1e3a25' : '#d4e2d4'} strokeWidth="0.5" strokeDasharray={i === 0 ? undefined : '3,3'} />
+              <text x={x} y={pt + chartH + 14} textAnchor="middle" fill={dark ? '#4a6b52' : '#88a890'} fontSize="8" fontWeight="400">{tick}</text>
             </g>
           );
         })}
@@ -181,9 +181,9 @@ const BarChart: React.FC<{ bars: BarData[]; dark?: boolean }> = ({ bars, dark })
                onMouseMove={(e) => handleMouseMove(e, i)}
                onMouseLeave={() => setHover(null)}>
               <rect x={0} y={pt + gap * i} width={w} height={gap} fill="transparent" />
-              <rect x={pl} y={y} width={chartW} height={barH} rx={r} ry={r} fill={dark ? '#334155' : '#f1f5f9'} />
+              <rect x={pl} y={y} width={chartW} height={barH} rx={r} ry={r} fill={dark ? '#1e3a25' : '#ecf2ec'} />
               <rect x={pl} y={y} width={barW} height={barH} rx={r} ry={r} fill={`url(#bar${i})`} />
-              <text x={pl - 6} y={y + barH / 2} textAnchor="end" fill={dark ? '#94a3b8' : '#64748b'} fontSize="8" fontWeight="500" dominantBaseline="central">{b.label}</text>
+              <text x={pl - 6} y={y + barH / 2} textAnchor="end" fill={dark ? '#88a890' : '#4a6b52'} fontSize="8" fontWeight="500" dominantBaseline="central">{b.label}</text>
             </g>
           );
         })}
@@ -201,7 +201,7 @@ const LegendVal = styled.span`font-weight: 600; margin-left: auto; min-width: 20
 
 const DonutChart: React.FC<{ slices: { value: number; color: string }[]; size?: number }> = ({ slices, size = 130 }) => {
   const total = slices.reduce((s, sl) => s + sl.value, 0);
-  if (total === 0) return <svg width={size} height={size}><circle cx={size/2} cy={size/2} r={size/2-8} fill="none" stroke="#e5e7eb" strokeWidth="16" /></svg>;
+  if (total === 0) return <svg width={size} height={size}><circle cx={size/2} cy={size/2} r={size/2-8} fill="none" stroke="#d4e2d4" strokeWidth="16" /></svg>;
   const r = size / 2 - 8;
   const c = 2 * Math.PI * r;
   let offset = 0;
@@ -239,12 +239,12 @@ const NotebookBody = styled.div`
     content: '';
     position: absolute; top: 16px; left: 12px;
     width: 10px; height: 10px; border-radius: 50%;
-    background: ${({ theme }) => theme.mode === 'dark' ? '#0f172a' : '#f1f5f9'};
+    background: ${({ theme }) => theme.mode === 'dark' ? '#0a140d' : '#ecf2ec'};
     border: 1.5px solid ${({ theme }) => theme.colors.border};
     box-shadow:
-      0 34px 0 ${({ theme }) => theme.mode === 'dark' ? '#0f172a' : '#f1f5f9'},
+      0 34px 0 ${({ theme }) => theme.mode === 'dark' ? '#0a140d' : '#ecf2ec'},
       0 34px 0 0 ${({ theme }) => theme.colors.border},
-      0 68px 0 ${({ theme }) => theme.mode === 'dark' ? '#0f172a' : '#f1f5f9'},
+      0 68px 0 ${({ theme }) => theme.mode === 'dark' ? '#0a140d' : '#ecf2ec'},
       0 68px 0 0 ${({ theme }) => theme.colors.border};
   }
 `;
@@ -276,7 +276,7 @@ const SpinnerWrap = styled.div`
 `;
 const Spinner = styled.div<{ $color?: string }>`
   width: 40px; height: 40px; border-radius: 50%;
-  border: 3px solid ${({ theme }) => theme.mode === 'dark' ? '#334155' : '#e2e8f0'};
+  border: 3px solid ${({ theme }) => theme.mode === 'dark' ? '#1e3a25' : '#d4e2d4'};
   border-top-color: ${({ $color, theme }) => $color || theme.colors.blue};
   animation: ${spinAnim} 0.75s linear infinite;
 `;
@@ -553,16 +553,16 @@ const Dashboard: React.FC = () => {
         </ActionCard>
 
         <ActionCard
-          $accent="#7c3aed" $bg1={dark ? 'rgba(196,181,253,0.06)' : '#faf5ff'} $bg2={dark ? 'rgba(196,181,253,0.12)' : '#ede9fe'}
+          $accent="#0ea5e9" $bg1={dark ? 'rgba(103,232,249,0.06)' : '#ecfeff'} $bg2={dark ? 'rgba(103,232,249,0.12)' : '#cffafe'}
           onClick={() => navigate('/cms-leads?tab=replied&sub=meeting')}
         >
-          <ActionArrow $fg={dark ? '#c4b5fd' : '#7c3aed'}>
+          <ActionArrow $fg={dark ? '#67e8f9' : '#0ea5e9'}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
           </ActionArrow>
-          <ActionWatermark $fg="#7c3aed"><IconClock /></ActionWatermark>
-          <ActionTitle $fg={dark ? '#c4b5fd' : '#5b21b6'}>{t('dashboard.cardTitleMeeting')}</ActionTitle>
-          <ActionCount $fg={dark ? '#c4b5fd' : '#7c3aed'}>{actions.pendingMeetings}</ActionCount>
-          <ActionLabel $fg={dark ? '#c4b5fd' : '#7c3aed'}>{t('dashboard.pendingMeetings')}</ActionLabel>
+          <ActionWatermark $fg="#0ea5e9"><IconClock /></ActionWatermark>
+          <ActionTitle $fg={dark ? '#67e8f9' : '#0369a1'}>{t('dashboard.cardTitleMeeting')}</ActionTitle>
+          <ActionCount $fg={dark ? '#67e8f9' : '#0ea5e9'}>{actions.pendingMeetings}</ActionCount>
+          <ActionLabel $fg={dark ? '#67e8f9' : '#0ea5e9'}>{t('dashboard.pendingMeetings')}</ActionLabel>
         </ActionCard>
 
         <ActionCard
@@ -581,20 +581,20 @@ const Dashboard: React.FC = () => {
 
       {/* ── Funnel (60%) + Reply Distribution (40%) ── */}
       <Row $cols="3fr 2fr">
-        <Card $topAccent="#3b82f6">
+        <Card $topAccent="#0ea5e9">
           <CardHeader>
-            <CardIcon $color="#3b82f6"><IconFunnel /></CardIcon>
+            <CardIcon $color="#0ea5e9"><IconFunnel /></CardIcon>
             {t('dashboard.funnel')}
           </CardHeader>
           <CardBody>
             <BarChart dark={dark} bars={[
-              { label: `${t('dashboard.newLeads')} (${funnel.total})`, value: funnel.total, color: '#3b82f6',
+              { label: `${t('dashboard.newLeads')} (${funnel.total})`, value: funnel.total, color: '#0ea5e9',
                 formula: t('dashboard.tipTotalLeads', { count: funnel.total }) },
               { label: `${t('dashboard.contacted')} ${funnel.total > 0 ? Math.round((funnel.contacted / funnel.total) * 100) : 0}%`, value: funnel.contacted, color: '#f59e0b',
                 formula: t('dashboard.tipContactRate', { contacted: funnel.contacted, total: funnel.total }) },
               { label: `${t('dashboard.replied')} ${funnel.contacted > 0 ? Math.round((funnel.replied / funnel.contacted) * 100) : 0}%`, value: funnel.replied, color: '#22c55e',
                 formula: t('dashboard.tipReplyRate', { replied: funnel.replied, contacted: funnel.contacted }) },
-              { label: `${t('dashboard.meetings')} ${funnel.replied > 0 ? Math.round((funnel.meetings / funnel.replied) * 100) : 0}%`, value: funnel.meetings, color: '#8b5cf6',
+              { label: `${t('dashboard.meetings')} ${funnel.replied > 0 ? Math.round((funnel.meetings / funnel.replied) * 100) : 0}%`, value: funnel.meetings, color: '#0ea5e9',
                 formula: t('dashboard.tipMeetingRate', { meetings: funnel.meetings, replied: funnel.replied }) },
               { label: `${t('dashboard.totalEmailsSent')} (${stats.sentEmails})`, value: stats.sentEmails, color: '#ec4899',
                 formula: t('dashboard.tipEmailsSent', { sent: stats.sentEmails, total: allEmails.length }) },
@@ -614,15 +614,15 @@ const Dashboard: React.FC = () => {
               <DonutWrap>
                 <DonutChart slices={[
                   { value: replyCats.interested, color: '#16a34a' },
-                  { value: replyCats.meeting, color: '#8b5cf6' },
-                  { value: replyCats.question, color: '#2563eb' },
+                  { value: replyCats.meeting, color: '#0ea5e9' },
+                  { value: replyCats.question, color: '#3d7ab8' },
                   { value: replyCats.not_interested, color: '#dc2626' },
                   { value: replyCats.auto_reply, color: '#94a3b8' },
                 ]} />
                 <LegendList>
                   <LegendItem><LegendDot $color="#16a34a" /> {t('dashboard.interested')} <LegendVal>{replyCats.interested}</LegendVal></LegendItem>
-                  <LegendItem><LegendDot $color="#8b5cf6" /> {t('dashboard.meetingCat')} <LegendVal>{replyCats.meeting}</LegendVal></LegendItem>
-                  <LegendItem><LegendDot $color="#2563eb" /> {t('dashboard.question')} <LegendVal>{replyCats.question}</LegendVal></LegendItem>
+                  <LegendItem><LegendDot $color="#0ea5e9" /> {t('dashboard.meetingCat')} <LegendVal>{replyCats.meeting}</LegendVal></LegendItem>
+                  <LegendItem><LegendDot $color="#3d7ab8" /> {t('dashboard.question')} <LegendVal>{replyCats.question}</LegendVal></LegendItem>
                   <LegendItem><LegendDot $color="#dc2626" /> {t('dashboard.notInterested')} <LegendVal>{replyCats.not_interested}</LegendVal></LegendItem>
                   <LegendItem><LegendDot $color="#94a3b8" /> {t('dashboard.autoReply')} <LegendVal>{replyCats.auto_reply}</LegendVal></LegendItem>
                 </LegendList>
@@ -670,9 +670,9 @@ const Dashboard: React.FC = () => {
           </CardBody>
         </SpiralCard>
 
-        <NotebookCard $topAccent="#64748b">
+        <NotebookCard $topAccent="#4a6b52">
           <CardHeader>
-            <CardIcon $color="#64748b"><IconActivity /></CardIcon>
+            <CardIcon $color="#4a6b52"><IconActivity /></CardIcon>
             {t('dashboard.recentActivity')}
           </CardHeader>
           <NotebookBody>
@@ -683,8 +683,8 @@ const Dashboard: React.FC = () => {
                 {recentActivity.map((item, i) => (
                   <FeedItem key={i}>
                     <FeedIcon
-                      $bg={item.type === 'sent' ? (dark ? '#1e3a5f' : '#dbeafe') : item.type === 'reply' ? (dark ? '#14532d' : '#dcfce7') : (dark ? '#422006' : '#fef3c7')}
-                      $fg={item.type === 'sent' ? '#3b82f6' : item.type === 'reply' ? '#22c55e' : '#f59e0b'}
+                      $bg={item.type === 'sent' ? (dark ? '#083344' : '#cffafe') : item.type === 'reply' ? (dark ? '#14532d' : '#dcfce7') : (dark ? '#422006' : '#fef3c7')}
+                      $fg={item.type === 'sent' ? '#0ea5e9' : item.type === 'reply' ? '#22c55e' : '#f59e0b'}
                     >
                       {item.type === 'sent' ? <IconSent /> : item.type === 'reply' ? <IconReply /> : <IconPen />}
                     </FeedIcon>

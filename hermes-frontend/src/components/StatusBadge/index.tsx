@@ -9,15 +9,15 @@ interface StatusBadgeProps {
 
 /* 3-color semantic mapping: blue (neutral/progress), green (positive), red (negative) */
 const statusFgMap: Record<string, string> = {
-  new: '#2563eb',
-  pending: '#2563eb',
+  new: '#0ea5e9',
+  pending: '#0ea5e9',
   contacted: '#10b981',
   rejected: '#ef4444',
   qualified: '#10b981',
-  draft: '#2563eb',
+  draft: '#0ea5e9',
   approved: '#10b981',
   sent: '#10b981',
-  running: '#2563eb',
+  running: '#0ea5e9',
   idle: '#94a3b8',
   active: '#10b981',
 };
@@ -77,7 +77,7 @@ const SpinnerSvg = () => (
 );
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  const fg = statusFgMap[status] ?? '#2563eb';
+  const fg = statusFgMap[status] ?? '#0ea5e9';
   const isRunning = status === 'running';
   const isActive = isRunning || status === 'active';
   return (

@@ -75,9 +75,9 @@ function getResultSummary(task: TaskItem, t: TFunc): React.ReactNode | string {
       if (v === true) {
         valNode = <span style={{ color: '#16a34a' }}>✓</span>;
       } else if (v === false) {
-        valNode = <span style={{ color: '#94a3b8' }}>✗</span>;
+        valNode = <span style={{ color: '#88a890' }}>✗</span>;
       } else if (typeof v === 'number') {
-        valNode = <span style={{ color: '#2563eb', fontWeight: 700 }}>{v}</span>;
+        valNode = <span style={{ color: '#0ea5e9', fontWeight: 700 }}>{v}</span>;
       } else {
         valNode = <span>{String(v).slice(0, 25)}</span>;
       }
@@ -92,7 +92,7 @@ function friendlyParamNode(key: string, val: unknown, t: TFunc): React.ReactNode
   const label = t(`tasks.params.${key}`, { defaultValue: key });
   if (typeof val === 'number') {
     const unit = t('tasks.batchUnit');
-    return <>{label}: <span style={{ color: '#2563eb', fontWeight: 700 }}>{val}</span>{unit ? ` ${unit}` : ''}</>;
+    return <>{label}: <span style={{ color: '#0ea5e9', fontWeight: 700 }}>{val}</span>{unit ? ` ${unit}` : ''}</>;
   }
   let s = typeof val === 'string' ? val : JSON.stringify(val);
   const translated = t(`tasks.paramValues.${s}`, { defaultValue: '' });
@@ -114,7 +114,7 @@ function getParamsSummary(task: TaskItem, t: TFunc): React.ReactNode {
 interface ColumnCfg { key: string; label: string; bg: string; }
 
 const COLUMNS: ColumnCfg[] = [
-  { key: 'pending',    label: 'Pending',    bg: '#3b82f6' },
+  { key: 'pending',    label: 'Pending',    bg: '#0ea5e9' },
   { key: 'processing', label: 'Processing', bg: '#d97706' },
   { key: 'completed',  label: 'Completed',  bg: '#16a34a' },
   { key: 'failed',     label: 'Failed',     bg: '#dc2626' },
@@ -124,12 +124,12 @@ const COLUMNS: ColumnCfg[] = [
 
 /* ── Skill visual config (color + icon) ── */
 const SKILL_CFG: Record<string, { color: string; icon: React.ReactNode }> = {
-  S1: { color: '#2563eb', icon: <><path d="M21 12a9 9 0 1 1-6.22-8.56" /><path d="M21 3v4h-4" /></> },          // globe-refresh = scraping
+  S1: { color: '#0ea5e9', icon: <><path d="M21 12a9 9 0 1 1-6.22-8.56" /><path d="M21 3v4h-4" /></> },          // globe-refresh = scraping
   S2: { color: '#7c3aed', icon: <><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H8" /><path d="M16 12h-2c0-3 2-4 2-6a4 4 0 0 0-4-4" /><line x1="9" y1="18" x2="15" y2="18" /><line x1="10" y1="22" x2="14" y2="22" /></> }, // lightbulb = AI
   S3: { color: '#d97706', icon: <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></> },                                                                     // mail
-  S4: { color: '#0891b2', icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></> },  // file-text = summary
+  S4: { color: '#0ea5e9', icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></> },  // file-text = summary
   S5: { color: '#16a34a', icon: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></> },                                           // download = export
-  S6: { color: '#6366f1', icon: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><path d="m15 15 3 3 3-3" /><path d="m15 9 3-3 3 3" /><path d="M18 6v12" /></> },                                         // arrows = sync
+  S6: { color: '#0ea5e9', icon: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><path d="m15 15 3 3 3-3" /><path d="m15 9 3-3 3 3" /><path d="M18 6v12" /></> },                                         // arrows = sync
 };
 // aliases
 SKILL_CFG.scrape = SKILL_CFG.S1;
@@ -137,7 +137,7 @@ SKILL_CFG.email = SKILL_CFG.S3;
 SKILL_CFG.analyze = SKILL_CFG.S2;
 
 function skillColor(id: string): string {
-  return SKILL_CFG[id]?.color || '#64748b';
+  return SKILL_CFG[id]?.color || '#4a6b52';
 }
 function skillIcon(id: string): React.ReactNode | null {
   return SKILL_CFG[id]?.icon || null;
@@ -219,7 +219,7 @@ const SortSelect = styled.select`
   outline: none; cursor: pointer;
   box-shadow: 0 1px 2px rgba(15,23,42,0.04);
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2388a890' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 8px center;
   transition: border-color 0.15s;
@@ -473,8 +473,8 @@ function priorityColor(p: string): string {
   switch (p) {
     case 'high': case 'urgent': return '#dc2626';
     case 'normal': return '#d97706';
-    case 'low': return '#2563eb';
-    default: return '#94a3b8';
+    case 'low': return '#0ea5e9';
+    default: return '#88a890';
   }
 }
 

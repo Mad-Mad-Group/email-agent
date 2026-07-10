@@ -112,7 +112,7 @@ const HamburgerIcon = styled.span<{ $collapsed?: boolean }>`
     display: block;
     width: 22px;
     height: 2px;
-    background: var(--primary, #567ebb);
+    background: var(--primary, #0ea5e9);
     border-radius: 2px;
     transition: all 0.3s ease;
     position: absolute;
@@ -201,7 +201,7 @@ const SearchBar = styled.div`
       color: ${({ theme }) => theme.colors.textTertiary};
     }
     &:focus {
-      border-color: var(--primary, #567ebb);
+      border-color: var(--primary, #0ea5e9);
     }
   }
 `;
@@ -403,7 +403,7 @@ const NotifMarkAllBtn = styled.button`
   background: none;
   border: none;
   font-size: 0.75rem;
-  color: var(--primary, #567ebb);
+  color: var(--primary, #0ea5e9);
   cursor: pointer;
   padding: 2px 6px;
   border-radius: 4px;
@@ -435,7 +435,7 @@ const NotifDot = styled.div<{ $type?: string }>`
   flex-shrink: 0;
   background: ${({ $type }) =>
     $type === 'lead' ? '#16a34a' :
-    $type === 'email' ? '#2563eb' :
+    $type === 'email' ? '#0ea5e9' :
     $type === 'task' ? '#dc2626' :
     $type === 'campaign' ? '#9333ea' :
     '#6b7280'};
@@ -615,7 +615,7 @@ const UserAvatar = styled.div`
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: var(--primary, #567ebb);
+  background: var(--primary, #0ea5e9);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -715,7 +715,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
         label: t(item.labelKey),
         path: item.path,
         icon: item.icon,
-        color: '#2563eb',
+        color: '#0ea5e9',
       }));
   }, [searchQuery, t]);
 

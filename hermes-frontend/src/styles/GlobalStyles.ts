@@ -10,12 +10,12 @@ export const GlobalStyles = createGlobalStyle`
 
   :root {
     /* 主品牌色 — Logo 蓝 */
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
+    --primary: #0ea5e9;
+    --primary-hover: #0369a1;
     --primary-light: #dbeafe;
 
     /* 渐变 */
-    --gradient-primary: #2563eb;
+    --gradient-primary: #0ea5e9;
     --gradient-green: #16a34a;
     --gradient-gold: #d97706;
     --gradient-danger: #dc2626;
@@ -24,7 +24,7 @@ export const GlobalStyles = createGlobalStyle`
     --success: #16a34a;
     --warning: #d97706;
     --danger:  #dc2626;
-    --info:    #2563eb;
+    --info:    #0ea5e9;
   }
 
   html {

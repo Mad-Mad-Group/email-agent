@@ -171,7 +171,7 @@ const ToggleTrack = styled.label<{ $on: boolean }>`
   cursor: pointer;
   background: ${({ $on }) => $on
     ? 'linear-gradient(135deg, #22c55e, #16a34a)'
-    : 'linear-gradient(135deg, #cbd5e1, #94a3b8)'};
+    : 'linear-gradient(135deg, #b8cfb8, #88a890)'};
   box-shadow:
     inset 0 2px 4px rgba(0,0,0,0.15),
     0 1px 2px rgba(0,0,0,0.08);
@@ -185,7 +185,7 @@ const ToggleKnob = styled.span<{ $on: boolean }>`
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: linear-gradient(180deg, #fff 0%, #f1f5f9 100%);
+  background: linear-gradient(180deg, #fff 0%, #ecf2ec 100%);
   box-shadow:
     0 1px 3px rgba(0,0,0,0.2),
     inset 0 1px 0 rgba(255,255,255,0.8);

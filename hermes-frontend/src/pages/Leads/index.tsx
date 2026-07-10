@@ -76,7 +76,7 @@ const IconSortArrow = () => (
 
 const IconLeadScraper = () => (
   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="40" height="40" rx="10" fill="#3b82f6"/>
+    <rect width="40" height="40" rx="10" fill="#0ea5e9"/>
     <path d="M13 17a7 7 0 0 1 14 0" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
     <circle cx="20" cy="15" r="3.5" stroke="#fff" strokeWidth="1.8"/>
     <path d="M11 28c0-3.87 4.03-7 9-7s9 3.13 9 7" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
@@ -206,7 +206,7 @@ const HeaderFeedback = styled.div`
 const FeedbackMsg = styled.span<{ $error?: boolean }>`
   font-size: 0.75rem;
   font-weight: 500;
-  color: ${({ $error, theme }) => $error ? theme.colors.red : '#16a34a'};
+  color: ${({ $error, theme }) => $error ? theme.colors.red : theme.colors.green};
   animation: leadsFeedbackFade 4s ease-out forwards;
   @keyframes leadsFeedbackFade {
     0% { opacity: 0; transform: translateY(-4px); }
@@ -336,16 +336,16 @@ const CircleActionBtn = styled.button<{ $color?: string }>`
   border-radius: 50%;
   border: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.surface};
-  color: ${({ $color }) => $color || '#64748b'};
+  color: ${({ $color, theme }) => $color || theme.colors.textSecondary};
   cursor: pointer;
   transition: all 0.15s;
   flex-shrink: 0;
   position: relative;
 
   &:hover {
-    border-color: ${({ $color }) => $color || '#3b82f6'};
-    color: ${({ $color }) => $color || '#3b82f6'};
-    background: ${({ $color }) => `${$color || '#3b82f6'}0d`};
+    border-color: ${({ $color, theme }) => $color || theme.colors.accent};
+    color: ${({ $color, theme }) => $color || theme.colors.accent};
+    background: ${({ $color, theme }) => `${$color || theme.colors.accent}0d`};
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(0,0,0,0.08);
   }
@@ -357,7 +357,7 @@ const CircleActionBtn = styled.button<{ $color?: string }>`
     transform: translateX(-50%);
     padding: 4px 10px;
     border-radius: 6px;
-    background: ${({ theme }) => theme.mode === 'dark' ? '#334155' : '#1e293b'};
+    background: ${({ theme }) => theme.mode === 'dark' ? theme.colors.borderStrong : theme.colors.textPrimary};
     color: #fff;
     font-size: 0.6875rem;
     font-weight: 500;
@@ -381,9 +381,9 @@ const AutoCheckBtn = styled.button<{ $active?: boolean }>`
   gap: 6px;
   padding: 6px 14px;
   border-radius: 999px;
-  border: 1px solid ${({ $active }) => $active ? '#16a34a' : '#cbd5e1'};
-  background: ${({ $active }) => $active ? '#f0fdf4' : 'transparent'};
-  color: ${({ $active }) => $active ? '#16a34a' : '#64748b'};
+  border: 1px solid ${({ $active, theme }) => $active ? theme.colors.green : theme.colors.border};
+  background: ${({ $active, theme }) => $active ? `${theme.colors.green}14` : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.green : theme.colors.textSecondary};
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
@@ -391,9 +391,9 @@ const AutoCheckBtn = styled.button<{ $active?: boolean }>`
   white-space: nowrap;
   svg { width: 14px; height: 14px; }
   &:hover {
-    border-color: #16a34a;
-    color: #16a34a;
-    background: #f0fdf4;
+    border-color: ${({ theme }) => theme.colors.green};
+    color: ${({ theme }) => theme.colors.green};
+    background: ${({ theme }) => `${theme.colors.green}14`};
   }
 `;
 
@@ -459,17 +459,17 @@ const AddBtn = styled.button`
   padding: 7px 16px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.colors.accent}cc);
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 1px 3px rgba(37,99,235,0.2);
+  box-shadow: 0 1px 3px ${({ theme }) => theme.colors.accent}33;
   transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
   &:hover {
     transform: translateY(-1px);
-    box-shadow: 0 3px 10px rgba(37,99,235,0.25);
+    box-shadow: 0 3px 10px ${({ theme }) => theme.colors.accent}40;
     opacity: 0.95;
   }
   &:active { transform: translateY(0); }
@@ -483,20 +483,20 @@ const AddBtn = styled.button`
 `;
 
 const AddBtnGreen = styled(AddBtn)`
-  background: linear-gradient(135deg, #16a34a, #22c55e);
-  box-shadow: 0 1px 3px rgba(22,163,74,0.2);
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green}, ${({ theme }) => theme.colors.green}cc);
+  box-shadow: 0 1px 3px ${({ theme }) => theme.colors.green}33;
   &:hover {
-    box-shadow: 0 3px 10px rgba(22,163,74,0.25);
+    box-shadow: 0 3px 10px ${({ theme }) => theme.colors.green}40;
   }
 `;
 
 // ponytail: red danger button for "一鍵清空" — visually distinct from the
 // green AddBtn so the user can't misclick.
 const ClearBtn = styled(AddBtn)`
-  background: linear-gradient(135deg, #dc2626, #ef4444);
-  box-shadow: 0 1px 3px rgba(220,38,38,0.2);
+  background: linear-gradient(135deg, ${({ theme }) => theme.colors.red}, ${({ theme }) => theme.colors.red}cc);
+  box-shadow: 0 1px 3px ${({ theme }) => theme.colors.red}33;
   &:hover:not(:disabled) {
-    box-shadow: 0 3px 10px rgba(220,38,38,0.25);
+    box-shadow: 0 3px 10px ${({ theme }) => theme.colors.red}40;
   }
 `;
 
@@ -521,7 +521,7 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
   padding: 12px 32px;
   background: transparent;
   border: none;
-  border-bottom: 2px solid ${({ $active, $color }) => $active ? ($color || '#2563eb') : 'transparent'};
+  border-bottom: 2px solid ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) : 'transparent'};
   cursor: pointer;
   white-space: nowrap;
   position: relative;
@@ -558,14 +558,14 @@ const SubPillRow = styled.div`
 
 const SUB_COLORS: Record<string, string> = {
   '': '#334155',
-  new: '#f59e0b',
-  draft: '#f59e0b',
-  no_followup: '#ef4444',
-  has_followup: '#10b981',
-  interested: '#10b981',
-  meeting: '#10b981',
+  new: '#ca8a04',
+  draft: '#ca8a04',
+  no_followup: '#dc2626',
+  has_followup: '#16a34a',
+  interested: '#16a34a',
+  meeting: '#16a34a',
   question: '#334155',
-  not_interested: '#ef4444',
+  not_interested: '#dc2626',
 };
 
 const SubPill = styled.button<{ $active?: boolean; $color?: string }>`
@@ -574,14 +574,14 @@ const SubPill = styled.button<{ $active?: boolean; $color?: string }>`
   gap: 4px;
   padding: 6px 16px;
   border-radius: 999px;
-  border: ${({ $active }) => $active ? '1px solid rgba(191, 219, 254, 0.4)' : '1px solid transparent'};
+  border: ${({ $active, theme }) => $active ? `1px solid ${theme.colors.accent}40` : '1px solid transparent'};
   font-size: 0.8125rem;
   font-weight: ${({ $active }) => ($active ? 600 : 400)};
-  background: ${({ $active }) => $active ? 'rgba(219, 234, 254, 0.55)' : 'transparent'};
+  background: ${({ $active, theme }) => $active ? `${theme.colors.accent}14` : 'transparent'};
   backdrop-filter: ${({ $active }) => $active ? 'blur(8px)' : 'none'};
   -webkit-backdrop-filter: ${({ $active }) => $active ? 'blur(8px)' : 'none'};
-  box-shadow: ${({ $active }) => $active ? '0 1px 4px rgba(37, 99, 235, 0.06)' : 'none'};
-  color: ${({ $active, $color }) => ($active ? ($color || '#2563eb') : 'inherit')};
+  box-shadow: ${({ $active, theme }) => $active ? `0 1px 4px ${theme.colors.accent}0f` : 'none'};
+  color: ${({ $active, $color, theme }) => ($active ? ($color || theme.colors.accent) : 'inherit')};
   cursor: pointer;
   transition: color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
 `;
@@ -620,7 +620,7 @@ const SearchInput = styled.input`
   &:focus {
     background: ${({ theme }) => theme.colors.surface};
     border-color: ${({ theme }) => theme.colors.blue};
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.accent}14;
   }
   &:hover:not(:focus) {
     border-color: ${({ theme }) => theme.colors.borderStrong};
@@ -685,7 +685,7 @@ const TRow = styled.tr<{ $even?: boolean; $collapsed?: boolean }>`
   transition: background 0.15s;
   cursor: pointer;
   &:hover {
-    background: ${({ theme, $collapsed }) => $collapsed ? 'transparent' : (theme.mode === 'dark' ? 'rgba(255,255,255,0.04)' : '#eff6ff')};
+    background: ${({ theme, $collapsed }) => $collapsed ? 'transparent' : (theme.mode === 'dark' ? 'rgba(255,255,255,0.04)' : theme.colors.surfaceMuted)};
   }
   td {
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
@@ -809,7 +809,7 @@ const DeleteIconBtn = styled.button`
   border-radius: 6px;
   transition: color 0.15s, transform 0.15s;
   &:hover {
-    color: #dc2626;
+    color: ${({ theme }) => theme.colors.red};
     transform: translateY(-1px);
   }
 `;
@@ -824,7 +824,7 @@ const EmptyCell = styled.td`
 /* ── Date Group Header ── */
 
 const GROUP_COLORS: Record<string, { bg: string; bgDark: string; fg: string; fgDark: string }> = {
-  '今日':  { bg: '#dbeafe', bgDark: '#1e3a5f', fg: '#2563eb', fgDark: '#93c5fd' },
+  '今日':  { bg: '#cffafe', bgDark: '#083344', fg: '#0ea5e9', fgDark: '#67e8f9' },
   '昨日':  { bg: '#fef3c7', bgDark: '#422006', fg: '#b45309', fgDark: '#fcd34d' },
   '更早前': { bg: '#f1f5f9', bgDark: '#1e293b', fg: '#64748b', fgDark: '#94a3b8' },
 };
@@ -990,11 +990,11 @@ const CloseBtn = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   flex-shrink: 0;
   transition: all 0.15s;
   &:hover {
-    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'};
+    background: ${({ theme }) => `${theme.colors.accent}${theme.mode === 'dark' ? '26' : '14'}`};
   }
 `;
 
@@ -1038,7 +1038,7 @@ const Input = styled.input`
   &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
   &:focus {
     border-color: ${({ theme }) => theme.colors.blue};
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.12), 0 1px 2px rgba(15,23,42,0.04);
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.accent}1f, 0 1px 2px rgba(15,23,42,0.04);
   }
 `;
 
@@ -1059,7 +1059,7 @@ const Textarea = styled.textarea`
   &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
   &:focus {
     border-color: ${({ theme }) => theme.colors.blue};
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.12), 0 1px 2px rgba(15,23,42,0.04);
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.accent}1f, 0 1px 2px rgba(15,23,42,0.04);
   }
 `;
 
@@ -1188,7 +1188,7 @@ const DpHeader = styled.div`
   gap: 14px;
   padding: 18px 24px;
   border-bottom: none;
-  background: ${({ theme }) => theme.mode === 'dark' ? '#1e3a5f' : '#e0edff'};
+  background: ${({ theme }) => theme.mode === 'dark' ? '#083344' : '#cffafe'};
   position: relative;
   overflow: hidden;
 `;
@@ -1205,7 +1205,7 @@ const DpCompanyName = styled.h2`
   margin: 0;
   font-size: 1.2rem;
   font-weight: 700;
-  color: ${({ theme }) => theme.mode === 'dark' ? '#e0edff' : '#1e3a5f'};
+  color: ${({ theme }) => theme.mode === 'dark' ? '#cffafe' : '#083344'};
   letter-spacing: 0.01em;
   font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif;
 `;
@@ -1219,12 +1219,12 @@ const DpCloseBtn = styled.button`
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.8)' : '#2563eb'};
+  color: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.8)' : theme.colors.accent};
   cursor: pointer;
   flex-shrink: 0;
   transition: all 0.15s;
   &:hover {
-    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.1)' : 'rgba(37,99,235,0.08)'};
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.1)' : `${theme.colors.accent}14`};
   }
 `;
 
@@ -1460,14 +1460,14 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   cursor: pointer;
   white-space: nowrap;
   transition: opacity 0.15s;
-  border: 1px solid ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(37,99,235,0.2)'};
+  border: 1px solid ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.15)' : `${theme.colors.accent}33`};
   background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? (theme.mode === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(220,38,38,0.06)') :
-    $variant === 'primary' ? (theme.mode === 'dark' ? 'rgba(255,255,255,0.15)' : 'rgba(37,99,235,0.1)') :
+    $variant === 'danger' ? (theme.mode === 'dark' ? 'rgba(255,255,255,0.08)' : `${theme.colors.red}0f`) :
+    $variant === 'primary' ? (theme.mode === 'dark' ? 'rgba(255,255,255,0.15)' : `${theme.colors.accent}1a`) :
     'transparent'};
   color: ${({ $variant, theme }) =>
-    $variant === 'danger' ? (theme.mode === 'dark' ? '#f87171' : '#dc2626') :
-    (theme.mode === 'dark' ? '#93c5fd' : '#2563eb')};
+    $variant === 'danger' ? theme.colors.red :
+    theme.colors.accent};
   &:hover { opacity: 0.85; }
 `;
 
@@ -1488,9 +1488,9 @@ const getReplyCategoryLabel = (t: (k: string, opts?: any) => string) => ({
   interested:         { text: t('leads.replyInterested'),        bg: '#dcfce7', fg: '#16a34a' },
   interested_pending: { text: t('leads.replyInterestedPending'), bg: '#fef3c7', fg: '#b45309' },
   not_interested:     { text: t('leads.replyNotInterested'),     bg: '#fee2e2', fg: '#dc2626' },
-  meeting:            { text: t('leads.replyMeeting'),           bg: '#dbeafe', fg: '#2563eb' },
+  meeting:            { text: t('leads.replyMeeting'),           bg: '#cffafe', fg: '#0ea5e9' },
   auto_reply:         { text: t('leads.replyAutoReply'),         bg: '#f3f4f6', fg: '#6b7280' },
-  question:           { text: t('leads.replyProcessing'),        bg: '#e0e7ff', fg: '#4338ca' },
+  question:           { text: t('leads.replyProcessing'),        bg: '#cffafe', fg: '#0ea5e9' },
 } as Record<string, { text: string; bg: string; fg: string }>);
 
 /* ── DEV MOCK DATA ── */
@@ -1627,12 +1627,12 @@ const getReplyBadge = (lead: Lead, t: (k: string, opts?: any) => string) => {
     if (lead._reply_category === 'interested' && lead._pending_meeting) {
       return labels.interested_pending;
     }
-    return labels[lead._reply_category || ''] || { text: t('leads.replyProcessing'), bg: '#e0e7ff', fg: '#4338ca' };
+    return labels[lead._reply_category || ''] || { text: t('leads.replyProcessing'), bg: '#cffafe', fg: '#0ea5e9' };
   }
   if (lead.status === 'contacted') {
     return lead._has_email_draft
       ? { text: t('leads.draftPending'), bg: '#fef3c7', fg: '#b45309' }
-      : { text: t('leads.awaitingReply'), bg: '#e0e7ff', fg: '#6366f1' };
+      : { text: t('leads.awaitingReply'), bg: '#cffafe', fg: '#0ea5e9' };
   }
   if (lead.status === 'pending') {
     return { text: t('leads.draftPending'), bg: '#fef3c7', fg: '#b45309' };
@@ -1662,15 +1662,15 @@ const NoReplyText = styled.span`
 /* ── Lead Emails section（撳開 lead 就睇到所有相關 email） ── */
 
 const getEmailTypeLabel = (t: (k: string) => string) => ({
-  reply:      { text: t('leads.emailTypeReply'),      bg: '#dcfce7', fg: '#15803d' },
+  reply:      { text: t('leads.emailTypeReply'),      bg: '#dcfce7', fg: '#16a34a' },
   followup:   { text: t('leads.emailTypeFollowup'),   bg: '#fef3c7', fg: '#b45309' },
-  reoutreach: { text: t('leads.emailTypeReoutreach'), bg: '#e0e7ff', fg: '#4338ca' },
+  reoutreach: { text: t('leads.emailTypeReoutreach'), bg: '#cffafe', fg: '#0ea5e9' },
 } as Record<string, { text: string; bg: string; fg: string }>);
 
 const EMAIL_STATUS_COLOR: Record<string, { bg: string; fg: string }> = {
-  pending:  { bg: '#fef3c7', fg: '#d97706' },
+  pending:  { bg: '#fef3c7', fg: '#ca8a04' },
   approved: { bg: '#dcfce7', fg: '#16a34a' },
-  sent:     { bg: '#dbeafe', fg: '#2563eb' },
+  sent:     { bg: '#cffafe', fg: '#0ea5e9' },
   rejected: { bg: '#fee2e2', fg: '#dc2626' },
   failed:   { bg: '#f3f4f6', fg: '#475569' },
 };
@@ -1750,19 +1750,19 @@ const EmailCardMeta = styled.div`
 const EmailSummary = styled.div`
   margin: 0 ${({ theme }) => theme.spacing.md}px;
   padding: 8px 12px;
-  background: ${({ theme }) => theme.mode === 'dark' ? '#1e3a5f' : '#eff6ff'};
-  border: 1px solid ${({ theme }) => theme.mode === 'dark' ? '#2563eb40' : '#bfdbfe'};
+  background: ${({ theme }) => theme.mode === 'dark' ? '#083344' : '#ecfeff'};
+  border: 1px solid ${({ theme }) => theme.mode === 'dark' ? `${theme.colors.accent}40` : '#99f6e4'};
   border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.9rem;
   line-height: 1.5;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   display: flex;
   align-items: flex-start;
   gap: 6px;
 `;
 const EmailSummaryLabel = styled.span`
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   white-space: nowrap;
   flex-shrink: 0;
 `;
@@ -1793,7 +1793,7 @@ const LeadSendBtn = styled.button`
   padding: 6px 16px;
   border: none;
   border-radius: 6px;
-  background: #10b981;
+  background: ${({ theme }) => theme.colors.green};
   color: #fff;
   font-size: 0.85rem;
   font-weight: 600;
@@ -1871,7 +1871,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     {busy ? t('leads.processing') : t('leads.approveAndSend')}
                   </LeadSendBtn>
-                  <EmailActionBtn $bg="#fef2f2" $fg="#ef4444" disabled={busy} onClick={() => handleReject(d._id)}>
+                  <EmailActionBtn $bg="#fef2f2" $fg="#dc2626" disabled={busy} onClick={() => handleReject(d._id)}>
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                     {t('leads.reject')}
                   </EmailActionBtn>
@@ -1961,7 +1961,7 @@ const Leads: React.FC = () => {
     {
       key: 'preparing',
       label: t('leads.tabPreparing'),
-      color: '#2563eb',
+      color: '#0ea5e9',
       icon: 'preparing',
       subs: [
         { key: '', label: t('leads.subAll'), icon: '' },
@@ -1978,7 +1978,7 @@ const Leads: React.FC = () => {
     {
       key: 'awaiting',
       label: t('leads.tabAwaiting'),
-      color: '#d97706',
+      color: '#ca8a04',
       icon: 'awaiting',
       subs: [
         { key: '', label: t('leads.subAll'), icon: '' },
@@ -2300,17 +2300,17 @@ const Leads: React.FC = () => {
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
               </StatCardValue>
             </StatCard>
-            <StatCard $accent="#2563eb">
+            <StatCard $accent="#0ea5e9">
               <StatCardLabel>{t('leads.tabPreparing')}</StatCardLabel>
               <StatCardValue>
-                <StatCardNumber $color="#2563eb">{tabCounts['preparing'] || 0}</StatCardNumber>
+                <StatCardNumber $color="#0ea5e9">{tabCounts['preparing'] || 0}</StatCardNumber>
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
               </StatCardValue>
             </StatCard>
-            <StatCard $accent="#d97706">
+            <StatCard $accent="#ca8a04">
               <StatCardLabel>{t('leads.tabAwaiting')}</StatCardLabel>
               <StatCardValue>
-                <StatCardNumber $color="#d97706">{tabCounts['awaiting'] || 0}</StatCardNumber>
+                <StatCardNumber $color="#ca8a04">{tabCounts['awaiting'] || 0}</StatCardNumber>
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
               </StatCardValue>
             </StatCard>
@@ -2324,10 +2324,10 @@ const Leads: React.FC = () => {
           </StatCardsRow>
           <HeaderTop style={{ justifyContent: 'space-between' }}>
             <HeaderBtns style={{ gap: '8px' }}>
-              <CircleActionBtn $color="#3b82f6" aria-label={t('leads.checkReplies', { defaultValue: '檢查回覆' })} onClick={handleCheckReplies} disabled={replyChecking}>
+              <CircleActionBtn $color="#0ea5e9" aria-label={t('leads.checkReplies', { defaultValue: '檢查回覆' })} onClick={handleCheckReplies} disabled={replyChecking}>
                 <IconCheckCircle />
               </CircleActionBtn>
-              <CircleActionBtn $color="#f59e0b" aria-label={t('leads.checkFollowups', { defaultValue: '檢查跟進' })} onClick={handleCheckFollowups} disabled={followupChecking}>
+              <CircleActionBtn $color="#ca8a04" aria-label={t('leads.checkFollowups', { defaultValue: '檢查跟進' })} onClick={handleCheckFollowups} disabled={followupChecking}>
                 <IconSparkle />
               </CircleActionBtn>
               <CircleActionBtn $color="#64748b" aria-label={t('leads.refresh', { defaultValue: '刷新' })} onClick={handleRefresh} disabled={refreshing}>
@@ -2377,7 +2377,7 @@ const Leads: React.FC = () => {
             <SubPill
               key={sub.key}
               $active={activeSub === sub.key}
-              $color={SUB_COLORS[sub.key] || '#2563eb'}
+              $color={SUB_COLORS[sub.key] || '#0ea5e9'}
               onClick={() => handleSubClick(sub.key)}
             >
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
@@ -2421,8 +2421,8 @@ const Leads: React.FC = () => {
                           style={{
                             marginTop: 4,
                             padding: '6px 14px',
-                            border: '1px solid #3b82f6',
-                            background: '#3b82f6',
+                            border: '1px solid #0ea5e9',
+                            background: '#0ea5e9',
                             color: '#fff',
                             borderRadius: 4,
                             cursor: 'pointer',
@@ -2491,7 +2491,7 @@ const Leads: React.FC = () => {
                         <td>
                           {lead.status && lead.status !== 'contacted' && NEXT_STATUS[lead.status] && (
                             <ActionBtn
-                              $color="#3b82f6"
+                              $color="#0ea5e9"
                               title={STATUS_LABEL[lead.status]}
                               onClick={(e) => { e.stopPropagation(); handleStatusChange(lead._id, NEXT_STATUS[lead.status!]); }}
                             >
@@ -2638,8 +2638,8 @@ const Leads: React.FC = () => {
               position: 'absolute',
               top: 0,
               left: 0,
-              background: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(37,99,235,0.12)',
-              color: isDark ? '#93c5fd' : '#2563eb',
+              background: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(14,165,233,0.12)',
+              color: isDark ? '#67e8f9' : '#0ea5e9',
               fontSize: '0.625rem',
               fontWeight: 700,
               padding: '3px 16px 3px 8px',
@@ -2648,7 +2648,7 @@ const Leads: React.FC = () => {
               textTransform: 'uppercase',
               backdropFilter: 'blur(4px)',
             }}>{selectedLead.status ?? 'new'}</span>
-            <Avatar $color={hashColor(selectedLead.company_name || 'Unknown')} style={{ width: 42, height: 42, fontSize: '0.875rem', border: isDark ? '2px solid rgba(255,255,255,0.3)' : '2px solid rgba(37,99,235,0.2)' }}>
+            <Avatar $color={hashColor(selectedLead.company_name || 'Unknown')} style={{ width: 42, height: 42, fontSize: '0.875rem', border: isDark ? '2px solid rgba(255,255,255,0.3)' : '2px solid rgba(14,165,233,0.2)' }}>
               <AvatarIcon name={selectedLead.company_name || 'Unknown'} />
             </Avatar>
             <DpHeaderInfo>
@@ -2694,10 +2694,10 @@ const Leads: React.FC = () => {
                 <DpGrid>
                   <DpField>
                     <DpFieldLabel>
-                      <DpFieldIcon $color="#2563eb"><svg viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
+                      <DpFieldIcon $color="#0ea5e9"><svg viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
                       {t('leads.email')}
                     </DpFieldLabel>
-                    <DpFieldValue style={{ color: selectedLead.email ? '#2563eb' : undefined }}>{selectedLead.email || '—'}</DpFieldValue>
+                    <DpFieldValue style={{ color: selectedLead.email ? '#0ea5e9' : undefined }}>{selectedLead.email || '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
                     <DpFieldLabel>
@@ -2800,7 +2800,7 @@ const Leads: React.FC = () => {
                 )}
 
                 {selectedLead._replied && (() => {
-                  const cat = getReplyBadge(selectedLead, t) || { text: '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
+                  const cat = getReplyBadge(selectedLead, t) || { text: '已回覆', bg: '#cffafe', fg: '#0ea5e9' };
                   return (
                     <DpTabSection>
                       <DpTabLabel>回覆資訊</DpTabLabel>

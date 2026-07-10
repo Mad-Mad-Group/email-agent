@@ -248,7 +248,7 @@ const StarBtn = styled.button<{ $active?: boolean }>`
 `;
 
 /* Initial-based avatar */
-const avatarPalette = ['#6890c2', '#5fa088', '#c19862', '#c78787', '#6890c2', '#94a3b8', '#5fa088', '#94a3b8'];
+const avatarPalette = ['#5a9a8a', '#5fa088', '#c19862', '#c78787', '#5a9a8a', '#88a890', '#5fa088', '#88a890'];
 
 const getAvatarColor = (name: string): string => {
   let hash = 0;
@@ -559,7 +559,7 @@ const OutlineBtn = styled.button<{ $color?: string }>`
   cursor: pointer;
   transition: background 0.15s;
   &:hover {
-    background: ${({ $color }) => ($color ? $color + '12' : '#f4f5f7')};
+    background: ${({ $color }) => ($color ? $color + '12' : '#ecf2ec')};
   }
 `;
 
@@ -824,8 +824,8 @@ interface EmailData {
 const colorMap: Record<string, string> = {
   pdf: '#c78787',
   exc: '#5fa088',
-  zip: '#6890c2',
-  docx: '#6890c2',
+  zip: '#5a9a8a',
+  docx: '#5a9a8a',
 };
 
 const emails: EmailData[] = [
@@ -1253,10 +1253,10 @@ const EmailApp: React.FC = () => {
             <RichBtn title={t('email.italic')}><I d={icons.italic} size={14} /></RichBtn>
             <RichBtn title={t('email.underline')}><I d={icons.underline} size={14} /></RichBtn>
             <RichBtn title={t('email.strikethrough')}><I d={icons.strikethrough} size={14} /></RichBtn>
-            <span style={{ width: 1, height: 18, background: '#e5e7eb', margin: '0 4px' }} />
+            <span style={{ width: 1, height: 18, background: '#d4e2d4', margin: '0 4px' }} />
             <RichBtn title={t('email.unorderedList')}><I d={icons.listUl} size={14} /></RichBtn>
             <RichBtn title={t('email.orderedList')}><I d={icons.listOl} size={14} /></RichBtn>
-            <span style={{ width: 1, height: 18, background: '#e5e7eb', margin: '0 4px' }} />
+            <span style={{ width: 1, height: 18, background: '#d4e2d4', margin: '0 4px' }} />
             <RichBtn title={t('email.link')}><I d={icons.link} size={14} /></RichBtn>
             <RichBtn title={t('email.image')}><I d={icons.image} size={14} /></RichBtn>
             <RichBtn title={t('email.align')}><I d={icons.alignLeft} size={14} /></RichBtn>

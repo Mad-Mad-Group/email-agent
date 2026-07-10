@@ -179,7 +179,7 @@ const TRow = styled.tr<{ $even?: boolean }>`
     : theme.colors.surface};
   transition: background 0.15s;
   &:hover {
-    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.04)' : '#eff6ff'};
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.04)' : '#ecfeff'};
   }
   td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
   cursor: pointer;
@@ -205,9 +205,9 @@ const UserName = styled.span`
 /* ── Role badge ── */
 
 const ROLE_COLORS: Record<string, { bg: string; fg: string; avatar: string }> = {
-  admin:   { bg: '#1d4ed818', fg: '#1d4ed8', avatar: '#bfdbfe' },
+  admin:   { bg: '#0369a118', fg: '#0369a1', avatar: '#a7f3d0' },
   manager: { bg: '#d9770618', fg: '#d97706', avatar: '#c4b5fd' },
-  user:    { bg: '#3b82f618', fg: '#3b82f6', avatar: '#a5f3fc' },
+  user:    { bg: '#0ea5e918', fg: '#0ea5e9', avatar: '#a7f3d0' },
 };
 
 const RoleBadge = styled.span<{ $bg: string; $fg: string }>`
@@ -321,7 +321,7 @@ const DpCloseBtn = styled.button`
   flex-shrink: 0;
   transition: all 0.15s;
   &:hover {
-    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'};
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(14,165,233,0.15)' : 'rgba(14,165,233,0.08)'};
   }
 `;
 
@@ -453,7 +453,7 @@ function formatDate(iso?: string): string {
 
 function roleProps(role: string) {
   const lower = role.toLowerCase();
-  return ROLE_COLORS[lower] ?? { bg: '#0f172a18', fg: '#0f172a', avatar: '#bbf7d0' };
+  return ROLE_COLORS[lower] ?? { bg: '#0a140d18', fg: '#0a140d', avatar: '#bbf7d0' };
 }
 
 function getInitials(name: string): string {

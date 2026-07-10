@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import { media } from '../../styles/media';
 import { useMe, useUpdateProfile, useChangePassword } from '../../api/hooks';
 import toast from 'react-hot-toast';
@@ -7,12 +8,6 @@ import toast from 'react-hot-toast';
 /* ══════════════════════════════════════
    User Info — 個人資料頁面
    ══════════════════════════════════════ */
-
-const ROLE_MAP: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-  super_admin: { label: '超級管理員', color: '#dc2626', bg: 'rgba(220,38,38,0.08)', icon: '👑' },
-  admin:       { label: '管理員',     color: '#2563eb', bg: 'rgba(37,99,235,0.08)',  icon: '🛡️' },
-  staff:       { label: '成員',       color: '#6b7280', bg: 'rgba(107,114,128,0.08)', icon: '👤' },
-};
 
 const formatDate = (d?: string | Date) => {
   if (!d) return '—';
@@ -79,7 +74,7 @@ const CardBody = styled.div`
 /* ── Profile Hero ── */
 
 const HeroCard = styled(Card)`
-  padding: 24px;
+  padding: ${({ theme }) => theme.spacing.lg}px;
 `;
 
 const HeroBody = styled.div`
@@ -89,8 +84,8 @@ const HeroBody = styled.div`
 
 const Avatar = styled.div`
   width: 64px; height: 64px;
-  border-radius: 16px;
-  background: var(--primary, #567ebb);
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  background: var(--primary, #0ea5e9);
   color: #fff;
   display: flex; align-items: center; justify-content: center;
   font-size: 1.35rem; font-weight: 700; letter-spacing: 1px;
@@ -171,23 +166,23 @@ const Label = styled.label`
 const Input = styled.input`
   padding: 8px 12px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.input ?? 6}px;
-  background: ${({ theme }) => theme.colors.bg};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  background: ${({ theme }) => theme.colors.canvas};
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 0.875rem;
   outline: none;
   transition: border-color 0.15s;
-  &:focus { border-color: var(--primary, #567ebb); }
+  &:focus { border-color: var(--primary, #0ea5e9); }
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 `;
 
 const SaveBtn = styled.button`
   align-self: flex-start;
   padding: 8px 20px;
-  background: var(--primary, #567ebb);
+  background: var(--primary, #0ea5e9);
   color: #fff;
   border: none;
-  border-radius: 6px;
+  border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
@@ -197,7 +192,7 @@ const SaveBtn = styled.button`
 `;
 
 const ErrorMsg = styled.div`
-  font-size: 0.75rem; color: #dc2626; margin-top: -4px;
+  font-size: 0.75rem; color: ${({ theme }) => theme.colors.red}; margin-top: -4px;
 `;
 
 /* ── SVG Icons ── */
@@ -211,6 +206,7 @@ const SvgIcon: React.FC<{ children: React.ReactNode; size?: number }> = ({ child
 /* ── Page ── */
 
 const UserInfoPage: React.FC = () => {
+  const { t } = useTranslation();
   const { data: me, isLoading } = useMe();
   const updateProfile = useUpdateProfile();
   const changePassword = useChangePassword();
@@ -232,38 +228,45 @@ const UserInfoPage: React.FC = () => {
 
   const user = (me as any)?.data ?? me;
   const role = user?.role ?? 'staff';
+
+  const ROLE_MAP: Record<string, { label: string; color: string; bg: string; icon: string }> = {
+    super_admin: { label: t('userInfo.roleSuper'), color: '#dc2626', bg: 'rgba(220,38,38,0.08)', icon: '👑' },
+    admin:       { label: t('userInfo.roleAdmin'), color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)',  icon: '🛡️' },
+    staff:       { label: t('userInfo.roleStaff'), color: '#6b7280', bg: 'rgba(107,114,128,0.08)', icon: '👤' },
+  };
+
   const roleInfo = ROLE_MAP[role] ?? ROLE_MAP.staff;
 
   const handleSaveProfile = () => {
     const changes: { name?: string; email?: string } = {};
     if (name !== (user?.name ?? '')) changes.name = name;
     if (email !== (user?.email ?? '')) changes.email = email;
-    if (Object.keys(changes).length === 0) { toast('冇需要更新嘅資料'); return; }
+    if (Object.keys(changes).length === 0) { toast(t('userInfo.noChanges')); return; }
     updateProfile.mutate(changes, {
-      onSuccess: () => toast.success('個人資料已更新'),
-      onError: (err: any) => toast.error(err?.response?.data?.message ?? '更新失敗'),
+      onSuccess: () => toast.success(t('userInfo.profileUpdated')),
+      onError: (err: any) => toast.error(err?.response?.data?.message ?? t('userInfo.updateFailed')),
     });
   };
 
   const handleChangePassword = () => {
     setPwError('');
-    if (!oldPw || !newPw || !confirmPw) { setPwError('請填寫所有欄位'); return; }
-    if (newPw.length < 6) { setPwError('新密碼至少 6 個字元'); return; }
-    if (newPw !== confirmPw) { setPwError('新密碼同確認密碼唔一致'); return; }
+    if (!oldPw || !newPw || !confirmPw) { setPwError(t('userInfo.pwAllFields')); return; }
+    if (newPw.length < 6) { setPwError(t('userInfo.pwMinLength')); return; }
+    if (newPw !== confirmPw) { setPwError(t('userInfo.pwMismatch')); return; }
     changePassword.mutate({ oldPassword: oldPw, newPassword: newPw }, {
-      onSuccess: () => { toast.success('密碼已更新'); setOldPw(''); setNewPw(''); setConfirmPw(''); },
-      onError: (err: any) => { const msg = err?.response?.data?.message ?? '密碼更新失敗'; setPwError(msg); toast.error(msg); },
+      onSuccess: () => { toast.success(t('userInfo.pwUpdated')); setOldPw(''); setNewPw(''); setConfirmPw(''); },
+      onError: (err: any) => { const msg = err?.response?.data?.message ?? t('userInfo.pwFailed'); setPwError(msg); toast.error(msg); },
     });
   };
 
-  if (isLoading) return <Page><PageTitle>載入中…</PageTitle></Page>;
+  if (isLoading) return <Page><PageTitle>{t('userInfo.loading')}</PageTitle></Page>;
 
   return (
     <Page>
       <div>
-        <Breadcrumb><li>CMS</li><li>個人資料</li></Breadcrumb>
-        <PageTitle>個人資料</PageTitle>
-        <PageSub>查看和編輯你嘅帳戶資料</PageSub>
+        <Breadcrumb><li>{t('userInfo.breadcrumbCms')}</li><li>{t('userInfo.breadcrumbProfile')}</li></Breadcrumb>
+        <PageTitle>{t('userInfo.title')}</PageTitle>
+        <PageSub>{t('userInfo.subtitle')}</PageSub>
       </div>
 
       {/* ── Hero profile card ── */}
@@ -285,11 +288,11 @@ const UserInfoPage: React.FC = () => {
       {/* ── Info stats ── */}
       <StatsRow>
         <StatCard>
-          <StatIcon $bg="rgba(37,99,235,0.08)">
+          <StatIcon $bg="rgba(14,165,233,0.08)">
             <SvgIcon><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" /><path opacity="0.5" d="M2 13c0-2.21 2.686-4 6-4s6 1.79 6 4v1H2v-1z" /></SvgIcon>
           </StatIcon>
           <StatContent>
-            <StatLabel>帳戶角色</StatLabel>
+            <StatLabel>{t('userInfo.statRole')}</StatLabel>
             <StatValue>{roleInfo.label}</StatValue>
           </StatContent>
         </StatCard>
@@ -298,7 +301,7 @@ const UserInfoPage: React.FC = () => {
             <SvgIcon><path d="M6.445 11.688V6.354h-.633A12.6 12.6 0 0 0 4.5 7.16v.695c.375-.257.969-.62 1.258-.777h.012v4.61h.675z" /><path opacity="0.5" d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z" /></SvgIcon>
           </StatIcon>
           <StatContent>
-            <StatLabel>註冊日期</StatLabel>
+            <StatLabel>{t('userInfo.statCreated')}</StatLabel>
             <StatValue>{formatDate(user?.created_at)}</StatValue>
           </StatContent>
         </StatCard>
@@ -307,7 +310,7 @@ const UserInfoPage: React.FC = () => {
             <SvgIcon><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z" /><path opacity="0.5" d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z" /></SvgIcon>
           </StatIcon>
           <StatContent>
-            <StatLabel>最後更新</StatLabel>
+            <StatLabel>{t('userInfo.statUpdated')}</StatLabel>
             <StatValue>{formatDate(user?.updated_at)}</StatValue>
           </StatContent>
         </StatCard>
@@ -316,40 +319,40 @@ const UserInfoPage: React.FC = () => {
       {/* ── Edit forms ── */}
       <Grid>
         <Card>
-          <CardHeader><h2>編輯資料</h2></CardHeader>
+          <CardHeader><h2>{t('userInfo.editTitle')}</h2></CardHeader>
           <CardBody>
             <FormGroup>
-              <Label>姓名</Label>
-              <Input value={name} onChange={e => setName(e.target.value)} placeholder="輸入姓名" />
+              <Label>{t('userInfo.labelName')}</Label>
+              <Input value={name} onChange={e => setName(e.target.value)} placeholder={t('userInfo.placeholderName')} />
             </FormGroup>
             <FormGroup>
-              <Label>電郵</Label>
-              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="輸入電郵" />
+              <Label>{t('userInfo.labelEmail')}</Label>
+              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={t('userInfo.placeholderEmail')} />
             </FormGroup>
             <SaveBtn disabled={updateProfile.isPending} onClick={handleSaveProfile}>
-              {updateProfile.isPending ? '儲存中…' : '儲存'}
+              {updateProfile.isPending ? t('userInfo.saving') : t('userInfo.save')}
             </SaveBtn>
           </CardBody>
         </Card>
 
         <Card>
-          <CardHeader><h2>更改密碼</h2></CardHeader>
+          <CardHeader><h2>{t('userInfo.changePassword')}</h2></CardHeader>
           <CardBody>
             <FormGroup>
-              <Label>舊密碼</Label>
-              <Input type="password" value={oldPw} onChange={e => setOldPw(e.target.value)} placeholder="輸入舊密碼" />
+              <Label>{t('userInfo.labelOldPw')}</Label>
+              <Input type="password" value={oldPw} onChange={e => setOldPw(e.target.value)} placeholder={t('userInfo.placeholderOldPw')} />
             </FormGroup>
             <FormGroup>
-              <Label>新密碼</Label>
-              <Input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder="至少 6 個字元" />
+              <Label>{t('userInfo.labelNewPw')}</Label>
+              <Input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder={t('userInfo.placeholderNewPw')} />
             </FormGroup>
             <FormGroup>
-              <Label>確認新密碼</Label>
-              <Input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder="再輸入一次新密碼" />
+              <Label>{t('userInfo.labelConfirmPw')}</Label>
+              <Input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder={t('userInfo.placeholderConfirmPw')} />
             </FormGroup>
             {pwError && <ErrorMsg>{pwError}</ErrorMsg>}
             <SaveBtn disabled={changePassword.isPending} onClick={handleChangePassword}>
-              {changePassword.isPending ? '更新中…' : '更改密碼'}
+              {changePassword.isPending ? t('userInfo.changingPw') : t('userInfo.changePwBtn')}
             </SaveBtn>
           </CardBody>
         </Card>

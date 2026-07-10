@@ -55,69 +55,83 @@ const Breadcrumb = styled.ol`
   a { color: ${({ theme }) => theme.colors.textSecondary}; text-decoration: none; &:hover { text-decoration: underline; } }
 `;
 
-const ToolbarRow = styled.div`
-  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
-`;
-
-const Title = styled.h5`
-  margin: 0; font-size: 1.125rem; font-weight: 600;
+const PageTitle = styled.h1`
+  font-size: 1.15rem; font-weight: 600; margin: 4px 0 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   display: flex; align-items: center; gap: 8px;
 `;
 
+const PageSub = styled.small`
+  color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
+`;
+
+const ToolbarRow = styled.div`
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+`;
+
 const SearchInput = styled.input`
-  padding: 6px 12px; border-radius: 6px; border: 1px solid ${({ theme }) => theme.colors.border};
+  padding: 6px 12px; border-radius: ${({ theme }) => theme.radii.control}px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.surface}; color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 0.8125rem; width: 220px;
+  font-size: 0.8125rem; width: 220px; outline: none; transition: border-color 0.15s;
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
-  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; }
+  &:focus { border-color: var(--primary, #0ea5e9); }
 `;
 
 const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'ghost' }>`
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 14px; border-radius: 6px; font-size: 0.8125rem; font-weight: 500;
+  padding: 6px 14px; border-radius: ${({ theme }) => theme.radii.control}px;
+  font-size: 0.8125rem; font-weight: 500;
   cursor: pointer; border: 1px solid transparent; transition: all 0.15s;
   ${({ $variant, theme }) => {
-    if ($variant === 'primary') return `background: ${theme.colors.primary}; color: #fff; &:hover { opacity: 0.9; }`;
-    if ($variant === 'danger') return `background: transparent; color: ${theme.colors.error || '#ef4444'}; border-color: ${theme.colors.error || '#ef4444'}; &:hover { background: ${theme.colors.error || '#ef4444'}; color: #fff; }`;
-    return `background: ${theme.colors.surface}; color: ${theme.colors.textSecondary}; border-color: ${theme.colors.border}; &:hover { background: ${theme.colors.surfaceHover || theme.colors.border}; }`;
+    if ($variant === 'primary') return `background: var(--primary, #0ea5e9); color: #fff; &:hover { opacity: 0.9; }`;
+    if ($variant === 'danger') return `background: transparent; color: ${theme.colors.red}; border-color: ${theme.colors.red}; &:hover { background: ${theme.colors.red}; color: #fff; }`;
+    return `background: ${theme.colors.surface}; color: ${theme.colors.textSecondary}; border-color: ${theme.colors.border}; &:hover { background: ${theme.colors.surfaceMuted}; }`;
   }}
 `;
 
 /* ── Stats Cards ── */
 
 const StatsRow = styled.div`
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: ${({ theme }) => theme.spacing.md}px;
 `;
 
 const StatCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface}; border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px; padding: 14px 16px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  padding: 14px 16px;
 `;
 
-const StatLabel = styled.div`font-size: 0.75rem; color: ${({ theme }) => theme.colors.textTertiary}; margin-bottom: 4px;`;
+const StatLabel = styled.div`font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; color: ${({ theme }) => theme.colors.textTertiary}; margin-bottom: 4px;`;
 const StatValue = styled.div`font-size: 1.25rem; font-weight: 700; color: ${({ theme }) => theme.colors.textPrimary};`;
 
 /* ── Table ── */
 
-const TableWrap = styled.div`
-  overflow-x: auto; border: 1px solid ${({ theme }) => theme.colors.border}; border-radius: 8px;
+const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  overflow: hidden;
 `;
+
+const TableWrap = styled.div`overflow-x: auto;`;
 
 const Table = styled.table`
   width: 100%; border-collapse: collapse; font-size: 0.8125rem;
   th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
-  th { font-weight: 600; color: ${({ theme }) => theme.colors.textSecondary}; background: ${({ theme }) => theme.colors.canvas}; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  th { font-weight: 600; color: ${({ theme }) => theme.colors.textTertiary}; background: ${({ theme }) => theme.colors.canvas}; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.5px; }
   td { color: ${({ theme }) => theme.colors.textPrimary}; }
   tr:last-child td { border-bottom: none; }
-  tr:hover td { background: ${({ theme }) => theme.colors.canvas}; }
+  tr:hover td { background: ${({ theme }) => theme.colors.surfaceMuted}; }
 `;
 
 const Badge = styled.span<{ $color?: string }>`
   display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.6875rem; font-weight: 600;
-  background: ${({ $color }) => $color ? `${$color}20` : '#6366f120'};
-  color: ${({ $color }) => $color || '#6366f1'};
+  background: ${({ $color }) => $color ? `${$color}20` : '#0ea5e920'};
+  color: ${({ $color }) => $color || '#0ea5e9'};
 `;
 
 const NoData = styled.div`
@@ -132,8 +146,9 @@ const PaginationRow = styled.div`
 `;
 
 const PageBtn = styled.button<{ $active?: boolean }>`
-  padding: 4px 10px; border-radius: 4px; border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ $active, theme }) => $active ? theme.colors.primary : 'transparent'};
+  padding: 4px 10px; border-radius: ${({ theme }) => theme.radii.control}px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ $active }) => $active ? 'var(--primary, #0ea5e9)' : 'transparent'};
   color: ${({ $active }) => $active ? '#fff' : 'inherit'};
   cursor: pointer; font-size: 0.75rem; margin: 0 2px;
   &:disabled { opacity: 0.4; cursor: not-allowed; }
@@ -150,7 +165,8 @@ const Overlay = styled.div`
 `;
 
 const Modal = styled.div`
-  background: ${({ theme }) => theme.colors.surface}; border-radius: 10px;
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: ${({ theme }) => theme.radii.card}px;
   padding: 24px; width: 400px; max-width: 90vw;
   box-shadow: 0 12px 40px rgba(0,0,0,0.2);
 `;
@@ -160,16 +176,16 @@ const ModalTitle = styled.h6`margin: 0 0 16px; font-size: 1rem; font-weight: 600
 const Field = styled.div`margin-bottom: 12px;`;
 const Label = styled.label`display: block; font-size: 0.75rem; font-weight: 500; color: ${({ theme }) => theme.colors.textSecondary}; margin-bottom: 4px;`;
 const Input = styled.input`
-  width: 100%; padding: 8px 10px; border-radius: 6px; font-size: 0.8125rem;
+  width: 100%; padding: 8px 10px; border-radius: ${({ theme }) => theme.radii.control}px; font-size: 0.8125rem;
   border: 1px solid ${({ theme }) => theme.colors.border}; background: ${({ theme }) => theme.colors.canvas};
-  color: ${({ theme }) => theme.colors.textPrimary};
-  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; }
+  color: ${({ theme }) => theme.colors.textPrimary}; outline: none; transition: border-color 0.15s;
+  &:focus { border-color: var(--primary, #0ea5e9); }
 `;
 const Textarea = styled.textarea`
-  width: 100%; padding: 8px 10px; border-radius: 6px; font-size: 0.8125rem; min-height: 60px; resize: vertical;
+  width: 100%; padding: 8px 10px; border-radius: ${({ theme }) => theme.radii.control}px; font-size: 0.8125rem; min-height: 60px; resize: vertical;
   border: 1px solid ${({ theme }) => theme.colors.border}; background: ${({ theme }) => theme.colors.canvas};
-  color: ${({ theme }) => theme.colors.textPrimary};
-  &:focus { outline: none; border-color: ${({ theme }) => theme.colors.primary}; }
+  color: ${({ theme }) => theme.colors.textPrimary}; outline: none; transition: border-color 0.15s;
+  &:focus { border-color: var(--primary, #0ea5e9); }
 `;
 
 const ModalActions = styled.div`display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;`;
@@ -178,14 +194,8 @@ const ModalActions = styled.div`display: flex; justify-content: flex-end; gap: 8
 
 const methodColors: Record<string, string> = {
   auto_reply_count: '#10b981',
-  ai_check: '#6366f1',
+  ai_check: '#0ea5e9',
   manual: '#f59e0b',
-};
-
-const methodLabels: Record<string, string> = {
-  auto_reply_count: 'Auto (replies)',
-  ai_check: 'AI Check',
-  manual: 'Manual',
 };
 
 const VerifiedEmailsPage: React.FC = () => {
@@ -194,6 +204,12 @@ const VerifiedEmailsPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
   const [addForm, setAddForm] = useState({ email: '', company_name: '', notes: '' });
+
+  const methodLabels: Record<string, string> = {
+    auto_reply_count: t('verifiedEmails.methodAutoReply'),
+    ai_check: t('verifiedEmails.methodAiCheck'),
+    manual: t('verifiedEmails.methodManual'),
+  };
 
   const limit = 20;
   const { data, isLoading } = useVerifiedEmails({ page, limit, search: search || undefined });
@@ -216,9 +232,9 @@ const VerifiedEmailsPage: React.FC = () => {
   }, [addForm, createMut]);
 
   const handleDelete = useCallback((id: string) => {
-    if (!confirm('確定刪除此驗證郵箱？')) return;
+    if (!confirm(t('verifiedEmails.confirmDelete'))) return;
     deleteMut.mutate(id);
-  }, [deleteMut]);
+  }, [deleteMut, t]);
 
   const handleExport = useCallback(() => {
     window.open(verifiedEmailsApi.exportUrl(), '_blank');
@@ -230,28 +246,31 @@ const VerifiedEmailsPage: React.FC = () => {
 
   return (
     <Page>
-      <Breadcrumb>
-        <li><a href="/dashboard">CMS</a></li>
-        <li>Verified Emails</li>
-      </Breadcrumb>
+      <div>
+        <Breadcrumb>
+          <li><a href="/dashboard">CMS</a></li>
+          <li>{t('verifiedEmails.breadcrumb')}</li>
+        </Breadcrumb>
+        <PageTitle><PoolIcon /> {t('verifiedEmails.title')}</PageTitle>
+        <PageSub>{t('verifiedEmails.breadcrumb')}</PageSub>
+      </div>
 
       <ToolbarRow>
-        <Title><PoolIcon /> Verified Email Pool</Title>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <SearchInput
-            placeholder="Search email / company..."
+            placeholder={t('verifiedEmails.searchPlaceholder')}
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
           />
-          <Btn onClick={handleExport}><ExportIcon /> Export</Btn>
-          <Btn $variant="primary" onClick={() => setShowAdd(true)}><PlusIcon /> Add</Btn>
+          <Btn onClick={handleExport}><ExportIcon /> {t('verifiedEmails.export')}</Btn>
+          <Btn $variant="primary" onClick={() => setShowAdd(true)}><PlusIcon /> {t('verifiedEmails.add')}</Btn>
         </div>
       </ToolbarRow>
 
       {/* Stats */}
       <StatsRow>
-        <StatCard><StatLabel>Total Verified</StatLabel><StatValue>{statTotal}</StatValue></StatCard>
-        <StatCard><StatLabel>Active</StatLabel><StatValue>{statActive}</StatValue></StatCard>
+        <StatCard><StatLabel>{t('verifiedEmails.totalVerified')}</StatLabel><StatValue>{statTotal}</StatValue></StatCard>
+        <StatCard><StatLabel>{t('verifiedEmails.active')}</StatLabel><StatValue>{statActive}</StatValue></StatCard>
         {statByMethod.map((m: any) => (
           <StatCard key={m._id}>
             <StatLabel>{methodLabels[m._id] ?? m._id}</StatLabel>
@@ -261,106 +280,108 @@ const VerifiedEmailsPage: React.FC = () => {
       </StatsRow>
 
       {/* Table */}
-      <TableWrap>
-        {isLoading ? (
-          <NoData>Loading...</NoData>
-        ) : items.length === 0 ? (
-          <NoData>No verified emails yet</NoData>
-        ) : (
-          <>
-            <Table>
-              <thead>
-                <tr>
-                  <th>Email</th>
-                  <th>Company</th>
-                  <th>Domain</th>
-                  <th>Method</th>
-                  <th>Replies</th>
-                  <th>Matches</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody>
-                {items.map(item => (
-                  <tr key={item._id}>
-                    <td>{item.email}</td>
-                    <td>{item.company_name}</td>
-                    <td style={{ color: 'inherit', opacity: 0.7 }}>{item.domain}</td>
-                    <td>
-                      <Badge $color={methodColors[item.verification_method]}>
-                        {methodLabels[item.verification_method] ?? item.verification_method}
-                      </Badge>
-                    </td>
-                    <td>{item.reply_count}</td>
-                    <td>{item.match_count}</td>
-                    <td>
-                      <Badge $color={item.status === 'active' ? '#10b981' : '#ef4444'}>
-                        {item.status}
-                      </Badge>
-                    </td>
-                    <td style={{ fontSize: '0.75rem', opacity: 0.7 }}>
-                      {item.created_at ? new Date(item.created_at).toLocaleDateString() : '—'}
-                    </td>
-                    <td>
-                      <Btn $variant="danger" onClick={() => handleDelete(item._id)} style={{ padding: '4px 8px' }}>
-                        <TrashIcon />
-                      </Btn>
-                    </td>
+      <Card>
+        <TableWrap>
+          {isLoading ? (
+            <NoData>{t('verifiedEmails.loading')}</NoData>
+          ) : items.length === 0 ? (
+            <NoData>{t('verifiedEmails.noData')}</NoData>
+          ) : (
+            <>
+              <Table>
+                <thead>
+                  <tr>
+                    <th>{t('verifiedEmails.thEmail')}</th>
+                    <th>{t('verifiedEmails.thCompany')}</th>
+                    <th>{t('verifiedEmails.thDomain')}</th>
+                    <th>{t('verifiedEmails.thMethod')}</th>
+                    <th>{t('verifiedEmails.thReplies')}</th>
+                    <th>{t('verifiedEmails.thMatches')}</th>
+                    <th>{t('verifiedEmails.thStatus')}</th>
+                    <th>{t('verifiedEmails.thCreated')}</th>
+                    <th></th>
                   </tr>
-                ))}
-              </tbody>
-            </Table>
-            <PaginationRow>
-              <span>Showing {(page - 1) * limit + 1}–{Math.min(page * limit, total)} of {total}</span>
-              <div>
-                <PageBtn disabled={page <= 1} onClick={() => setPage(p => p - 1)}>Prev</PageBtn>
-                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                  const p = i + 1;
-                  return <PageBtn key={p} $active={p === page} onClick={() => setPage(p)}>{p}</PageBtn>;
-                })}
-                {totalPages > 5 && <span>...</span>}
-                <PageBtn disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>Next</PageBtn>
-              </div>
-            </PaginationRow>
-          </>
-        )}
-      </TableWrap>
+                </thead>
+                <tbody>
+                  {items.map(item => (
+                    <tr key={item._id}>
+                      <td>{item.email}</td>
+                      <td>{item.company_name}</td>
+                      <td style={{ color: 'inherit', opacity: 0.7 }}>{item.domain}</td>
+                      <td>
+                        <Badge $color={methodColors[item.verification_method]}>
+                          {methodLabels[item.verification_method] ?? item.verification_method}
+                        </Badge>
+                      </td>
+                      <td>{item.reply_count}</td>
+                      <td>{item.match_count}</td>
+                      <td>
+                        <Badge $color={item.status === 'active' ? '#10b981' : '#ef4444'}>
+                          {item.status}
+                        </Badge>
+                      </td>
+                      <td style={{ fontSize: '0.75rem', opacity: 0.7 }}>
+                        {item.created_at ? new Date(item.created_at).toLocaleDateString() : '—'}
+                      </td>
+                      <td>
+                        <Btn $variant="danger" onClick={() => handleDelete(item._id)} style={{ padding: '4px 8px' }}>
+                          <TrashIcon />
+                        </Btn>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+              <PaginationRow>
+                <span>{t('verifiedEmails.showing')} {(page - 1) * limit + 1}–{Math.min(page * limit, total)} {t('verifiedEmails.of')} {total}</span>
+                <div>
+                  <PageBtn disabled={page <= 1} onClick={() => setPage(p => p - 1)}>{t('verifiedEmails.prev')}</PageBtn>
+                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                    const p = i + 1;
+                    return <PageBtn key={p} $active={p === page} onClick={() => setPage(p)}>{p}</PageBtn>;
+                  })}
+                  {totalPages > 5 && <span>...</span>}
+                  <PageBtn disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>{t('verifiedEmails.next')}</PageBtn>
+                </div>
+              </PaginationRow>
+            </>
+          )}
+        </TableWrap>
+      </Card>
 
       {/* Add Modal */}
       {showAdd && (
         <Overlay onClick={() => setShowAdd(false)}>
           <Modal onClick={e => e.stopPropagation()}>
-            <ModalTitle>Add Verified Email</ModalTitle>
+            <ModalTitle>{t('verifiedEmails.addTitle')}</ModalTitle>
             <Field>
-              <Label>Email *</Label>
+              <Label>{t('verifiedEmails.labelEmail')}</Label>
               <Input
                 value={addForm.email}
                 onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))}
-                placeholder="contact@example.com"
+                placeholder={t('verifiedEmails.placeholderEmail')}
               />
             </Field>
             <Field>
-              <Label>Company Name *</Label>
+              <Label>{t('verifiedEmails.labelCompany')}</Label>
               <Input
                 value={addForm.company_name}
                 onChange={e => setAddForm(f => ({ ...f, company_name: e.target.value }))}
-                placeholder="Acme Corp"
+                placeholder={t('verifiedEmails.placeholderCompany')}
               />
             </Field>
             <Field>
-              <Label>Notes</Label>
+              <Label>{t('verifiedEmails.labelNotes')}</Label>
               <Textarea
                 value={addForm.notes}
                 onChange={e => setAddForm(f => ({ ...f, notes: e.target.value }))}
-                placeholder="Optional notes..."
+                placeholder={t('verifiedEmails.placeholderNotes')}
               />
             </Field>
             <ModalActions>
-              <Btn onClick={() => setShowAdd(false)}>Cancel</Btn>
+              <Btn onClick={() => setShowAdd(false)}>{t('verifiedEmails.cancel')}</Btn>
               <Btn $variant="primary" onClick={handleAdd} disabled={createMut.isPending}>
-                <CheckIcon /> {createMut.isPending ? 'Adding...' : 'Add'}
+                <CheckIcon /> {createMut.isPending ? t('verifiedEmails.adding') : t('verifiedEmails.add')}
               </Btn>
             </ModalActions>
           </Modal>

@@ -88,7 +88,7 @@ const statusFolders: StatusFolderDef[] = [
   { id: 'pending', label: 'Pending', icon: 'clock', filterValue: 'pending', badgeColor: '#d97706' },
   { id: 'approved', label: 'Approved', icon: 'check', filterValue: 'approved', badgeColor: '#16a34a' },
   { id: 'rejected', label: 'Rejected', icon: 'x', filterValue: 'rejected', badgeColor: '#dc2626' },
-  { id: 'sent', label: 'Sent', icon: 'send', filterValue: 'sent', badgeColor: '#2563eb' },
+  { id: 'sent', label: 'Sent', icon: 'send', filterValue: 'sent', badgeColor: '#0ea5e9' },
   { id: 'failed', label: 'Failed', icon: 'exclamation', filterValue: 'failed', badgeColor: '#475569' },
 ];
 
@@ -96,14 +96,14 @@ const statusColorMap: Record<string, string> = {
   pending: '#d97706',
   approved: '#16a34a',
   rejected: '#dc2626',
-  sent: '#2563eb',
+  sent: '#0ea5e9',
   failed: '#475569',
 };
 
 const REPLY_CATEGORY_LABEL: Record<string, { text: string; bg: string; fg: string }> = {
   interested:     { text: '有興趣',   bg: '#dcfce7', fg: '#16a34a' },
   not_interested: { text: '冇興趣',   bg: '#fee2e2', fg: '#dc2626' },
-  meeting:        { text: '約時間',   bg: '#dbeafe', fg: '#2563eb' },
+  meeting:        { text: '約時間',   bg: '#cffafe', fg: '#0ea5e9' },
   auto_reply:     { text: '自動回覆', bg: '#f3f4f6', fg: '#6b7280' },
   question:       { text: '有問題',   bg: '#fef3c7', fg: '#d97706' },
 };
@@ -166,7 +166,7 @@ const Card = styled.div`
       -45deg,
       #dc2626 0, #dc2626 4px,
       transparent 4px, transparent 8px,
-      #2563eb 8px, #2563eb 12px,
+      #0ea5e9 8px, #0ea5e9 12px,
       transparent 12px, transparent 16px
     );
     opacity: 0.35;
@@ -274,7 +274,7 @@ const FolderItem = styled.li<{ $active?: boolean }>`
   transition: background 0.15s, transform 0.1s;
   &:hover {
     background: ${({ $active, theme }) => ($active
-      ? (theme.mode === 'dark' ? 'rgba(37,99,235,0.2)' : '#dbeafe')
+      ? (theme.mode === 'dark' ? 'rgba(37,99,235,0.2)' : '#cffafe')
       : theme.colors.surfaceMuted)};
   }
   svg {
@@ -1110,7 +1110,7 @@ const EmailQueue: React.FC = () => {
     { id: 'pending', label: t('emailQueue.pending'), icon: 'clock', filterValue: 'pending', badgeColor: '#d97706' },
     { id: 'approved', label: t('emailQueue.approved'), icon: 'check', filterValue: 'approved', badgeColor: '#16a34a' },
     { id: 'rejected', label: t('emailQueue.rejected'), icon: 'x', filterValue: 'rejected', badgeColor: '#dc2626' },
-    { id: 'sent', label: t('emailQueue.sent'), icon: 'send', filterValue: 'sent', badgeColor: '#2563eb' },
+    { id: 'sent', label: t('emailQueue.sent'), icon: 'send', filterValue: 'sent', badgeColor: '#0ea5e9' },
     { id: 'failed', label: t('emailQueue.failed'), icon: 'exclamation', filterValue: 'failed', badgeColor: '#475569' },
   ];
 
@@ -1364,8 +1364,8 @@ const EmailQueue: React.FC = () => {
               onClick={() => refetch()}
               style={{
                 padding: '6px 14px',
-                border: '1px solid #3b82f6',
-                background: '#3b82f6',
+                border: '1px solid #0ea5e9',
+                background: '#0ea5e9',
                 color: '#fff',
                 borderRadius: 4,
                 cursor: 'pointer',
@@ -1392,14 +1392,14 @@ const EmailQueue: React.FC = () => {
                 <span>
                   已選 <strong>{selectedIds.size}</strong> 個
                 </span>
-                <BulkBtn $color="#2563eb" onClick={handleBulkApprove} disabled={bulkApprove.isPending}>
+                <BulkBtn $color="#0ea5e9" onClick={handleBulkApprove} disabled={bulkApprove.isPending}>
                   Approve ({selectedIds.size})
                 </BulkBtn>
                 <BulkBtn $color="#ef4444" onClick={handleBulkReject} disabled={bulkReject.isPending}>
                   Reject ({selectedIds.size})
                 </BulkBtn>
                 <BulkBtn
-                  $color="#2563eb"
+                  $color="#0ea5e9"
                   onClick={handleBulkSend}
                   disabled={bulkSend.isPending || statusFilter !== 'approved'}
                   title={statusFilter !== 'approved' ? 'Send 只可喺 Approved panel 做' : ''}
@@ -1442,7 +1442,7 @@ const EmailQueue: React.FC = () => {
                   {status === 'pending' && (
                     <>
                       <HoverBtn
-                        $color="#2563eb"
+                        $color="#0ea5e9"
                         title={t('emailQueue.approve')}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1467,7 +1467,7 @@ const EmailQueue: React.FC = () => {
                   )}
                   {status === 'approved' && (
                     <HoverBtn
-                      $color="#3b82f6"
+                      $color="#0ea5e9"
                       title={t('emailQueue.send')}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1522,7 +1522,7 @@ const EmailQueue: React.FC = () => {
               {status === 'pending' && (
                 <>
                   <DetailToolbarBtn
-                    $color="#2563eb"
+                    $color="#0ea5e9"
                     onClick={() => {
                       approve.mutate(item._id);
                       closeDetail();
@@ -1662,7 +1662,7 @@ const EmailQueue: React.FC = () => {
             {status === 'pending' && (
               <>
                 <ActionButton
-                  $color="#2563eb"
+                  $color="#0ea5e9"
                   onClick={() => {
                     approve.mutate(item._id);
                     setModalPreview(null);

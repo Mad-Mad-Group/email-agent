@@ -311,7 +311,7 @@ const PlusBtn = styled.button`
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: var(--primary, #2563eb);
+  background: var(--primary, #0ea5e9);
   color: #fff;
   font-size: 1rem;
   cursor: pointer;
@@ -396,7 +396,7 @@ const MLink = styled(NavLink)`
   }
 
   &.active {
-    color: var(--primary, #2563eb);
+    color: var(--primary, #0ea5e9);
     font-weight: 600;
   }
 
@@ -414,7 +414,7 @@ const MLinkButton = styled.button<{ $active?: boolean }>`
   padding: 8px 12px;
   border-radius: 14px;
   font-size: 0.9375rem;
-  color: ${({ theme, $active }) => $active ? 'var(--primary, #2563eb)' : theme.colors.textPrimary};
+  color: ${({ theme, $active }) => $active ? 'var(--primary, #0ea5e9)' : theme.colors.textPrimary};
   font-weight: ${({ $active }) => $active ? 600 : 400};
   text-decoration: none;
   transition: all 0.15s ease;
@@ -470,7 +470,7 @@ const SubLink = styled(NavLink)`
   }
 
   &.active {
-    color: var(--primary, #2563eb);
+    color: var(--primary, #0ea5e9);
     font-weight: 500;
   }
 `;
@@ -478,7 +478,7 @@ const SubLink = styled(NavLink)`
 const Badge = styled.span`
   font-size: 0.6875rem;
   font-weight: 600;
-  background: var(--primary, #2563eb);
+  background: var(--primary, #0ea5e9);
   color: #fff;
   padding: 1px 7px;
   border-radius: 20px;
@@ -622,11 +622,11 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
         <li><MLink to="/cms-search"><IconSearch /><span>{t('nav.leadSearch')}</span></MLink></li>
         <li><MLink to="/cms-leads"><IconLeads /><span>{t('nav.leadPool')}</span></MLink></li>
         {/* <li><MLink to="/cms-tasks"><IconTasks /><span>{t('nav.workflows')}</span></MLink></li> */}
-        <li><MLink to="/cms-verified-emails"><IconVerifiedEmail /><span>Verified Emails</span></MLink></li>
+        <li><MLink to="/cms-verified-emails"><IconVerifiedEmail /><span>{t('nav.verifiedEmails')}</span></MLink></li>
         <li><MLink to="/cms-agents"><IconAgent /><span>{t('nav.agents')}</span></MLink></li>
         <li><MLink to="/cms-users"><IconUsers /><span>{t('nav.team')}</span></MLink></li>
         <li><MLink to="/cms-settings"><IconSettings /><span>{t('nav.settings')}</span></MLink></li>
-        <li><MLink to="/cms-user-info"><IconUserInfo /><span>個人資料</span></MLink></li>
+        <li><MLink to="/cms-user-info"><IconUserInfo /><span>{t('nav.userInfo')}</span></MLink></li>
       </MenuList>
       </ScrollArea>
 

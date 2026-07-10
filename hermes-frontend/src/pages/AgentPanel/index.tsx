@@ -103,7 +103,7 @@ const RightPane = styled.div`
 
 /* ── Agent color map ── */
 const AGENT_COLORS: Record<string, { accent: string; bg1: string; bg2: string; fg: string; fgDark: string }> = {
-  S1: { accent: '#3b82f6', bg1: '#eff6ff', bg2: '#dbeafe', fg: '#1e40af', fgDark: '#93c5fd' },
+  S1: { accent: '#0ea5e9', bg1: '#ecfeff', bg2: '#cffafe', fg: '#0369a1', fgDark: '#67e8f9' },
   S2: { accent: '#8b5cf6', bg1: '#faf5ff', bg2: '#ede9fe', fg: '#5b21b6', fgDark: '#c4b5fd' },
   S3: { accent: '#f59e0b', bg1: '#fffbeb', bg2: '#fef3c7', fg: '#92400e', fgDark: '#fbbf24' },
   S4: { accent: '#22c55e', bg1: '#f0fdf4', bg2: '#dcfce7', fg: '#14532d', fgDark: '#4ade80' },
@@ -293,7 +293,7 @@ const FeedList = styled.div`
 
 const FEED_COLORS: Record<string, { accent: string; bg: string }> = {
   scrape: { accent: '#16a34a', bg: '#dcfce720' },
-  email:  { accent: '#2563eb', bg: '#dbeafe20' },
+  email:  { accent: '#0ea5e9', bg: '#cffafe20' },
   qualify: { accent: '#d97706', bg: '#fef3c720' },
 };
 
@@ -438,7 +438,7 @@ const CloseBtn = styled.button`
   flex-shrink: 0;
   transition: all 0.15s;
   &:hover {
-    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'};
+    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(14,165,233,0.15)' : 'rgba(14,165,233,0.08)'};
   }
 `;
 
@@ -471,8 +471,8 @@ const StepNode = styled.div<{ $status: 'done' | 'active' | 'pending' }>`
 `;
 
 const pulseGlow = keyframes`
-  0%, 100% { box-shadow: 0 0 0 0 rgba(37,99,235,0.3); }
-  50%      { box-shadow: 0 0 0 8px rgba(37,99,235,0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(14,165,233,0.3); }
+  50%      { box-shadow: 0 0 0 8px rgba(14,165,233,0); }
 `;
 
 const StepCircle = styled.div<{ $status: 'done' | 'active' | 'pending'; $color?: string }>`
@@ -488,7 +488,7 @@ const StepCircle = styled.div<{ $status: 'done' | 'active' | 'pending'; $color?:
     $status === 'done' ? ($color || theme.colors.green) :
     $status === 'active' ? ($color || theme.colors.blue) :
     theme.colors.surfaceMuted};
-  color: ${({ $status }) => $status === 'pending' ? '#94a3b8' : '#fff'};
+  color: ${({ $status }) => $status === 'pending' ? '#88a890' : '#fff'};
   box-shadow: ${({ $status }) => $status !== 'pending' ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'};
   ${({ $status }) => $status === 'active' && css`animation: ${pulseGlow} 2s ease-in-out infinite;`}
 

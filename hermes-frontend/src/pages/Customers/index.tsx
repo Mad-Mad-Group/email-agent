@@ -184,7 +184,7 @@ const CloseBtn = styled.button`
   display: flex; align-items: center; justify-content: center;
   color: ${({ theme }) => theme.colors.blue};
   flex-shrink: 0; transition: all 0.15s;
-  &:hover { background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'}; }
+  &:hover { background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(14,165,233,0.15)' : 'rgba(14,165,233,0.08)'}; }
 `;
 
 const ModalBody = styled.div`
@@ -382,7 +382,7 @@ const Customers: React.FC = () => {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: 24, color: '#94a3b8' }}>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: 24, color: '#88a890' }}>
                       {t('customers.noMatch')}
                     </td>
                   </tr>

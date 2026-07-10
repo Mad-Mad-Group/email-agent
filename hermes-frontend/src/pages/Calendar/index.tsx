@@ -123,15 +123,15 @@ const CalCell = styled.div<{ $today?: boolean; $other?: boolean; $selected?: boo
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   border-right: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ $today, $selected, theme }) =>
-    $selected ? (theme.mode === 'dark' ? '#1e3a5f' : '#e0eef9') :
+    $selected ? (theme.mode === 'dark' ? '#083344' : '#cffafe') :
     $today ? (theme.mode === 'dark' ? '#332b00' : '#fffde7') :
     theme.colors.surface};
   color: ${({ $other, theme }) => $other ? theme.colors.textTertiary : theme.colors.textPrimary};
   cursor: pointer;
   transition: background 0.12s;
   &:hover { background: ${({ $selected, theme }) =>
-    $selected ? (theme.mode === 'dark' ? '#1e3a5f' : '#d0e4f5') :
-    (theme.mode === 'dark' ? '#1e293b' : '#f0f7ff')}; }
+    $selected ? (theme.mode === 'dark' ? '#083344' : '#a5f3fc') :
+    (theme.mode === 'dark' ? '#14261a' : '#ecfeff')}; }
   &:nth-child(7n) { border-right: none; }
   ${media.mobile} { min-height: 60px; font-size: 0.65rem; }
 `;
@@ -148,7 +148,7 @@ const CellDay = styled.div<{ $today?: boolean }>`
 
 const EventBlock = styled.div<{ $color?: string; $past?: boolean }>`
   padding: 2px 6px; margin: 1px 0; border-radius: 3px; font-size: 0.65rem;
-  background: ${({ $past, $color }) => $past ? '#d1d5db' : ($color || '#567ebb')};
+  background: ${({ $past, $color }) => $past ? '#b8cfb8' : ($color || '#0ea5e9')};
   color: ${({ $past }) => $past ? '#9ca3af' : '#fff'};
   text-decoration: ${({ $past }) => $past ? 'line-through' : 'none'};
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -163,7 +163,7 @@ const EventDot = styled.div<{ $past?: boolean }>`
   padding: 1px 0;
   &::before {
     content: ''; width: 6px; height: 6px; border-radius: 50%;
-    background: ${({ $past, theme }) => $past ? '#d1d5db' : theme.colors.blue}; flex-shrink: 0;
+    background: ${({ $past, theme }) => $past ? '#b8cfb8' : theme.colors.blue}; flex-shrink: 0;
   }
   ${media.mobile} { font-size: 0.55rem; }
 `;
@@ -234,7 +234,7 @@ const WeekCell = styled.div<{ $today?: boolean }>`
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   border-right: 1px solid ${({ theme }) => theme.colors.border};
   &:nth-child(8n) { border-right: none; } /* last col in 8-col grid */
-  background: ${({ $today, theme }) => $today ? (theme.mode === 'dark' ? '#1a2332' : '#fafcff') : 'transparent'};
+  background: ${({ $today, theme }) => $today ? (theme.mode === 'dark' ? '#0f1f15' : '#ecfeff') : 'transparent'};
 `;
 
 /* ── Week Event Card ── */
@@ -243,14 +243,14 @@ const TYPE_COLORS: Record<string, { bg: string; border: string; text: string }> 
   meeting:   { bg: '#ede9fe', border: '#8b5cf6', text: '#6d28d9' },
   follow_up: { bg: '#dcfce7', border: '#22c55e', text: '#15803d' },
   deadline:  { bg: '#fee2e2', border: '#ef4444', text: '#b91c1c' },
-  other:     { bg: '#dbeafe', border: '#3b82f6', text: '#1d4ed8' },
+  other:     { bg: '#cffafe', border: '#0ea5e9', text: '#0369a1' },
 };
 
 const TYPE_COLORS_DARK: Record<string, { bg: string; border: string; text: string }> = {
   meeting:   { bg: '#2e1065', border: '#8b5cf6', text: '#c4b5fd' },
   follow_up: { bg: '#052e16', border: '#22c55e', text: '#86efac' },
   deadline:  { bg: '#450a0a', border: '#ef4444', text: '#fca5a5' },
-  other:     { bg: '#172554', border: '#3b82f6', text: '#93c5fd' },
+  other:     { bg: '#083344', border: '#0ea5e9', text: '#67e8f9' },
 };
 
 const WeekEventCard = styled.div<{ $type: string; $dark?: boolean; $top: number; $height: number }>`
@@ -381,7 +381,7 @@ const MiniCalDay = styled.button<{ $today?: boolean; $other?: boolean; $inWeek?:
   border: none;
   background: ${({ $today, $inWeek, theme }) =>
     $today ? theme.colors.blue :
-    $inWeek ? (theme.mode === 'dark' ? '#1e3a5f' : '#e0eef9') :
+    $inWeek ? (theme.mode === 'dark' ? '#083344' : '#cffafe') :
     'transparent'};
   color: ${({ $today, $other, theme }) =>
     $today ? '#fff' :
@@ -396,7 +396,7 @@ const MiniCalDay = styled.button<{ $today?: boolean; $other?: boolean; $inWeek?:
   margin: 0 auto;
   transition: background 0.12s;
   &:hover {
-    background: ${({ $today, theme }) => $today ? theme.colors.blue : (theme.mode === 'dark' ? '#334155' : '#f0f7ff')};
+    background: ${({ $today, theme }) => $today ? theme.colors.blue : (theme.mode === 'dark' ? '#1e3a25' : '#ecfeff')};
   }
 `;
 
@@ -533,7 +533,7 @@ const DayEventItem = styled.div<{ $color?: string; $past?: boolean }>`
   display: flex; align-items: flex-start; gap: 12px;
   padding: 12px 16px; border-radius: 8px;
   background: ${({ theme }) => theme.colors.surfaceMuted};
-  border-left: 4px solid ${({ $past, $color }) => $past ? '#d1d5db' : ($color || '#567ebb')};
+  border-left: 4px solid ${({ $past, $color }) => $past ? '#b8cfb8' : ($color || '#0ea5e9')};
   opacity: ${({ $past }) => $past ? 0.6 : 1};
   transition: transform 0.1s;
   &:hover { transform: translateX(2px); }
@@ -570,15 +570,15 @@ interface CalEvent {
 }
 
 const FALLBACK_EVENTS: CalEvent[] = [
-  { day: 1, title: 'All Day Event', type: 'block', eventType: 'other', color: '#567ebb' },
-  { day: 7, title: 'Long Event', type: 'block', eventType: 'meeting', color: '#567ebb', span: 3 },
+  { day: 1, title: 'All Day Event', type: 'block', eventType: 'other', color: '#0ea5e9' },
+  { day: 7, title: 'Long Event', type: 'block', eventType: 'meeting', color: '#0ea5e9', span: 3 },
   { day: 9, title: 'Repeating Event', time: '4p', type: 'dot', eventType: 'follow_up', startHour: 16, startMin: 0, endHour: 17, endMin: 0 },
   { day: 16, title: 'Repeating Event', time: '4p', type: 'dot', eventType: 'follow_up', startHour: 16, startMin: 0, endHour: 17, endMin: 0 },
-  { day: 23, title: 'Conference', type: 'block', eventType: 'meeting', color: '#567ebb', span: 2 },
+  { day: 23, title: 'Conference', type: 'block', eventType: 'meeting', color: '#0ea5e9', span: 2 },
   { day: 24, title: 'Meeting', time: '10:30a', type: 'dot', eventType: 'meeting', startHour: 10, startMin: 30, endHour: 11, endMin: 30 },
   { day: 24, title: 'Lunch', time: '12p', type: 'dot', eventType: 'other', startHour: 12, startMin: 0, endHour: 13, endMin: 0 },
   { day: 25, title: 'Birthday Party', time: '7a', type: 'dot', eventType: 'other', startHour: 7, startMin: 0, endHour: 8, endMin: 0 },
-  { day: 28, title: 'Click for Google', type: 'block', eventType: 'deadline', color: '#567ebb' },
+  { day: 28, title: 'Click for Google', type: 'block', eventType: 'deadline', color: '#0ea5e9' },
 ];
 
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -599,7 +599,7 @@ const EVENT_TYPE_DOT_COLORS: Record<string, string> = {
   meeting: '#8b5cf6',
   follow_up: '#22c55e',
   deadline: '#ef4444',
-  other: '#3b82f6',
+  other: '#0ea5e9',
 };
 
 function apiToCalEvents(apiEvents: any[]): CalEvent[] {
@@ -617,7 +617,7 @@ function apiToCalEvents(apiEvents: any[]): CalEvent[] {
       time,
       type: e.all_day ? 'block' as const : 'dot' as const,
       eventType: (e.type as CalEvent['eventType']) || 'other',
-      color: e.color || '#567ebb',
+      color: e.color || '#0ea5e9',
       past: end < now,
       startHour: h,
       startMin: m,
@@ -873,14 +873,14 @@ const Calendar: React.FC = () => {
             )}
             {upcoming.map((ev, i) => (
               <UpcomingItem key={i}>
-                <UpcomingDot $color={EVENT_TYPE_DOT_COLORS[ev.eventType] || '#3b82f6'} />
+                <UpcomingDot $color={EVENT_TYPE_DOT_COLORS[ev.eventType] || '#0ea5e9'} />
                 <UpcomingInfo>
                   <UpcomingTitle>{ev.title}</UpcomingTitle>
                   <UpcomingMeta>
                     {MONTHS_SHORT[month]} {ev.day} · {ev.time || 'All day'}
                   </UpcomingMeta>
                 </UpcomingInfo>
-                <UpcomingTag $color={EVENT_TYPE_DOT_COLORS[ev.eventType] || '#3b82f6'}>
+                <UpcomingTag $color={EVENT_TYPE_DOT_COLORS[ev.eventType] || '#0ea5e9'}>
                   {EVENT_TYPE_LABELS[ev.eventType]}
                 </UpcomingTag>
               </UpcomingItem>
@@ -1028,12 +1028,12 @@ const Calendar: React.FC = () => {
       })()}
 
       {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', fontSize: '0.75rem', color: '#94a3b8' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', fontSize: '0.75rem', color: '#88a890' }}>
         <span>{t('footer.copyrightHermes', { year: 2024 })}</span>
         <div style={{ display: 'flex', gap: 16 }}>
-          <a href="#" style={{ color: '#94a3b8', textDecoration: 'none' }}>{t('footer.documentation')}</a>
-          <a href="#" style={{ color: '#94a3b8', textDecoration: 'none' }}>{t('footer.support')}</a>
-          <a href="#" style={{ color: '#94a3b8', textDecoration: 'none' }}>{t('footer.faqs')}</a>
+          <a href="#" style={{ color: '#88a890', textDecoration: 'none' }}>{t('footer.documentation')}</a>
+          <a href="#" style={{ color: '#88a890', textDecoration: 'none' }}>{t('footer.support')}</a>
+          <a href="#" style={{ color: '#88a890', textDecoration: 'none' }}>{t('footer.faqs')}</a>
         </div>
       </div>
     </Page>

@@ -167,8 +167,8 @@ const TemplateItem = styled.div<{ $active: boolean }>`
     $active
       ? css`
           background: #f0f7ff;
-          border-left-color: #2563eb;
-          box-shadow: inset 0 0 0 1px #dbeafe;
+          border-left-color: #0ea5e9;
+          box-shadow: inset 0 0 0 1px #cffafe;
         `
       : css`
           &:hover {
@@ -300,7 +300,7 @@ const CategorySelect = styled.select`
   outline: none;
   cursor: pointer;
   &:focus {
-    border-color: #2563eb;
+    border-color: #0ea5e9;
   }
 `;
 
@@ -323,7 +323,7 @@ const RichEditor = styled.div`
   .variable-tag {
     display: inline-block;
     background: rgba(37, 99, 235, 0.12);
-    color: #2563eb;
+    color: #0ea5e9;
     border: 1px solid rgba(37, 99, 235, 0.3);
     border-radius: 3px;
     padding: 0 4px;
@@ -351,12 +351,12 @@ const SaveBtn = styled.button`
   padding: 5px 12px;
   border-radius: 6px;
   border: none;
-  background: #2563eb;
+  background: #0ea5e9;
   color: #fff;
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  &:hover { background: #1d4ed8; }
+  &:hover { background: #0369a1; }
 `;
 
 /* ── Right: Preview + Variables ── */
@@ -381,7 +381,7 @@ const PreviewTab = styled.button<{ $active: boolean }>`
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  border-bottom: 2px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
+  border-bottom: 2px solid ${({ $active }) => $active ? '#0ea5e9' : 'transparent'};
   &:hover { background: ${({ theme }) => theme.colors.surface}; }
 `;
 
@@ -445,7 +445,7 @@ const VarItem = styled.button`
   text-align: left;
   transition: all 0.15s;
   &:hover {
-    border-color: #2563eb;
+    border-color: #0ea5e9;
     background: rgba(37, 99, 235, 0.04);
   }
 `;
@@ -453,7 +453,7 @@ const VarItem = styled.button`
 const VarKey = styled.span`
   font-size: 0.75rem;
   font-family: 'SF Mono', 'Fira Code', monospace;
-  color: #2563eb;
+  color: #0ea5e9;
   white-space: nowrap;
 `;
 
