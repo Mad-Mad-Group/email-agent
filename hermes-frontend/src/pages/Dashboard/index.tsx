@@ -516,14 +516,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <Page>
-      {/* ── Header ── */}
-      <HeaderRow>
-        <div>
-          <PageTitle>{t('dashboard.title')}</PageTitle>
-          <PageSub>{t('dashboard.subtitle')}</PageSub>
-        </div>
-      </HeaderRow>
-
       {/* ── Action Cards (LUNO-style) ── */}
       <ActionGrid>
         <ActionCard

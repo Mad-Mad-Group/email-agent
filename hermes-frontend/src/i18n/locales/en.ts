@@ -772,6 +772,8 @@ const en = {
     pwMismatch: 'Passwords do not match',
     pwUpdated: 'Password updated',
     pwFailed: 'Password update failed',
+    discard: 'Discard',
+    pwHint: 'Minimum 6 characters',
   },
 };
 

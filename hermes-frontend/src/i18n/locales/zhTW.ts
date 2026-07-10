@@ -772,6 +772,8 @@ const zhTW = {
     pwMismatch: '新密碼同確認密碼唔一致',
     pwUpdated: '密碼已更新',
     pwFailed: '密碼更新失敗',
+    discard: '捨棄',
+    pwHint: '最少 6 個字元',
   },
 };
 

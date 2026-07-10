@@ -116,7 +116,7 @@ const IconLeads = () => (
 );
 
 const IconSearch = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="currentColor" viewBox="0 0 16 16">
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" fill="currentColor" viewBox="0 0 16 16">
     <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
   </svg>
 );
@@ -407,6 +407,13 @@ const MLink = styled(NavLink)`
     padding: 10px 4px;
     span { display: none; }
   }
+`;
+
+const SearchLink = styled(MLink)`
+  font-size: 1.0625rem;
+  font-weight: 600;
+  padding: 10px 12px;
+  gap: 10px;
 `;
 
 const MLinkButton = styled.button<{ $active?: boolean }>`
@@ -727,31 +734,13 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
         </SidebarTitle>
       </TitleRow>
 
-      {/* MAIN section */}
       <MenuList>
-        <Divider>
-          <DividerLabel>{t('nav.main')}</DividerLabel>
-          <DividerSmall>{t('nav.uniqueDashboards')}</DividerSmall>
-        </Divider>
-        <li>
-          <MLink to="/dashboard"><IconHome /><span>{t('nav.myDashboard')}</span></MLink>
-        </li>
-        <li>
-          <MLink to="/app-calendar"><IconSchedule /><span>{t('nav.calendar')}</span></MLink>
-        </li>
-      </MenuList>
-
-      {/* CMS section */}
-      <MenuList>
-        <Divider>
-          <DividerLabel>{t('nav.cms')}</DividerLabel>
-          <DividerSmall>{t('nav.cmsDesc')}</DividerSmall>
-        </Divider>
-        <li><MLink to="/cms-search"><IconSearch /><span>{t('nav.leadSearch')}</span></MLink></li>
+        <li><SearchLink to="/cms-search"><IconSearch /><span>{t('nav.leadSearch')}</span></SearchLink></li>
+        <li><MLink to="/dashboard"><IconHome /><span>{t('nav.myDashboard')}</span></MLink></li>
         <li><MLink to="/cms-leads"><IconLeads /><span>{t('nav.leadPool')}</span></MLink></li>
-        {/* <li><MLink to="/cms-tasks"><IconTasks /><span>{t('nav.workflows')}</span></MLink></li> */}
         <li><MLink to="/cms-verified-emails"><IconVerifiedEmail /><span>{t('nav.verifiedEmails')}</span></MLink></li>
         <li><MLink to="/cms-agents"><IconAgent /><span>{t('nav.agents')}</span></MLink></li>
+        <li><MLink to="/app-calendar"><IconSchedule /><span>{t('nav.calendar')}</span></MLink></li>
         <li><MLink to="/cms-users"><IconUsers /><span>{t('nav.team')}</span></MLink></li>
       </MenuList>
       </ScrollArea>

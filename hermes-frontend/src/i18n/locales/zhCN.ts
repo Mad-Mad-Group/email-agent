@@ -739,6 +739,8 @@ const zhCN = {
     pwMismatch: '新密码与确认密码不一致',
     pwUpdated: '密码已更新',
     pwFailed: '密码更新失败',
+    discard: '舍弃',
+    pwHint: '最少 6 个字符',
   },
 };
 

@@ -1,19 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { media } from '../../styles/media';
 import { useMe, useUpdateProfile, useChangePassword } from '../../api/hooks';
 import toast from 'react-hot-toast';
 
 /* ══════════════════════════════════════
-   User Info — 個人資料頁面
+   User Info — 個人資料頁面 (LUNO style)
    ══════════════════════════════════════ */
-
-const formatDate = (d?: string | Date) => {
-  if (!d) return '—';
-  const date = new Date(d);
-  return date.toLocaleDateString('zh-TW', { year: 'numeric', month: 'long', day: 'numeric' });
-};
 
 const getInitials = (name?: string, email?: string) => {
   if (name) {
@@ -29,26 +23,6 @@ const getInitials = (name?: string, email?: string) => {
 
 const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
 
-const Breadcrumb = styled.ol`
-  list-style: none; margin: 0; padding: 0; display: flex; gap: ${({ theme }) => theme.spacing.sm}px;
-  font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary};
-  li + li::before { content: '/'; margin-right: ${({ theme }) => theme.spacing.sm}px; }
-`;
-
-const PageTitle = styled.h1`
-  font-size: 1.15rem; font-weight: 600; margin: 4px 0 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const PageSub = styled.small`
-  color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
-`;
-
-const Grid = styled.div`
-  display: grid; grid-template-columns: 1fr 1fr; gap: ${({ theme }) => theme.spacing.md}px;
-  ${media.mobile} { grid-template-columns: 1fr; }
-`;
-
 /* ── Card ── */
 
 const Card = styled.div`
@@ -56,19 +30,6 @@ const Card = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
   box-shadow: ${({ theme }) => theme.shadows.card};
-`;
-
-const CardHeader = styled.div`
-  display: flex; justify-content: space-between; align-items: center;
-  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  h2 { margin: 0; font-size: 1rem; font-weight: 600; color: ${({ theme }) => theme.colors.textPrimary}; }
-`;
-
-const CardBody = styled.div`
-  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
-  display: flex; flex-direction: column; gap: 16px;
-  ${media.mobile} { padding: ${({ theme }) => theme.spacing.md}px; }
 `;
 
 /* ── Profile Hero ── */
@@ -92,9 +53,7 @@ const Avatar = styled.div`
   flex-shrink: 0;
 `;
 
-const HeroInfo = styled.div`
-  flex: 1;
-`;
+const HeroInfo = styled.div`flex: 1;`;
 
 const HeroName = styled.h2`
   margin: 0; font-size: 1.25rem; font-weight: 600;
@@ -119,43 +78,112 @@ const MetaChip = styled.span<{ $color?: string; $bg?: string }>`
   color: ${({ $color }) => $color ?? '#6b7280'};
 `;
 
-/* ── Stats Row ── */
+/* ── Settings Layout (LUNO style: left tabs + right content) ── */
 
-const StatsRow = styled.div`
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: ${({ theme }) => theme.spacing.md}px;
+const SettingsLayout = styled.div`
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 0;
   ${media.mobile} { grid-template-columns: 1fr; }
 `;
 
-const StatCard = styled(Card)`
-  padding: 16px 20px;
-  display: flex; align-items: center; gap: 14px;
+const TabNav = styled(Card)`
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  overflow: hidden;
+  align-self: start;
+  ${media.mobile} {
+    display: flex; flex-direction: row;
+    border-radius: ${({ theme }) => theme.radii.card}px;
+    margin-bottom: ${({ theme }) => theme.spacing.md}px;
+  }
 `;
 
-const StatIcon = styled.div<{ $bg: string }>`
-  width: 40px; height: 40px;
-  border-radius: 10px;
-  background: ${({ $bg }) => $bg};
+const TabItem = styled.button<{ $active?: boolean }>`
+  display: flex; align-items: center; gap: 10px;
+  width: 100%;
+  padding: 14px 20px;
+  border: none;
+  background: transparent;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: ${({ $active, theme }) => $active ? 'var(--primary, #0ea5e9)' : theme.colors.textSecondary};
+  transition: color 0.15s, background 0.15s;
+  text-align: left;
+  position: relative;
+
+  ${({ $active }) => $active && css`
+    background: rgba(14,165,233,0.06);
+    font-weight: 600;
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 8px; bottom: 8px;
+      width: 3px;
+      border-radius: 0 3px 3px 0;
+      background: var(--primary, #0ea5e9);
+    }
+  `}
+
+  &:hover {
+    color: var(--primary, #0ea5e9);
+    background: rgba(14,165,233,0.04);
+  }
+
+  & + & {
+    border-top: 1px solid ${({ theme }) => theme.colors.border};
+  }
+
+  ${media.mobile} {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+    padding: 12px 10px;
+    & + & { border-top: none; border-left: 1px solid ${({ theme }) => theme.colors.border}; }
+    ${({ $active }) => $active && css`
+      &::before {
+        left: 8px; right: 8px; top: auto; bottom: 0;
+        width: auto; height: 3px;
+        border-radius: 3px 3px 0 0;
+      }
+    `}
+  }
+`;
+
+const TabIcon = styled.span`
   display: flex; align-items: center; justify-content: center;
-  font-size: 1.1rem;
-  flex-shrink: 0;
+  width: 20px; height: 20px; flex-shrink: 0;
+  ${media.mobile} { display: none; }
 `;
 
-const StatContent = styled.div``;
-
-const StatLabel = styled.div`
-  font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px;
-  color: ${({ theme }) => theme.colors.textTertiary};
+const ContentPanel = styled(Card)`
+  margin-left: ${({ theme }) => theme.spacing.md}px;
+  ${media.mobile} { margin-left: 0; }
 `;
 
-const StatValue = styled.div`
-  font-size: 0.9375rem; font-weight: 600; margin-top: 2px;
-  color: ${({ theme }) => theme.colors.textPrimary};
+const ContentHeader = styled.div`
+  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  h2 { margin: 0; font-size: 1rem; font-weight: 600; color: ${({ theme }) => theme.colors.textPrimary}; }
+`;
+
+const ContentBody = styled.div`
+  padding: ${({ theme }) => theme.spacing.lg}px;
+  display: flex; flex-direction: column; gap: 20px;
+  ${media.mobile} { padding: ${({ theme }) => theme.spacing.md}px; }
 `;
 
 /* ── Form ── */
 
+const FormRow = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  ${media.mobile} { grid-template-columns: 1fr; }
+`;
+
 const FormGroup = styled.div`
-  display: flex; flex-direction: column; gap: 4px;
+  display: flex; flex-direction: column; gap: 6px;
 `;
 
 const Label = styled.label`
@@ -164,7 +192,7 @@ const Label = styled.label`
 `;
 
 const Input = styled.input`
-  padding: 8px 12px;
+  padding: 10px 14px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
   background: ${({ theme }) => theme.colors.canvas};
@@ -176,9 +204,12 @@ const Input = styled.input`
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 `;
 
+const BtnRow = styled.div`
+  display: flex; gap: 10px; padding-top: 4px;
+`;
+
 const SaveBtn = styled.button`
-  align-self: flex-start;
-  padding: 8px 20px;
+  padding: 10px 24px;
   background: var(--primary, #0ea5e9);
   color: #fff;
   border: none;
@@ -191,19 +222,46 @@ const SaveBtn = styled.button`
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
+const DiscardBtn = styled.button`
+  padding: 10px 24px;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: ${({ theme }) => theme.colors.canvas}; }
+`;
+
 const ErrorMsg = styled.div`
   font-size: 0.75rem; color: ${({ theme }) => theme.colors.red}; margin-top: -4px;
 `;
 
+const PwHint = styled.div`
+  font-size: 0.75rem; color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
 /* ── SVG Icons ── */
 
-const SvgIcon: React.FC<{ children: React.ReactNode; size?: number }> = ({ children, size = 16 }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} fill="currentColor" viewBox="0 0 16 16">
-    {children}
+const ProfileIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+    <circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
   </svg>
 );
 
 /* ── Page ── */
+
+type SettingsTab = 'profile' | 'password';
 
 const UserInfoPage: React.FC = () => {
   const { t } = useTranslation();
@@ -211,6 +269,7 @@ const UserInfoPage: React.FC = () => {
   const updateProfile = useUpdateProfile();
   const changePassword = useChangePassword();
 
+  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [oldPw, setOldPw] = useState('');
@@ -248,6 +307,11 @@ const UserInfoPage: React.FC = () => {
     });
   };
 
+  const handleDiscardProfile = () => {
+    setName(user?.name ?? '');
+    setEmail(user?.email ?? '');
+  };
+
   const handleChangePassword = () => {
     setPwError('');
     if (!oldPw || !newPw || !confirmPw) { setPwError(t('userInfo.pwAllFields')); return; }
@@ -259,7 +323,11 @@ const UserInfoPage: React.FC = () => {
     });
   };
 
-  if (isLoading) return <Page><PageTitle>{t('userInfo.loading')}</PageTitle></Page>;
+  const handleDiscardPassword = () => {
+    setOldPw(''); setNewPw(''); setConfirmPw(''); setPwError('');
+  };
+
+  if (isLoading) return <Page><h1 style={{ fontSize: '1.15rem', fontWeight: 600 }}>{t('userInfo.loading')}</h1></Page>;
 
   return (
     <Page>
@@ -279,78 +347,75 @@ const UserInfoPage: React.FC = () => {
         </HeroBody>
       </HeroCard>
 
-      {/* ── Info stats ── */}
-      <StatsRow>
-        <StatCard>
-          <StatIcon $bg="rgba(14,165,233,0.08)">
-            <SvgIcon><path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" /><path opacity="0.5" d="M2 13c0-2.21 2.686-4 6-4s6 1.79 6 4v1H2v-1z" /></SvgIcon>
-          </StatIcon>
-          <StatContent>
-            <StatLabel>{t('userInfo.statRole')}</StatLabel>
-            <StatValue>{roleInfo.label}</StatValue>
-          </StatContent>
-        </StatCard>
-        <StatCard>
-          <StatIcon $bg="rgba(22,163,74,0.08)">
-            <SvgIcon><path d="M6.445 11.688V6.354h-.633A12.6 12.6 0 0 0 4.5 7.16v.695c.375-.257.969-.62 1.258-.777h.012v4.61h.675z" /><path opacity="0.5" d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v11a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM1 4v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V4H1z" /></SvgIcon>
-          </StatIcon>
-          <StatContent>
-            <StatLabel>{t('userInfo.statCreated')}</StatLabel>
-            <StatValue>{formatDate(user?.created_at)}</StatValue>
-          </StatContent>
-        </StatCard>
-        <StatCard>
-          <StatIcon $bg="rgba(147,51,234,0.08)">
-            <SvgIcon><path d="M8 3.5a.5.5 0 0 0-1 0V9a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 8.71V3.5z" /><path opacity="0.5" d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z" /></SvgIcon>
-          </StatIcon>
-          <StatContent>
-            <StatLabel>{t('userInfo.statUpdated')}</StatLabel>
-            <StatValue>{formatDate(user?.updated_at)}</StatValue>
-          </StatContent>
-        </StatCard>
-      </StatsRow>
+      {/* ── Settings: left tabs + right content ── */}
+      <SettingsLayout>
+        <TabNav>
+          <TabItem $active={activeTab === 'profile'} onClick={() => setActiveTab('profile')}>
+            <TabIcon><ProfileIcon /></TabIcon>
+            {t('userInfo.editTitle')}
+          </TabItem>
+          <TabItem $active={activeTab === 'password'} onClick={() => setActiveTab('password')}>
+            <TabIcon><LockIcon /></TabIcon>
+            {t('userInfo.changePassword')}
+          </TabItem>
+        </TabNav>
 
-      {/* ── Edit forms ── */}
-      <Grid>
-        <Card>
-          <CardHeader><h2>{t('userInfo.editTitle')}</h2></CardHeader>
-          <CardBody>
-            <FormGroup>
-              <Label>{t('userInfo.labelName')}</Label>
-              <Input value={name} onChange={e => setName(e.target.value)} placeholder={t('userInfo.placeholderName')} />
-            </FormGroup>
-            <FormGroup>
-              <Label>{t('userInfo.labelEmail')}</Label>
-              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={t('userInfo.placeholderEmail')} />
-            </FormGroup>
-            <SaveBtn disabled={updateProfile.isPending} onClick={handleSaveProfile}>
-              {updateProfile.isPending ? t('userInfo.saving') : t('userInfo.save')}
-            </SaveBtn>
-          </CardBody>
-        </Card>
+        <ContentPanel>
+          {activeTab === 'profile' && (
+            <>
+              <ContentHeader><h2>{t('userInfo.editTitle')}</h2></ContentHeader>
+              <ContentBody>
+                <FormRow>
+                  <FormGroup>
+                    <Label>{t('userInfo.labelName')}</Label>
+                    <Input value={name} onChange={e => setName(e.target.value)} placeholder={t('userInfo.placeholderName')} />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>{t('userInfo.labelEmail')}</Label>
+                    <Input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={t('userInfo.placeholderEmail')} />
+                  </FormGroup>
+                </FormRow>
+                <BtnRow>
+                  <DiscardBtn onClick={handleDiscardProfile}>{t('userInfo.discard') || 'Discard'}</DiscardBtn>
+                  <SaveBtn disabled={updateProfile.isPending} onClick={handleSaveProfile}>
+                    {updateProfile.isPending ? t('userInfo.saving') : t('userInfo.save')}
+                  </SaveBtn>
+                </BtnRow>
+              </ContentBody>
+            </>
+          )}
 
-        <Card>
-          <CardHeader><h2>{t('userInfo.changePassword')}</h2></CardHeader>
-          <CardBody>
-            <FormGroup>
-              <Label>{t('userInfo.labelOldPw')}</Label>
-              <Input type="password" value={oldPw} onChange={e => setOldPw(e.target.value)} placeholder={t('userInfo.placeholderOldPw')} />
-            </FormGroup>
-            <FormGroup>
-              <Label>{t('userInfo.labelNewPw')}</Label>
-              <Input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder={t('userInfo.placeholderNewPw')} />
-            </FormGroup>
-            <FormGroup>
-              <Label>{t('userInfo.labelConfirmPw')}</Label>
-              <Input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder={t('userInfo.placeholderConfirmPw')} />
-            </FormGroup>
-            {pwError && <ErrorMsg>{pwError}</ErrorMsg>}
-            <SaveBtn disabled={changePassword.isPending} onClick={handleChangePassword}>
-              {changePassword.isPending ? t('userInfo.changingPw') : t('userInfo.changePwBtn')}
-            </SaveBtn>
-          </CardBody>
-        </Card>
-      </Grid>
+          {activeTab === 'password' && (
+            <>
+              <ContentHeader><h2>{t('userInfo.changePassword')}</h2></ContentHeader>
+              <ContentBody>
+                <PwHint>{t('userInfo.pwHint') || 'Minimum 6 characters'}</PwHint>
+                <FormGroup>
+                  <Label>{t('userInfo.labelOldPw')}</Label>
+                  <Input type="password" value={oldPw} onChange={e => setOldPw(e.target.value)} placeholder={t('userInfo.placeholderOldPw')} />
+                </FormGroup>
+                <FormRow>
+                  <FormGroup>
+                    <Label>{t('userInfo.labelNewPw')}</Label>
+                    <Input type="password" value={newPw} onChange={e => setNewPw(e.target.value)} placeholder={t('userInfo.placeholderNewPw')} />
+                  </FormGroup>
+                  <FormGroup>
+                    <Label>{t('userInfo.labelConfirmPw')}</Label>
+                    <Input type="password" value={confirmPw} onChange={e => setConfirmPw(e.target.value)} placeholder={t('userInfo.placeholderConfirmPw')} />
+                  </FormGroup>
+                </FormRow>
+                {pwError && <ErrorMsg>{pwError}</ErrorMsg>}
+                <BtnRow>
+                  <DiscardBtn onClick={handleDiscardPassword}>{t('userInfo.discard') || 'Discard'}</DiscardBtn>
+                  <SaveBtn disabled={changePassword.isPending} onClick={handleChangePassword}>
+                    {changePassword.isPending ? t('userInfo.changingPw') : t('userInfo.changePwBtn')}
+                  </SaveBtn>
+                </BtnRow>
+              </ContentBody>
+            </>
+          )}
+        </ContentPanel>
+      </SettingsLayout>
     </Page>
   );
 };
