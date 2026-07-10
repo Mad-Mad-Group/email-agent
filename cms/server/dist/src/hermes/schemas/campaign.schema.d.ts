@@ -6,6 +6,7 @@ export declare class Campaign {
     location?: string;
     target_count?: number;
     mode?: string;
+    user_id?: string;
     status: string;
     pipeline_stage?: string;
     lead_ids: string[];

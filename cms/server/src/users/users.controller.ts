@@ -15,6 +15,33 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+
+interface JwtUser { userId: string; role: string; }
+
+/* ── 通知偏好（所有登入用戶都可用） ── */
+@ApiTags('Users 通知偏好')
+@ApiBearerAuth()
+@Controller('users/me')
+@UseGuards(JwtAuthGuard)
+export class UserPrefsController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Get('notification-prefs')
+  async getNotificationPrefs(@CurrentUser() user: JwtUser) {
+    const u = await this.usersService.findById(user.userId);
+    if (!u) throw new NotFoundException('User not found');
+    return (u as any).notification_prefs ?? { email_on_complete: false, browser_on_complete: false };
+  }
+
+  @Patch('notification-prefs')
+  async updateNotificationPrefs(
+    @CurrentUser() user: JwtUser,
+    @Body() body: { email_on_complete?: boolean; browser_on_complete?: boolean },
+  ) {
+    return this.usersService.updateNotificationPrefs(user.userId, body);
+  }
+}
 
 @ApiTags('Users 用戶管理')
 @ApiBearerAuth()

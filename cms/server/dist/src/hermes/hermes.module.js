@@ -14,6 +14,7 @@ const hermes_service_1 = require("./hermes.service");
 const hermes_controller_1 = require("./hermes.controller");
 const tasks_module_1 = require("../tasks/tasks.module");
 const sse_module_1 = require("../sse/sse.module");
+const users_module_1 = require("../users/users.module");
 let HermesModule = class HermesModule {
 };
 exports.HermesModule = HermesModule;
@@ -25,6 +26,7 @@ exports.HermesModule = HermesModule = __decorate([
             ]),
             tasks_module_1.TasksModule,
             sse_module_1.SseModule,
+            users_module_1.UsersModule,
         ],
         controllers: [hermes_controller_1.HermesController],
         providers: [hermes_service_1.HermesService],

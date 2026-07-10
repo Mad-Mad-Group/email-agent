@@ -3,7 +3,7 @@ import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { media } from '../../styles/media';
-import { useSettings } from '../../api/hooks';
+import { useSettings, useNotificationPrefs, useUpdateNotificationPrefs } from '../../api/hooks';
 import { settingsApi } from '../../api/services';
 
 /* ══════════════════════════════════════
@@ -265,6 +265,10 @@ const Settings: React.FC = () => {
 
   const entries = toDisplayEntries(data);
 
+  // Notification preferences (per-user)
+  const { data: notifPrefs, isLoading: notifLoading } = useNotificationPrefs();
+  const updateNotif = useUpdateNotificationPrefs();
+
   const handleSave = async () => {
     if (busy) return;
     setBusy(true);
@@ -313,6 +317,43 @@ const Settings: React.FC = () => {
             {busy ? t('settings.updating') : t('settings.save')}
           </PrimaryBtn>
         </CardFooter>
+      </Card>
+
+      {/* Notification Preferences Card */}
+      <Card>
+        <CardHeader>
+          <h2>通知設定</h2>
+        </CardHeader>
+        <CardBody>
+          {notifLoading ? (
+            <EmptyText>載入中…</EmptyText>
+          ) : (
+            <>
+              <SettingRow>
+                <div>
+                  <SettingKey>Pipeline 完成 Email 通知</SettingKey>
+                  <FormHint style={{ display: 'block', marginTop: 2 }}>搜尋完成後發送 email 到你嘅信箱</FormHint>
+                </div>
+                <ToggleSwitch
+                  on={notifPrefs?.email_on_complete ?? false}
+                  onChange={(v) => updateNotif.mutate({ email_on_complete: v })}
+                  disabled={updateNotif.isPending}
+                />
+              </SettingRow>
+              <SettingRow>
+                <div>
+                  <SettingKey>瀏覽器推播通知</SettingKey>
+                  <FormHint style={{ display: 'block', marginTop: 2 }}>搜尋完成後喺瀏覽器彈出通知</FormHint>
+                </div>
+                <ToggleSwitch
+                  on={notifPrefs?.browser_on_complete ?? false}
+                  onChange={(v) => updateNotif.mutate({ browser_on_complete: v })}
+                  disabled={updateNotif.isPending}
+                />
+              </SettingRow>
+            </>
+          )}
+        </CardBody>
       </Card>
 
       {/* Other Settings Card */}

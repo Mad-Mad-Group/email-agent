@@ -89,6 +89,21 @@ let UsersService = class UsersService {
             updated_at: new Date(),
         }).exec();
     }
+    async getNotificationPrefs(id) {
+        const user = await this.userModel.findById(id).select('notification_prefs').lean().exec();
+        return user?.notification_prefs ?? { email_on_complete: false, browser_on_complete: false };
+    }
+    async updateNotificationPrefs(id, prefs) {
+        const $set = {};
+        if (prefs.email_on_complete !== undefined)
+            $set['notification_prefs.email_on_complete'] = prefs.email_on_complete;
+        if (prefs.browser_on_complete !== undefined)
+            $set['notification_prefs.browser_on_complete'] = prefs.browser_on_complete;
+        if (Object.keys($set).length === 0)
+            return this.getNotificationPrefs(id);
+        await this.userModel.findByIdAndUpdate(id, { $set, updated_at: new Date() }).exec();
+        return this.getNotificationPrefs(id);
+    }
 };
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([

@@ -5,6 +5,7 @@ import { HermesService } from './hermes.service';
 import { HermesController } from './hermes.controller';
 import { TasksModule } from '../tasks/tasks.module';
 import { SseModule } from '../sse/sse.module';
+import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { SseModule } from '../sse/sse.module';
     ]),
     TasksModule, // enqueue + TaskEvents
     SseModule,
+    UsersModule,
   ],
   controllers: [HermesController],
   providers: [HermesService],

@@ -29,6 +29,15 @@ export class User {
   @Prop({ default: null })
   deleted_at: Date;
 
+  @Prop({
+    type: Object,
+    default: { email_on_complete: false, browser_on_complete: false },
+  })
+  notification_prefs: {
+    email_on_complete: boolean;
+    browser_on_complete: boolean;
+  };
+
   @Prop({ default: null })
   resetToken: string;
 

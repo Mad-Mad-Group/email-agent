@@ -12,11 +12,13 @@ const http_exception_filter_1 = require("./common/filters/http-exception.filter"
 const response_interceptor_1 = require("./common/interceptors/response.interceptor");
 const STATIC_ALLOWED_ORIGINS = [
     'http://localhost:5173',
+    'https://localhost:5173',
     'http://localhost:4173',
+    'https://localhost:4173',
 ];
 const ALLOWED_ORIGIN_PATTERNS = [
-    /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/,
-    /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:5173$/,
+    /^https?:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/,
+    /^https?:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:5173$/,
 ];
 function isOriginAllowed(origin, extra) {
     if (!origin)

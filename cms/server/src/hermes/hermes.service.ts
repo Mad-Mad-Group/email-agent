@@ -11,6 +11,7 @@ import { SseEvent, SseService } from '../sse/sse.service';
 import { Campaign, CampaignDocument } from './schemas/campaign.schema';
 import { RunHermesDto } from './dto/run-hermes.dto';
 import { EmailService } from '../email/email.service';
+import { UsersService } from '../users/users.service';
 
 /** 每個 stage 最多重試幾次 */
 const MAX_STAGE_RETRIES = 2;
@@ -47,6 +48,7 @@ export class HermesService implements OnModuleInit {
     private readonly sse: SseService,
     private readonly email: EmailService,
     private readonly config: ConfigService,
+    private readonly users: UsersService,
   ) {}
 
   onModuleInit() {
@@ -75,6 +77,7 @@ export class HermesService implements OnModuleInit {
       location: dto.location,
       target_count: dto.targetCount,
       mode,
+      user_id: userId,
       status: 'running',
       pipeline_stage: 'search',
       lead_ids: [],
@@ -241,9 +244,8 @@ export class HermesService implements OnModuleInit {
       stage: 'complete',
       message: `Pipeline 完成（${why}）`,
     });
-    // ponytail: best-effort email notify. Wrapped in try/catch so SMTP failure
-    // can't undo the status save. Notify uses fixed dev inbox from .env.
-    void this.notifyCompletion(campaign, why).catch((e) =>
+    // 根據用戶通知偏好決定是否發 email
+    void this.maybeNotifyCompletion(campaign, why).catch((e) =>
       this.sse.emit(SseEvent.HERMES_LOG, {
         runId: campaign.campaign_id,
         level: 'warn',
@@ -251,6 +253,19 @@ export class HermesService implements OnModuleInit {
         message: `Email 通知失敗：${e?.message ?? e}`,
       }),
     );
+  }
+
+  /** 檢查用戶通知偏好，只有開啟先發 email */
+  private async maybeNotifyCompletion(campaign: CampaignDocument, why: string): Promise<void> {
+    if (campaign.user_id) {
+      try {
+        const prefs = await this.users.getNotificationPrefs(campaign.user_id);
+        if (!prefs.email_on_complete) return; // 用戶關咗 email 通知
+      } catch { /* 查不到用戶 → 跳過通知 */ return; }
+    } else {
+      return; // 冇 user_id → 跳過
+    }
+    await this.notifyCompletion(campaign, why);
   }
 
   /**

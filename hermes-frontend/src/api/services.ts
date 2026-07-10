@@ -47,6 +47,19 @@ export const settingsApi = {
     client.patch('/settings', data),
 };
 
+/* ── Notification Preferences ── */
+
+export interface NotificationPrefs {
+  email_on_complete: boolean;
+  browser_on_complete: boolean;
+}
+
+export const notificationPrefsApi = {
+  get: () => client.get<NotificationPrefs>('/users/me/notification-prefs'),
+  update: (prefs: Partial<NotificationPrefs>) =>
+    client.patch<NotificationPrefs>('/users/me/notification-prefs', prefs),
+};
+
 /* ── Search ── */
 
 export interface SearchPayload {
