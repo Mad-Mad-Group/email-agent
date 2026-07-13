@@ -25,6 +25,8 @@ const sse_service_1 = require("../sse/sse.service");
 const campaign_schema_1 = require("./schemas/campaign.schema");
 const email_service_1 = require("../email/email.service");
 const users_service_1 = require("../users/users.service");
+const verified_emails_service_1 = require("../verified-emails/verified-emails.service");
+const leads_service_1 = require("../leads/leads.service");
 const MAX_STAGE_RETRIES = 2;
 const STAGE_SKILL = {
     search: task_status_enum_1.SKILL.SEARCH,
@@ -48,7 +50,9 @@ let HermesService = class HermesService {
     email;
     config;
     users;
-    constructor(campaigns, tasks, taskEvents, sse, email, config, users) {
+    verifiedEmails;
+    leads;
+    constructor(campaigns, tasks, taskEvents, sse, email, config, users, verifiedEmails, leads) {
         this.campaigns = campaigns;
         this.tasks = tasks;
         this.taskEvents = taskEvents;
@@ -56,6 +60,8 @@ let HermesService = class HermesService {
         this.email = email;
         this.config = config;
         this.users = users;
+        this.verifiedEmails = verifiedEmails;
+        this.leads = leads;
     }
     onModuleInit() {
         this.taskEvents.completed$.subscribe((task) => {
@@ -118,11 +124,19 @@ let HermesService = class HermesService {
             await campaign.save();
             this.progress(campaignId, 'search→enrich', 0, leadIds.length);
             const userId = params.user_id;
-            for (const leadId of leadIds) {
-                await this.enqueueStage('enrich', campaignId, { lead_object_id: leadId, user_id: userId });
-            }
-            if (leadIds.length === 0)
+            if (leadIds.length === 0) {
                 await this.finish(campaign, '搜尋 0 結果');
+                return;
+            }
+            for (const leadId of leadIds) {
+                const poolHit = await this.tryMatchVerifiedPool(leadId, campaignId);
+                if (poolHit) {
+                    await this.enqueueStage('draft', campaignId, { lead_object_id: leadId, user_id: userId });
+                }
+                else {
+                    await this.enqueueStage('enrich', campaignId, { lead_object_id: leadId, user_id: userId });
+                }
+            }
             return;
         }
         const next = STAGE_NEXT[stage];
@@ -183,6 +197,35 @@ let HermesService = class HermesService {
         this.progress(campaignId, 'pipeline', updated.done_count, updated.lead_ids.length);
         if (updated.done_count >= updated.lead_ids.length) {
             await this.finish(updated, '全部 lead 處理完畢（部分可能失敗）');
+        }
+    }
+    async tryMatchVerifiedPool(leadId, campaignId) {
+        try {
+            const lead = await this.leads.findOne(leadId);
+            if (!lead?.company_name)
+                return false;
+            const matches = await this.verifiedEmails.matchByCompany(lead.company_name);
+            if (!matches.length)
+                return false;
+            const verified = matches[0];
+            await this.leads.update(leadId, { email: verified.email });
+            await this.verifiedEmails.incrementMatchCount(verified._id.toString());
+            this.sse.emit(sse_service_1.SseEvent.HERMES_LOG, {
+                runId: campaignId,
+                level: 'info',
+                stage: 'pool_match',
+                message: `Lead "${lead.company_name}" 命中 Verified Pool → 使用 ${verified.email}，跳過 S2 enrich`,
+            });
+            return true;
+        }
+        catch (e) {
+            this.sse.emit(sse_service_1.SseEvent.HERMES_LOG, {
+                runId: campaignId,
+                level: 'warn',
+                stage: 'pool_match',
+                message: `Pool 匹配失敗（fallback S2）：${e?.message ?? e}`,
+            });
+            return false;
         }
     }
     async enqueueStage(stage, campaignId, extra = {}) {
@@ -274,6 +317,8 @@ exports.HermesService = HermesService = __decorate([
         sse_service_1.SseService,
         email_service_1.EmailService,
         config_1.ConfigService,
-        users_service_1.UsersService])
+        users_service_1.UsersService,
+        verified_emails_service_1.VerifiedEmailsService,
+        leads_service_1.LeadsService])
 ], HermesService);
 //# sourceMappingURL=hermes.service.js.map

@@ -35,7 +35,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 function callHermes(prompt: string, timeoutMs = 300_000): Promise<string> {
   const t0 = Date.now();
   return new Promise((resolve, reject) => {
-    execFile('hermes', ['-z', prompt, '--yolo'], {
+    execFile('hermes', ['-z', prompt, '--yolo', '--ignore-rules'], {
       encoding: 'utf8',
       timeout: timeoutMs,
       maxBuffer: 16 * 1024 * 1024,
@@ -759,25 +759,25 @@ async function doSearch(p: any, db: Db) {
     const isOldWebsiteMode = p.mode === 'old_website';
 
     const prompt = isOldWebsiteMode
-      ? `You are a business research assistant specialising in finding companies with OUTDATED websites. Your job is to use Google Search with advanced operators (dorks) to find businesses that still use old web technology.
+      ? `IMPORTANT: Do NOT use your built-in browser. Use Computer Use (CUA) to control the local desktop Chrome browser instead.
 
-TASK: Find up to ${still_need} businesses related to "${p.keyword}" in ${p.location} that have OLD, outdated websites.
+TYPING RULE: Never type Chinese characters directly — the input method will mangle them. Instead, navigate to URLs directly in the address bar. For Google searches, go to: https://www.google.com/search?q=${encodeURIComponent(p.keyword + ' ' + p.location + ' inurl:.htm')}
+
+Find up to ${still_need} "${p.keyword}" businesses in ${p.location} with OUTDATED websites.
 ${excludeClause}
-INSTRUCTIONS:
-1. Open your browser and go to Google Search. You have a stealth browser that handles captchas automatically.
-2. Try these Google dork searches one by one until you find enough results:
-   - "${p.keyword}" "${p.location}" "best viewed in" OR "optimized for" OR "designed for 800x600"
-   - "${p.keyword}" "${p.location}" inurl:index.htm OR inurl:default.asp OR inurl:home.html
-   - "${p.keyword}" "${p.location}" "visitor counter" OR "hit counter" OR "web counter"
-   - "${p.keyword}" "${p.location}" "last updated" OR "last modified" OR "© 200" OR "© 199"
-   - "${p.keyword}" "${p.location}" "under construction" OR "guestbook" OR "webmaster"
-   - "${p.keyword}" "${p.location}" "powered by FrontPage" OR "made with Dreamweaver"
-3. For each business found: open their website to confirm it looks outdated (old design, table layouts, no mobile support, etc.), then get: name, website, and EMAIL. If the site looks modern, SKIP it.
-4. Use "" for any field you cannot find. Only include businesses with genuinely outdated websites.
-5. If you find no results, return an empty array: []
+STEPS:
+1. Use Computer Use to open Chrome. Navigate directly to this URL in the address bar:
+   https://www.google.com/search?q=${encodeURIComponent(p.keyword + ' ' + p.location + ' inurl:.htm')}
+   If no good results, navigate to:
+   https://www.google.com/search?q=${encodeURIComponent(p.keyword + ' ' + p.location + ' "© 200" OR "© 199"')}
+   If still not enough:
+   https://www.google.com/search?q=${encodeURIComponent(p.keyword + ' ' + p.location + ' site:.com.hk')}
+2. Click on each result and visually check the website. ONLY keep it if it looks built before 2015 — signs: table layout, Flash, clip art, no mobile support, .htm URLs, old copyright. If it has responsive design, modern CSS, WhatsApp widget, or modern CMS — SKIP it.
+3. Get: name, website, email (check contact page). Use "" if not found.
+4. Stop after checking 10 websites total. If none qualify, return []. An empty result is fine.
 
-RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
-[{"name":"Example Co","website":"https://example.com","email":"info@example.com"}]`
+Reply with ONLY a JSON array:
+[{"name":"Co","website":"https://example.com","email":"a@b.com","reason":"table layout, copyright 2005"}]`
       : `You are a business research assistant. Your job is to find real businesses using your browser.
 
 TASK: Find up to ${still_need} real "${p.keyword}" businesses in ${p.location}.
@@ -795,7 +795,7 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
     let arr: any[];
     const searchT0 = Date.now();
     try {
-      arr = await hermesJson(prompt, { array: true, timeout: 300_000 });
+      arr = await hermesJson(prompt, { array: true, timeout: isOldWebsiteMode ? 600_000 : 300_000 });
     } catch (e: any) {
       const searchElapsed = ((Date.now() - searchT0) / 1000).toFixed(1);
       log(`  [search] 第 ${round} 輪 hermes 失敗 (${searchElapsed}s): ${e?.message ?? e}`);

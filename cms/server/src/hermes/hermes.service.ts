@@ -12,6 +12,8 @@ import { Campaign, CampaignDocument } from './schemas/campaign.schema';
 import { RunHermesDto } from './dto/run-hermes.dto';
 import { EmailService } from '../email/email.service';
 import { UsersService } from '../users/users.service';
+import { VerifiedEmailsService } from '../verified-emails/verified-emails.service';
+import { LeadsService } from '../leads/leads.service';
 
 /** 每個 stage 最多重試幾次 */
 const MAX_STAGE_RETRIES = 2;
@@ -49,6 +51,8 @@ export class HermesService implements OnModuleInit {
     private readonly email: EmailService,
     private readonly config: ConfigService,
     private readonly users: UsersService,
+    private readonly verifiedEmails: VerifiedEmailsService,
+    private readonly leads: LeadsService,
   ) {}
 
   onModuleInit() {
@@ -127,10 +131,22 @@ export class HermesService implements OnModuleInit {
 
       this.progress(campaignId, 'search→enrich', 0, leadIds.length);
       const userId = params.user_id as string | undefined;
-      for (const leadId of leadIds) {
-        await this.enqueueStage('enrich', campaignId, { lead_object_id: leadId, user_id: userId });
+
+      if (leadIds.length === 0) {
+        await this.finish(campaign, '搜尋 0 結果');
+        return;
       }
-      if (leadIds.length === 0) await this.finish(campaign, '搜尋 0 結果');
+
+      for (const leadId of leadIds) {
+        // ── Verified Email Pool 匹配：命中就跳過 S2，直接去 S3 draft ──
+        const poolHit = await this.tryMatchVerifiedPool(leadId, campaignId);
+        if (poolHit) {
+          // 已有 verified email → 跳過 enrich，直接 draft
+          await this.enqueueStage('draft', campaignId, { lead_object_id: leadId, user_id: userId });
+        } else {
+          await this.enqueueStage('enrich', campaignId, { lead_object_id: leadId, user_id: userId });
+        }
+      }
       return;
     }
 
@@ -219,6 +235,47 @@ export class HermesService implements OnModuleInit {
     );
     if (updated.done_count >= updated.lead_ids.length) {
       await this.finish(updated, '全部 lead 處理完畢（部分可能失敗）');
+    }
+  }
+
+  /**
+   * 嘗試用 lead 嘅 company_name 匹配 Verified Email Pool。
+   * 命中 → 更新 lead.email，回傳 true（跳過 S2）。
+   * 未命中 → 回傳 false（照行 S2）。
+   */
+  private async tryMatchVerifiedPool(leadId: string, campaignId: string): Promise<boolean> {
+    try {
+      const lead = await this.leads.findOne(leadId);
+      if (!lead?.company_name) return false;
+
+      const matches = await this.verifiedEmails.matchByCompany(lead.company_name);
+      if (!matches.length) return false;
+
+      // 用第一個 active verified email
+      const verified = matches[0];
+
+      // 更新 lead 嘅 email（如果 lead 本身冇 email 或者 pool 嘅更可靠）
+      await this.leads.update(leadId, { email: verified.email } as any);
+
+      // 累計 match_count
+      await this.verifiedEmails.incrementMatchCount((verified as any)._id.toString());
+
+      this.sse.emit(SseEvent.HERMES_LOG, {
+        runId: campaignId,
+        level: 'info',
+        stage: 'pool_match',
+        message: `Lead "${lead.company_name}" 命中 Verified Pool → 使用 ${verified.email}，跳過 S2 enrich`,
+      });
+
+      return true;
+    } catch (e: any) {
+      this.sse.emit(SseEvent.HERMES_LOG, {
+        runId: campaignId,
+        level: 'warn',
+        stage: 'pool_match',
+        message: `Pool 匹配失敗（fallback S2）：${e?.message ?? e}`,
+      });
+      return false; // 失敗就 fallback 行正常 S2
     }
   }
 
