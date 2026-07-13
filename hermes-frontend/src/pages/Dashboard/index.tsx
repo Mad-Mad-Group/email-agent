@@ -119,11 +119,7 @@ const BarChartTooltip = styled.div<{ $x: number; $y: number; $visible: boolean }
   &::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: #14261a; }
 `;
 const BarChartWrap = styled.div`
-  position: relative; padding: 8px; border-radius: 8px;
-  background-image:
-    linear-gradient(${({ theme }) => theme.mode === 'dark' ? 'rgba(148,163,184,0.04)' : 'rgba(148,163,184,0.08)'} 1px, transparent 1px),
-    linear-gradient(90deg, ${({ theme }) => theme.mode === 'dark' ? 'rgba(148,163,184,0.04)' : 'rgba(148,163,184,0.08)'} 1px, transparent 1px);
-  background-size: 18px 18px;
+  position: relative; padding: 8px; border-radius: 8px; min-width: 0; overflow: hidden;
 `;
 
 const BarChart: React.FC<{ bars: BarData[]; dark?: boolean }> = ({ bars, dark }) => {
@@ -192,33 +188,97 @@ const BarChart: React.FC<{ bars: BarData[]; dark?: boolean }> = ({ bars, dark })
   );
 };
 
-/* ── Donut Chart ── */
-const DonutWrap = styled.div`display: flex; align-items: center; gap: 24px; justify-content: center;`;
-const LegendList = styled.div`display: flex; flex-direction: column; gap: 8px;`;
-const LegendItem = styled.div`display: flex; align-items: center; gap: 8px; font-size: 0.8125rem;`;
-const LegendDot = styled.div<{ $color: string }>`width: 10px; height: 10px; border-radius: 50%; background: ${({ $color }) => $color}; flex-shrink: 0;`;
-const LegendVal = styled.span`font-weight: 600; margin-left: auto; min-width: 20px; text-align: right;`;
+/* ── Donut Chart (redesigned) ── */
+const DonutWrap = styled.div`
+  display: flex; align-items: center; gap: 20px; justify-content: center; padding: 8px;
+`;
+const LegendList = styled.div`display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0; max-width: 180px;`;
+const LegendRow = styled.div`display: flex; flex-direction: column; gap: 3px;`;
+const LegendRowTop = styled.div`display: flex; align-items: center; gap: 6px;`;
+const LegendDot = styled.div<{ $color: string }>`width: 8px; height: 8px; border-radius: 50%; background: ${({ $color }) => $color}; flex-shrink: 0;`;
+const LegendLabel = styled.span`font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`;
+const LegendVal = styled.span`font-weight: 700; font-size: 0.72rem; margin-left: auto; white-space: nowrap; flex-shrink: 0;`;
+const LegendBarTrack = styled.div`height: 5px; border-radius: 3px; background: ${({ theme }) => theme.mode === 'dark' ? '#1e3a25' : '#ecf2ec'}; overflow: hidden;`;
+const LegendBarFill = styled.div<{ $color: string; $pct: number }>`height: 100%; border-radius: 3px; width: ${({ $pct }) => $pct}%; background: ${({ $color }) => $color}; transition: width 0.4s ease;`;
 
-const DonutChart: React.FC<{ slices: { value: number; color: string }[]; size?: number }> = ({ slices, size = 130 }) => {
+const DonutTooltip = styled.div<{ $x: number; $y: number; $visible: boolean }>`
+  position: absolute;
+  left: ${({ $x }) => $x}px; top: ${({ $y }) => $y}px;
+  transform: translate(-50%, -100%);
+  background: #14261a; color: #fff; font-size: 0.6875rem; font-weight: 600;
+  padding: 4px 10px; border-radius: 8px; pointer-events: none; white-space: nowrap;
+  opacity: ${({ $visible }) => $visible ? 1 : 0}; transition: opacity 0.12s; z-index: 10;
+  &::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: #14261a; }
+`;
+
+const DonutChart: React.FC<{ slices: { value: number; color: string; label?: string }[]; size?: number }> = ({ slices, size = 200 }) => {
+  const [hover, setHover] = useState<{ idx: number; x: number; y: number } | null>(null);
+  const svgRef = useRef<SVGSVGElement>(null);
   const total = slices.reduce((s, sl) => s + sl.value, 0);
-  if (total === 0) return <svg width={size} height={size}><circle cx={size/2} cy={size/2} r={size/2-8} fill="none" stroke="#d4e2d4" strokeWidth="16" /></svg>;
-  const r = size / 2 - 8;
+  const strokeW = 28;
+  const r = size / 2 - strokeW / 2 - 4;
   const c = 2 * Math.PI * r;
+  const cx = size / 2, cy = size / 2;
+
+  if (total === 0) return (
+    <svg width={size} height={size}><circle cx={cx} cy={cy} r={r} fill="none" stroke="#d4e2d4" strokeWidth={strokeW} /></svg>
+  );
+
   let offset = 0;
+  const arcs = slices.filter(s => s.value > 0).map((sl, i) => {
+    const pct = sl.value / total;
+    const dash = `${pct * c} ${c}`;
+    const arc = { ...sl, pct, dash, offset, origIdx: i };
+    offset += pct * c;
+    return arc;
+  });
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<SVGElement>, idx: number) => {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    setHover({ idx, x: e.clientX - rect.left, y: e.clientY - rect.top - 8 });
+  }, []);
+
   return (
-    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)' }}>
-      {slices.filter(s => s.value > 0).map((sl, i) => {
-        const pct = sl.value / total;
-        const dash = `${pct * c} ${c}`;
-        const el = <circle key={i} cx={size/2} cy={size/2} r={r} fill="none" stroke={sl.color} strokeWidth="16" strokeDasharray={dash} strokeDashoffset={-offset} strokeLinecap="butt" />;
-        offset += pct * c;
-        return el;
-      })}
-      <text x={size/2} y={size/2} textAnchor="middle" dominantBaseline="central"
-        style={{ transform: 'rotate(90deg)', transformOrigin: 'center', fontSize: '1.5rem', fontWeight: 700, fill: 'currentColor' }}>
-        {total}
-      </text>
-    </svg>
+    <div style={{ position: 'relative', flexShrink: 0 }}>
+      {hover !== null && (
+        <DonutTooltip $x={hover.x} $y={hover.y} $visible>
+          {arcs[hover.idx].label}: {arcs[hover.idx].value} ({Math.round(arcs[hover.idx].pct * 100)}%)
+        </DonutTooltip>
+      )}
+      <svg ref={svgRef} width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block' }}>
+        <defs>
+          {arcs.map((a, i) => (
+            <linearGradient key={i} id={`donut${i}`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor={a.color} stopOpacity="0.7" />
+              <stop offset="100%" stopColor={a.color} stopOpacity="1" />
+            </linearGradient>
+          ))}
+        </defs>
+        {/* background track */}
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke="currentColor" strokeWidth={strokeW} opacity={0.06} />
+        {/* arcs */}
+        <g style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }}>
+          {arcs.map((a, i) => (
+            <circle key={i} cx={cx} cy={cy} r={r} fill="none"
+              stroke={`url(#donut${i})`} strokeWidth={hover?.idx === i ? strokeW + 4 : strokeW}
+              strokeDasharray={a.dash} strokeDashoffset={-a.offset} strokeLinecap="butt"
+              style={{ cursor: 'pointer', transition: 'stroke-width 0.15s ease' }}
+              onMouseMove={(e) => handleMouseMove(e, i)}
+              onMouseLeave={() => setHover(null)} />
+          ))}
+        </g>
+        {/* center text */}
+        <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="central"
+          style={{ fontSize: '1.75rem', fontWeight: 700, fill: 'currentColor' }}>
+          {total}
+        </text>
+        <text x={cx} y={cy + 14} textAnchor="middle" dominantBaseline="central"
+          style={{ fontSize: '0.6rem', fontWeight: 500, fill: 'currentColor', opacity: 0.45 }}>
+          REPLIES
+        </text>
+      </svg>
+    </div>
   );
 };
 
@@ -397,6 +457,54 @@ const timeAgo = (dateStr: string | undefined, t: (key: string, opts?: Record<str
   return t('dashboard.daysAgo', { count: days });
 };
 
+/* ── Demo hint ── */
+const DemoHint = styled.div`
+  font-size: 0.6875rem; color: ${({ theme }) => theme.colors.textTertiary}; font-style: italic;
+`;
+
+/* ══════════ DEMO MOCK DATA ══════════ */
+const DEMO_COMPANIES = ['Stripe', 'Notion', 'Vercel', 'Figma', 'Linear', 'Retool', 'Supabase', 'Clerk', 'Resend', 'Neon',
+  'PostHog', 'Cal.com', 'Dub.co', 'Trigger.dev', 'Inngest', 'Tiptap', 'Liveblocks', 'Prisma', 'PlanetScale', 'Turso'];
+
+function generateDemoLeads(): Lead[] {
+  const now = Date.now();
+  const day = 86400000;
+  return DEMO_COMPANIES.map((name, i) => {
+    const status = i < 17 ? 'contacted' : 'new';
+    const replied = i < 9;
+    const cats = ['interested', 'meeting', 'question', 'not_interested', 'auto_reply'];
+    const cat = replied ? cats[i % 5] : undefined;
+    return {
+      _id: `demo-lead-${i}`,
+      company_name: name,
+      email: `hello@${name.toLowerCase().replace(/[^a-z]/g, '')}.com`,
+      status,
+      _replied: replied,
+      _reply_category: cat,
+      _reply_at: replied ? new Date(now - (i + 1) * day * 0.5).toISOString() : undefined,
+      _pending_meeting: cat === 'meeting',
+      _followup_count: i < 5 ? 1 : 0,
+      created_at: new Date(now - (20 - i) * day).toISOString(),
+    } as any;
+  });
+}
+
+function generateDemoEmails(): EmailItem[] {
+  const now = Date.now();
+  const day = 86400000;
+  const statuses = ['sent', 'sent', 'sent', 'sent', 'sent', 'sent', 'sent', 'sent', 'pending', 'pending', 'pending', 'approved', 'approved'];
+  return statuses.map((status, i) => ({
+    _id: `demo-email-${i}`,
+    to_email: `hello@${DEMO_COMPANIES[i % DEMO_COMPANIES.length].toLowerCase().replace(/[^a-z]/g, '')}.com`,
+    company_name: DEMO_COMPANIES[i % DEMO_COMPANIES.length],
+    subject: `Partnership Opportunity — ${DEMO_COMPANIES[i % DEMO_COMPANIES.length]}`,
+    status,
+    _type: i < 6 ? 'outreach' : i < 8 ? 'followup' : i < 10 ? 'outreach' : 'reply',
+    sent_at: status === 'sent' ? new Date(now - (i + 1) * day * 0.3).toISOString() : undefined,
+    created_at: new Date(now - (i + 1) * day * 0.25).toISOString(),
+  } as any));
+}
+
 /* ══════════ COMPONENT ══════════ */
 
 const Dashboard: React.FC = () => {
@@ -408,8 +516,15 @@ const Dashboard: React.FC = () => {
   const { data: leadsData, isLoading: leadsLoading } = useLeads({ page: 1, limit: 100 });
   const { data: emailData, isLoading: emailsLoading } = useEmailQueue({ page: 1, limit: 100 });
 
-  const allLeads: Lead[] = leadsData?.data || [];
-  const allEmails: EmailItem[] = emailData?.data || [];
+  /* ── Demo mode: auto-use mock data when real data is empty ── */
+  const demoLeads = useMemo(() => generateDemoLeads(), []);
+  const demoEmails = useMemo(() => generateDemoEmails(), []);
+
+  const realLeads = leadsData?.data || [];
+  const realEmails = emailData?.data || [];
+  const demoMode = realLeads.length === 0 && realEmails.length === 0;
+  const allLeads: Lead[] = demoMode ? demoLeads : realLeads;
+  const allEmails: EmailItem[] = demoMode ? demoEmails : realEmails;
 
   // ── Stats (header pills) ──
   const stats = useMemo(() => {
@@ -516,6 +631,9 @@ const Dashboard: React.FC = () => {
 
   return (
     <Page>
+      {/* ── Demo hint (auto, no toggle) ── */}
+      {demoMode && <DemoHint>Showing simulated data for demonstration</DemoHint>}
+
       {/* ── Action Cards (LUNO-style) ── */}
       <ActionGrid>
         <ActionCard
@@ -571,8 +689,8 @@ const Dashboard: React.FC = () => {
         </ActionCard>
       </ActionGrid>
 
-      {/* ── Funnel (60%) + Reply Distribution (40%) ── */}
-      <Row $cols="3fr 2fr">
+      {/* ── Funnel (50%) + Reply Distribution (50%) ── */}
+      <Row $cols="minmax(0,1fr) minmax(0,1fr)">
         <Card $topAccent="#0ea5e9">
           <CardHeader>
             <CardIcon $color="#0ea5e9"><IconFunnel /></CardIcon>
@@ -580,15 +698,15 @@ const Dashboard: React.FC = () => {
           </CardHeader>
           <CardBody>
             <BarChart dark={dark} bars={[
-              { label: `${t('dashboard.newLeads')} (${funnel.total})`, value: funnel.total, color: '#0ea5e9',
+              { label: `${t('dashboard.newLeads')} (${funnel.total})`, value: funnel.total, color: '#67e8f9',
                 formula: t('dashboard.tipTotalLeads', { count: funnel.total }) },
-              { label: `${t('dashboard.contacted')} ${funnel.total > 0 ? Math.round((funnel.contacted / funnel.total) * 100) : 0}%`, value: funnel.contacted, color: '#f59e0b',
+              { label: `${t('dashboard.contacted')} ${funnel.total > 0 ? Math.round((funnel.contacted / funnel.total) * 100) : 0}%`, value: funnel.contacted, color: '#fcd34d',
                 formula: t('dashboard.tipContactRate', { contacted: funnel.contacted, total: funnel.total }) },
-              { label: `${t('dashboard.replied')} ${funnel.contacted > 0 ? Math.round((funnel.replied / funnel.contacted) * 100) : 0}%`, value: funnel.replied, color: '#22c55e',
+              { label: `${t('dashboard.replied')} ${funnel.contacted > 0 ? Math.round((funnel.replied / funnel.contacted) * 100) : 0}%`, value: funnel.replied, color: '#4ade80',
                 formula: t('dashboard.tipReplyRate', { replied: funnel.replied, contacted: funnel.contacted }) },
-              { label: `${t('dashboard.meetings')} ${funnel.replied > 0 ? Math.round((funnel.meetings / funnel.replied) * 100) : 0}%`, value: funnel.meetings, color: '#0ea5e9',
+              { label: `${t('dashboard.meetings')} ${funnel.replied > 0 ? Math.round((funnel.meetings / funnel.replied) * 100) : 0}%`, value: funnel.meetings, color: '#93c5fd',
                 formula: t('dashboard.tipMeetingRate', { meetings: funnel.meetings, replied: funnel.replied }) },
-              { label: `${t('dashboard.totalEmailsSent')} (${stats.sentEmails})`, value: stats.sentEmails, color: '#ec4899',
+              { label: `${t('dashboard.totalEmailsSent')} (${stats.sentEmails})`, value: stats.sentEmails, color: '#fda4af',
                 formula: t('dashboard.tipEmailsSent', { sent: stats.sentEmails, total: allEmails.length }) },
             ]} />
           </CardBody>
@@ -605,18 +723,31 @@ const Dashboard: React.FC = () => {
             ) : (
               <DonutWrap>
                 <DonutChart slices={[
-                  { value: replyCats.interested, color: '#16a34a' },
-                  { value: replyCats.meeting, color: '#0ea5e9' },
-                  { value: replyCats.question, color: '#3d7ab8' },
-                  { value: replyCats.not_interested, color: '#dc2626' },
-                  { value: replyCats.auto_reply, color: '#94a3b8' },
+                  { value: replyCats.interested, color: '#4ade80', label: t('dashboard.interested') },
+                  { value: replyCats.meeting, color: '#67e8f9', label: t('dashboard.meetingCat') },
+                  { value: replyCats.question, color: '#fcd34d', label: t('dashboard.question') },
+                  { value: replyCats.not_interested, color: '#fda4af', label: t('dashboard.notInterested') },
+                  { value: replyCats.auto_reply, color: '#cbd5e1', label: t('dashboard.autoReply') },
                 ]} />
                 <LegendList>
-                  <LegendItem><LegendDot $color="#16a34a" /> {t('dashboard.interested')} <LegendVal>{replyCats.interested}</LegendVal></LegendItem>
-                  <LegendItem><LegendDot $color="#0ea5e9" /> {t('dashboard.meetingCat')} <LegendVal>{replyCats.meeting}</LegendVal></LegendItem>
-                  <LegendItem><LegendDot $color="#3d7ab8" /> {t('dashboard.question')} <LegendVal>{replyCats.question}</LegendVal></LegendItem>
-                  <LegendItem><LegendDot $color="#dc2626" /> {t('dashboard.notInterested')} <LegendVal>{replyCats.not_interested}</LegendVal></LegendItem>
-                  <LegendItem><LegendDot $color="#94a3b8" /> {t('dashboard.autoReply')} <LegendVal>{replyCats.auto_reply}</LegendVal></LegendItem>
+                  {[
+                    { color: '#4ade80', label: t('dashboard.interested'), value: replyCats.interested },
+                    { color: '#67e8f9', label: t('dashboard.meetingCat'), value: replyCats.meeting },
+                    { color: '#fcd34d', label: t('dashboard.question'), value: replyCats.question },
+                    { color: '#fda4af', label: t('dashboard.notInterested'), value: replyCats.not_interested },
+                    { color: '#cbd5e1', label: t('dashboard.autoReply'), value: replyCats.auto_reply },
+                  ].map((item, i) => (
+                    <LegendRow key={i}>
+                      <LegendRowTop>
+                        <LegendDot $color={item.color} />
+                        <LegendLabel>{item.label}</LegendLabel>
+                        <LegendVal>{item.value} ({stats.replied > 0 ? Math.round((item.value / stats.replied) * 100) : 0}%)</LegendVal>
+                      </LegendRowTop>
+                      <LegendBarTrack>
+                        <LegendBarFill $color={item.color} $pct={stats.replied > 0 ? (item.value / stats.replied) * 100 : 0} />
+                      </LegendBarTrack>
+                    </LegendRow>
+                  ))}
                 </LegendList>
               </DonutWrap>
             )}

@@ -201,6 +201,59 @@ const LiveBadge = styled.span`
   }
 `;
 
+/* ── Demo button & progress bar ── */
+const DemoButton = styled.button`
+  padding: 4px 12px;
+  background: rgba(234, 179, 8, 0.3);
+  border: 1px solid rgba(234, 179, 8, 0.6);
+  border-radius: 4px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fde047;
+  cursor: pointer;
+  letter-spacing: 1px;
+  transition: background 0.2s;
+  &:hover:not(:disabled) { background: rgba(234, 179, 8, 0.5); }
+  &:disabled { opacity: 0.7; cursor: default; }
+`;
+
+const demoGlow = keyframes`
+  0%, 100% { box-shadow: 0 0 4px rgba(234, 179, 8, 0.4); }
+  50% { box-shadow: 0 0 12px rgba(234, 179, 8, 0.8); }
+`;
+
+const demoAppear = keyframes`
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+`;
+
+const DemoProgressBar = styled.div`
+  position: absolute;
+  top: 60px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  gap: 6px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  border-radius: 6px;
+  animation: ${demoAppear} 0.3s ease backwards;
+`;
+
+const DemoProgressStep = styled.span<{ $active: boolean; $done: boolean }>`
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  padding: 3px 8px;
+  border-radius: 3px;
+  color: ${({ $active, $done }) => $active ? '#000' : $done ? '#4ade80' : '#9ca3af'};
+  background: ${({ $active }) => $active ? '#fde047' : 'transparent'};
+  ${({ $active }) => $active && css`animation: ${demoGlow} 1s ease-in-out infinite;`}
+  ${({ $done }) => $done && 'text-decoration: line-through;'}
+  transition: all 0.3s;
+`;
+
 /* ── Agent floating labels — game-style name tags with sprite ── */
 const labelAppear = keyframes`
   from { opacity: 0; transform: translateY(6px); }
@@ -425,9 +478,51 @@ const LabelType = styled.span<{ $color: string }>`
 `;
 
 const AgentStatusTag = styled.span<{ $running: boolean }>`
-  font-size: 10px;
-  line-height: 1;
+  display: inline-flex; align-items: center; line-height: 1;
 `;
+
+/* ── SVG status icons (replace emoji) ── */
+const IconBolt = () => (
+  <svg width="10" height="12" viewBox="0 0 10 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M6 0L0 7h4l-1 5 7-8H6l1-4z" fill="#fbbf24" stroke="#000" strokeWidth="0.5"/>
+  </svg>
+);
+const IconZzz = ({ big }: { big?: boolean }) => {
+  const w = big ? 40 : 14;
+  const h = big ? 30 : 12;
+  return (
+    <svg width={w} height={h} viewBox="0 0 14 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <text x="0" y="6" fontFamily="'Press Start 2P', monospace" fontSize="5" fill="#fff" fontWeight="700" stroke="#000" strokeWidth="0.5">z</text>
+      <text x="5" y="10" fontFamily="'Press Start 2P', monospace" fontSize="6" fill="#fff" fontWeight="700" stroke="#000" strokeWidth="0.5">z</text>
+      <text x="10" y="4" fontFamily="'Press Start 2P', monospace" fontSize="4" fill="#e2e8f0" fontWeight="700" stroke="#000" strokeWidth="0.4">z</text>
+    </svg>
+  );
+};
+
+/* ── Zzz floating bubble for sleeping agents ── */
+const zzzFloat = keyframes`
+  0%, 100% { opacity: 0.4; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-6px); }
+`;
+const ZzzBubble = styled.div`
+  position: absolute; top: -10px; right: 10px;
+  animation: ${zzzFloat} 2.5s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 5;
+`;
+
+/* ── Work sparkle for running agents ── */
+const sparkle = keyframes`
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+`;
+const WorkGlow = styled.div`
+  position: absolute; top: -16px; right: -6px;
+  animation: ${sparkle} 1s ease-in-out infinite;
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px rgba(251,191,36,0.6));
+`;
+
 
 /* ── Left-top status panel — agent avatars + status ── */
 const StatusPanel = styled.div`
@@ -1106,6 +1201,8 @@ const AgentPanel: React.FC = () => {
   const [farmerTalk, setFarmerTalk] = useState(0); // increment to trigger bubble
   const scene = VILLAGE_SCENE;
 
+  /* ── Demo mode removed ── */
+
   /* ── Deco click dialogue state ── */
   const [activeQuote, setActiveQuote] = useState<{ idx: number; text: string } | null>(null);
   const quoteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1193,7 +1290,7 @@ const AgentPanel: React.FC = () => {
       <StatusPanel>
         {agentCards.map((ag) => {
           const sprite = AGENT_SPRITES[ag.skill];
-          const isRunning = ag.status === 'running';
+          const isRunning = ag.status === 'running' ;
           return (
             <StatusRow key={ag.skill} onClick={() => setSelectedSkill(ag.skill)}>
               <StatusAvatar $src={sprite?.idle ?? ''} />
@@ -1221,7 +1318,7 @@ const AgentPanel: React.FC = () => {
         const c = AGENT_COLORS[ag.skill] ?? AGENT_COLORS.S1;
         const pos = scene.agentPos[ag.skill] ?? AGENT_POSITIONS[ag.skill];
         const sprite = AGENT_SPRITES[ag.skill];
-        const isRunning = ag.status === 'running';
+        const isRunning = ag.status === 'running' ;
         const motionAnim = isRunning ? (AGENT_ANIMATIONS[ag.skill] ?? foxDart) : gentleIdle;
         const motionDur = isRunning ? (AGENT_ANIM_DURATION[ag.skill] ?? 10) : 3;
         return (
@@ -1237,17 +1334,21 @@ const AgentPanel: React.FC = () => {
                 <LabelStatusDot $isRunning={isRunning} $accent={c.accent} />
                 <LabelName>{ag.name}</LabelName>
                 <AgentStatusTag $running={isRunning}>
-                  {isRunning ? '⚡' : '💤'}
+                  {isRunning ? <IconBolt /> : <IconZzz />}
                 </AgentStatusTag>
               </AgentLabel>
               {sprite && (
-                <SpriteAnimator
-                  src={sprite.idle}
-                  frameCount={sprite.frames}
-                  frameSize={48}
-                  scale={4}
-                  fps={isRunning ? 5 : 2}
-                />
+                <div style={{ position: 'relative' }}>
+                  <SpriteAnimator
+                    src={sprite.idle}
+                    frameCount={sprite.frames}
+                    frameSize={48}
+                    scale={4}
+                    fps={isRunning ? 6 : 1.5}
+                  />
+                  {!isRunning && <ZzzBubble><IconZzz big /></ZzzBubble>}
+                  {isRunning && <WorkGlow><IconBolt /></WorkGlow>}
+                </div>
               )}
             </SpriteMotion>
           </AgentLabelWrap>
