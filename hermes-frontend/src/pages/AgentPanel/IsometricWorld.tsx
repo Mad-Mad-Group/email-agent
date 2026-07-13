@@ -128,18 +128,20 @@ const BUTTERFLIES = [
   { top: 45, left: 30, dur: 6.5, delay: 4, color: '#ff9ec4' },
 ];
 
-const IsometricWorld: React.FC = () => (
+const IsometricWorld: React.FC<{ bgUrl?: string; hideAtmosphere?: boolean }> = ({ bgUrl, hideAtmosphere }) => (
   <Container>
-    <BgLayer />
+    <BgLayer style={bgUrl ? { backgroundImage: `url(${bgUrl})` } : undefined} />
     <AmbientOverlay />
-    <AnimLayer>
-      {CLOUDS.map((c, i) => (
-        <Cloud key={`cloud-${i}`} $top={c.top} $dur={c.dur} $delay={c.delay} $size={c.size} $rtl={c.rtl} />
-      ))}
-      {BUTTERFLIES.map((b, i) => (
-        <Butterfly key={`fly-${i}`} $top={b.top} $left={b.left} $dur={b.dur} $delay={b.delay} $color={b.color} />
-      ))}
-    </AnimLayer>
+    {!hideAtmosphere && (
+      <AnimLayer>
+        {CLOUDS.map((c, i) => (
+          <Cloud key={`cloud-${i}`} $top={c.top} $dur={c.dur} $delay={c.delay} $size={c.size} $rtl={c.rtl} />
+        ))}
+        {BUTTERFLIES.map((b, i) => (
+          <Butterfly key={`fly-${i}`} $top={b.top} $left={b.left} $dur={b.dur} $delay={b.delay} $color={b.color} />
+        ))}
+      </AnimLayer>
+    )}
   </Container>
 );
 

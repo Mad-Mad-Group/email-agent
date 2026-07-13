@@ -281,18 +281,18 @@ const haloHue = keyframes`
 
 const ModePill = styled.div`
   display: flex; align-items: center;
-  border-radius: 24px; padding: 3px;
+  border-radius: 18px; padding: 2px;
   background: ${({ theme }) => theme.colors.surfaceMuted || '#f1f5f9'};
   margin: 5px 0 5px 5px; flex-shrink: 0;
   position: relative;
-  align-self: stretch;
+  align-self: center;
 `;
 
 const ModeThumb = styled.div<{ $right: boolean }>`
   position: absolute;
-  top: 3px; bottom: 3px; left: 3px;
-  width: calc(50% - 3px);
-  border-radius: 21px;
+  top: 2px; bottom: 2px; left: 2px;
+  width: calc(50% - 2px);
+  border-radius: 16px;
   background: ${({ $right }) => $right ? '#1a1a2e' : '#0ea5e9'};
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s;
   transform: translateX(${({ $right }) => $right ? '100%' : '0'});
@@ -318,9 +318,9 @@ const ModeThumb = styled.div<{ $right: boolean }>`
 
 const ModeOption = styled.button<{ $active: boolean }>`
   position: relative; z-index: 1;
-  padding: 10px 14px; border: none; border-radius: 21px;
+  padding: 6px 12px; border: none; border-radius: 16px;
   background: transparent;
-  font-size: 0.75rem; font-weight: 600;
+  font-size: 0.6875rem; font-weight: 600;
   cursor: pointer; white-space: nowrap;
   color: ${({ $active }) => $active ? '#fff' : 'inherit'};
   transition: color 0.25s;

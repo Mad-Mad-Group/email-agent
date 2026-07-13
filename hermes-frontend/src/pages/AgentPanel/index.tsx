@@ -98,6 +98,35 @@ const AGENT_SPRITES: Record<string, { idle: string; frames: number }> = {
   S4: { idle: '/assets/pixel-world/sprites/duck-idle.png', frames: 4 },
 };
 
+/* ── Scene definitions with per-scene layout ── */
+interface SceneLayout {
+  key: string;
+  bgUrl: string;
+  title: string;
+  emoji: string;
+  /** Override agent label positions per scene */
+  agentPos: Record<string, { top: string; left: string }>;
+  /** Farmer NPC position */
+  farmerPos: { bottom: string; left: string };
+  /** Per-scene farmer sprite (different outfit) */
+  farmerSprite?: string;
+  /** Hide clouds / butterflies / bees for night scenes */
+  hideAtmosphere?: boolean;
+  /* decoAnimals are defined in VILLAGE_DECO array */
+}
+
+const VILLAGE_SCENE: SceneLayout = {
+  key: 'village', bgUrl: '/assets/pixel-world/village-bg.png', title: 'HERMES VILLAGE', emoji: '🏡',
+  farmerSprite: '/assets/pixel-world/sprites/farmer-village.png',
+  agentPos: {
+    S1: { top: '70%', left: '6%' },
+    S2: { top: '62%', left: '22%' },
+    S3: { top: '74%', left: '40%' },
+    S4: { top: '58%', left: '12%' },
+  },
+  farmerPos: { bottom: '3%', left: '50%' },
+};
+
 /* ── Scene container: full-screen with relative positioning ── */
 const SceneContainer = styled.div`
   position: relative;
@@ -257,28 +286,24 @@ const AGENT_ANIM_DURATION: Record<string, number> = {
   S4: 12,
 };
 
-/* ── Decorative animals: cow×2, sheep×2, chicken×2, bunny×2, bee×3 ── */
-const DECO_ANIMALS: Array<{
+/* ── Per-scene decorative animals ── */
+type DecoAnimal = {
   sprite: string; frames: number; frameSize: number; top: string; left: string;
   anim: ReturnType<typeof keyframes>; dur: number; scale: number; delay: number; flip?: boolean;
-}> = [
-  /* Cows ×2 — center pasture (away from trees) */
-  { sprite: '/assets/pixel-world/sprites/cow-idle.png', frames: 5, frameSize: 48, top: '66%', left: '36%', anim: cowGraze, dur: 10, scale: 2.5, delay: 0 },
-  { sprite: '/assets/pixel-world/sprites/cow-idle.png', frames: 5, frameSize: 48, top: '74%', left: '48%', anim: cowGraze, dur: 12, scale: 2.5, delay: 3, flip: true },
-  /* Sheep ×2 — center-left */
-  { sprite: '/assets/pixel-world/sprites/sheep-idle.png', frames: 5, frameSize: 48, top: '70%', left: '55%', anim: sheepWalk, dur: 11, scale: 2.5, delay: 1 },
-  { sprite: '/assets/pixel-world/sprites/sheep-idle.png', frames: 5, frameSize: 48, top: '76%', left: '42%', anim: sheepWalk, dur: 13, scale: 2.5, delay: 5, flip: true },
-  /* Chickens ×2 — right field */
-  { sprite: '/assets/pixel-world/sprites/chicken-idle.png', frames: 5, frameSize: 48, top: '63%', left: '78%', anim: chickenPeck, dur: 10, scale: 2, delay: 0.5 },
-  { sprite: '/assets/pixel-world/sprites/chicken-idle.png', frames: 5, frameSize: 48, top: '70%', left: '65%', anim: chickenPeck, dur: 11, scale: 2, delay: 2, flip: true },
-  /* Bunnies ×2 — scattered */
-  { sprite: '/assets/pixel-world/sprites/bunny-idle.png', frames: 4, frameSize: 48, top: '78%', left: '52%', anim: bunnyHop, dur: 12, scale: 2, delay: 0 },
-  { sprite: '/assets/pixel-world/sprites/bunny-idle.png', frames: 4, frameSize: 48, top: '80%', left: '88%', anim: bunnyHop, dur: 14, scale: 2, delay: 6, flip: true },
-  /* Bees ×3 — sky */
-  { sprite: '/assets/pixel-world/sprites/bee-idle.png', frames: 4, frameSize: 16, top: '12%', left: '25%', anim: beeFloat, dur: 8, scale: 3, delay: 0 },
-  { sprite: '/assets/pixel-world/sprites/bee-idle.png', frames: 4, frameSize: 16, top: '18%', left: '55%', anim: beeFloat, dur: 9, scale: 2.5, delay: 2 },
-  { sprite: '/assets/pixel-world/sprites/bee-idle.png', frames: 4, frameSize: 16, top: '8%', left: '80%', anim: beeFloat, dur: 7, scale: 2.5, delay: 4 },
+};
+
+const VILLAGE_DECO: DecoAnimal[] = [
+  { sprite: '/assets/pixel-world/sprites/street-dog-idle.png', frames: 4, frameSize: 48, top: '72%', left: '8%', anim: foxDart, dur: 12, scale: 2, delay: 0 },
+  { sprite: '/assets/pixel-world/sprites/street-dog2-idle.png', frames: 4, frameSize: 48, top: '78%', left: '28%', anim: cowGraze, dur: 14, scale: 2, delay: 4, flip: true },
+  { sprite: '/assets/pixel-world/sprites/street-cat-idle.png', frames: 4, frameSize: 48, top: '75%', left: '42%', anim: chickenPeck, dur: 11, scale: 2, delay: 1 },
+  { sprite: '/assets/pixel-world/sprites/street-cat2-idle.png', frames: 4, frameSize: 48, top: '70%', left: '18%', anim: bunnyHop, dur: 13, scale: 2, delay: 3, flip: true },
+  { sprite: '/assets/pixel-world/sprites/bunny-idle.png', frames: 4, frameSize: 48, top: '82%', left: '35%', anim: bunnyHop, dur: 12, scale: 1.8, delay: 2 },
+  { sprite: '/assets/pixel-world/sprites/bee-idle.png', frames: 4, frameSize: 16, top: '10%', left: '22%', anim: beeFloat, dur: 8, scale: 3, delay: 0 },
+  { sprite: '/assets/pixel-world/sprites/bee-idle.png', frames: 4, frameSize: 16, top: '14%', left: '50%', anim: beeFloat, dur: 9, scale: 2.5, delay: 3 },
 ];
+
+/* ── Click dialogue quotes ── */
+const VILLAGE_QUOTES: string[] = ['不努力就送去M記', '今天KPI完成了嗎', '老闆又催了…', '下班去喝一杯？', '這個月績效怎麼樣'];
 
 const AgentLabelWrap = styled.div<{ $top: string; $left: string }>`
   position: absolute;
@@ -292,12 +317,6 @@ const AgentLabelWrap = styled.div<{ $top: string; $left: string }>`
   cursor: pointer;
   animation: ${labelAppear} 0.4s ease backwards;
   user-select: none;
-
-  &:hover > div:last-child {
-    transform: translateY(-2px);
-    background: rgba(0, 0, 0, 0.82);
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-  }
 `;
 
 /* Wrapper that carries the per-agent movement animation */
@@ -323,33 +342,61 @@ const SpriteCanvas = styled.div<{ $src: string; $frames: number; $frameSize: num
   filter: drop-shadow(0 3px 6px rgba(0,0,0,0.25));
 `;
 
-/* ── Decorative animal wrapper (no label, just sprite) ── */
+/* ── Decorative animal wrapper (clickable for dialogue) ── */
 const DecoAnimalWrap = styled.div<{ $top: string; $left: string; $flip?: boolean }>`
   position: absolute;
   top: ${({ $top }) => $top};
   left: ${({ $left }) => $left};
-  z-index: 3;
-  pointer-events: none;
+  z-index: 6;
+  cursor: pointer;
   ${({ $flip }) => $flip && 'transform: scaleX(-1);'}
+  &:hover { filter: brightness(1.15); }
+`;
+
+/* ── Speech bubble for deco click dialogue ── */
+const SpeechBubble = styled.div`
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.95);
+  color: #333;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  animation: ${labelAppear} 0.3s ease backwards;
+  margin-bottom: 4px;
+  z-index: 10;
+  pointer-events: none;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgba(255, 255, 255, 0.95);
+  }
 `;
 
 const AgentLabel = styled.div`
   display: inline-flex;
   align-items: center;
   align-self: center;
-  gap: 4px;
-  padding: 3px 8px;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(6px);
-  border-radius: 4px;
-  transition: transform 0.18s, background 0.18s, box-shadow 0.18s;
+  gap: 5px;
+  padding: 4px 10px;
+  background: transparent;
   white-space: nowrap;
   width: fit-content;
 `;
 
 const LabelStatusDot = styled.span<{ $isRunning: boolean; $accent: string }>`
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
   background: ${({ $isRunning, $accent }) => $isRunning ? $accent : '#6b7280'};
@@ -359,19 +406,22 @@ const LabelStatusDot = styled.span<{ $isRunning: boolean; $accent: string }>`
 `;
 
 const LabelName = styled.span`
-  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-  font-size: 10px;
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  font-size: 11px;
   font-weight: 700;
   color: #fff;
   line-height: 1;
+  text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
+  letter-spacing: 1px;
 `;
 
 const LabelType = styled.span<{ $color: string }>`
-  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-  font-size: 10px;
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  font-size: 8px;
   color: ${({ $color }) => $color};
-  opacity: 0.9;
   line-height: 1;
+  text-shadow: 1px 1px 0 #000;
+  letter-spacing: 0.5px;
 `;
 
 const AgentStatusTag = styled.span<{ $running: boolean }>`
@@ -620,6 +670,64 @@ const GearOverlayBtn = styled.button`
   }
 `;
 
+/* ── Scene switcher — bottom-left ── */
+const SceneSwitcher = styled.div`
+  position: absolute;
+  bottom: 16px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(8px);
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  user-select: none;
+`;
+
+const SceneArrow = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.5);
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  transition: color 0.15s, background 0.15s;
+
+  &:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.12);
+  }
+`;
+
+const SceneLabel = styled.span`
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+  min-width: 50px;
+  text-align: center;
+`;
+
+const SceneDots = styled.div`
+  display: flex;
+  gap: 4px;
+  margin-left: 4px;
+`;
+
+const SceneDot = styled.span<{ $active: boolean }>`
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: ${({ $active }) => $active ? '#fbbf24' : 'rgba(255,255,255,0.25)'};
+  transition: background 0.2s;
+`;
+
 /* ── Config overlay — appears above gear button ── */
 const ConfigOverlay = styled.div`
   position: absolute;
@@ -660,10 +768,13 @@ const ConfigOverlayValue = styled.span`
   font-family: 'JetBrains Mono', monospace;
 `;
 
-/* ── Farmer NPC — bottom-left, clickable with speech bubble ── */
-const farmerBounce = keyframes`
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-2px); }
+/* ── Farmer NPC — walks around, clickable with speech bubble ── */
+const farmerWalk = keyframes`
+  0%, 35%  { transform: translate(0, 0) scaleX(1); }
+  45%      { transform: translate(100px, 4px) scaleX(1); }
+  45.1%, 80% { transform: translate(100px, 4px) scaleX(-1); }
+  90%      { transform: translate(0, 0) scaleX(-1); }
+  90.1%, 100% { transform: translate(0, 0) scaleX(1); }
 `;
 
 const bubblePop = keyframes`
@@ -684,7 +795,7 @@ const FarmerWrap = styled.div`
   align-items: center;
   cursor: pointer;
   user-select: none;
-  animation: ${farmerBounce} 3s ease-in-out infinite;
+  animation: ${farmerWalk} 14s ease-in-out infinite;
 
   &:hover {
     filter: brightness(1.15);
@@ -993,6 +1104,17 @@ const AgentPanel: React.FC = () => {
   const [showConfig, setShowConfig] = useState(false);
   const [feedOpen, setFeedOpen] = useState(true);
   const [farmerTalk, setFarmerTalk] = useState(0); // increment to trigger bubble
+  const scene = VILLAGE_SCENE;
+
+  /* ── Deco click dialogue state ── */
+  const [activeQuote, setActiveQuote] = useState<{ idx: number; text: string } | null>(null);
+  const quoteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleDecoClick = useCallback((decoIdx: number) => {
+    const text = VILLAGE_QUOTES[Math.floor(Math.random() * VILLAGE_QUOTES.length)];
+    setActiveQuote({ idx: decoIdx, text });
+    if (quoteTimerRef.current) clearTimeout(quoteTimerRef.current);
+    quoteTimerRef.current = setTimeout(() => setActiveQuote(null), 3000);
+  }, []);
 
   /* ── Agent data from task stats ── */
   const statsArr: AgentSkillStats[] = Array.isArray(statsRaw) ? statsRaw : [];
@@ -1058,12 +1180,12 @@ const AgentPanel: React.FC = () => {
     <SceneContainer>
       {/* ── Background: IsometricWorld fills entire scene ── */}
       <WorldBackground>
-        <IsometricWorld />
+        <IsometricWorld bgUrl={scene.bgUrl} hideAtmosphere={scene.hideAtmosphere} />
       </WorldBackground>
 
       {/* ── Title bar overlay — top-left ── */}
       <TitleBar>
-        <TitleText>HERMES FARM</TitleText>
+        <TitleText>{scene.title}</TitleText>
         <LiveBadge>LIVE</LiveBadge>
       </TitleBar>
 
@@ -1084,9 +1206,10 @@ const AgentPanel: React.FC = () => {
         })}
       </StatusPanel>
 
-      {/* ── Decorative animals (extra animals per zone, no labels) ── */}
-      {DECO_ANIMALS.map((d, i) => (
-        <DecoAnimalWrap key={`deco-${i}`} $top={d.top} $left={d.left} $flip={d.flip}>
+      {/* ── Decorative characters — village cats, dogs & bees ── */}
+      {VILLAGE_DECO.map((d, i) => (
+        <DecoAnimalWrap key={`deco-${i}`} $top={d.top} $left={d.left} $flip={d.flip} onClick={() => handleDecoClick(i)}>
+          {activeQuote?.idx === i && <SpeechBubble style={d.flip ? { transform: 'translateX(-50%) scaleX(-1)' } : undefined}>{activeQuote.text}</SpeechBubble>}
           <SpriteMotion $anim={d.anim} $dur={d.dur} style={{ animationDelay: `${d.delay}s` }}>
             <SpriteAnimator src={d.sprite} frameCount={d.frames} frameSize={d.frameSize} scale={d.scale} fps={d.frameSize === 16 ? 6 : 4} />
           </SpriteMotion>
@@ -1096,7 +1219,7 @@ const AgentPanel: React.FC = () => {
       {/* ── Main agent animals with labels (label + status above sprite, all follow movement) ── */}
       {agentCards.map((ag) => {
         const c = AGENT_COLORS[ag.skill] ?? AGENT_COLORS.S1;
-        const pos = AGENT_POSITIONS[ag.skill];
+        const pos = scene.agentPos[ag.skill] ?? AGENT_POSITIONS[ag.skill];
         const sprite = AGENT_SPRITES[ag.skill];
         const isRunning = ag.status === 'running';
         const motionAnim = isRunning ? (AGENT_ANIMATIONS[ag.skill] ?? foxDart) : gentleIdle;
@@ -1132,14 +1255,14 @@ const AgentPanel: React.FC = () => {
       })}
 
       {/* ── Farmer NPC — bottom-left corner ── */}
-      <FarmerWrap onClick={() => setFarmerTalk((v) => v + 1)}>
+      <FarmerWrap style={{ bottom: scene.farmerPos.bottom, left: scene.farmerPos.left }} onClick={() => setFarmerTalk((v) => v + 1)}>
         {farmerTalk > 0 && (
           <FarmerBubble key={farmerTalk}>
             💢 加油努力！不然把你們送去M記！
           </FarmerBubble>
         )}
         <SpriteAnimator
-          src="/assets/pixel-world/sprites/farmer-idle.png"
+          src={scene.farmerSprite ?? '/assets/pixel-world/sprites/farmer-idle.png'}
           frameCount={4}
           frameSize={80}
           scale={4.5}

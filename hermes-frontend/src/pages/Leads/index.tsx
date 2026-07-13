@@ -607,11 +607,11 @@ const SUB_COLORS: Record<string, string> = {
 const SubPill = styled.button<{ $active?: boolean; $color?: string }>`
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 6px 16px;
+  gap: 3px;
+  padding: 4px 12px;
   border-radius: 999px;
   border: ${({ $active, theme }) => $active ? `1px solid ${theme.colors.accent}40` : '1px solid transparent'};
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: ${({ $active }) => ($active ? 600 : 400)};
   background: ${({ $active, theme }) => $active ? `${theme.colors.accent}14` : 'transparent'};
   backdrop-filter: ${({ $active }) => $active ? 'blur(8px)' : 'none'};
