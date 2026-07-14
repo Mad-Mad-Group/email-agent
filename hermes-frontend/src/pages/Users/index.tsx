@@ -275,6 +275,26 @@ const PermCount = styled.span`
 const EmptyCell = styled.td`
   text-align: center; padding: 40px ${({ theme }) => theme.spacing.md}px;
   color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.875rem;
+  & > div { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+`;
+
+const EmptyTeamIllustration = () => (
+  <svg width="120" height="90" viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="60" cy="30" r="16" fill="#e0f2fe" stroke="#93c5fd" strokeWidth="1.5"/>
+    <circle cx="60" cy="26" r="6" fill="#93c5fd" opacity="0.7"/>
+    <path d="M48 42c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="#93c5fd" strokeWidth="1.5" fill="#e0f2fe"/>
+    <circle cx="32" cy="38" r="10" fill="#f0f9ff" stroke="#bfdbfe" strokeWidth="1"/>
+    <circle cx="32" cy="35" r="4" fill="#bfdbfe" opacity="0.6"/>
+    <path d="M24 46c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#bfdbfe" strokeWidth="1" fill="#f0f9ff"/>
+    <circle cx="88" cy="38" r="10" fill="#f0f9ff" stroke="#bfdbfe" strokeWidth="1"/>
+    <circle cx="88" cy="35" r="4" fill="#bfdbfe" opacity="0.6"/>
+    <path d="M80 46c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#bfdbfe" strokeWidth="1" fill="#f0f9ff"/>
+    <text x="60" y="72" textAnchor="middle" fontFamily="sans-serif" fontSize="10" fill="#94a3b8">Team</text>
+  </svg>
+);
+
+const EmptyHint = styled.p`
+  margin: 0; font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; opacity: 0.8;
 `;
 
 /* ── Footer ── */
@@ -658,7 +678,7 @@ const Users: React.FC = () => {
                 {isLoading ? (
                   <tr><EmptyCell colSpan={5}>{t('users.loading')}</EmptyCell></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><EmptyCell colSpan={5}>{t('users.noUsers')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={5}><div><EmptyTeamIllustration />{t('users.noUsers')}<EmptyHint>邀請成員加入你的團隊。</EmptyHint></div></EmptyCell></tr>
                 ) : (
                   filtered.map((u, i) => {
                     const { bg, fg, avatar } = roleProps(u.role);
@@ -702,7 +722,7 @@ const Users: React.FC = () => {
 
       {/* Footer */}
       <Footer>
-        <span>{t('footer.copyrightHermes', { year: 2024 })}</span>
+        <span>{t('footer.copyrightHermes', { year: 2026 })}</span>
         <div>
           <a href="#">{t('footer.documentation')}</a>
           <a href="#">{t('footer.support')}</a>

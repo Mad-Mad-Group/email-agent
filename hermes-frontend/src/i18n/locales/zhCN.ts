@@ -108,6 +108,10 @@ const zhCN = {
   },
   dashboard: {
     title: '仪表盘',
+    greetingMorning: '早安',
+    greetingAfternoon: '午安',
+    greetingEvening: '晚安',
+    greetingSub: '以下是今日的业务概览。',
     totalLeads: '总潜在客户数',
     qualified: '已合格',
     emailsSent: '已发送邮件',
@@ -480,7 +484,7 @@ const zhCN = {
     updateFailed: '更新失败。',
     agentIpAddress: 'Agent 设备 IP',
     agentIpPlaceholder: '例如 192.168.1.100',
-    agentIpHint: '运行 Hermes Agent 的设备 IP 地址',
+    agentIpHint: '运行 MADMAD Agent 的设备 IP 地址',
   },
   calendar: {
     today: '今天',
@@ -536,7 +540,7 @@ const zhCN = {
   },
   footer: {
     copyright: '© {{year}} ThemeMakker，保留所有权利。',
-    copyrightHermes: '© {{year}} Hermes CMS，保留所有权利。',
+    copyrightHermes: '© {{year}} MADMAD CMS，保留所有权利。',
     portfolio: '作品集',
     licenses: '许可协议',
     support: '支持',

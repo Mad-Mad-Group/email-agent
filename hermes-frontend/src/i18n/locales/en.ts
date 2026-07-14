@@ -108,6 +108,10 @@ const en = {
   },
   dashboard: {
     title: 'Dashboard',
+    greetingMorning: 'Good morning',
+    greetingAfternoon: 'Good afternoon',
+    greetingEvening: 'Good evening',
+    greetingSub: 'Here is your business overview for today.',
     totalLeads: 'Total Leads',
     qualified: 'Qualified',
     emailsSent: 'Emails Sent',
@@ -513,7 +517,7 @@ const en = {
     updateFailed: 'Update failed.',
     agentIpAddress: 'Agent Device IP',
     agentIpPlaceholder: 'e.g. 192.168.1.100',
-    agentIpHint: 'IP address of the device running the Hermes agent',
+    agentIpHint: 'IP address of the device running the MADMAD agent',
   },
   calendar: {
     today: 'today',
@@ -569,7 +573,7 @@ const en = {
   },
   footer: {
     copyright: '© {{year}} ThemeMakker, All Rights Reserved.',
-    copyrightHermes: '© {{year}} Hermes CMS, All Rights Reserved.',
+    copyrightHermes: '© {{year}} MADMAD CMS, All Rights Reserved.',
     portfolio: 'Portfolio',
     licenses: 'Licenses',
     support: 'Support',

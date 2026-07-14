@@ -102,7 +102,7 @@ const Login: React.FC = () => {
   return (
     <LoginContainer>
       <LoginCard>
-        <Logo>Hermes</Logo>
+        <Logo>MADMAD</Logo>
         <Title>{t('login.title')}</Title>
         <Form onSubmit={handleSubmit}>
           <FormField

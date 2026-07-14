@@ -93,7 +93,7 @@ const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'ghost' }>`
 /* ── Stats Cards (LUNO style) ── */
 
 const StatsRow = styled.div`
-  display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: ${({ theme }) => theme.spacing.md}px;
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 260px)); gap: ${({ theme }) => theme.spacing.md}px;
 `;
 
 const LunoStatCard = styled.div<{ $accent: string; $bg1: string; $bg2: string }>`
@@ -165,7 +165,23 @@ const Badge = styled.span<{ $color?: string }>`
 `;
 
 const NoData = styled.div`
-  padding: 40px; text-align: center; color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.875rem;
+  padding: 60px 40px; text-align: center; color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.875rem;
+  display: flex; flex-direction: column; align-items: center; gap: 16px;
+`;
+
+const EmptyIllustration = () => (
+  <svg width="120" height="100" viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="20" y="15" width="80" height="60" rx="8" fill="#e0f2fe" stroke="#93c5fd" strokeWidth="1.5"/>
+    <rect x="32" y="30" width="56" height="4" rx="2" fill="#93c5fd" opacity="0.6"/>
+    <rect x="32" y="40" width="40" height="4" rx="2" fill="#93c5fd" opacity="0.4"/>
+    <rect x="32" y="50" width="48" height="4" rx="2" fill="#93c5fd" opacity="0.3"/>
+    <circle cx="90" cy="72" r="20" fill="#dcfce7" stroke="#86efac" strokeWidth="1.5"/>
+    <path d="M82 72l5 5 10-10" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+);
+
+const EmptyHint = styled.p`
+  margin: 0; font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; opacity: 0.8;
 `;
 
 /* ── Pagination ── */
@@ -323,7 +339,11 @@ const VerifiedEmailsPage: React.FC = () => {
           {isLoading ? (
             <NoData>{t('verifiedEmails.loading')}</NoData>
           ) : items.length === 0 ? (
-            <NoData>{t('verifiedEmails.noData')}</NoData>
+            <NoData>
+              <EmptyIllustration />
+              {t('verifiedEmails.noData')}
+              <EmptyHint>{t('verifiedEmails.noDataHint', '點擊「+ 新增」驗證你的第一個信箱')}</EmptyHint>
+            </NoData>
           ) : (
             <>
               <Table>

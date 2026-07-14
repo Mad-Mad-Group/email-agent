@@ -5,6 +5,7 @@ import styled, { css, keyframes } from 'styled-components';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { media } from '../../styles/media';
 import { useAuth } from '../../contexts/AuthContext';
+import { useBadge } from '../../contexts/BadgeContext';
 
 /* ── LUNO SVG Icons ── */
 
@@ -485,13 +486,18 @@ const SubLink = styled(NavLink)`
 `;
 
 const Badge = styled.span`
-  font-size: 0.6875rem;
-  font-weight: 600;
-  background: var(--primary, #0ea5e9);
+  font-size: 0.625rem;
+  font-weight: 700;
+  background: #ef4444;
   color: #fff;
-  padding: 1px 7px;
-  border-radius: 20px;
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  padding: 0 5px;
+  border-radius: 10px;
   margin-left: auto;
+  flex-shrink: 0;
   ${collapsedHide}
 `;
 
@@ -700,6 +706,13 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
+  const { counts, clearBadge } = useBadge();
+
+  /* Clear badge when user visits a route */
+  useEffect(() => {
+    const path = location.pathname;
+    if (counts[path]) clearBadge(path);
+  }, [location.pathname, counts, clearBadge]);
 
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const handleLogout = () => {
@@ -736,10 +749,10 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
 
       <MenuList>
         <li><SearchLink to="/cms-search"><IconSearch /><span>{t('nav.leadSearch')}</span></SearchLink></li>
-        <li><MLink to="/dashboard"><IconHome /><span>{t('nav.myDashboard')}</span></MLink></li>
-        <li><MLink to="/cms-leads"><IconLeads /><span>{t('nav.leadPool')}</span></MLink></li>
-        <li><MLink to="/cms-verified-emails"><IconVerifiedEmail /><span>{t('nav.verifiedEmails')}</span></MLink></li>
-        <li><MLink to="/cms-agents"><IconAgent /><span>{t('nav.agents')}</span></MLink></li>
+        <li><MLink to="/dashboard"><IconHome /><span>{t('nav.myDashboard')}</span>{counts['/dashboard'] ? <Badge>{counts['/dashboard']}</Badge> : null}</MLink></li>
+        <li><MLink to="/cms-leads"><IconLeads /><span>{t('nav.leadPool')}</span>{counts['/cms-leads'] ? <Badge>{counts['/cms-leads']}</Badge> : null}</MLink></li>
+        <li><MLink to="/cms-verified-emails"><IconVerifiedEmail /><span>{t('nav.verifiedEmails')}</span>{counts['/cms-verified-emails'] ? <Badge>{counts['/cms-verified-emails']}</Badge> : null}</MLink></li>
+        <li><MLink to="/cms-agents"><IconAgent /><span>{t('nav.agents')}</span>{counts['/cms-agents'] ? <Badge>{counts['/cms-agents']}</Badge> : null}</MLink></li>
         <li><MLink to="/app-calendar"><IconSchedule /><span>{t('nav.calendar')}</span></MLink></li>
         <li><MLink to="/cms-users"><IconUsers /><span>{t('nav.team')}</span></MLink></li>
       </MenuList>

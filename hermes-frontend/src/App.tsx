@@ -5,6 +5,7 @@ import { lightTheme, darkTheme } from './styles/theme';
 import { GlobalStyles } from './styles/GlobalStyles';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeModeProvider, useThemeMode } from './contexts/ThemeModeContext';
+import { BadgeProvider } from './contexts/BadgeContext';
 import AppLayout from './layouts/AppLayout';
 import Dashboard from './pages/Dashboard';
 import Calendar from './pages/Calendar';
@@ -66,6 +67,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeModeProvider>
+        <BadgeProvider>
         <ThemedApp>
           <BrowserRouter>
             <Routes>
@@ -124,6 +126,7 @@ function App() {
             </Routes>
           </BrowserRouter>
         </ThemedApp>
+        </BadgeProvider>
         </ThemeModeProvider>
       </AuthProvider>
     </QueryClientProvider>

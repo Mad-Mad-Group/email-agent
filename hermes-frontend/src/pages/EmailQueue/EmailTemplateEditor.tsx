@@ -27,7 +27,7 @@ const TEMPLATE_VARIABLES = [
   { key: '{{location}}', label: '地點', example: 'San Francisco' },
   { key: '{{sender_name}}', label: '寄件人姓名', example: 'Patricia' },
   { key: '{{sender_title}}', label: '寄件人職稱', example: 'Sales Manager' },
-  { key: '{{product}}', label: '產品名稱', example: 'Hermes CMS' },
+  { key: '{{product}}', label: '產品名稱', example: 'MADMAD CMS' },
   { key: '{{custom_1}}', label: '自訂欄位 1', example: '—' },
 ];
 

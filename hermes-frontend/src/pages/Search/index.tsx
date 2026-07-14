@@ -8,6 +8,7 @@ import { SearchPayload, hermesApi } from '../../api/services';
 import { sseClient, SSEEvent } from '../../api/sse';
 import { leadsApi, Lead } from '../../api/leads';
 import { media } from '../../styles/media';
+import { useBadge } from '../../contexts/BadgeContext';
 
 /* ══════════════════════════════════════
    CMS Search — LUNO-style UI
@@ -32,10 +33,10 @@ const Page = styled.div<{ $hasResults?: boolean }>`
 `;
 
 const GREETINGS = [
-  'Find your next client',
-  'Let AI discover opportunities',
-  'Search, filter, close the deal',
-  'Your next lead starts here',
+  'Find your next client.',
+  'Let AI discover opportunities.',
+  'Search, filter, close the deal.',
+  'Your next lead starts here.',
   'Who are you looking for today?',
 ];
 
@@ -1451,6 +1452,7 @@ function renderStars(rating: number): string {
 
 const SearchPage: React.FC = () => {
   const { t } = useTranslation();
+  const { setBadge } = useBadge();
   const [greeting] = useState(() => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
   // ponytail: restore form state from localStorage so refresh doesn't wipe it.
   // Falls back to defaults if key missing or JSON corrupt.
@@ -1540,7 +1542,7 @@ const SearchPage: React.FC = () => {
     address: lead.address || '',
     rating: lead.rating ? parseFloat(lead.rating) : 0,
     reviews: 0,
-    source: lead.source || 'Hermes',
+    source: lead.source || 'MADMAD',
     status: lead.status || 'new',
     color: '#0ea5e9',
     hasEmail: !!(lead.email),
@@ -1574,8 +1576,10 @@ const SearchPage: React.FC = () => {
           setRealResults(mapped);
           setPipelineComplete(true);
           fireCompletionNotification(mapped.length);
-          // ponytail: pipeline done — drop the saved campaignId so a refresh
-          // doesn't try to reattach to a finished campaign.
+          /* Update sidebar badges with new result counts */
+          if (mapped.length > 0) {
+            setBadge('/cms-leads', mapped.length);
+          }
           /* localStorage campaign persistence removed — refresh clears search */
         });
     }).catch(err => {

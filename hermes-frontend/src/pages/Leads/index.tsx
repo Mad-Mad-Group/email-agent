@@ -855,7 +855,21 @@ const EmptyCell = styled.td`
   padding: 48px ${({ theme }) => theme.spacing.md}px;
   color: ${({ theme }) => theme.colors.textTertiary};
   font-size: 0.875rem;
+  & > div { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 `;
+
+const EmptyLeadsIllustration = () => (
+  <svg width="110" height="85" viewBox="0 0 110 85" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="15" y="12" width="80" height="56" rx="8" fill="#eff6ff" stroke="#93c5fd" strokeWidth="1.5"/>
+    <circle cx="40" cy="34" r="8" fill="#dbeafe" stroke="#93c5fd" strokeWidth="1"/>
+    <rect x="54" y="30" width="30" height="3" rx="1.5" fill="#93c5fd" opacity="0.5"/>
+    <rect x="54" y="37" width="20" height="3" rx="1.5" fill="#bfdbfe" opacity="0.5"/>
+    <line x1="20" y1="50" x2="90" y2="50" stroke="#dbeafe" strokeWidth="1"/>
+    <circle cx="40" cy="58" r="5" fill="#dbeafe" stroke="#bfdbfe" strokeWidth="0.8" strokeDasharray="2 2"/>
+    <rect x="54" y="55" width="25" height="3" rx="1.5" fill="#bfdbfe" opacity="0.3"/>
+    <rect x="54" y="61" width="16" height="3" rx="1.5" fill="#dbeafe" opacity="0.3"/>
+  </svg>
+);
 
 /* ── Date Group Header ── */
 
@@ -2538,7 +2552,7 @@ const Leads: React.FC = () => {
                 ) : isLoading ? (
                   <tr><EmptyCell colSpan={isAdmin ? 7 : 6}>{t('leads.loading')}</EmptyCell></tr>
                 ) : leads.length === 0 ? (
-                  <tr><EmptyCell colSpan={isAdmin ? 7 : 6}>{t('leads.noLeads')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={isAdmin ? 7 : 6}><div><EmptyLeadsIllustration />{t('leads.noLeads')}</div></EmptyCell></tr>
                 ) : (
                   (() => {
                     let lastGroup = '';
@@ -2993,7 +3007,7 @@ const Leads: React.FC = () => {
 
       {/* Footer */}
       <Footer>
-        <span>{t('footer.copyrightHermes', { year: 2024 })}</span>
+        <span>{t('footer.copyrightHermes', { year: 2026 })}</span>
         <div>
           <a href="#">{t('footer.documentation')}</a>
           <a href="#">{t('footer.support')}</a>

@@ -108,6 +108,10 @@ const zhTW = {
   },
   dashboard: {
     title: '儀表板',
+    greetingMorning: '早安',
+    greetingAfternoon: '午安',
+    greetingEvening: '晚安',
+    greetingSub: '以下是今日的業務概覽。',
     totalLeads: '總潛在客戶數',
     qualified: '已合格',
     emailsSent: '已寄出郵件',
@@ -513,7 +517,7 @@ const zhTW = {
     updateFailed: '更新失敗。',
     agentIpAddress: 'Agent 設備 IP',
     agentIpPlaceholder: '例如 192.168.1.100',
-    agentIpHint: '執行 Hermes Agent 的設備 IP 位址',
+    agentIpHint: '執行 MADMAD Agent 的設備 IP 位址',
   },
   calendar: {
     today: '今天',
@@ -569,7 +573,7 @@ const zhTW = {
   },
   footer: {
     copyright: '© {{year}} ThemeMakker，版權所有。',
-    copyrightHermes: '© {{year}} Hermes CMS，版權所有。',
+    copyrightHermes: '© {{year}} MADMAD CMS，版權所有。',
     portfolio: '作品集',
     licenses: '授權條款',
     support: '支援',

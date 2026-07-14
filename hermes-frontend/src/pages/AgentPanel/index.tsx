@@ -116,7 +116,7 @@ interface SceneLayout {
 }
 
 const VILLAGE_SCENE: SceneLayout = {
-  key: 'village', bgUrl: '/assets/pixel-world/village-bg.png', title: 'HERMES VILLAGE', emoji: '🏡',
+  key: 'village', bgUrl: '/assets/pixel-world/village-bg.png', title: 'MADMAD VILLAGE', emoji: '🏡',
   farmerSprite: '/assets/pixel-world/sprites/farmer-village.png',
   agentPos: {
     S1: { top: '70%', left: '6%' },

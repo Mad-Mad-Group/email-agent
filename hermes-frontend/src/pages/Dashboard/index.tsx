@@ -122,7 +122,19 @@ const BarChartWrap = styled.div`
   position: relative; padding: 8px; border-radius: 8px; min-width: 0; overflow: hidden;
 `;
 
+const EmptyBarSvg = () => (
+  <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="25" y="10" width="80" height="4" rx="2" fill="#d4e2d4" opacity="0.4"/>
+    <rect x="25" y="22" width="55" height="4" rx="2" fill="#d4e2d4" opacity="0.3"/>
+    <rect x="25" y="34" width="70" height="4" rx="2" fill="#d4e2d4" opacity="0.25"/>
+    <rect x="25" y="46" width="40" height="4" rx="2" fill="#d4e2d4" opacity="0.2"/>
+    <rect x="25" y="58" width="60" height="4" rx="2" fill="#d4e2d4" opacity="0.15"/>
+    <line x1="22" y1="5" x2="22" y2="68" stroke="#d4e2d4" strokeWidth="1" opacity="0.3"/>
+  </svg>
+);
+
 const BarChart: React.FC<{ bars: BarData[]; dark?: boolean }> = ({ bars, dark }) => {
+  const allZero = bars.every(b => b.value === 0);
   const [hover, setHover] = useState<{ idx: number; x: number; y: number } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const w = 440, h = 180, pl = 80, pr = 12, pt = 6, pb = 22;
@@ -141,6 +153,15 @@ const BarChart: React.FC<{ bars: BarData[]; dark?: boolean }> = ({ bars, dark })
     const rect = svgRef.current.getBoundingClientRect();
     setHover({ idx, x: e.clientX - rect.left, y: e.clientY - rect.top - 6 });
   }, []);
+
+  if (allZero) {
+    return (
+      <BarChartWrap style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '32px 16px', color: dark ? '#4a6b52' : '#88a890', fontSize: '0.8125rem' }}>
+        <EmptyBarSvg />
+        尚無漏斗數據
+      </BarChartWrap>
+    );
+  }
 
   return (
     <BarChartWrap>
@@ -326,7 +347,14 @@ const FeedIcon = styled.div<{ $bg: string; $fg: string }>`
 const FeedBody = styled.div`flex: 1; min-width: 0;`;
 const FeedText = styled.div`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textPrimary}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`;
 const FeedTime = styled.div`font-size: 0.6875rem; color: ${({ theme }) => theme.colors.textTertiary}; margin-top: 2px; font-style: italic;`;
-const Empty = styled.div`text-align: center; padding: 32px 16px; font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary};`;
+const Empty = styled.div`text-align: center; padding: 32px 16px; font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; display: flex; flex-direction: column; align-items: center; gap: 12px;`;
+
+const EmptyDonutSvg = () => (
+  <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="40" cy="40" r="30" stroke="#e2e8f0" strokeWidth="12"/>
+    <path d="M40 10a30 30 0 0 1 21.2 8.8" stroke="#cbd5e1" strokeWidth="12" strokeLinecap="round"/>
+  </svg>
+);
 
 /* ── LUNO-style Spinner ── */
 const spinAnim = keyframes`to { transform: rotate(360deg); }`;
@@ -629,10 +657,23 @@ const Dashboard: React.FC = () => {
   const loading = leadsLoading || emailsLoading;
   if (loading) return <Page><SpinnerWrap><Spinner /><SpinnerText>{t('dashboard.loading')}</SpinnerText></SpinnerWrap></Page>;
 
+  const greetingKey = (() => {
+    const h = new Date().getHours();
+    if (h < 12) return 'dashboard.greetingMorning';
+    if (h < 18) return 'dashboard.greetingAfternoon';
+    return 'dashboard.greetingEvening';
+  })();
+
   return (
     <Page>
       {/* ── Demo hint (auto, no toggle) ── */}
       {demoMode && <DemoHint>Showing simulated data for demonstration</DemoHint>}
+
+      {/* ── Greeting ── */}
+      <div>
+        <PageTitle>{t(greetingKey)}</PageTitle>
+        <PageSub>{t('dashboard.greetingSub')}</PageSub>
+      </div>
 
       {/* ── Action Cards (LUNO-style) ── */}
       <ActionGrid>
@@ -719,7 +760,7 @@ const Dashboard: React.FC = () => {
           </CardHeader>
           <CardBody>
             {stats.replied === 0 ? (
-              <Empty>{t('dashboard.noReplyData')}</Empty>
+              <Empty><EmptyDonutSvg />{t('dashboard.noReplyData')}</Empty>
             ) : (
               <DonutWrap>
                 <DonutChart slices={[

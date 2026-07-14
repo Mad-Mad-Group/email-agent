@@ -438,10 +438,20 @@ const ErrText = styled.span`
 `;
 
 const EmptyCol = styled.div`
-  text-align: center;
+  text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;
   padding: ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.sm}px;
   color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
 `;
+
+const EmptyTaskIllustration = () => (
+  <svg width="100" height="80" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="15" y="10" width="70" height="55" rx="8" fill="#f0fdf4" stroke="#86efac" strokeWidth="1.5"/>
+    <rect x="28" y="24" width="10" height="10" rx="2" stroke="#86efac" strokeWidth="1.5" fill="none"/>
+    <rect x="28" y="40" width="10" height="10" rx="2" stroke="#86efac" strokeWidth="1.5" fill="none"/>
+    <line x1="44" y1="29" x2="72" y2="29" stroke="#bbf7d0" strokeWidth="3" strokeLinecap="round"/>
+    <line x1="44" y1="45" x2="66" y2="45" stroke="#bbf7d0" strokeWidth="3" strokeLinecap="round"/>
+  </svg>
+);
 
 /* ── Footer ── */
 
@@ -932,7 +942,7 @@ const Tasks: React.FC = () => {
                 {isLoading ? (
                   <EmptyCol>{t('tasks.loading')}</EmptyCol>
                 ) : items.length === 0 ? (
-                  <EmptyCol>{t('tasks.noTasks')}</EmptyCol>
+                  <EmptyCol><EmptyTaskIllustration />{t('tasks.noTasks')}</EmptyCol>
                 ) : (
                   items.map((task) => {
                     const title = getTitle(task);
@@ -986,7 +996,7 @@ const Tasks: React.FC = () => {
       </Board>
 
       <Footer>
-        <span>{t('footer.copyrightHermes', { year: 2024 })}</span>
+        <span>{t('footer.copyrightHermes', { year: 2026 })}</span>
         <div>
           <a href="#">{t('footer.documentation')}</a>
           <a href="#">{t('footer.support')}</a>

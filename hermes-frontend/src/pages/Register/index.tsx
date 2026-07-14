@@ -95,7 +95,7 @@ const Register: React.FC = () => {
   return (
     <RegisterContainer>
       <RegisterCard>
-        <Logo>Hermes</Logo>
+        <Logo>MADMAD</Logo>
         <Title>{t('register.title')}</Title>
         <Form onSubmit={handleSubmit}>
           <FormField

@@ -454,7 +454,7 @@ const Customers: React.FC = () => {
 
       {/* Footer */}
       <Footer>
-        <span>{t('footer.copyrightHermes', { year: 2024 })}</span>
+        <span>{t('footer.copyrightHermes', { year: 2026 })}</span>
         <div>
           <a href="#">{t('footer.documentation')}</a>
           <a href="#">{t('footer.support')}</a>

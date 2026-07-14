@@ -1045,7 +1045,7 @@ const Calendar: React.FC = () => {
 
       {/* Footer */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', fontSize: '0.75rem', color: '#88a890' }}>
-        <span>{t('footer.copyrightHermes', { year: 2024 })}</span>
+        <span>{t('footer.copyrightHermes', { year: 2026 })}</span>
         <div style={{ display: 'flex', gap: 16 }}>
           <a href="#" style={{ color: '#88a890', textDecoration: 'none' }}>{t('footer.documentation')}</a>
           <a href="#" style={{ color: '#88a890', textDecoration: 'none' }}>{t('footer.support')}</a>
