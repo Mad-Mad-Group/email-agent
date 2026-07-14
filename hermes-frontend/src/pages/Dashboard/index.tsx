@@ -33,8 +33,22 @@ const HeaderRow = styled.div`
 const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
 const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 const GreetingRow = styled.div`
-  display: flex; align-items: center; gap: 12px;
-  height: 56px; overflow: visible; position: relative;
+  display: flex; align-items: flex-end; gap: 0;
+  height: 64px; overflow: visible; position: relative;
+`;
+const SpeechBubble = styled.div`
+  position: relative;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1.5px solid ${({ theme }) => theme.colors.border};
+  border-radius: 14px; padding: 10px 18px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  &::before, &::after {
+    content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%);
+    border: 6px solid transparent; border-right-color: ${({ theme }) => theme.colors.border};
+  }
+  &::after {
+    left: -8px; border-right-color: ${({ theme }) => theme.colors.surface};
+  }
 `;
 
 /* ── Row grid ── */
@@ -688,11 +702,11 @@ const Dashboard: React.FC = () => {
       <PageCard>
       {/* ── Greeting ── */}
       <GreetingRow>
-        <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} size={140} style={{ marginTop: -40 }} />
-        <div>
+        <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} size={220} style={{ marginBottom: -90, marginRight: -30 }} />
+        <SpeechBubble>
           <PageTitle>{t(greetingKey)}</PageTitle>
           <PageSub>{t('dashboard.greetingSub')}</PageSub>
-        </div>
+        </SpeechBubble>
       </GreetingRow>
 
       {/* ── Action Cards (LUNO-style) ── */}
