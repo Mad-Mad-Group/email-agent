@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { useTasks } from '../../api/hooks';
 import { TaskItem } from '../../api/services';
 import { media } from '../../styles/media';
+import SpriteAvatar from '../../components/SpriteAvatar';
+import { AGENTS, FARMER } from '../../config/agents';
 
 /* ══════════════════════════════════════
    CMS Tasks — Luno jKanban Board style
@@ -143,22 +145,15 @@ function skillIcon(id: string): React.ReactNode | null {
   return SKILL_CFG[id]?.icon || null;
 }
 
-/* ── Agent visual config (DiceBear avatar URL) ── */
-/* ── Agent visual config (local LUNO avatars) ── */
-const AGENT_AVATAR: Record<string, string> = {
-  'Worker-1': '/avatars/avatar2.jpg',
-  'Worker-2': '/avatars/avatar9.jpg',
-  'Worker-3': '/avatars/avatar6.jpg',
-  'Agent-A':  '/avatars/avatar1.jpg',
-  'Agent-B':  '/avatars/avatar4.jpg',
-  'Agent-C':  '/avatars/avatar7.jpg',
+/* ── Agent → animal mapping ── */
+const TASK_AGENT_MAP: Record<string, string> = {
+  'Worker-1': 'S1', 'Worker-2': 'S2', 'Worker-3': 'S3',
+  'Agent-A': 'S1', 'Agent-B': 'S3', 'Agent-C': 'S4',
 };
-const AGENT_BG = '#f0eef6';   // light lavender fallback (overridden by theme in AgentAvatar)
-function agentColor(_id: string): string {
-  return AGENT_BG;
-}
-function agentAvatarUrl(id: string): string {
-  return AGENT_AVATAR[id] || '/avatars/avatar3.jpg';
+function getTaskAgent(assignee: string) {
+  const key = TASK_AGENT_MAP[assignee];
+  if (key) return AGENTS[key];
+  return null;
 }
 
 /* ── Safely extract tasks array from API response ── */
@@ -964,10 +959,22 @@ const Tasks: React.FC = () => {
                         </PriorityDot>
                         <CardTopRow>
                           <AvatarWrap>
-                            <AgentAvatar $bg={agentColor(assignee)}>
-                              <img src={agentAvatarUrl(assignee)} alt={assignee} />
-                            </AgentAvatar>
-                            <AvatarName>{t(`tasks.agents.${assignee}`, { defaultValue: assignee })}</AvatarName>
+                            {(() => {
+                              const agent = getTaskAgent(assignee);
+                              return agent ? (
+                                <SpriteAvatar src={agent.sprite} frames={agent.frames} frameW={agent.frameW} frameH={agent.frameH} size={36} />
+                              ) : (
+                                <AgentAvatar $bg="#e2e8f0">
+                                  <I size={18}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></I>
+                                </AgentAvatar>
+                              );
+                            })()}
+                            <AvatarName>
+                              {(() => {
+                                const agent = getTaskAgent(assignee);
+                                return agent ? t(agent.nameKey) : assignee;
+                              })()}
+                            </AvatarName>
                           </AvatarWrap>
                           <CardTitle>{title}</CardTitle>
                         </CardTopRow>

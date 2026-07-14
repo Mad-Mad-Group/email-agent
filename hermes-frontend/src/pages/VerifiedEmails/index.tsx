@@ -4,6 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { media } from '../../styles/media';
 import { useVerifiedEmails, useVerifiedEmailStats, useCreateVerifiedEmail, useDeleteVerifiedEmail } from '../../api/hooks';
 import { VerifiedEmailItem, verifiedEmailsApi } from '../../api/services';
+import SpriteAvatar from '../../components/SpriteAvatar';
+import { AGENTS } from '../../config/agents';
 
 /* ══════════════════════════════════════
    Verified Emails Pool — 共用已驗證郵箱
@@ -311,7 +313,10 @@ const VerifiedEmailsPage: React.FC = () => {
   return (
     <Page>
       <PageCard>
-      <div><PageTitle>{t('verifiedEmails.title')}</PageTitle><PageSub>{t('verifiedEmails.subtitle')}</PageSub></div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <SpriteAvatar src={AGENTS.S4.sprite} frames={AGENTS.S4.frames} frameW={AGENTS.S4.frameW} frameH={AGENTS.S4.frameH} size={48} />
+        <div><PageTitle>{t('verifiedEmails.title')}</PageTitle><PageSub>{t('verifiedEmails.subtitle')}</PageSub></div>
+      </div>
 
       {/* Stats — same layout as Leads */}
       <StatCardsRow>

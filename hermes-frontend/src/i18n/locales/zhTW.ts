@@ -108,9 +108,9 @@ const zhTW = {
   },
   dashboard: {
     title: '儀表板',
-    greetingMorning: '早安',
-    greetingAfternoon: '午安',
-    greetingEvening: '晚安',
+    greetingMorning: '早安！',
+    greetingAfternoon: '午安！',
+    greetingEvening: '晚安！',
     greetingSub: '以下是今日的業務概覽。',
     totalLeads: '總潛在客戶數',
     qualified: '已合格',
@@ -701,6 +701,7 @@ const zhTW = {
     s3Type: '草稿生成',
     s4Name: '鴿速達',
     s4Type: '郵件發送',
+    farmer: '農場主',
     config: {
       searchDepth: '搜尋深度',
       emailBatch: '郵件批次量',

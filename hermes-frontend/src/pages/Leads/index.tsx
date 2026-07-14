@@ -11,6 +11,8 @@ import { EmailItem } from '../../api/emailQueue';
 import client from '../../api/client';
 import { media } from '../../styles/media';
 import { useDialog } from '../../components';
+import SpriteAvatar from '../../components/SpriteAvatar';
+import { AGENTS, FARMER, SOURCE_AGENT } from '../../config/agents';
 
 /* ══════════════════════════════════════
    CMS Leads — Luno Contacts-style UI
@@ -188,11 +190,9 @@ const PageSub = styled.p`
 /* ── Header Card (title + buttons + stats in one box) ── */
 
 const HeaderSection = styled.div`
-  padding: ${({ theme }) => theme.spacing.xl}px;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const HeaderBtns = styled.div`
@@ -2586,6 +2586,14 @@ const Leads: React.FC = () => {
                               <strong>{name}</strong>
                               {lead.website && <small>{lead.website}</small>}
                             </NameText>
+                            {(() => {
+                              const src = lead.source || '';
+                              const agentKey = SOURCE_AGENT[src];
+                              if (!agentKey) return null;
+                              if (agentKey === 'farmer') return <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} size={28} />;
+                              const agent = AGENTS[agentKey];
+                              return agent ? <SpriteAvatar src={agent.sprite} frames={agent.frames} frameW={agent.frameW} frameH={agent.frameH} size={28} /> : null;
+                            })()}
                           </NameCell>
                         </td>
                         <td>

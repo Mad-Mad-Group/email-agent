@@ -108,9 +108,9 @@ const en = {
   },
   dashboard: {
     title: 'Dashboard',
-    greetingMorning: 'Good morning',
-    greetingAfternoon: 'Good afternoon',
-    greetingEvening: 'Good evening',
+    greetingMorning: 'Good morning!',
+    greetingAfternoon: 'Good afternoon!',
+    greetingEvening: 'Good evening!',
     greetingSub: 'Here is your business overview for today.',
     totalLeads: 'Total Leads',
     qualified: 'Qualified',
@@ -701,6 +701,7 @@ const en = {
     s3Type: 'Draft Generation',
     s4Name: 'Parrot Post',
     s4Type: 'Email Delivery',
+    farmer: 'Farmer',
     config: {
       searchDepth: 'Search Depth',
       emailBatch: 'Email Batch Size',

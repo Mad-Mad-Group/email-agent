@@ -6,6 +6,8 @@ import { useLeads, useEmailQueue } from '../../api/hooks';
 import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
 import { media } from '../../styles/media';
+import SpriteAvatar from '../../components/SpriteAvatar';
+import { AGENTS, FARMER, ACTIVITY_AGENT } from '../../config/agents';
 
 /* ══════════════════════════════════════
    Lead Scraper CMS Dashboard — v2
@@ -15,12 +17,25 @@ import { media } from '../../styles/media';
 
 const Page = styled.div`display: flex; flex-direction: column; gap: 20px; padding-bottom: 32px; overflow: hidden; min-width: 0;`;
 
+const PageCard = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  padding: 24px;
+  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
+`;
+
 const HeaderRow = styled.div`
   display: flex; align-items: flex-end; justify-content: space-between;
   ${media.mobile} { flex-direction: column; align-items: flex-start; gap: 8px; }
 `;
 const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
 const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
+const GreetingRow = styled.div`
+  display: flex; align-items: center; gap: 12px;
+  height: 56px; overflow: visible; position: relative;
+`;
 
 /* ── Row grid ── */
 const Row = styled.div<{ $cols?: string; $gap?: number }>`
@@ -347,6 +362,7 @@ const FeedIcon = styled.div<{ $bg: string; $fg: string }>`
 const FeedBody = styled.div`flex: 1; min-width: 0;`;
 const FeedText = styled.div`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textPrimary}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`;
 const FeedTime = styled.div`font-size: 0.6875rem; color: ${({ theme }) => theme.colors.textTertiary}; margin-top: 2px; font-style: italic;`;
+const FeedAgentName = styled.span<{ $color: string }>`font-weight: 600; font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textSecondary};`;
 const Empty = styled.div`text-align: center; padding: 32px 16px; font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; display: flex; flex-direction: column; align-items: center; gap: 12px;`;
 
 const EmptyDonutSvg = () => (
@@ -669,11 +685,15 @@ const Dashboard: React.FC = () => {
       {/* ── Demo hint (auto, no toggle) ── */}
       {demoMode && <DemoHint>Showing simulated data for demonstration</DemoHint>}
 
+      <PageCard>
       {/* ── Greeting ── */}
-      <div>
-        <PageTitle>{t(greetingKey)}</PageTitle>
-        <PageSub>{t('dashboard.greetingSub')}</PageSub>
-      </div>
+      <GreetingRow>
+        <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} size={140} style={{ marginTop: -40 }} />
+        <div>
+          <PageTitle>{t(greetingKey)}</PageTitle>
+          <PageSub>{t('dashboard.greetingSub')}</PageSub>
+        </div>
+      </GreetingRow>
 
       {/* ── Action Cards (LUNO-style) ── */}
       <ActionGrid>
@@ -684,7 +704,6 @@ const Dashboard: React.FC = () => {
           <ActionArrow $fg={dark ? '#fbbf24' : '#b45309'}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
           </ActionArrow>
-          <ActionWatermark $fg="#d97706"><IconDraft /></ActionWatermark>
           <ActionTitle $fg={dark ? '#fbbf24' : '#92400e'}>{t('dashboard.cardTitleDraft')}</ActionTitle>
           <ActionCount $fg={dark ? '#fbbf24' : '#b45309'}>{actions.pendingDrafts}</ActionCount>
           <ActionLabel $fg={dark ? '#fbbf24' : '#b45309'}>{t('dashboard.draftsPendingApproval')}</ActionLabel>
@@ -697,7 +716,6 @@ const Dashboard: React.FC = () => {
           <ActionArrow $fg={dark ? '#4ade80' : '#15803d'}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
           </ActionArrow>
-          <ActionWatermark $fg="#16a34a"><IconReplyArrow /></ActionWatermark>
           <ActionTitle $fg={dark ? '#4ade80' : '#14532d'}>{t('dashboard.cardTitleReply')}</ActionTitle>
           <ActionCount $fg={dark ? '#4ade80' : '#15803d'}>{actions.newReplies}</ActionCount>
           <ActionLabel $fg={dark ? '#4ade80' : '#15803d'}>{t('dashboard.newRepliesToHandle')}</ActionLabel>
@@ -710,7 +728,6 @@ const Dashboard: React.FC = () => {
           <ActionArrow $fg={dark ? '#67e8f9' : '#0ea5e9'}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
           </ActionArrow>
-          <ActionWatermark $fg="#0ea5e9"><IconClock /></ActionWatermark>
           <ActionTitle $fg={dark ? '#67e8f9' : '#0369a1'}>{t('dashboard.cardTitleMeeting')}</ActionTitle>
           <ActionCount $fg={dark ? '#67e8f9' : '#0ea5e9'}>{actions.pendingMeetings}</ActionCount>
           <ActionLabel $fg={dark ? '#67e8f9' : '#0ea5e9'}>{t('dashboard.pendingMeetings')}</ActionLabel>
@@ -723,7 +740,6 @@ const Dashboard: React.FC = () => {
           <ActionArrow $fg={dark ? '#fca5a5' : '#b91c1c'}>
             <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
           </ActionArrow>
-          <ActionWatermark $fg="#dc2626"><IconAlert /></ActionWatermark>
           <ActionTitle $fg={dark ? '#fca5a5' : '#991b1b'}>{t('dashboard.cardTitleFollowup')}</ActionTitle>
           <ActionCount $fg={dark ? '#fca5a5' : '#b91c1c'}>{actions.noReplyNoFollowup}</ActionCount>
           <ActionLabel $fg={dark ? '#fca5a5' : '#b91c1c'}>{t('dashboard.contactedNoFollowup')}</ActionLabel>
@@ -846,14 +862,22 @@ const Dashboard: React.FC = () => {
               <FeedList>
                 {recentActivity.map((item, i) => (
                   <FeedItem key={i}>
-                    <FeedIcon
-                      $bg={item.type === 'sent' ? (dark ? '#083344' : '#cffafe') : item.type === 'reply' ? (dark ? '#14532d' : '#dcfce7') : (dark ? '#422006' : '#fef3c7')}
-                      $fg={item.type === 'sent' ? '#0ea5e9' : item.type === 'reply' ? '#22c55e' : '#f59e0b'}
-                    >
-                      {item.type === 'sent' ? <IconSent /> : item.type === 'reply' ? <IconReply /> : <IconPen />}
-                    </FeedIcon>
+                    {(() => {
+                      const agentId = ACTIVITY_AGENT[item.type];
+                      const agent = agentId ? AGENTS[agentId] : null;
+                      return agent ? (
+                        <SpriteAvatar src={agent.sprite} frames={agent.frames} frameW={agent.frameW} frameH={agent.frameH} size={56} />
+                      ) : (
+                        <FeedIcon $bg={dark ? '#422006' : '#fef3c7'} $fg="#f59e0b"><IconPen /></FeedIcon>
+                      );
+                    })()}
                     <FeedBody>
-                      <FeedText>{item.text}</FeedText>
+                      <FeedText>
+                        <FeedAgentName $color={AGENTS[ACTIVITY_AGENT[item.type]]?.accent || '#f59e0b'}>
+                          {t(AGENTS[ACTIVITY_AGENT[item.type]]?.nameKey || '')}
+                        </FeedAgentName>
+                        {' '}{item.text}
+                      </FeedText>
                       <FeedTime>{item.time}</FeedTime>
                     </FeedBody>
                   </FeedItem>
@@ -863,6 +887,7 @@ const Dashboard: React.FC = () => {
           </NotebookBody>
         </NotebookCard>
       </Row>
+      </PageCard>
     </Page>
   );
 };

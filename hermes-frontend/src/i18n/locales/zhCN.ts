@@ -108,9 +108,9 @@ const zhCN = {
   },
   dashboard: {
     title: '仪表盘',
-    greetingMorning: '早安',
-    greetingAfternoon: '午安',
-    greetingEvening: '晚安',
+    greetingMorning: '早安！',
+    greetingAfternoon: '午安！',
+    greetingEvening: '晚安！',
     greetingSub: '以下是今日的业务概览。',
     totalLeads: '总潜在客户数',
     qualified: '已合格',
@@ -668,6 +668,7 @@ const zhCN = {
     s3Type: '草稿生成',
     s4Name: '鸽必达',
     s4Type: '邮件发送',
+    farmer: '农场主',
     config: {
       searchDepth: '搜索深度',
       emailBatch: '邮件批次量',
