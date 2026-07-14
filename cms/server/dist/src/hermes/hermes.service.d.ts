@@ -8,6 +8,8 @@ import { Campaign, CampaignDocument } from './schemas/campaign.schema';
 import { RunHermesDto } from './dto/run-hermes.dto';
 import { EmailService } from '../email/email.service';
 import { UsersService } from '../users/users.service';
+import { VerifiedEmailsService } from '../verified-emails/verified-emails.service';
+import { LeadsService } from '../leads/leads.service';
 export declare class HermesService implements OnModuleInit {
     private readonly campaigns;
     private readonly tasks;
@@ -16,7 +18,9 @@ export declare class HermesService implements OnModuleInit {
     private readonly email;
     private readonly config;
     private readonly users;
-    constructor(campaigns: Model<CampaignDocument>, tasks: TasksService, taskEvents: TaskEvents, sse: SseService, email: EmailService, config: ConfigService, users: UsersService);
+    private readonly verifiedEmails;
+    private readonly leads;
+    constructor(campaigns: Model<CampaignDocument>, tasks: TasksService, taskEvents: TaskEvents, sse: SseService, email: EmailService, config: ConfigService, users: UsersService, verifiedEmails: VerifiedEmailsService, leads: LeadsService);
     onModuleInit(): void;
     run(dto: RunHermesDto, userId?: string): Promise<{
         campaign_id: string;
@@ -24,6 +28,7 @@ export declare class HermesService implements OnModuleInit {
     }>;
     private onTaskCompleted;
     private onTaskFailed;
+    private tryMatchVerifiedPool;
     private enqueueStage;
     private finish;
     private maybeNotifyCompletion;
