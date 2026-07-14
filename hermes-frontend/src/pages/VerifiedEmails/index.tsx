@@ -322,12 +322,12 @@ const VerifiedEmailsPage: React.FC = () => {
       <StatCardsRow>
         <LunoStatCard $accent="#0ea5e9" $bg1="#ecfeff" $bg2="#cffafe">
           <StatLabel>{t('verifiedEmails.totalVerified')}</StatLabel>
-          <StatValueRow><StatNumber $color="#0ea5e9">{statTotal}</StatNumber><StatUnit>{t('verifiedEmails.unit', { defaultValue: '個' })}</StatUnit></StatValueRow>
+          <StatValueRow><StatNumber $color="#0ea5e9">{statTotal}</StatNumber><StatUnit>{t('verifiedEmails.unit')}</StatUnit></StatValueRow>
           <StatWatermark $color="#0ea5e9"><WmShield /></StatWatermark>
         </LunoStatCard>
         <LunoStatCard $accent="#16a34a" $bg1="#f0fdf4" $bg2="#dcfce7">
           <StatLabel>{t('verifiedEmails.active')}</StatLabel>
-          <StatValueRow><StatNumber $color="#16a34a">{statActive}</StatNumber><StatUnit>{t('verifiedEmails.unit', { defaultValue: '個' })}</StatUnit></StatValueRow>
+          <StatValueRow><StatNumber $color="#16a34a">{statActive}</StatNumber><StatUnit>{t('verifiedEmails.unit')}</StatUnit></StatValueRow>
           <StatWatermark $color="#16a34a"><WmHeart /></StatWatermark>
         </LunoStatCard>
         {statByMethod.map((m: any, i: number) => {
@@ -340,7 +340,7 @@ const VerifiedEmailsPage: React.FC = () => {
           return (
             <LunoStatCard key={m._id} $accent={p.accent} $bg1={p.bg1} $bg2={p.bg2}>
               <StatLabel>{methodLabels[m._id] ?? m._id}</StatLabel>
-              <StatValueRow><StatNumber $color={p.accent}>{m.count}</StatNumber><StatUnit>{t('verifiedEmails.unit', { defaultValue: '個' })}</StatUnit></StatValueRow>
+              <StatValueRow><StatNumber $color={p.accent}>{m.count}</StatNumber><StatUnit>{t('verifiedEmails.unit')}</StatUnit></StatValueRow>
               <StatWatermark $color={p.accent}><p.Wm /></StatWatermark>
             </LunoStatCard>
           );
@@ -368,7 +368,7 @@ const VerifiedEmailsPage: React.FC = () => {
             <NoData>
               <EmptyIllustration />
               {t('verifiedEmails.noData')}
-              <EmptyHint>{t('verifiedEmails.noDataHint', '點擊「+ 新增」驗證你的第一個信箱')}</EmptyHint>
+              <EmptyHint>{t('verifiedEmails.noDataHint')}</EmptyHint>
             </NoData>
           ) : (
             <>
@@ -401,7 +401,7 @@ const VerifiedEmailsPage: React.FC = () => {
                       <td>{item.match_count}</td>
                       <td>
                         <Badge $color={item.status === 'active' ? '#10b981' : '#ef4444'}>
-                          {item.status}
+                          {item.status === 'active' ? t('verifiedEmails.statusActive') : t('verifiedEmails.statusInactive')}
                         </Badge>
                       </td>
                       <td style={{ fontSize: '0.75rem', opacity: 0.7 }}>

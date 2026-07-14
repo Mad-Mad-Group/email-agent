@@ -869,9 +869,9 @@ const EmptyLeadsIllustration = () => (
 /* ── Date Group Header ── */
 
 const GROUP_COLORS: Record<string, { bg: string; bgDark: string; fg: string; fgDark: string }> = {
-  '今日':  { bg: '#cffafe', bgDark: '#083344', fg: '#0ea5e9', fgDark: '#67e8f9' },
-  '昨日':  { bg: '#fef3c7', bgDark: '#422006', fg: '#b45309', fgDark: '#fcd34d' },
-  '更早前': { bg: '#f1f5f9', bgDark: '#1e293b', fg: '#64748b', fgDark: '#94a3b8' },
+  today:  { bg: '#cffafe', bgDark: '#083344', fg: '#0ea5e9', fgDark: '#67e8f9' },
+  yesterday:  { bg: '#fef3c7', bgDark: '#422006', fg: '#b45309', fgDark: '#fcd34d' },
+  earlier: { bg: '#f1f5f9', bgDark: '#1e293b', fg: '#64748b', fgDark: '#94a3b8' },
 };
 
 const GroupBar = styled.tr<{ $group: string; $dark?: boolean }>`
@@ -891,11 +891,11 @@ const GroupBarInner = styled.div<{ $group: string; $dark?: boolean; $collapsed?:
   user-select: none;
   transition: background 0.15s;
   background: ${({ $group, $dark }) => {
-    const c = GROUP_COLORS[$group] || GROUP_COLORS['更早前'];
+    const c = GROUP_COLORS[$group] || GROUP_COLORS['earlier'];
     return $dark ? c.bgDark : c.bg;
   }};
   color: ${({ $group, $dark }) => {
-    const c = GROUP_COLORS[$group] || GROUP_COLORS['更早前'];
+    const c = GROUP_COLORS[$group] || GROUP_COLORS['earlier'];
     return $dark ? c.fgDark : c.fg;
   }};
   font-size: 0.75rem;
@@ -918,15 +918,15 @@ const GroupBarInner = styled.div<{ $group: string; $dark?: boolean; $collapsed?:
 `;
 
 const getDateGroup = (dateStr?: string): string => {
-  if (!dateStr) return '更早前';
+  if (!dateStr) return 'earlier';
   const d = new Date(dateStr);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today.getTime() - 864e5);
   const itemDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  if (itemDate.getTime() >= today.getTime()) return '今日';
-  if (itemDate.getTime() >= yesterday.getTime()) return '昨日';
-  return '更早前';
+  if (itemDate.getTime() >= today.getTime()) return 'today';
+  if (itemDate.getTime() >= yesterday.getTime()) return 'yesterday';
+  return 'earlier';
 };
 
 /* ── Pagination ── */
@@ -1551,7 +1551,7 @@ const MOCK_LEADS: Lead[] = [
   },
   {
     _id: 'mock-2', company_name: 'ByteDance HK', email: 'contact@bytedance.hk', phone: '+852 6789 0123',
-    website: 'https://bytedance.hk', address: '灣仔告士打道 100 號',
+    website: 'https://bytedance.hk', address: '100 Gloucester Road, Wan Chai',
     source: 'LinkedIn', status: 'pending', rating: '3.8', industry_tags: ['AI', 'Social Media', 'Tech'],
     createdAt: new Date(Date.now() - 86400000).toISOString(),
     _has_email_draft: true,
@@ -1564,7 +1564,7 @@ const MOCK_LEADS: Lead[] = [
   },
   {
     _id: 'mock-4', company_name: 'Dragon Logistics', email: 'ops@dragonlog.com', phone: '+86 138 0000 1234',
-    website: 'https://dragonlogistics.cn', address: '深圳市南山區科技園',
+    website: 'https://dragonlogistics.cn', address: 'Tech Park, Nanshan, Shenzhen',
     source: 'Cold Email', status: 'contacted', rating: '4.0', industry_tags: ['Logistics', 'Supply Chain'],
     createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
     _replied: true, _reply_category: 'interested', _reply_summary: 'Interested in partnership, wants a demo next week.',
@@ -1595,7 +1595,7 @@ const MOCK_LEADS: Lead[] = [
   },
   {
     _id: 'mock-8', company_name: 'Quantum Finance', email: 'cfo@quantumfin.hk', phone: '+852 2888 9999',
-    website: 'https://quantumfinance.hk', address: '中環國際金融中心 38 樓',
+    website: 'https://quantumfinance.hk', address: 'IFC Tower, 38/F, Central, HK',
     source: 'Referral', status: 'contacted', rating: '5.0', industry_tags: ['FinTech', 'Banking'],
     createdAt: new Date(Date.now() - 86400000 * 8).toISOString(),
     _replied: true, _reply_category: 'question', _reply_summary: 'Asked about pricing and compliance requirements.',
@@ -2134,10 +2134,10 @@ const Leads: React.FC = () => {
     setReplyChecking(true); setReplyCheckMsg('');
     try {
       await client.post('/jobs/check-replies/run');
-      setReplyCheckMsg('已派發檢查回覆任務');
+      setReplyCheckMsg(t('leads.checkReplyDispatched'));
       setTimeout(() => setReplyCheckMsg(''), 4000);
     } catch (err: any) {
-      setReplyCheckMsg('觸發失敗: ' + (err?.message || '未知錯誤'));
+      setReplyCheckMsg(t('leads.triggerFailed') + (err?.message || ''));
       setTimeout(() => setReplyCheckMsg(''), 5000);
     } finally { setReplyChecking(false); }
   };
@@ -2146,10 +2146,10 @@ const Leads: React.FC = () => {
     setFollowupChecking(true); setFollowupCheckMsg('');
     try {
       await client.post('/jobs/check-followups/run');
-      setFollowupCheckMsg('已派發檢查跟進任務');
+      setFollowupCheckMsg(t('leads.checkFollowupDispatched'));
       setTimeout(() => setFollowupCheckMsg(''), 4000);
     } catch (err: any) {
-      setFollowupCheckMsg('觸發失敗: ' + (err?.message || '未知錯誤'));
+      setFollowupCheckMsg(t('leads.triggerFailed') + (err?.message || ''));
       setTimeout(() => setFollowupCheckMsg(''), 5000);
     } finally { setFollowupChecking(false); }
   };
@@ -2186,11 +2186,11 @@ const Leads: React.FC = () => {
     setClearMsg('');
     clearAllLeads.mutate(undefined, {
       onSuccess: (data) => {
-        setClearMsg(`已清空 ${data?.deleted ?? 0} 筆 leads`);
+        setClearMsg(t('leads.clearedLeads', { count: data?.deleted ?? 0 }));
         setTimeout(() => setClearMsg(''), 4000);
       },
       onError: (err: any) => {
-        setClearMsg('清空失敗: ' + (err?.message || '未知錯誤'));
+        setClearMsg(t('leads.clearFailed') + (err?.message || ''));
         setTimeout(() => setClearMsg(''), 5000);
       },
     });
@@ -2367,7 +2367,7 @@ const Leads: React.FC = () => {
         <HeaderSection>
           <StatCardsRow>
             <StatCard $accent="#0ea5e9" $bg1="#ecfeff" $bg2="#cffafe">
-              <StatCardLabel>{t('leads.totalLeads', { defaultValue: '全部潛在客戶' })}</StatCardLabel>
+              <StatCardLabel>{t('leads.totalLeads')}</StatCardLabel>
               <StatCardValue>
                 <StatCardNumber $color="#0ea5e9">{stats.total}</StatCardNumber>
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
@@ -2401,21 +2401,21 @@ const Leads: React.FC = () => {
           </StatCardsRow>
           <HeaderTop style={{ justifyContent: 'space-between' }}>
             <HeaderBtns style={{ gap: '8px' }}>
-              <CircleActionBtn $color="#0ea5e9" aria-label={t('leads.checkReplies', { defaultValue: '檢查回覆' })} onClick={handleCheckReplies} disabled={replyChecking}>
+              <CircleActionBtn $color="#0ea5e9" aria-label={t('leads.checkReplies')} onClick={handleCheckReplies} disabled={replyChecking}>
                 <IconCheckCircle />
               </CircleActionBtn>
-              <CircleActionBtn $color="#ca8a04" aria-label={t('leads.checkFollowups', { defaultValue: '檢查跟進' })} onClick={handleCheckFollowups} disabled={followupChecking}>
+              <CircleActionBtn $color="#ca8a04" aria-label={t('leads.checkFollowups')} onClick={handleCheckFollowups} disabled={followupChecking}>
                 <IconSparkle />
               </CircleActionBtn>
-              <CircleActionBtn $color="#64748b" aria-label={t('leads.refresh', { defaultValue: '刷新' })} onClick={handleRefresh} disabled={refreshing}>
+              <CircleActionBtn $color="#64748b" aria-label={t('leads.refresh')} onClick={handleRefresh} disabled={refreshing}>
                 <IconRefresh spinning={refreshing} />
               </CircleActionBtn>
-              <CircleActionBtn $color="#dc2626" aria-label={t('leads.clearAll', { defaultValue: '清空全部' })} onClick={handleClearAll} disabled={clearAllLeads.isPending}>
+              <CircleActionBtn $color="#dc2626" aria-label={t('leads.clearAll')} onClick={handleClearAll} disabled={clearAllLeads.isPending}>
                 <IconTrash />
               </CircleActionBtn>
               <AutoCheckBtn $active={autoCheckReplies} onClick={() => setAutoCheckReplies(p => !p)}>
                 <IconCheckCircle />
-                {autoCheckReplies ? '自動檢查中 (10s)' : '自動檢查回覆'}
+                {autoCheckReplies ? t('leads.autoCheckActive') : t('leads.autoCheckReplies')}
               </AutoCheckBtn>
             </HeaderBtns>
             <AddBtnGreen onClick={() => setShowAdd(true)}>
@@ -2425,9 +2425,9 @@ const Leads: React.FC = () => {
           </HeaderTop>
           {(replyCheckMsg || followupCheckMsg || clearMsg) && (
             <HeaderFeedback>
-              {replyCheckMsg && <FeedbackMsg key={replyCheckMsg} $error={replyCheckMsg.startsWith('觸發失敗')}>{replyCheckMsg}</FeedbackMsg>}
-              {followupCheckMsg && <FeedbackMsg key={followupCheckMsg} $error={followupCheckMsg.startsWith('觸發失敗')}>{followupCheckMsg}</FeedbackMsg>}
-              {clearMsg && <FeedbackMsg key={clearMsg} $error={clearMsg.startsWith('清空失敗')}>{clearMsg}</FeedbackMsg>}
+              {replyCheckMsg && <FeedbackMsg key={replyCheckMsg} $error={replyCheckMsg.startsWith(t('leads.triggerFailed'))}>{replyCheckMsg}</FeedbackMsg>}
+              {followupCheckMsg && <FeedbackMsg key={followupCheckMsg} $error={followupCheckMsg.startsWith(t('leads.triggerFailed'))}>{followupCheckMsg}</FeedbackMsg>}
+              {clearMsg && <FeedbackMsg key={clearMsg} $error={clearMsg.startsWith(t('leads.clearFailed'))}>{clearMsg}</FeedbackMsg>}
             </HeaderFeedback>
           )}
         </HeaderSection>
@@ -2486,7 +2486,7 @@ const Leads: React.FC = () => {
               whiteSpace: 'nowrap',
             }}
           >
-            {oldWebsiteOnly ? '✕ 舊網站' : '🔍 只顯示舊網站'}
+            {oldWebsiteOnly ? t('leads.filterOldWebsiteOff') : t('leads.filterOldWebsiteOn')}
           </button>
           <button
             onClick={() => { setSortByTech(v => !v); setPage(1); }}
@@ -2502,7 +2502,7 @@ const Leads: React.FC = () => {
               whiteSpace: 'nowrap',
             }}
           >
-            {sortByTech ? '✕ 按評分排' : '↓ 按技術評分排序'}
+            {sortByTech ? t('leads.filterSortTechOff') : t('leads.filterSortTechOn')}
           </button>
         </SubPillRow>
           <TableWrap>
@@ -2512,8 +2512,8 @@ const Leads: React.FC = () => {
                   <th>{t('leads.status')}</th>
                   <th>{t('leads.name')} <IconSortArrow /></th>
                   <th>{t('leads.reply')}</th>
-                  {isAdmin && <th>{t('leads.sourceUser') || '來源用戶'}</th>}
-                  <th style={{ textAlign: 'center' }}>技術評分</th>
+                  {isAdmin && <th>{t('leads.sourceUser')}</th>}
+                  <th style={{ textAlign: 'center' }}>{t('leads.techScore')}</th>
                   <th>{t('leads.importedAt')}</th>
                   <th>{t('leads.action')}</th>
                 </tr>
@@ -2540,7 +2540,7 @@ const Leads: React.FC = () => {
                             fontSize: 13,
                           }}
                         >
-                          {t('common.retry') || '重試'}
+                          {t('leads.retry')}
                         </button>
                       </div>
                     </EmptyCell>
@@ -2570,7 +2570,7 @@ const Leads: React.FC = () => {
                                   $collapsed={isCollapsed}
                                   onClick={() => setCollapsedGroups(prev => ({ ...prev, [group]: !prev[group] }))}
                                 >
-                                  {group}
+                                  {group === 'today' ? t('leads.groupToday') : group === 'yesterday' ? t('leads.groupYesterday') : t('leads.groupEarlier')}
                                 </GroupBarInner>
                               </td>
                             </GroupBar>
@@ -2611,7 +2611,7 @@ const Leads: React.FC = () => {
                           {(lead as any)._tech_score != null ? (() => {
                             const s = (lead as any)._tech_score as number;
                             const bg = s >= 50 ? '#dc2626' : s >= 25 ? '#f59e0b' : '#22c55e';
-                            const label = s >= 50 ? '舊' : s >= 25 ? '普通' : '新';
+                            const label = s >= 50 ? t('leads.techOld') : s >= 25 ? t('leads.techNormal') : t('leads.techNew');
                             return (
                               <span style={{
                                 display: 'inline-block',
@@ -2629,7 +2629,8 @@ const Leads: React.FC = () => {
                         </td>
                         <td>{(() => {
                           const g = getDateGroup(lead._imported_at);
-                          if (g === '今日' || g === '昨日') return g;
+                          if (g === 'today') return t('leads.groupToday');
+                          if (g === 'yesterday') return t('leads.groupYesterday');
                           return lead._imported_at ? new Date(lead._imported_at).toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—';
                         })()}</td>
                         <td>
@@ -2643,7 +2644,7 @@ const Leads: React.FC = () => {
                             </ActionBtn>
                           )}
                           <DeleteIconBtn
-                            title="Delete"
+                            title={t('leads.delete')}
                             onClick={(e) => { e.stopPropagation(); handleDelete(lead._id); }}
                           >
                             <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M2.5 4.5h11M5.5 4.5V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1.5M12 4.5l-.5 8.5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1L4 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
@@ -2728,36 +2729,36 @@ const Leads: React.FC = () => {
                 </FormGroup>
                 <FormRow>
                   <FormGroup>
-                    <Label>{t('leads.source', { defaultValue: '來源' })}</Label>
+                    <Label>{t('leads.source')}</Label>
                     <Input
                       value={form.source}
                       onChange={e => setForm(f => ({ ...f, source: e.target.value }))}
-                      placeholder={t('leads.enterSource', { defaultValue: '例如 google_maps, referral' })}
+                      placeholder={t('leads.enterSource')}
                     />
                   </FormGroup>
                   <FormGroup>
-                    <Label>{t('leads.rating', { defaultValue: '評分' })}</Label>
+                    <Label>{t('leads.rating')}</Label>
                     <Input
                       value={form.rating}
                       onChange={e => setForm(f => ({ ...f, rating: e.target.value }))}
-                      placeholder={t('leads.enterRating', { defaultValue: '例如 4.5' })}
+                      placeholder={t('leads.enterRating')}
                     />
                   </FormGroup>
                 </FormRow>
                 <FormGroup>
-                  <Label>{t('leads.industryTags', { defaultValue: '行業標籤' })}</Label>
+                  <Label>{t('leads.industryTags')}</Label>
                   <Input
                     value={form.industry_tags}
                     onChange={e => setForm(f => ({ ...f, industry_tags: e.target.value }))}
-                    placeholder={t('leads.enterIndustryTags', { defaultValue: '用逗號分隔，例如 教育, 科技' })}
+                    placeholder={t('leads.enterIndustryTags')}
                   />
                 </FormGroup>
                 <FormGroup>
-                  <Label>{t('leads.description', { defaultValue: '備註 / 公司簡介' })}</Label>
+                  <Label>{t('leads.description')}</Label>
                   <Textarea
                     value={form.website_description}
                     onChange={e => setForm(f => ({ ...f, website_description: e.target.value }))}
-                    placeholder={t('leads.enterDescription', { defaultValue: '關於呢間公司嘅備註或簡介' })}
+                    placeholder={t('leads.enterDescription')}
                     rows={3}
                   />
                 </FormGroup>
@@ -2878,7 +2879,7 @@ const Leads: React.FC = () => {
                   <DpField>
                     <DpFieldLabel>
                       <DpFieldIcon $color="#d97706"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
-                      {t('leads.rating', { defaultValue: '評分' })}
+                      {t('leads.rating')}
                     </DpFieldLabel>
                     <DpFieldValue style={{ color: selectedLead.rating ? '#d97706' : undefined }}>{selectedLead.rating ? `${selectedLead.rating} / 5.0` : '—'}</DpFieldValue>
                   </DpField>
@@ -2944,35 +2945,35 @@ const Leads: React.FC = () => {
                 )}
 
                 {selectedLead._replied && (() => {
-                  const cat = getReplyBadge(selectedLead, t) || { text: '已回覆', bg: '#cffafe', fg: '#0ea5e9' };
+                  const cat = getReplyBadge(selectedLead, t) || { text: t('leads.replied'), bg: '#cffafe', fg: '#0ea5e9' };
                   return (
                     <DpTabSection>
-                      <DpTabLabel>回覆資訊</DpTabLabel>
+                      <DpTabLabel>{t('leads.replyInfo')}</DpTabLabel>
                       <DpTabCard>
                       <DpGrid>
                         <DpField>
-                          <DpFieldLabel>分類</DpFieldLabel>
+                          <DpFieldLabel>{t('leads.replyCategory')}</DpFieldLabel>
                           <DpFieldValue><ReplyBadge $bg={cat.bg} $fg={cat.fg}>{cat.text}</ReplyBadge></DpFieldValue>
                         </DpField>
                         <DpField>
-                          <DpFieldLabel>情緒</DpFieldLabel>
+                          <DpFieldLabel>{t('leads.replySentiment')}</DpFieldLabel>
                           <DpFieldValue>{selectedLead._reply_sentiment || '—'}</DpFieldValue>
                         </DpField>
                         <DpField>
-                          <DpFieldLabel>摘要</DpFieldLabel>
+                          <DpFieldLabel>{t('leads.replySummary')}</DpFieldLabel>
                           <DpFieldValue>{selectedLead._reply_summary || '—'}</DpFieldValue>
                         </DpField>
                         <DpField>
-                          <DpFieldLabel>下一步</DpFieldLabel>
+                          <DpFieldLabel>{t('leads.replyNextStep')}</DpFieldLabel>
                           <DpFieldValue>{selectedLead._reply_next_step || '—'}</DpFieldValue>
                         </DpField>
                         <DpField>
-                          <DpFieldLabel>方式</DpFieldLabel>
+                          <DpFieldLabel>{t('leads.replyVia')}</DpFieldLabel>
                           <DpFieldValue>{selectedLead._reply_via || '—'}</DpFieldValue>
                         </DpField>
                         <DpField>
-                          <DpFieldLabel>時間</DpFieldLabel>
-                          <DpFieldValue>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString('zh-HK') : '—'}</DpFieldValue>
+                          <DpFieldLabel>{t('leads.replyTime')}</DpFieldLabel>
+                          <DpFieldValue>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString() : '—'}</DpFieldValue>
                         </DpField>
                       </DpGrid>
                       </DpTabCard>
@@ -3000,7 +3001,7 @@ const Leads: React.FC = () => {
                 style={{ textTransform: 'capitalize' }}
               >
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ marginRight: 4 }}><path d="M13.5 8a5.5 5.5 0 0 1-9.72 3.5M2.5 8a5.5 5.5 0 0 1 9.72-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M13.5 3v3.5H10M2.5 13v-3.5H6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                重跑 {stage}
+                {t('leads.rerunStage', { stage })}
               </DpActionBtn>
             ))}
           </DpFooter>

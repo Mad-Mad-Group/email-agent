@@ -51,11 +51,10 @@ const Main = styled.main`
 
 const Content = styled.div`
   flex: 1;
-  padding: 8px 20px;
+  padding: 0 20px 8px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 5px;
   min-width: 0;
   overflow: visible;
 

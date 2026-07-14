@@ -32,12 +32,12 @@ const Page = styled.div<{ $hasResults?: boolean }>`
   ${({ $hasResults }) => $hasResults && 'padding-top: 40px;'}
 `;
 
-const GREETINGS = [
-  'Find your next client.',
-  'Let AI discover opportunities.',
-  'Search, filter, close the deal.',
-  'Your next lead starts here.',
-  'Who are you looking for today?',
+const GREETING_KEYS = [
+  'search.greeting1',
+  'search.greeting2',
+  'search.greeting3',
+  'search.greeting4',
+  'search.greeting5',
 ];
 
 const Greeting = styled.p`
@@ -327,11 +327,19 @@ const ModeOption = styled.button<{ $active: boolean }>`
   transition: color 0.25s;
 `;
 
-const HK_DISTRICTS = [
-  '全區', '中西區', '灣仔', '東區', '南區',
-  '油尖旺', '深水埗', '九龍城', '黃大仙', '觀塘',
-  '葵青', '荃灣', '屯門', '元朗', '北區', '大埔', '沙田', '西貢', '離島',
+const HK_DISTRICT_KEYS = [
+  'all', 'centralWestern', 'wanChai', 'eastern', 'southern',
+  'yauTsimMong', 'shamShuiPo', 'kowloonCity', 'wongTaiSin', 'kwunTong',
+  'kwaiTsing', 'tsuenWan', 'tuenMun', 'yuenLong', 'north', 'taiPo', 'shaTin', 'saiKung', 'islands',
 ];
+
+/* API always sends Traditional Chinese district names regardless of UI locale */
+const DISTRICT_API_VALUES: Record<string, string> = {
+  all: '全區', centralWestern: '中西區', wanChai: '灣仔', eastern: '東區', southern: '南區',
+  yauTsimMong: '油尖旺', shamShuiPo: '深水埗', kowloonCity: '九龍城', wongTaiSin: '黃大仙', kwunTong: '觀塘',
+  kwaiTsing: '葵青', tsuenWan: '荃灣', tuenMun: '屯門', yuenLong: '元朗', north: '北區',
+  taiPo: '大埔', shaTin: '沙田', saiKung: '西貢', islands: '離島',
+};
 
 /* ── Glow animation ── */
 const glowPulse = keyframes`
@@ -1115,8 +1123,8 @@ const PIPELINE_STAGES = ['search', 'enrich', 'analyze', 'draft', 'send'] as cons
 const PIPELINE_STAGE_NUMS: Record<string, number> = {
   search: 1, enrich: 2, analyze: 3, draft: 4, send: 5,
 };
-const PIPELINE_STAGE_LABELS_SHORT: Record<string, string> = {
-  search: '搜尋', enrich: '充實', analyze: '分析', draft: '撰寫', send: '發送',
+const PIPELINE_STAGE_I18N_KEYS: Record<string, string> = {
+  search: 'search.pipelineSearch', enrich: 'search.pipelineEnrich', analyze: 'search.pipelineAnalyze', draft: 'search.pipelineDraft', send: 'search.pipelineSend',
 };
 
 const stepPulse = keyframes`
@@ -1315,15 +1323,15 @@ const PipelineLogStage = styled.span`
   margin-right: 6px;
 `;
 
-const STAGE_LABELS: Record<string, string> = {
-  search: '搜尋中',
-  'search→enrich': '開始充實資料',
-  enrich: '充實資料中',
-  analyze: '分析中',
-  draft: '撰寫郵件中',
-  send: '處理發送中',
-  pipeline: '處理中',
-  complete: '完成',
+const STAGE_LABEL_I18N_KEYS: Record<string, string> = {
+  search: 'search.stageSearching',
+  'search→enrich': 'search.stageStartEnrich',
+  enrich: 'search.stageEnriching',
+  analyze: 'search.stageAnalyzing',
+  draft: 'search.stageDrafting',
+  send: 'search.stageSending',
+  pipeline: 'search.stageProcessing',
+  complete: 'search.stageComplete',
 };
 
 /* ── Helpers ── */
@@ -1382,7 +1390,7 @@ function getResultTitle(row: Record<string, unknown>): string {
     if (row[key] && typeof row[key] === 'string') return row[key] as string;
   }
   const firstString = Object.values(row).find(v => typeof v === 'string' && (v as string).length > 0);
-  return firstString ? String(firstString) : 'Result';
+  return firstString ? String(firstString) : '—';
 }
 
 function getResultType(row: Record<string, unknown>): string {
@@ -1390,7 +1398,7 @@ function getResultType(row: Record<string, unknown>): string {
   for (const key of candidates) {
     if (row[key] && typeof row[key] === 'string') return row[key] as string;
   }
-  return 'result';
+  return '—';
 }
 
 function getResultPreview(row: Record<string, unknown>): string {
@@ -1401,10 +1409,11 @@ function getResultPreview(row: Record<string, unknown>): string {
   return JSON.stringify(row, null, 2);
 }
 
-const MOCK_RELATED = [
-  { title: 'Similar result in nearby area', type: 'location', color: '#0ea5e9' },
-  { title: 'Related business listing', type: 'business', color: '#0ea5e9' },
-  { title: 'Matching industry entry', type: 'industry', color: '#d97706' },
+/* MOCK_RELATED keys — titles are i18n'd via search.relatedNearby / relatedBusiness / relatedIndustry */
+const MOCK_RELATED_KEYS = [
+  { titleKey: 'search.relatedNearby', type: 'location', color: '#0ea5e9' },
+  { titleKey: 'search.relatedBusiness', type: 'business', color: '#0ea5e9' },
+  { titleKey: 'search.relatedIndustry', type: 'industry', color: '#d97706' },
 ];
 
 /* ── Mock search results (displayed by default) ── */
@@ -1437,11 +1446,11 @@ const MOCK_SEARCH_RESULTS: MockLead[] = [
   { name: '北投水電材料行', phone: '02-2893-0123', address: '台北市北投區中央南路一段45號', rating: 3.7, reviews: 31, source: '104人力銀行', status: 'rejected', color: '#94a3b8', hasEmail: false, hasPhone: true, hasWebsite: false },
 ];
 
-const STATUS_LABELS: Record<string, string> = {
-  new: 'New',
-  contacted: 'Contacted',
-  qualified: 'Qualified',
-  rejected: 'Rejected',
+const STATUS_LABEL_I18N_KEYS: Record<string, string> = {
+  new: 'search.statusNew',
+  contacted: 'search.statusContacted',
+  qualified: 'search.statusQualified',
+  rejected: 'search.statusRejected',
 };
 
 function renderStars(rating: number): string {
@@ -1453,7 +1462,7 @@ function renderStars(rating: number): string {
 const SearchPage: React.FC = () => {
   const { t } = useTranslation();
   const { setBadge } = useBadge();
-  const [greeting] = useState(() => GREETINGS[Math.floor(Math.random() * GREETINGS.length)]);
+  const [greetingKey] = useState(() => GREETING_KEYS[Math.floor(Math.random() * GREETING_KEYS.length)]);
   // ponytail: restore form state from localStorage so refresh doesn't wipe it.
   // Falls back to defaults if key missing or JSON corrupt.
   const readSavedForm = (): { kw: string; loc: string; dist: string; tc: number } => {
@@ -1461,10 +1470,14 @@ const SearchPage: React.FC = () => {
       const raw = localStorage.getItem('search-form');
       if (raw) {
         const j = JSON.parse(raw);
-        if (typeof j.kw === 'string') return j;
+        if (typeof j.kw === 'string') {
+          // Migrate old Chinese district values to keys
+          if (j.dist && !HK_DISTRICT_KEYS.includes(j.dist)) j.dist = 'all';
+          return j;
+        }
       }
     } catch { /* ignore corrupt localStorage */ }
-    return { kw: '', loc: '香港', dist: '全區', tc: 20 };
+    return { kw: '', loc: t('search.defaultLocation'), dist: 'all', tc: 20 };
   };
   const saved = readSavedForm();
   const [keyword, setKeyword] = useState(saved.kw);
@@ -1512,8 +1525,8 @@ const SearchPage: React.FC = () => {
     void ensureNotificationPermission().then((granted) => {
       if (!granted) return;
       try {
-        new Notification('潛在客戶搜尋完成', {
-          body: `搵到 ${leadCount} 筆新結果，撳去睇 →`,
+        new Notification(t('search.notificationTitle'), {
+          body: t('search.notificationBody', { count: leadCount }),
           tag: 'search-complete',
         });
       } catch (e) {
@@ -1537,7 +1550,7 @@ const SearchPage: React.FC = () => {
   /* ── Helper: map Lead → MockLead ── */
   const mapLead = (lead: Lead): MockLead => ({
     _id: lead._id,
-    name: lead.company_name || '未知公司',
+    name: lead.company_name || t('search.unknownCompany'),
     phone: lead.phone || '',
     address: lead.address || '',
     rating: lead.rating ? parseFloat(lead.rating) : 0,
@@ -1665,8 +1678,8 @@ const SearchPage: React.FC = () => {
   useEffect(() => {
     if (pipelineComplete) {
       setKeyword('');
-      setLocation('香港');
-      setDistrict('全區');
+      setLocation(t('search.defaultLocation'));
+      setDistrict('all');
       setTargetCount(20);
       try { localStorage.removeItem('search-form'); } catch {}
     }
@@ -1710,7 +1723,8 @@ const SearchPage: React.FC = () => {
     if (search.isPending || !keyword.trim()) return;
     // 喺 user gesture 內請求通知權限，確保瀏覽器唔會靜靜忽略
     void ensureNotificationPermission();
-    const fullLocation = district === '全區' ? location : `${location} ${district}`;
+    const districtApiName = DISTRICT_API_VALUES[district] || '';
+    const fullLocation = district === 'all' ? location : `${location} ${districtApiName}`;
     const payload: SearchPayload = {
       keyword: keyword.trim(),
       location: fullLocation.trim(),
@@ -1753,7 +1767,7 @@ const SearchPage: React.FC = () => {
 
   return (
     <Page $hasResults={search.isPending || isPipelineRunning || pipelineComplete || search.isError}>
-      <Greeting>{greeting}</Greeting>
+      <Greeting>{t(greetingKey)}</Greeting>
 
       <GlowWrap>
         {DOT_CONFIG.map((d, i) => (
@@ -1775,7 +1789,7 @@ const SearchPage: React.FC = () => {
             />
             <LocBadge type="button" onClick={() => setShowLocPicker(p => !p)}>
               <MapPinIcon />
-              {district === '全區' ? t('search.allDistricts') : district}
+              {t(`search.dist_${district}`)}
             </LocBadge>
             <NumberWrap>
               <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(200, c + 5))}><ChevronUp /></NumArrowBtn>
@@ -1793,9 +1807,9 @@ const SearchPage: React.FC = () => {
             </BarSearchBtn>
             {showLocPicker && (
               <LocDropdown>
-                {HK_DISTRICTS.map(d => (
-                  <LocOption key={d} $active={district === d} onClick={() => { setDistrict(d); setShowLocPicker(false); }}>
-                    {d === '全區' ? t('search.allDistricts') : d}
+                {HK_DISTRICT_KEYS.map(dk => (
+                  <LocOption key={dk} $active={district === dk} onClick={() => { setDistrict(dk); setShowLocPicker(false); }}>
+                    {t(`search.dist_${dk}`)}
                   </LocOption>
                 ))}
               </LocDropdown>
@@ -1825,18 +1839,18 @@ const SearchPage: React.FC = () => {
                   <RingCount>
                     {pipelineProgress
                       ? `${pipelineProgress.current}/${pipelineProgress.total}`
-                      : search.isPending ? '提交中' : '準備中'}
+                      : search.isPending ? t('search.submitting') : t('search.preparing')}
                   </RingCount>
                 </SearchRing>
                 {pipelineProgress && (
                   <RingStage>
-                    {STAGE_LABELS[pipelineProgress.stage] || pipelineProgress.stage}
+                    {STAGE_LABEL_I18N_KEYS[pipelineProgress.stage] ? t(STAGE_LABEL_I18N_KEYS[pipelineProgress.stage]) : pipelineProgress.stage}
                   </RingStage>
                 )}
                 <RingHint>
                   {pipelineProgress
-                    ? `${Math.round(pipelineProgress.percent)}% 完成`
-                    : search.isPending ? '正在連線至搜尋引擎…' : '等待管道啟動…'}
+                    ? t('search.percentComplete', { percent: Math.round(pipelineProgress.percent) })
+                    : search.isPending ? t('search.connectingToEngine') : t('search.waitingForPipeline')}
                 </RingHint>
               </SearchRingWrap>
             )}
@@ -1848,7 +1862,7 @@ const SearchPage: React.FC = () => {
         <div style={{ width: 'calc(100% - 48px)', maxWidth: 760 }}>
           {/* Status banner — loading state handled by ring */}
           {search.isError && (
-            <StatusBanner $type="error">搜尋失敗：{(search.error as any)?.message || '未知錯誤'}</StatusBanner>
+            <StatusBanner $type="error">{t('search.searchFailedWithMessage', { message: (search.error as any)?.message || t('search.unknownError') })}</StatusBanner>
           )}
           {isPipelineRunning && (
             <PipelineSection>
@@ -1869,7 +1883,7 @@ const SearchPage: React.FC = () => {
                         <StepCircle $state={state}>
                           {state === 'done' ? '✓' : PIPELINE_STAGE_NUMS[stage]}
                         </StepCircle>
-                        <StepLabel $state={state}>{PIPELINE_STAGE_LABELS_SHORT[stage]}</StepLabel>
+                        <StepLabel $state={state}>{t(PIPELINE_STAGE_I18N_KEYS[stage])}</StepLabel>
                       </StepItem>
                     </React.Fragment>
                   );
@@ -1879,7 +1893,7 @@ const SearchPage: React.FC = () => {
               {/* Lead counter */}
               {pipelineProgress && pipelineProgress.total > 0 && (
                 <LeadCounter>
-                  已找到 <LeadCountNum>{pipelineProgress.current}</LeadCountNum> / {pipelineProgress.total} 筆
+                  {t('search.foundLeadsBefore')} <LeadCountNum>{pipelineProgress.current}</LeadCountNum> / {pipelineProgress.total} {t('search.foundLeadsAfter')}
                 </LeadCounter>
               )}
 
@@ -1889,7 +1903,7 @@ const SearchPage: React.FC = () => {
                   {pipelineLogs.map((log, i) => (
                     <PipelineLogLine key={i} $level={log.level}>
                       <PipelineLogTime>[{log.time}]</PipelineLogTime>
-                      {log.stage && <PipelineLogStage>[{STAGE_LABELS[log.stage] || log.stage}]</PipelineLogStage>}
+                      {log.stage && <PipelineLogStage>[{STAGE_LABEL_I18N_KEYS[log.stage] ? t(STAGE_LABEL_I18N_KEYS[log.stage]) : log.stage}]</PipelineLogStage>}
                       {log.message}
                     </PipelineLogLine>
                   ))}
@@ -1901,7 +1915,7 @@ const SearchPage: React.FC = () => {
           {/* Complete → show results */}
           {pipelineComplete && (
             <PipelineSection>
-              <StatusBanner $type="success">搜尋完成，共找到 {realResults.length} 筆結果</StatusBanner>
+              <StatusBanner $type="success">{t('search.searchCompleteWithCount', { count: realResults.length })}</StatusBanner>
 
               {/* Result cards */}
               <ResultCardList>
@@ -1930,11 +1944,11 @@ const SearchPage: React.FC = () => {
                       </RcContactIcons>
                     </RcBody>
                     <RcActions>
-                      <RcStatusBadge $status={lead.status}>{STATUS_LABELS[lead.status] || lead.status}</RcStatusBadge>
+                      <RcStatusBadge $status={lead.status}>{STATUS_LABEL_I18N_KEYS[lead.status] ? t(STATUS_LABEL_I18N_KEYS[lead.status]) : lead.status}</RcStatusBadge>
                     </RcActions>
                   </ResultCard>
                 ))}
-                {realResults.length === 0 && <EmptyState>呢次搜尋冇搵到結果</EmptyState>}
+                {realResults.length === 0 && <EmptyState>{t('search.noSearchResults')}</EmptyState>}
               </ResultCardList>
             </PipelineSection>
           )}

@@ -1,4 +1,4 @@
-import React, { useMemo, useCallback, useState, useRef } from 'react';
+import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme, keyframes } from 'styled-components';
@@ -34,20 +34,31 @@ const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; col
 const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 const GreetingRow = styled.div`
   display: flex; align-items: flex-end; gap: 0;
-  height: 64px; overflow: visible; position: relative;
+  position: relative; overflow: visible;
+`;
+const GreetingStack = styled.div`
+  display: flex; flex-direction: column; align-items: center;
 `;
 const SpeechBubble = styled.div`
   position: relative;
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1.5px solid ${({ theme }) => theme.colors.border};
-  border-radius: 14px; padding: 10px 18px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-  &::before, &::after {
-    content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%);
-    border: 6px solid transparent; border-right-color: ${({ theme }) => theme.colors.border};
-  }
+  background: #1a1a2e; color: #e0f0ff;
+  border: 3px solid #3a3a5c;
+  border-radius: 4px; padding: 10px 16px;
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  font-size: 0.875rem; line-height: 1.6;
+  image-rendering: pixelated;
+  box-shadow: 0 3px 0 #0d0d1a;
   &::after {
-    left: -8px; border-right-color: ${({ theme }) => theme.colors.surface};
+    content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0;
+    border-top: 8px solid transparent; border-bottom: 8px solid transparent;
+    border-right: 10px solid #1a1a2e;
+  }
+  &::before {
+    content: ''; position: absolute; left: -14px; top: 50%; transform: translateY(-50%);
+    width: 0; height: 0;
+    border-top: 10px solid transparent; border-bottom: 10px solid transparent;
+    border-right: 12px solid #3a3a5c;
   }
 `;
 
@@ -163,6 +174,7 @@ const EmptyBarSvg = () => (
 );
 
 const BarChart: React.FC<{ bars: BarData[]; dark?: boolean }> = ({ bars, dark }) => {
+  const { t } = useTranslation();
   const allZero = bars.every(b => b.value === 0);
   const [hover, setHover] = useState<{ idx: number; x: number; y: number } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -187,7 +199,7 @@ const BarChart: React.FC<{ bars: BarData[]; dark?: boolean }> = ({ bars, dark })
     return (
       <BarChartWrap style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '32px 16px', color: dark ? '#4a6b52' : '#88a890', fontSize: '0.8125rem' }}>
         <EmptyBarSvg />
-        尚無漏斗數據
+        {t('dashboard.noFunnelData')}
       </BarChartWrap>
     );
   }
@@ -262,6 +274,7 @@ const DonutTooltip = styled.div<{ $x: number; $y: number; $visible: boolean }>`
 `;
 
 const DonutChart: React.FC<{ slices: { value: number; color: string; label?: string }[]; size?: number }> = ({ slices, size = 200 }) => {
+  const { t } = useTranslation();
   const [hover, setHover] = useState<{ idx: number; x: number; y: number } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const total = slices.reduce((s, sl) => s + sl.value, 0);
@@ -325,7 +338,7 @@ const DonutChart: React.FC<{ slices: { value: number; color: string; label?: str
         </text>
         <text x={cx} y={cy + 14} textAnchor="middle" dominantBaseline="central"
           style={{ fontSize: '0.6rem', fontWeight: 500, fill: 'currentColor', opacity: 0.45 }}>
-          REPLIES
+          {t('dashboard.replies')}
         </text>
       </svg>
     </div>
@@ -563,6 +576,40 @@ function generateDemoEmails(): EmailItem[] {
   } as any));
 }
 
+/* ══════════ PIXEL TYPEWRITER ══════════ */
+
+const GREETINGS_MORNING = [
+  'dashboard.greetingMorning',
+  'dashboard.pixelMorning1',
+  'dashboard.pixelMorning2',
+];
+const GREETINGS_AFTERNOON = [
+  'dashboard.greetingAfternoon',
+  'dashboard.pixelAfternoon1',
+  'dashboard.pixelAfternoon2',
+];
+const GREETINGS_EVENING = [
+  'dashboard.greetingEvening',
+  'dashboard.pixelEvening1',
+  'dashboard.pixelEvening2',
+];
+
+const PixelTypewriter: React.FC<{ text: string }> = ({ text }) => {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    setShown(0);
+    if (!text) return;
+    let i = 0;
+    const id = setInterval(() => {
+      i++;
+      setShown(i);
+      if (i >= text.length) clearInterval(id);
+    }, 60);
+    return () => clearInterval(id);
+  }, [text]);
+  return <>{text.slice(0, shown)}<span style={{ opacity: shown < text.length ? 1 : 0 }}>_</span></>;
+};
+
 /* ══════════ COMPONENT ══════════ */
 
 const Dashboard: React.FC = () => {
@@ -684,31 +731,28 @@ const Dashboard: React.FC = () => {
       }));
   }, [allEmails, t]);
 
+  const greetingKey = useMemo(() => {
+    const h = new Date().getHours();
+    const pool = h < 12 ? GREETINGS_MORNING : h < 18 ? GREETINGS_AFTERNOON : GREETINGS_EVENING;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }, []);
+
   const loading = leadsLoading || emailsLoading;
   if (loading) return <Page><SpinnerWrap><Spinner /><SpinnerText>{t('dashboard.loading')}</SpinnerText></SpinnerWrap></Page>;
-
-  const greetingKey = (() => {
-    const h = new Date().getHours();
-    if (h < 12) return 'dashboard.greetingMorning';
-    if (h < 18) return 'dashboard.greetingAfternoon';
-    return 'dashboard.greetingEvening';
-  })();
 
   return (
     <Page>
       {/* ── Demo hint (auto, no toggle) ── */}
-      {demoMode && <DemoHint>Showing simulated data for demonstration</DemoHint>}
+      {demoMode && <DemoHint>{t('dashboard.demoHint')}</DemoHint>}
 
-      <PageCard>
+      <PageCard style={{ paddingTop: 8 }}>
       {/* ── Greeting ── */}
-      <GreetingRow>
-        <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} size={220} style={{ marginBottom: -90, marginRight: -30 }} />
+      <GreetingRow style={{ marginTop: -60 }}>
+        <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} size={200} style={{ marginBottom: -70, marginRight: -20 }} />
         <SpeechBubble>
-          <PageTitle>{t(greetingKey)}</PageTitle>
-          <PageSub>{t('dashboard.greetingSub')}</PageSub>
+          <PixelTypewriter text={t(greetingKey)} />
         </SpeechBubble>
       </GreetingRow>
-
       {/* ── Action Cards (LUNO-style) ── */}
       <ActionGrid>
         <ActionCard

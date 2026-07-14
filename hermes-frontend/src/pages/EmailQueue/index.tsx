@@ -100,12 +100,20 @@ const statusColorMap: Record<string, string> = {
   failed: '#475569',
 };
 
-const REPLY_CATEGORY_LABEL: Record<string, { text: string; bg: string; fg: string }> = {
-  interested:     { text: '有興趣',   bg: '#dcfce7', fg: '#16a34a' },
-  not_interested: { text: '冇興趣',   bg: '#fee2e2', fg: '#dc2626' },
-  meeting:        { text: '約時間',   bg: '#cffafe', fg: '#0ea5e9' },
-  auto_reply:     { text: '自動回覆', bg: '#f3f4f6', fg: '#6b7280' },
-  question:       { text: '有問題',   bg: '#fef3c7', fg: '#d97706' },
+const REPLY_CATEGORY_STYLE: Record<string, { bg: string; fg: string }> = {
+  interested:     { bg: '#dcfce7', fg: '#16a34a' },
+  not_interested: { bg: '#fee2e2', fg: '#dc2626' },
+  meeting:        { bg: '#cffafe', fg: '#0ea5e9' },
+  auto_reply:     { bg: '#f3f4f6', fg: '#6b7280' },
+  question:       { bg: '#fef3c7', fg: '#d97706' },
+};
+
+const REPLY_CATEGORY_I18N_KEY: Record<string, string> = {
+  interested:     'emailQueue.replyCategoryInterested',
+  not_interested: 'emailQueue.replyCategoryNotInterested',
+  meeting:        'emailQueue.replyCategoryMeeting',
+  auto_reply:     'emailQueue.replyCategoryAutoReply',
+  question:       'emailQueue.replyCategoryQuestion',
 };
 
 /* ══════════════════════════════════════
@@ -1076,16 +1084,20 @@ const EmailQueue: React.FC = () => {
   const [replyCheckMsg, setReplyCheckMsg] = useState('');
   const [followupChecking, setFollowupChecking] = useState(false);
   const [followupCheckMsg, setFollowupCheckMsg] = useState('');
+  const [replyCheckError, setReplyCheckError] = useState(false);
+  const [followupCheckError, setFollowupCheckError] = useState(false);
 
   const handleCheckReplies = async () => {
     setReplyChecking(true);
     setReplyCheckMsg('');
+    setReplyCheckError(false);
     try {
       await client.post('/jobs/check-replies/run');
-      setReplyCheckMsg('已派發檢查回覆任務');
+      setReplyCheckMsg(t('emailQueue.replyCheckDispatched'));
       setTimeout(() => setReplyCheckMsg(''), 4000);
     } catch (err: any) {
-      setReplyCheckMsg('觸發失敗: ' + (err?.message || '未知錯誤'));
+      setReplyCheckError(true);
+      setReplyCheckMsg(t('emailQueue.triggerFailed', { message: err?.message || t('emailQueue.unknownError') }));
       setTimeout(() => setReplyCheckMsg(''), 5000);
     } finally {
       setReplyChecking(false);
@@ -1095,12 +1107,14 @@ const EmailQueue: React.FC = () => {
   const handleCheckFollowups = async () => {
     setFollowupChecking(true);
     setFollowupCheckMsg('');
+    setFollowupCheckError(false);
     try {
       await client.post('/jobs/check-followups/run');
-      setFollowupCheckMsg('已派發檢查跟進任務');
+      setFollowupCheckMsg(t('emailQueue.followupCheckDispatched'));
       setTimeout(() => setFollowupCheckMsg(''), 4000);
     } catch (err: any) {
-      setFollowupCheckMsg('觸發失敗: ' + (err?.message || '未知錯誤'));
+      setFollowupCheckError(true);
+      setFollowupCheckMsg(t('emailQueue.triggerFailed', { message: err?.message || t('emailQueue.unknownError') }));
       setTimeout(() => setFollowupCheckMsg(''), 5000);
     } finally {
       setFollowupChecking(false);
@@ -1149,7 +1163,7 @@ const EmailQueue: React.FC = () => {
   };
   const handleBulkReject = async () => {
     if (selectedIds.size === 0) return;
-    const reason = await showPrompt(`拒絕 ${selectedIds.size} 個 email 嘅原因?（可空）`);
+    const reason = await showPrompt(t('emailQueue.bulkRejectPrompt', { count: selectedIds.size }));
     if (reason === null) return;
     bulkReject.mutate(
       { ids: [...selectedIds], reason: reason || undefined },
@@ -1158,7 +1172,7 @@ const EmailQueue: React.FC = () => {
   };
   const handleBulkSend = async () => {
     if (selectedIds.size === 0) return;
-    if (!(await showConfirm(`寄出 ${selectedIds.size} 個 email?`))) return;
+    if (!(await showConfirm(t('emailQueue.bulkSendConfirm', { count: selectedIds.size })))) return;
     bulkSend.mutate([...selectedIds], { onSuccess: () => clearSelection() });
   };
 
@@ -1302,7 +1316,7 @@ const EmailQueue: React.FC = () => {
               if (e.target.checked) selectAll(visibleIds);
               else deselectAll();
             }}
-            aria-label="全選/全不選"
+            aria-label={t('emailQueue.selectAllLabel')}
           />
           <ToolbarTitle>{t('emailQueue.outbox')}</ToolbarTitle>
           <DetailToolbarBtn
@@ -1312,7 +1326,7 @@ const EmailQueue: React.FC = () => {
             style={{ marginLeft: 8 }}
           >
             <I d={icons.envelope} />
-            {replyChecking ? '檢查中…' : '檢查回覆'}
+            {replyChecking ? t('emailQueue.checking') : t('emailQueue.checkReplies')}
           </DetailToolbarBtn>
           <DetailToolbarBtn
             $color="#d97706"
@@ -1321,7 +1335,7 @@ const EmailQueue: React.FC = () => {
             style={{ marginLeft: 4 }}
           >
             <I d={icons.clock} />
-            {followupChecking ? '檢查中…' : '檢查跟進'}
+            {followupChecking ? t('emailQueue.checking') : t('emailQueue.checkFollowups')}
           </DetailToolbarBtn>
         </ToolbarLeft>
         <ToolbarRight>
@@ -1341,12 +1355,12 @@ const EmailQueue: React.FC = () => {
       {(replyCheckMsg || followupCheckMsg) && (
         <ToolbarFeedbackArea>
           {replyCheckMsg && (
-            <FeedbackMsg key={replyCheckMsg} $error={replyCheckMsg.startsWith('觸發失敗')}>
+            <FeedbackMsg key={replyCheckMsg} $error={replyCheckError}>
               {replyCheckMsg}
             </FeedbackMsg>
           )}
           {followupCheckMsg && (
-            <FeedbackMsg key={followupCheckMsg} $error={followupCheckMsg.startsWith('觸發失敗')} style={{ marginLeft: replyCheckMsg ? 12 : 0 }}>
+            <FeedbackMsg key={followupCheckMsg} $error={followupCheckError} style={{ marginLeft: replyCheckMsg ? 12 : 0 }}>
               {followupCheckMsg}
             </FeedbackMsg>
           )}
@@ -1374,7 +1388,7 @@ const EmailQueue: React.FC = () => {
                 fontSize: 13,
               }}
             >
-              {t('common.retry') || '重試'}
+              {t('common.retry')}
             </button>
           </EmptyState>
         ) : isLoading ? (
@@ -1392,24 +1406,24 @@ const EmailQueue: React.FC = () => {
             {selectedIds.size > 0 && (
               <BulkActionBar>
                 <span>
-                  已選 <strong>{selectedIds.size}</strong> 個
+                  {t('emailQueue.selectedCount', { count: selectedIds.size })}
                 </span>
                 <BulkBtn $color="#0ea5e9" onClick={handleBulkApprove} disabled={bulkApprove.isPending}>
-                  Approve ({selectedIds.size})
+                  {t('emailQueue.bulkApprove', { count: selectedIds.size })}
                 </BulkBtn>
                 <BulkBtn $color="#ef4444" onClick={handleBulkReject} disabled={bulkReject.isPending}>
-                  Reject ({selectedIds.size})
+                  {t('emailQueue.bulkReject', { count: selectedIds.size })}
                 </BulkBtn>
                 <BulkBtn
                   $color="#0ea5e9"
                   onClick={handleBulkSend}
                   disabled={bulkSend.isPending || statusFilter !== 'approved'}
-                  title={statusFilter !== 'approved' ? 'Send 只可喺 Approved panel 做' : ''}
+                  title={statusFilter !== 'approved' ? t('emailQueue.bulkSendDisabledTip') : ''}
                 >
-                  Send ({selectedIds.size})
+                  {t('emailQueue.bulkSend', { count: selectedIds.size })}
                 </BulkBtn>
                 <BulkBtn $color="#888" onClick={clearSelection}>
-                  清除
+                  {t('emailQueue.clearSelection')}
                 </BulkBtn>
               </BulkActionBar>
             )}
@@ -1436,7 +1450,7 @@ const EmailQueue: React.FC = () => {
                   <SubjectLine>{item.subject || t('emailQueue.noSubject')}</SubjectLine>
                   <Preview>{(item.body || '').replace(/<[^>]*>/g, ' ').trim()}</Preview>
                 </EmailContent>
-                <StatusBadge $status={status}>{status}</StatusBadge>
+                <StatusBadge $status={status}>{t(`emailQueue.${status}` as any) || status}</StatusBadge>
                 <DateCell>{formatDate(item.created_at)}</DateCell>
 
                 {/* Hover action buttons */}
@@ -1544,7 +1558,7 @@ const EmailQueue: React.FC = () => {
                     style={{ background: '#fef2f2', border: '1px solid #fecaca' }}
                   >
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                    Reject
+                    {t('emailQueue.reject')}
                   </DetailToolbarBtn>
                 </>
               )}
@@ -1573,14 +1587,14 @@ const EmailQueue: React.FC = () => {
                 {item.to_email && <DetailSenderEmail>&lt;{item.to_email}&gt;</DetailSenderEmail>}
               </DetailSenderInfo>
               <DetailDateRight>
-                <StatusBadge $status={status}>{status}</StatusBadge>
+                <StatusBadge $status={status}>{t(`emailQueue.${status}` as any) || status}</StatusBadge>
                 <span>{formatDateFull(item.created_at)}</span>
               </DetailDateRight>
             </DetailSenderRow>
 
             <DetailMeta>
-              <span>寄件人: {import.meta.env.VITE_SMTP_FROM || '—'}</span>
-              <span>收件人: {item.to_email || import.meta.env.VITE_TEST_RECIPIENT || '—'}</span>
+              <span>{t('emailQueue.from')}: {import.meta.env.VITE_SMTP_FROM || '—'}</span>
+              <span>{t('emailQueue.to')}: {item.to_email || import.meta.env.VITE_TEST_RECIPIENT || '—'}</span>
               {item.error?.rejected_reason && <span>{t('emailQueue.reason')} {item.error?.rejected_reason}</span>}
               {item.lead_id && <span>{t('emailQueue.lead')} {item.lead_id}</span>}
             </DetailMeta>
@@ -1589,38 +1603,40 @@ const EmailQueue: React.FC = () => {
 
             {/* Lead Reply Section */}
             {leadReply && (() => {
-              const cat = REPLY_CATEGORY_LABEL[leadReply._reply_category || ''] || { text: leadReply._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
+              const catStyle = REPLY_CATEGORY_STYLE[leadReply._reply_category || ''] || { bg: '#e0e7ff', fg: '#4338ca' };
+              const catKey = REPLY_CATEGORY_I18N_KEY[leadReply._reply_category || ''];
+              const catText = catKey ? t(catKey) : (leadReply._reply_category || t('emailQueue.replyCategoryDefault'));
               return (
                 <ReplySection>
                   <ReplySectionHeader>
-                    📩 對方回覆
-                    <ReplyCategoryBadge $bg={cat.bg} $fg={cat.fg}>{cat.text}</ReplyCategoryBadge>
+                    {t('emailQueue.leadReplyTitle')}
+                    <ReplyCategoryBadge $bg={catStyle.bg} $fg={catStyle.fg}>{catText}</ReplyCategoryBadge>
                     {leadReply._reply_at && (
                       <span style={{ fontSize: '0.75rem', fontWeight: 400, color: '#94a3b8', marginLeft: 'auto' }}>
-                        {new Date(leadReply._reply_at).toLocaleString('zh-HK')}
+                        {new Date(leadReply._reply_at).toLocaleString()}
                       </span>
                     )}
                   </ReplySectionHeader>
                   <ReplyBody>
                     <ReplyFieldRow>
                       <ReplyField>
-                        <ReplyFieldLabel>摘要</ReplyFieldLabel>
+                        <ReplyFieldLabel>{t('emailQueue.replySummaryLabel')}</ReplyFieldLabel>
                         <ReplyFieldValue>{leadReply._reply_summary || '—'}</ReplyFieldValue>
                       </ReplyField>
                     </ReplyFieldRow>
                     <ReplyFieldRow>
                       <ReplyField>
-                        <ReplyFieldLabel>情緒</ReplyFieldLabel>
+                        <ReplyFieldLabel>{t('emailQueue.replySentimentLabel')}</ReplyFieldLabel>
                         <ReplyFieldValue>{leadReply._reply_sentiment || '—'}</ReplyFieldValue>
                       </ReplyField>
                       <ReplyField>
-                        <ReplyFieldLabel>回覆方式</ReplyFieldLabel>
+                        <ReplyFieldLabel>{t('emailQueue.replyViaLabel')}</ReplyFieldLabel>
                         <ReplyFieldValue>{leadReply._reply_via || '—'}</ReplyFieldValue>
                       </ReplyField>
                     </ReplyFieldRow>
                     <ReplyFieldRow>
                       <ReplyField>
-                        <ReplyFieldLabel>建議下一步</ReplyFieldLabel>
+                        <ReplyFieldLabel>{t('emailQueue.replyNextStepLabel')}</ReplyFieldLabel>
                         <ReplyFieldValue>{leadReply._reply_next_step || '—'}</ReplyFieldValue>
                       </ReplyField>
                     </ReplyFieldRow>
@@ -1650,10 +1666,10 @@ const EmailQueue: React.FC = () => {
           </ModalHeader>
           <ModalBody>
             <ModalMeta>
-              <span>寄件人: {import.meta.env.VITE_SMTP_FROM || '—'}</span>
-              <span>收件人: {item.to_email || import.meta.env.VITE_TEST_RECIPIENT || '—'}</span>
+              <span>{t('emailQueue.from')}: {import.meta.env.VITE_SMTP_FROM || '—'}</span>
+              <span>{t('emailQueue.to')}: {item.to_email || import.meta.env.VITE_TEST_RECIPIENT || '—'}</span>
               <span>
-                {t('emailQueue.status')} <StatusBadge $status={status}>{status}</StatusBadge>
+                {t('emailQueue.status')} <StatusBadge $status={status}>{t(`emailQueue.${status}` as any) || status}</StatusBadge>
               </span>
               {item.error?.rejected_reason && <span>{t('emailQueue.reason')} {item.error?.rejected_reason}</span>}
               {item.lead_id && <span>{t('emailQueue.lead')} {item.lead_id}</span>}
@@ -1683,7 +1699,7 @@ const EmailQueue: React.FC = () => {
                   style={{ background: '#fef2f2', border: '1px solid #fecaca' }}
                 >
                   <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                  Reject
+                  {t('emailQueue.reject')}
                 </ActionButton>
               </>
             )}
@@ -1711,10 +1727,10 @@ const EmailQueue: React.FC = () => {
       <div><PageTitle>{t('emailQueue.title')}</PageTitle><PageSub>{t('emailQueue.subtitle')}</PageSub></div>
       <PageTabs>
         <PageTab $active={pageTab === 'queue'} onClick={() => setPageTab('queue')}>
-          寄件匣
+          {t('emailQueue.queueTab')}
         </PageTab>
         <PageTab $active={pageTab === 'templates'} onClick={() => setPageTab('templates')}>
-          郵件樣板
+          {t('emailQueue.templatesTab')}
         </PageTab>
       </PageTabs>
 

@@ -963,6 +963,12 @@ const EmailApp: React.FC = () => {
     { id: 'spam', label: t('email.spam'), icon: 'exclamation' },
     { id: 'trash', label: t('email.trash'), icon: 'trash', badge: 68 },
   ];
+  const translatedCategories = [
+    { id: 'angular', label: t('emailApp.catAngular') },
+    { id: 'uiux', label: t('emailApp.catUiUxDesign') },
+    { id: 'development', label: t('emailApp.catDevelopment') },
+    { id: 'marketing', label: t('emailApp.catMarketing') },
+  ];
   const [selectedEmails, setSelectedEmails] = useState<Set<number>>(new Set());
   const [starredEmails, setStarredEmails] = useState<Set<number>>(
     new Set(emails.filter((e) => e.defaultStarred).map((e) => e.id))
@@ -1037,10 +1043,10 @@ const EmailApp: React.FC = () => {
       <SidebarDivider />
       <CategoryLabel>{t('email.categories')}</CategoryLabel>
       <FolderList>
-        {categories.map((c) => (
-          <FolderItem key={c} onClick={() => setActiveFolder(c)}>
+        {translatedCategories.map((c) => (
+          <FolderItem key={c.id} onClick={() => setActiveFolder(c.id)}>
             <I d={icons.tag} />
-            {c}
+            {c.label}
           </FolderItem>
         ))}
       </FolderList>
@@ -1068,7 +1074,7 @@ const EmailApp: React.FC = () => {
           </ToolbarBtn>
         </ToolbarLeft>
         <ToolbarRight>
-          <span>1-50 of 234</span>
+          <span>{t('emailApp.showingRange', { start: 1, end: 50, total: 234 })}</span>
           <IconBtn>
             <I d={icons.angleLeft} />
           </IconBtn>
@@ -1194,7 +1200,7 @@ const EmailApp: React.FC = () => {
             </DetailDateRight>
           </DetailSenderRow>
 
-          <ToLine>To: Me &#9662;</ToLine>
+          <ToLine>{t('emailApp.toMe')} &#9662;</ToLine>
 
           <EmailBodyText>
             {e.body.split('\n').map((para, i) => (
@@ -1264,7 +1270,7 @@ const EmailApp: React.FC = () => {
 
           <ComposeTextarea
             placeholder={t('email.writeMessage')}
-            defaultValue="It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters."
+            defaultValue={t('emailApp.composeDefaultText')}
           />
 
           <ComposeActions>

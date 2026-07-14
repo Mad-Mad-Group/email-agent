@@ -1,5 +1,6 @@
 import React, { useState, useRef, useCallback } from 'react';
 import styled, { css } from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import { useDialog } from '../../components';
 
 /* ══════════════════════════════════════
@@ -20,18 +21,27 @@ interface EmailTemplate {
 /* ── Variables available for insertion ── */
 
 const TEMPLATE_VARIABLES = [
-  { key: '{{name}}', label: '收件人姓名', example: 'John Smith' },
-  { key: '{{company}}', label: '公司名稱', example: 'Acme Corp' },
-  { key: '{{title}}', label: '職稱', example: 'CTO' },
-  { key: '{{industry}}', label: '行業', example: 'SaaS' },
-  { key: '{{location}}', label: '地點', example: 'San Francisco' },
-  { key: '{{sender_name}}', label: '寄件人姓名', example: 'Patricia' },
-  { key: '{{sender_title}}', label: '寄件人職稱', example: 'Sales Manager' },
-  { key: '{{product}}', label: '產品名稱', example: 'MADMAD CMS' },
-  { key: '{{custom_1}}', label: '自訂欄位 1', example: '—' },
+  { key: '{{name}}', labelKey: 'emailTemplate.varRecipientName', example: 'John Smith' },
+  { key: '{{company}}', labelKey: 'emailTemplate.varCompanyName', example: 'Acme Corp' },
+  { key: '{{title}}', labelKey: 'emailTemplate.varTitle', example: 'CTO' },
+  { key: '{{industry}}', labelKey: 'emailTemplate.varIndustry', example: 'SaaS' },
+  { key: '{{location}}', labelKey: 'emailTemplate.varLocation', example: 'San Francisco' },
+  { key: '{{sender_name}}', labelKey: 'emailTemplate.varSenderName', example: 'Patricia' },
+  { key: '{{sender_title}}', labelKey: 'emailTemplate.varSenderTitle', example: 'Sales Manager' },
+  { key: '{{product}}', labelKey: 'emailTemplate.varProductName', example: 'MADMAD CMS' },
+  { key: '{{custom_1}}', labelKey: 'emailTemplate.varCustomField1', example: '—' },
 ];
 
 const CATEGORIES = ['Cold Outreach', 'Follow-up', 'Introduction', 'Partnership', 'Event', 'Re-engagement'];
+
+const CATEGORY_I18N: Record<string, string> = {
+  'Cold Outreach': 'emailTemplate.catColdOutreach',
+  'Follow-up': 'emailTemplate.catFollowUp',
+  'Introduction': 'emailTemplate.catIntroduction',
+  'Partnership': 'emailTemplate.catPartnership',
+  'Event': 'emailTemplate.catEvent',
+  'Re-engagement': 'emailTemplate.catReEngagement',
+};
 
 /* ── Mock templates ── */
 
@@ -474,6 +484,7 @@ const VarExample = styled.span`
    ══════════════════════════════════════ */
 
 const EmailTemplateEditor: React.FC = () => {
+  const { t } = useTranslation();
   const { showPrompt } = useDialog();
   const [templates, setTemplates] = useState<EmailTemplate[]>(INITIAL_TEMPLATES);
   const [activeId, setActiveId] = useState<string>(INITIAL_TEMPLATES[0].id);
@@ -501,7 +512,7 @@ const EmailTemplateEditor: React.FC = () => {
     const id = `tpl-${Date.now()}`;
     const newTpl: EmailTemplate = {
       id,
-      name: 'New Template',
+      name: t('emailTemplate.newTemplateName'),
       subject: '',
       body: '<p>Hi {{name}},</p><p></p><p>Best,<br/>{{sender_name}}</p>',
       category: 'Cold Outreach',
@@ -516,7 +527,7 @@ const EmailTemplateEditor: React.FC = () => {
     const dup: EmailTemplate = {
       ...active,
       id,
-      name: `${active.name} (Copy)`,
+      name: `${active.name} ${t('emailTemplate.copyTemplateSuffix')}`,
       updatedAt: new Date().toISOString(),
     };
     setTemplates((prev) => {
@@ -594,15 +605,15 @@ const EmailTemplateEditor: React.FC = () => {
       {/* ── Left: Template List ── */}
       <TemplateListPane>
         <ListHeader>
-          <ListTitle>樣板 ({templates.length})</ListTitle>
+          <ListTitle>{t('emailTemplate.templates')} ({templates.length})</ListTitle>
           <ListActions>
-            <SmallBtn title="新增樣板" onClick={addTemplate}>
+            <SmallBtn title={t('emailTemplate.addTemplate')} onClick={addTemplate}>
               <I d={ico.plus} size={14} />
             </SmallBtn>
-            <SmallBtn title="複製樣板" onClick={duplicateTemplate}>
+            <SmallBtn title={t('emailTemplate.duplicateTemplate')} onClick={duplicateTemplate}>
               <I d={ico.copy} size={14} />
             </SmallBtn>
-            <SmallBtn $danger title="刪除樣板" onClick={deleteTemplate}>
+            <SmallBtn $danger title={t('emailTemplate.deleteTemplate')} onClick={deleteTemplate}>
               <I d={ico.trash} size={14} />
             </SmallBtn>
           </ListActions>
@@ -612,7 +623,7 @@ const EmailTemplateEditor: React.FC = () => {
             <TemplateItem key={tpl.id} $active={tpl.id === activeId} onClick={() => setActiveId(tpl.id)}>
               <TemplateName>{tpl.name}</TemplateName>
               <div>
-                <TemplateCategory>{tpl.category}</TemplateCategory>
+                <TemplateCategory>{t(CATEGORY_I18N[tpl.category] || tpl.category)}</TemplateCategory>
                 <TemplateDate>{formatDate(tpl.updatedAt)}</TemplateDate>
               </div>
             </TemplateItem>
@@ -623,52 +634,52 @@ const EmailTemplateEditor: React.FC = () => {
       {/* ── Center: Editor ── */}
       <EditorPane>
         <NameRow>
-          <SubjectLabel>名稱</SubjectLabel>
+          <SubjectLabel>{t('emailTemplate.nameLabel')}</SubjectLabel>
           <NameInput
             value={active.name}
             onChange={(e) => updateTemplate({ name: e.target.value })}
-            placeholder="Template name..."
+            placeholder={t('emailTemplate.templateNamePlaceholder')}
           />
           <CategorySelect
             value={active.category}
             onChange={(e) => updateTemplate({ category: e.target.value })}
           >
             {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
+              <option key={c} value={c}>{t(CATEGORY_I18N[c] || c)}</option>
             ))}
           </CategorySelect>
         </NameRow>
 
         <SubjectRow>
-          <SubjectLabel>主旨</SubjectLabel>
+          <SubjectLabel>{t('emailTemplate.subjectLabel')}</SubjectLabel>
           <SubjectInput
             value={active.subject}
             onChange={(e) => updateTemplate({ subject: e.target.value })}
-            placeholder="Email subject line..."
+            placeholder={t('emailTemplate.subjectPlaceholder')}
           />
         </SubjectRow>
 
         <EditorToolbar>
-          <ToolBtn onClick={() => execCmd('bold')} title="Bold">
+          <ToolBtn onClick={() => execCmd('bold')} title={t('emailTemplate.bold')}>
             <I d={ico.bold} size={14} />
           </ToolBtn>
-          <ToolBtn onClick={() => execCmd('italic')} title="Italic">
+          <ToolBtn onClick={() => execCmd('italic')} title={t('emailTemplate.italic')}>
             <I d={ico.italic} size={14} />
           </ToolBtn>
-          <ToolBtn onClick={() => execCmd('underline')} title="Underline">
+          <ToolBtn onClick={() => execCmd('underline')} title={t('emailTemplate.underline')}>
             <I d={ico.underline} size={14} />
           </ToolBtn>
           <ToolDivider />
           <ToolBtn
             onClick={async () => {
-              const url = await showPrompt('Enter URL:', '', 'https://');
+              const url = await showPrompt(t('emailTemplate.enterUrl'), '', 'https://');
               if (url) execCmd('createLink', url);
             }}
-            title="Insert Link"
+            title={t('emailTemplate.insertLink')}
           >
             <I d={ico.link} size={14} />
           </ToolBtn>
-          <ToolBtn onClick={() => execCmd('insertUnorderedList')} title="Bullet List">
+          <ToolBtn onClick={() => execCmd('insertUnorderedList')} title={t('emailTemplate.bulletList')}>
             <I d={ico.list} size={14} />
           </ToolBtn>
           <ToolDivider />
@@ -676,7 +687,7 @@ const EmailTemplateEditor: React.FC = () => {
             <ToolBtn
               key={v.key}
               onClick={() => insertVariable(v.key)}
-              title={`插入 ${v.label}`}
+              title={t('emailTemplate.insertVar', { label: t(v.labelKey) })}
               style={{ fontSize: '0.6875rem', padding: '3px 6px' }}
             >
               {v.key}
@@ -697,10 +708,10 @@ const EmailTemplateEditor: React.FC = () => {
         </BodyArea>
 
         <EditorFooter>
-          <span>{saved ? '✓ 已儲存' : '未儲存的變更'}</span>
+          <span>{saved ? `✓ ${t('emailTemplate.saved')}` : t('emailTemplate.unsavedChanges')}</span>
           <SaveBtn onClick={handleSave}>
             <I d={ico.save} size={14} />
-            儲存樣板
+            {t('emailTemplate.saveTemplate')}
           </SaveBtn>
         </EditorFooter>
       </EditorPane>
@@ -709,10 +720,10 @@ const EmailTemplateEditor: React.FC = () => {
       <PreviewPane>
         <PreviewTabs>
           <PreviewTab $active={rightTab === 'preview'} onClick={() => setRightTab('preview')}>
-            即時預覽
+            {t('emailTemplate.livePreview')}
           </PreviewTab>
           <PreviewTab $active={rightTab === 'variables'} onClick={() => setRightTab('variables')}>
-            變量面板
+            {t('emailTemplate.variablePanel')}
           </PreviewTab>
         </PreviewTabs>
 
@@ -725,11 +736,11 @@ const EmailTemplateEditor: React.FC = () => {
           </PreviewContent>
         ) : (
           <VariablePanel>
-            <VarSectionTitle>點擊插入變量到編輯器</VarSectionTitle>
+            <VarSectionTitle>{t('emailTemplate.clickToInsertVar')}</VarSectionTitle>
             {TEMPLATE_VARIABLES.map((v) => (
               <VarItem key={v.key} onClick={() => insertVariable(v.key)}>
                 <VarKey>{v.key}</VarKey>
-                <VarLabel>{v.label}</VarLabel>
+                <VarLabel>{t(v.labelKey)}</VarLabel>
                 <VarExample>{v.example}</VarExample>
               </VarItem>
             ))}

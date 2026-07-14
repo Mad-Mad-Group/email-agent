@@ -700,6 +700,25 @@ const Calendar: React.FC = () => {
 
   const dark = typeof window !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark';
 
+  const months = useMemo(() => [
+    t('calendar.january'), t('calendar.february'), t('calendar.march'),
+    t('calendar.april'), t('calendar.may'), t('calendar.june'),
+    t('calendar.july'), t('calendar.august'), t('calendar.september'),
+    t('calendar.october'), t('calendar.november'), t('calendar.december'),
+  ], [t]);
+
+  const monthsShort = useMemo(() => [
+    t('calendar.janShort'), t('calendar.febShort'), t('calendar.marShort'),
+    t('calendar.aprShort'), t('calendar.mayShort'), t('calendar.junShort'),
+    t('calendar.julShort'), t('calendar.augShort'), t('calendar.sepShort'),
+    t('calendar.octShort'), t('calendar.novShort'), t('calendar.decShort'),
+  ], [t]);
+
+  const dayNames = useMemo(() => [
+    t('calendar.sun'), t('calendar.mon'), t('calendar.tue'),
+    t('calendar.wed'), t('calendar.thu'), t('calendar.fri'), t('calendar.sat'),
+  ], [t]);
+
   useEffect(() => {
     client.get('/calendar', { params: { month: month + 1, year } })
       .then((res) => {
@@ -870,10 +889,10 @@ const Calendar: React.FC = () => {
     const end = new Date(weekStart);
     end.setDate(end.getDate() + 6);
     if (weekStart.getMonth() === end.getMonth()) {
-      return `${MONTHS[weekStart.getMonth()]} ${weekStart.getDate()} – ${end.getDate()}, ${weekStart.getFullYear()}`;
+      return t('calendar.weekRangeSameMonth', { month: months[weekStart.getMonth()], startDay: weekStart.getDate(), endDay: end.getDate(), year: weekStart.getFullYear() });
     }
-    return `${MONTHS_SHORT[weekStart.getMonth()]} ${weekStart.getDate()} – ${MONTHS_SHORT[end.getMonth()]} ${end.getDate()}, ${end.getFullYear()}`;
-  }, [weekStart]);
+    return t('calendar.weekRangeCrossMonth', { startMonth: monthsShort[weekStart.getMonth()], startDay: weekStart.getDate(), endMonth: monthsShort[end.getMonth()], endDay: end.getDate(), year: end.getFullYear() });
+  }, [weekStart, months, monthsShort, t]);
 
   // Now indicator position
   const nowMinutes = today.getHours() * 60 + today.getMinutes();
@@ -887,11 +906,11 @@ const Calendar: React.FC = () => {
         <MainArea>
           <SpiralCalCard>
             <CalHeader>
-              <CalTitle>{viewMode === 'month' ? `${MONTHS[month]} ${year}` : weekTitle}</CalTitle>
+              <CalTitle>{viewMode === 'month' ? t('calendar.monthYearTitle', { month: months[month], year }) : weekTitle}</CalTitle>
               <CalNav>
                 <PillWrap>
-                  <PillBtn $active={viewMode === 'month'} onClick={() => setViewMode('month')}>Month</PillBtn>
-                  <PillBtn $active={viewMode === 'week'} onClick={() => setViewMode('week')}>Week</PillBtn>
+                  <PillBtn $active={viewMode === 'month'} onClick={() => setViewMode('month')}>{t('calendar.monthView')}</PillBtn>
+                  <PillBtn $active={viewMode === 'week'} onClick={() => setViewMode('week')}>{t('calendar.weekView')}</PillBtn>
                 </PillWrap>
                 <CalBtn $disabled={isCurrentMonth && viewMode === 'month'} onClick={goToday}>{t('calendar.today')}</CalBtn>
                 <CalBtn onClick={prev}>&lt;</CalBtn>
@@ -933,7 +952,7 @@ const Calendar: React.FC = () => {
                 {weekDays.map((d, i) => (
                   <WeekDayHeader key={i} $today={isToday(d)}>
                     <WeekDayNum $today={isToday(d)}>{d.getDate()}</WeekDayNum>
-                    <WeekDayName>{DAY_NAMES[d.getDay()]}</WeekDayName>
+                    <WeekDayName>{dayNames[d.getDay()]}</WeekDayName>
                   </WeekDayHeader>
                 ))}
 
@@ -970,13 +989,13 @@ const Calendar: React.FC = () => {
                               >
                                 <WeekEvTitle>{ev.title}</WeekEvTitle>
                                 <WeekEvTime>
-                                  {ev.time || 'All day'}
+                                  {ev.time || t('calendar.allDay')}
                                   {ev.endHour !== undefined ? ` – ${ev.endHour > 12 ? ev.endHour - 12 : ev.endHour || 12}:${String(ev.endMin || 0).padStart(2, '0')}${(ev.endHour || 0) >= 12 ? 'pm' : 'am'}` : ''}
                                 </WeekEvTime>
                                 {isExpanded && duration > 40 && (
                                   <WeekEvActions>
-                                    <WeekEvBtn $type={ev.eventType} $dark={dark}>Detail</WeekEvBtn>
-                                    <WeekEvBtn $type={ev.eventType} $dark={dark}>Participant</WeekEvBtn>
+                                    <WeekEvBtn $type={ev.eventType} $dark={dark}>{t('calendar.detail')}</WeekEvBtn>
+                                    <WeekEvBtn $type={ev.eventType} $dark={dark}>{t('calendar.participant')}</WeekEvBtn>
                                   </WeekEvActions>
                                 )}
                               </WeekEventCard>
@@ -997,7 +1016,7 @@ const Calendar: React.FC = () => {
             return (
               <DayDetailWrap key={selectedDay}>
                 <DayDetailHeader>
-                  <DayDetailTitle>{MONTHS_SHORT[month]} {selectedDay} 日程</DayDetailTitle>
+                  <DayDetailTitle>{t('calendar.dayScheduleTitle', { month: monthsShort[month], day: selectedDay })}</DayDetailTitle>
                   <DayDetailClose onClick={() => setSelectedDay(null)}>
                     <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
                       <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
@@ -1008,13 +1027,13 @@ const Calendar: React.FC = () => {
                   <DayEventList>
                     {dayEvents.map((ev, i) => (
                       <DayEventItem key={i} $color={EVENT_TYPE_DOT_COLORS[ev.eventType]} $past={ev.past}>
-                        <DayEventTime>{ev.time || '全日'}</DayEventTime>
+                        <DayEventTime>{ev.time || t('calendar.allDay')}</DayEventTime>
                         <DayEventTitle>{ev.title}</DayEventTitle>
                       </DayEventItem>
                     ))}
                   </DayEventList>
                 ) : (
-                  <DayEmptyText>當日冇日程</DayEmptyText>
+                  <DayEmptyText>{t('calendar.noDayEvents')}</DayEmptyText>
                 )}
               </DayDetailWrap>
             );
@@ -1025,22 +1044,22 @@ const Calendar: React.FC = () => {
         {viewMode === 'month' && (
           <AgendaPanel>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <span style={{ fontSize: '1rem', fontWeight: 600 }}>今日議程</span>
+              <span style={{ fontSize: '1rem', fontWeight: 600 }}>{t('calendar.todayAgenda')}</span>
               <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
-                {today.getMonth() + 1}/{today.getDate()}（{DAY_NAMES[today.getDay()]})
+                {today.getMonth() + 1}/{today.getDate()}（{dayNames[today.getDay()]})
               </span>
             </div>
             {todayAgenda.length > 0 ? (
               <DayEventList>
                 {todayAgenda.map((ev, i) => (
                   <DayEventItem key={i} $color={EVENT_TYPE_DOT_COLORS[ev.eventType]} $past={ev.past}>
-                    <DayEventTime>{ev.time || '全日'}</DayEventTime>
+                    <DayEventTime>{ev.time || t('calendar.allDay')}</DayEventTime>
                     <DayEventTitle>{ev.title}</DayEventTitle>
                   </DayEventItem>
                 ))}
               </DayEventList>
             ) : (
-              <DayEmptyText>今日暫無事項</DayEmptyText>
+              <DayEmptyText>{t('calendar.noItemsToday')}</DayEmptyText>
             )}
           </AgendaPanel>
         )}

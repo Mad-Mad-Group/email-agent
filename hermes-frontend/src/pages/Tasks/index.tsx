@@ -38,7 +38,7 @@ function getStr(task: TaskItem, key: string): string {
   return '';
 }
 function getTitle(task: TaskItem): string {
-  return getStr(task, 'title') || getStr(task, 'type') || 'Untitled Task';
+  return getStr(task, 'title') || getStr(task, 'type') || 'tasks.untitledTask';
 }
 function getSkill(task: TaskItem): string {
   return getStr(task, 'skill_id') || getStr(task, 'type') || '';
@@ -481,26 +481,26 @@ function priorityColor(p: string): string {
 
 const MOCK_TASKS: TaskItem[] = [
   // ── Pending ──
-  { _id: 'mock-p1', title: '抓取 LinkedIn 資料', skill_id: 'S1', params: { keyword: 'CTO', location: 'San Francisco' }, priority: 'high', status: 'pending', _created_at: '2026-06-23T08:15:00Z', assigned_agent_id: 'Agent-A' } as unknown as TaskItem,
-  { _id: 'mock-p2', title: '批量寄送開發信', skill_id: 'S3', params: { template: 'intro_v2', batch_size: 50 }, priority: 'normal', status: 'pending', _created_at: '2026-06-23T09:30:00Z', assigned_agent_id: 'Agent-B' } as unknown as TaskItem,
-  { _id: 'mock-p3', title: '分析競品定價頁面', skill_id: 'S2', params: { url: 'https://competitor.io/pricing' }, priority: 'low', status: 'pending', _created_at: '2026-06-22T14:00:00Z' } as unknown as TaskItem,
-  { _id: 'mock-p4', title: '匯出本週 Leads 報表', skill_id: 'S5', params: { format: 'xlsx', range: 'this_week' }, priority: 'normal', status: 'pending', _created_at: '2026-06-24T06:00:00Z', assigned_agent_id: 'Agent-C' } as unknown as TaskItem,
+  { _id: 'mock-p1', title: 'tasks.mockTitles.scrapeLinkedin', skill_id: 'S1', params: { keyword: 'CTO', location: 'San Francisco' }, priority: 'high', status: 'pending', _created_at: '2026-06-23T08:15:00Z', assigned_agent_id: 'Agent-A' } as unknown as TaskItem,
+  { _id: 'mock-p2', title: 'tasks.mockTitles.batchSendColdEmails', skill_id: 'S3', params: { template: 'intro_v2', batch_size: 50 }, priority: 'normal', status: 'pending', _created_at: '2026-06-23T09:30:00Z', assigned_agent_id: 'Agent-B' } as unknown as TaskItem,
+  { _id: 'mock-p3', title: 'tasks.mockTitles.analyzeCompetitorPricing', skill_id: 'S2', params: { url: 'https://competitor.io/pricing' }, priority: 'low', status: 'pending', _created_at: '2026-06-22T14:00:00Z' } as unknown as TaskItem,
+  { _id: 'mock-p4', title: 'tasks.mockTitles.exportWeeklyLeads', skill_id: 'S5', params: { format: 'xlsx', range: 'this_week' }, priority: 'normal', status: 'pending', _created_at: '2026-06-24T06:00:00Z', assigned_agent_id: 'Agent-C' } as unknown as TaskItem,
 
   // ── Processing ──
-  { _id: 'mock-r1', title: '爬取 Crunchbase 資料', skill_id: 'S1', params: { target: 'Series A startups', pages: 20 }, priority: 'high', status: 'processing', _created_at: '2026-06-24T07:45:00Z', assigned_agent_id: 'Worker-1' } as unknown as TaskItem,
-  { _id: 'mock-r2', title: 'AI 分析潛在客戶匹配度', skill_id: 'S2', params: { model: 'lead-scorer-v3', batch: 120 }, priority: 'normal', status: 'processing', _created_at: '2026-06-24T08:10:00Z', assigned_agent_id: 'Worker-2' } as unknown as TaskItem,
-  { _id: 'mock-r3', title: '同步 CRM 聯絡人', skill_id: 'S6', params: { crm: 'HubSpot', direction: 'bidirectional' }, priority: 'normal', status: 'processing', _created_at: '2026-06-24T09:00:00Z', assigned_agent_id: 'Worker-1' } as unknown as TaskItem,
+  { _id: 'mock-r1', title: 'tasks.mockTitles.scrapeCrunchbase', skill_id: 'S1', params: { target: 'Series A startups', pages: 20 }, priority: 'high', status: 'processing', _created_at: '2026-06-24T07:45:00Z', assigned_agent_id: 'Worker-1' } as unknown as TaskItem,
+  { _id: 'mock-r2', title: 'tasks.mockTitles.aiAnalyzeLeadMatch', skill_id: 'S2', params: { model: 'lead-scorer-v3', batch: 120 }, priority: 'normal', status: 'processing', _created_at: '2026-06-24T08:10:00Z', assigned_agent_id: 'Worker-2' } as unknown as TaskItem,
+  { _id: 'mock-r3', title: 'tasks.mockTitles.syncCrmContacts', skill_id: 'S6', params: { crm: 'HubSpot', direction: 'bidirectional' }, priority: 'normal', status: 'processing', _created_at: '2026-06-24T09:00:00Z', assigned_agent_id: 'Worker-1' } as unknown as TaskItem,
 
   // ── Completed ──
-  { _id: 'mock-c1', title: '寄送 TechCorp 開發信', skill_id: 'S3', params: { to: 'ceo@techcorp.com' }, priority: 'normal', status: 'completed', result: { sent: true, opened: true, replied: false }, _created_at: '2026-06-21T10:00:00Z', assigned_agent_id: 'Agent-A' } as unknown as TaskItem,
-  { _id: 'mock-c2', title: '分析 Q2 轉換率數據', skill_id: 'S2', params: { quarter: 'Q2', metric: 'conversion' }, priority: 'low', status: 'completed', result: { analyzed: true, score: 87 }, _created_at: '2026-06-20T16:30:00Z', assigned_agent_id: 'Agent-B' } as unknown as TaskItem,
-  { _id: 'mock-c3', title: '生成每日潛客摘要', skill_id: 'S4', params: { mode: 'daily_digest' }, priority: 'normal', status: 'completed', result: { leads_found: 34, qualified: 12 }, _created_at: '2026-06-22T06:00:00Z' } as unknown as TaskItem,
-  { _id: 'mock-c4', title: '更新公司資料庫', skill_id: 'S5', params: { source: 'LinkedIn', records: 250 }, priority: 'normal', status: 'completed', result: { updated: 248, skipped: 2 }, _created_at: '2026-06-23T11:00:00Z', assigned_agent_id: 'Worker-2' } as unknown as TaskItem,
+  { _id: 'mock-c1', title: 'tasks.mockTitles.sendTechCorpEmail', skill_id: 'S3', params: { to: 'ceo@techcorp.com' }, priority: 'normal', status: 'completed', result: { sent: true, opened: true, replied: false }, _created_at: '2026-06-21T10:00:00Z', assigned_agent_id: 'Agent-A' } as unknown as TaskItem,
+  { _id: 'mock-c2', title: 'tasks.mockTitles.analyzeQ2Conversion', skill_id: 'S2', params: { quarter: 'Q2', metric: 'conversion' }, priority: 'low', status: 'completed', result: { analyzed: true, score: 87 }, _created_at: '2026-06-20T16:30:00Z', assigned_agent_id: 'Agent-B' } as unknown as TaskItem,
+  { _id: 'mock-c3', title: 'tasks.mockTitles.generateDailyLeadSummary', skill_id: 'S4', params: { mode: 'daily_digest' }, priority: 'normal', status: 'completed', result: { leads_found: 34, qualified: 12 }, _created_at: '2026-06-22T06:00:00Z' } as unknown as TaskItem,
+  { _id: 'mock-c4', title: 'tasks.mockTitles.updateCompanyDatabase', skill_id: 'S5', params: { source: 'LinkedIn', records: 250 }, priority: 'normal', status: 'completed', result: { updated: 248, skipped: 2 }, _created_at: '2026-06-23T11:00:00Z', assigned_agent_id: 'Worker-2' } as unknown as TaskItem,
 
   // ── Failed ──
-  { _id: 'mock-f1', title: '爬取 AngelList 頁面', skill_id: 'S1', params: { url: 'https://angel.co/companies' }, priority: 'high', status: 'failed', error: { message: 'Rate limit exceeded (429)' }, _created_at: '2026-06-23T13:00:00Z', assigned_agent_id: 'Worker-1' } as unknown as TaskItem,
-  { _id: 'mock-f2', title: '寄信給 GlobalTech CEO', skill_id: 'S3', params: { to: 'john@globaltech.com' }, priority: 'normal', status: 'failed', error: { message: 'SMTP connection timeout' }, _created_at: '2026-06-22T15:20:00Z', assigned_agent_id: 'Agent-A' } as unknown as TaskItem,
-  { _id: 'mock-f3', title: '同步 Salesforce 資料', skill_id: 'S6', params: { crm: 'Salesforce' }, priority: 'urgent', status: 'failed', error: { message: 'OAuth token expired, please re-authenticate' }, _created_at: '2026-06-24T04:30:00Z' } as unknown as TaskItem,
+  { _id: 'mock-f1', title: 'tasks.mockTitles.scrapeAngelList', skill_id: 'S1', params: { url: 'https://angel.co/companies' }, priority: 'high', status: 'failed', error: { message: 'Rate limit exceeded (429)' }, _created_at: '2026-06-23T13:00:00Z', assigned_agent_id: 'Worker-1' } as unknown as TaskItem,
+  { _id: 'mock-f2', title: 'tasks.mockTitles.sendGlobalTechEmail', skill_id: 'S3', params: { to: 'john@globaltech.com' }, priority: 'normal', status: 'failed', error: { message: 'SMTP connection timeout' }, _created_at: '2026-06-22T15:20:00Z', assigned_agent_id: 'Agent-A' } as unknown as TaskItem,
+  { _id: 'mock-f3', title: 'tasks.mockTitles.syncSalesforce', skill_id: 'S6', params: { crm: 'Salesforce' }, priority: 'urgent', status: 'failed', error: { message: 'OAuth token expired, please re-authenticate' }, _created_at: '2026-06-24T04:30:00Z' } as unknown as TaskItem,
 ];
 
 /* ═══════════ Workflow Steps (per task) ═══════════ */
@@ -514,91 +514,91 @@ interface WorkflowStep {
 
 const TASK_WORKFLOWS: Record<string, WorkflowStep[]> = {
   'mock-p1': [
-    { label: '任務已建立', status: 'done', time: '06/23 08:15' },
-    { label: '等待排程分配', status: 'active', time: '06/23 08:16' },
-    { label: '開始抓取 LinkedIn', status: 'pending' },
-    { label: '資料清洗 & 去重', status: 'pending' },
-    { label: '匯入潛客池', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/23 08:15' },
+    { label: 'tasks.wf.awaitingScheduleAssign', status: 'active', time: '06/23 08:16' },
+    { label: 'tasks.wf.startScrapeLinkedin', status: 'pending' },
+    { label: 'tasks.wf.dataCleanDedup', status: 'pending' },
+    { label: 'tasks.wf.importLeadPool', status: 'pending' },
   ],
   'mock-p2': [
-    { label: '任務已建立', status: 'done', time: '06/23 09:30' },
-    { label: '載入模板 intro_v2', status: 'active', time: '06/23 09:31', detail: '50 封信件待個性化生成' },
-    { label: 'AI 生成信件內容', status: 'pending' },
-    { label: '批量寄送', status: 'pending' },
-    { label: '追蹤開信率', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/23 09:30' },
+    { label: 'tasks.wf.loadTemplateIntroV2', status: 'active', time: '06/23 09:31', detail: 'tasks.wfDetail.emails50Pending' },
+    { label: 'tasks.wf.aiGenerateEmailContent', status: 'pending' },
+    { label: 'tasks.wf.batchSend', status: 'pending' },
+    { label: 'tasks.wf.trackOpenRate', status: 'pending' },
   ],
   'mock-p3': [
-    { label: '任務已建立', status: 'done', time: '06/22 14:00' },
-    { label: '排隊中', status: 'active' },
-    { label: '訪問定價頁面', status: 'pending' },
-    { label: '截圖 & 提取定價', status: 'pending' },
-    { label: '生成分析報告', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/22 14:00' },
+    { label: 'tasks.wf.queued', status: 'active' },
+    { label: 'tasks.wf.visitPricingPage', status: 'pending' },
+    { label: 'tasks.wf.screenshotExtractPricing', status: 'pending' },
+    { label: 'tasks.wf.generateAnalysisReport', status: 'pending' },
   ],
   'mock-p4': [
-    { label: '任務已建立', status: 'done', time: '06/24 06:00' },
-    { label: '查詢本週數據', status: 'active' },
-    { label: '生成 XLSX', status: 'pending' },
-    { label: '寄送至管理員', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/24 06:00' },
+    { label: 'tasks.wf.queryThisWeekData', status: 'active' },
+    { label: 'tasks.wf.generateXlsx', status: 'pending' },
+    { label: 'tasks.wf.sendToAdmin', status: 'pending' },
   ],
   'mock-r1': [
-    { label: '任務已建立', status: 'done', time: '06/24 07:45' },
-    { label: '分配給 Worker-1', status: 'done', time: '06/24 07:46' },
-    { label: '爬取 Crunchbase', status: 'active', time: '06/24 07:48', detail: '已抓取 12/20 頁，發現 87 家公司' },
-    { label: '資料標準化', status: 'pending' },
-    { label: '匯入管線', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/24 07:45' },
+    { label: 'tasks.wf.assignedToWorker1', status: 'done', time: '06/24 07:46' },
+    { label: 'tasks.wf.scrapeCrunchbase', status: 'active', time: '06/24 07:48', detail: 'tasks.wfDetail.scraped12of20' },
+    { label: 'tasks.wf.dataNormalization', status: 'pending' },
+    { label: 'tasks.wf.importPipeline', status: 'pending' },
   ],
   'mock-r2': [
-    { label: '任務已建立', status: 'done', time: '06/24 08:10' },
-    { label: '載入 lead-scorer-v3 模型', status: 'done', time: '06/24 08:12' },
-    { label: '批次評分中', status: 'active', time: '06/24 08:15', detail: '已評分 78/120 筆，平均分 0.68' },
-    { label: '生成報告', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/24 08:10' },
+    { label: 'tasks.wf.loadLeadScorerModel', status: 'done', time: '06/24 08:12' },
+    { label: 'tasks.wf.batchScoring', status: 'active', time: '06/24 08:15', detail: 'tasks.wfDetail.scored78of120' },
+    { label: 'tasks.wf.generateReport', status: 'pending' },
   ],
   'mock-r3': [
-    { label: '任務已建立', status: 'done', time: '06/24 09:00' },
-    { label: '連接 HubSpot API', status: 'done', time: '06/24 09:02' },
-    { label: '雙向同步中', status: 'active', time: '06/24 09:05', detail: '上傳 45 筆，下載 23 筆' },
-    { label: '衝突檢查', status: 'pending' },
-    { label: '同步完成確認', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/24 09:00' },
+    { label: 'tasks.wf.connectHubspotApi', status: 'done', time: '06/24 09:02' },
+    { label: 'tasks.wf.bidirectionalSync', status: 'active', time: '06/24 09:05', detail: 'tasks.wfDetail.upload45Download23' },
+    { label: 'tasks.wf.conflictCheck', status: 'pending' },
+    { label: 'tasks.wf.syncCompleteConfirm', status: 'pending' },
   ],
   'mock-c1': [
-    { label: '任務已建立', status: 'done', time: '06/21 10:00' },
-    { label: 'AI 生成個性化信件', status: 'done', time: '06/21 10:05', detail: '主旨：Collaboration opportunity with TechCorp' },
-    { label: '信件已寄出', status: 'done', time: '06/21 10:08' },
-    { label: '已開信', status: 'done', time: '06/21 14:22', detail: '收件人已開信 (首次)' },
-    { label: '等待回覆', status: 'done', time: '06/21 14:22', detail: '尚未回覆，3 天後自動跟進' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/21 10:00' },
+    { label: 'tasks.wf.aiGeneratePersonalizedEmail', status: 'done', time: '06/21 10:05', detail: 'tasks.wfDetail.subjectCollaboration' },
+    { label: 'tasks.wf.emailSent', status: 'done', time: '06/21 10:08' },
+    { label: 'tasks.wf.emailOpened', status: 'done', time: '06/21 14:22', detail: 'tasks.wfDetail.recipientOpened' },
+    { label: 'tasks.wf.awaitingReply', status: 'done', time: '06/21 14:22', detail: 'tasks.wfDetail.noReply3DayFollowup' },
   ],
   'mock-c2': [
-    { label: '任務已建立', status: 'done', time: '06/20 16:30' },
-    { label: '讀取 Q2 數據', status: 'done', time: '06/20 16:32' },
-    { label: 'AI 分析完成', status: 'done', time: '06/20 16:40', detail: '轉換率評分: 87/100' },
-    { label: '報告已生成', status: 'done', time: '06/20 16:42' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/20 16:30' },
+    { label: 'tasks.wf.readQ2Data', status: 'done', time: '06/20 16:32' },
+    { label: 'tasks.wf.aiAnalysisComplete', status: 'done', time: '06/20 16:40', detail: 'tasks.wfDetail.conversionScore87' },
+    { label: 'tasks.wf.reportGenerated', status: 'done', time: '06/20 16:42' },
   ],
   'mock-c3': [
-    { label: '任務已建立', status: 'done', time: '06/22 06:00' },
-    { label: '掃描所有來源', status: 'done', time: '06/22 06:05' },
-    { label: '找到 34 筆潛客', status: 'done', time: '06/22 06:18', detail: '合格: 12, 待確認: 22' },
-    { label: '摘要已寄出', status: 'done', time: '06/22 06:20' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/22 06:00' },
+    { label: 'tasks.wf.scanAllSources', status: 'done', time: '06/22 06:05' },
+    { label: 'tasks.wf.found34Leads', status: 'done', time: '06/22 06:18', detail: 'tasks.wfDetail.qualified12Pending22' },
+    { label: 'tasks.wf.summarySent', status: 'done', time: '06/22 06:20' },
   ],
   'mock-c4': [
-    { label: '任務已建立', status: 'done', time: '06/23 11:00' },
-    { label: '匯入 LinkedIn 數據', status: 'done', time: '06/23 11:05' },
-    { label: '更新 248 筆記錄', status: 'done', time: '06/23 11:30', detail: '跳過 2 筆 (重複)' },
-    { label: '完成', status: 'done', time: '06/23 11:31' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/23 11:00' },
+    { label: 'tasks.wf.importLinkedinData', status: 'done', time: '06/23 11:05' },
+    { label: 'tasks.wf.updated248Records', status: 'done', time: '06/23 11:30', detail: 'tasks.wfDetail.skipped2Duplicate' },
+    { label: 'tasks.wf.complete', status: 'done', time: '06/23 11:31' },
   ],
   'mock-f1': [
-    { label: '任務已建立', status: 'done', time: '06/23 13:00' },
-    { label: '分配給 Worker-1', status: 'done', time: '06/23 13:01' },
-    { label: '開始爬取 AngelList', status: 'done', time: '06/23 13:03' },
-    { label: '❌ 失敗: Rate limit exceeded (429)', status: 'done', time: '06/23 13:05', detail: '已重試 3 次，建議等待 1 小時後重試' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/23 13:00' },
+    { label: 'tasks.wf.assignedToWorker1', status: 'done', time: '06/23 13:01' },
+    { label: 'tasks.wf.startScrapeAngellist', status: 'done', time: '06/23 13:03' },
+    { label: 'tasks.wf.failedRateLimit', status: 'done', time: '06/23 13:05', detail: 'tasks.wfDetail.retried3Times' },
   ],
   'mock-f2': [
-    { label: '任務已建立', status: 'done', time: '06/22 15:20' },
-    { label: '生成信件內容', status: 'done', time: '06/22 15:22' },
-    { label: '❌ 寄送失敗: SMTP connection timeout', status: 'done', time: '06/22 15:25', detail: 'SMTP 伺服器無回應，請檢查網路設定' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/22 15:20' },
+    { label: 'tasks.wf.generateEmailContent', status: 'done', time: '06/22 15:22' },
+    { label: 'tasks.wf.failedSmtpTimeout', status: 'done', time: '06/22 15:25', detail: 'tasks.wfDetail.smtpNoResponse' },
   ],
   'mock-f3': [
-    { label: '任務已建立', status: 'done', time: '06/24 04:30' },
-    { label: '❌ 連接失敗: OAuth token expired', status: 'done', time: '06/24 04:32', detail: '請重新授權 Salesforce 帳戶' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/24 04:30' },
+    { label: 'tasks.wf.failedOauthExpired', status: 'done', time: '06/24 04:32', detail: 'tasks.wfDetail.reauthSalesforce' },
   ],
 };
 
@@ -607,29 +607,29 @@ function getWorkflowSteps(taskId: string, status: string): WorkflowStep[] {
   // Fallback generic workflow
   if (status === 'completed') {
     return [
-      { label: '任務已建立', status: 'done' },
-      { label: '處理中', status: 'done' },
-      { label: '已完成', status: 'done' },
+      { label: 'tasks.wf.taskCreated', status: 'done' },
+      { label: 'tasks.wf.processing', status: 'done' },
+      { label: 'tasks.wf.completed', status: 'done' },
     ];
   }
   if (status === 'failed') {
     return [
-      { label: '任務已建立', status: 'done' },
-      { label: '❌ 執行失敗', status: 'done' },
+      { label: 'tasks.wf.taskCreated', status: 'done' },
+      { label: 'tasks.wf.executionFailed', status: 'done' },
     ];
   }
   if (status === 'processing') {
     return [
-      { label: '任務已建立', status: 'done' },
-      { label: '處理中', status: 'active' },
-      { label: '待完成', status: 'pending' },
+      { label: 'tasks.wf.taskCreated', status: 'done' },
+      { label: 'tasks.wf.processing', status: 'active' },
+      { label: 'tasks.wf.pendingCompletion', status: 'pending' },
     ];
   }
   return [
-    { label: '任務已建立', status: 'done' },
-    { label: '等待排程', status: 'active' },
-    { label: '開始執行', status: 'pending' },
-    { label: '完成', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done' },
+    { label: 'tasks.wf.awaitingSchedule', status: 'active' },
+    { label: 'tasks.wf.startExecution', status: 'pending' },
+    { label: 'tasks.wf.complete', status: 'pending' },
   ];
 }
 
@@ -865,14 +865,15 @@ const Tasks: React.FC = () => {
   const filtered = useMemo(() => {
     if (!search.trim()) return tasks;
     const q = search.trim().toLowerCase();
-    return tasks.filter((t) => {
-      const title = getTitle(t).toLowerCase();
-      const skill = getSkill(t).toLowerCase();
-      const status = getStatus(t);
-      const id = t._id.toLowerCase();
+    return tasks.filter((task) => {
+      const rawTitle = getTitle(task);
+      const title = t(rawTitle, { defaultValue: rawTitle }).toLowerCase();
+      const skill = getSkill(task).toLowerCase();
+      const status = getStatus(task);
+      const id = task._id.toLowerCase();
       return title.includes(q) || skill.includes(q) || status.includes(q) || id.includes(q);
     });
-  }, [tasks, search]);
+  }, [tasks, search, t]);
 
   const grouped = useMemo(() => {
     const m: Record<string, TaskItem[]> = {};
@@ -976,7 +977,7 @@ const Tasks: React.FC = () => {
                               })()}
                             </AvatarName>
                           </AvatarWrap>
-                          <CardTitle>{title}</CardTitle>
+                          <CardTitle>{t(title, { defaultValue: title })}</CardTitle>
                         </CardTopRow>
                         <CardDescRow>
                           <CardDesc>
@@ -1021,7 +1022,7 @@ const Tasks: React.FC = () => {
             <FloatingPanel>
               <PanelHead>
                 <PanelHeadLeft>
-                  <PanelTitle>{title}</PanelTitle>
+                  <PanelTitle>{t(title, { defaultValue: title })}</PanelTitle>
                   <PanelSub>{skill && `${t(`tasks.skills.${skill}`, { defaultValue: skill })} · `}{t(`tasks.${status}`, { defaultValue: status })}</PanelSub>
                 </PanelHeadLeft>
                 <CloseBtn onClick={handleClose} title={t('common.close')}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
@@ -1034,8 +1035,8 @@ const Tasks: React.FC = () => {
                       <WfTime>{step.time || ''}</WfTime>
                       <WfDot $s={step.status} />
                       <WfContent>
-                        <WfLabel $s={step.status}>{step.label}</WfLabel>
-                        {step.detail && <WfDetail>{step.detail}</WfDetail>}
+                        <WfLabel $s={step.status}>{t(step.label, { defaultValue: step.label })}</WfLabel>
+                        {step.detail && <WfDetail>{t(step.detail, { defaultValue: step.detail })}</WfDetail>}
                       </WfContent>
                     </WfItem>
                   ))}
@@ -1043,7 +1044,7 @@ const Tasks: React.FC = () => {
               </WfBody>
 
               <PanelFoot>
-                <FootStat>{doneCount} / {steps.length} {t('tasks.steps', { defaultValue: '步驟' })}</FootStat>
+                <FootStat>{doneCount} / {steps.length} {t('tasks.steps', { defaultValue: 'steps' })}</FootStat>
                 <ProgWrap>
                   <ProgTrack><ProgFill $pct={pct} /></ProgTrack>
                   <ProgPct>{pct}%</ProgPct>

@@ -689,12 +689,12 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
   const formatTimeAgo = (dateStr: string) => {
     const diff = Date.now() - new Date(dateStr.replace(' ', 'T')).getTime();
     const mins = Math.floor(diff / 60000);
-    if (mins < 1) return '剛剛';
-    if (mins < 60) return `${mins} 分鐘前`;
+    if (mins < 1) return t('topbar.timeJustNow');
+    if (mins < 60) return t('topbar.timeMinutesAgo', { count: mins });
     const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours} 小時前`;
+    if (hours < 24) return t('topbar.timeHoursAgo', { count: hours });
     const days = Math.floor(hours / 24);
-    return `${days} 日前`;
+    return t('topbar.timeDaysAgo', { count: days });
   };
 
   /* ── Language ── */
@@ -879,7 +879,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
   return (
     <Wrapper>
       <LeftGroup>
-        <HamburgerBtn onClick={onToggleSidebar} aria-label="Toggle sidebar">
+        <HamburgerBtn onClick={onToggleSidebar} aria-label={t('topbar.toggleSidebar')}>
           <HamburgerIcon $collapsed={sidebarCollapsed}>
             <span className="line" />
             <span className="line" />
@@ -936,7 +936,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
             ))}
           </LangDropdown>
         </LangWrapper>
-        <ThemeToggle onClick={toggleTheme} title={mode === 'light' ? 'Dark mode' : 'Light mode'}>
+        <ThemeToggle onClick={toggleTheme} title={mode === 'light' ? t('topbar.darkMode') : t('topbar.lightMode')}>
           {mode === 'light' ? <MoonIcon /> : <SunIcon />}
         </ThemeToggle>
         <NotifWrapper>
@@ -948,20 +948,20 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
         <NotifOverlay $open={notifOpen} onClick={() => setNotifOpen(false)} />
         <NotifPanel $open={notifOpen}>
           <NotifPanelHeader>
-            <NotifPanelTitle>通知 {unread > 0 && `(${unread})`}</NotifPanelTitle>
+            <NotifPanelTitle>{t('topbar.notificationTitle')} {unread > 0 && `(${unread})`}</NotifPanelTitle>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {unread > 0 && (
-                <NotifMarkAllBtn onClick={() => markAllRead.mutate()}>全部已讀</NotifMarkAllBtn>
+                <NotifMarkAllBtn onClick={() => markAllRead.mutate()}>{t('topbar.markAllRead')}</NotifMarkAllBtn>
               )}
               {notifications.length > 0 && (
-                <NotifMarkAllBtn onClick={() => dismissAll.mutate()} style={{ color: '#dc2626' }}>清除全部</NotifMarkAllBtn>
+                <NotifMarkAllBtn onClick={() => dismissAll.mutate()} style={{ color: '#dc2626' }}>{t('topbar.clearAll')}</NotifMarkAllBtn>
               )}
               <NotifCloseBtn onClick={() => setNotifOpen(false)}>&times;</NotifCloseBtn>
             </div>
           </NotifPanelHeader>
           <NotifList>
             {notifications.length === 0 ? (
-              <NotifEmpty>暫時冇通知</NotifEmpty>
+              <NotifEmpty>{t('topbar.noNotifications')}</NotifEmpty>
             ) : (
               notifications.map((n) => (
                 <NotifItemRow
@@ -976,7 +976,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
                     <NotifTime>{formatTimeAgo(n.created_at)}</NotifTime>
                   </NotifContent>
                   <NotifDismissBtn
-                    title="刪除"
+                    title={t('topbar.dismiss')}
                     onClick={(e) => { e.stopPropagation(); dismissOne.mutate(n._id); }}
                   >&times;</NotifDismissBtn>
                 </NotifItemRow>

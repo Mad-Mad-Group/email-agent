@@ -497,8 +497,8 @@ const Settings: React.FC = () => {
                   <>
                     <SettingRow>
                       <div>
-                        <SettingKey>Pipeline 完成 Email 通知</SettingKey>
-                        <FormHint style={{ display: 'block', marginTop: 2 }}>搜尋完成後發送 email 到你嘅信箱</FormHint>
+                        <SettingKey>{t('settings.emailOnComplete')}</SettingKey>
+                        <FormHint style={{ display: 'block', marginTop: 2 }}>{t('settings.emailOnCompleteHint')}</FormHint>
                       </div>
                       <ToggleSwitch
                         on={notifPrefs?.email_on_complete ?? false}
@@ -508,8 +508,8 @@ const Settings: React.FC = () => {
                     </SettingRow>
                     <SettingRow>
                       <div>
-                        <SettingKey>瀏覽器推播通知</SettingKey>
-                        <FormHint style={{ display: 'block', marginTop: 2 }}>搜尋完成後喺瀏覽器彈出通知</FormHint>
+                        <SettingKey>{t('settings.browserNotification')}</SettingKey>
+                        <FormHint style={{ display: 'block', marginTop: 2 }}>{t('settings.browserNotificationHint')}</FormHint>
                       </div>
                       <ToggleSwitch
                         on={notifPrefs?.browser_on_complete ?? false}

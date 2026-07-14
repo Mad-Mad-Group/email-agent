@@ -677,7 +677,7 @@ const Users: React.FC = () => {
                 {isLoading ? (
                   <tr><EmptyCell colSpan={5}>{t('users.loading')}</EmptyCell></tr>
                 ) : filtered.length === 0 ? (
-                  <tr><EmptyCell colSpan={5}><div><EmptyTeamIllustration />{t('users.noUsers')}<EmptyHint>邀請成員加入你的團隊。</EmptyHint></div></EmptyCell></tr>
+                  <tr><EmptyCell colSpan={5}><div><EmptyTeamIllustration />{t('users.noUsers')}<EmptyHint>{t('users.inviteHint')}</EmptyHint></div></EmptyCell></tr>
                 ) : (
                   filtered.map((u, i) => {
                     const { bg, fg, avatar } = roleProps(u.role);
@@ -752,19 +752,19 @@ const Users: React.FC = () => {
                 /* ── Edit Mode ── */
                 <DpGrid>
                   <DpField>
-                    <DpFieldLabel>Name</DpFieldLabel>
+                    <DpFieldLabel>{t('users.name')}</DpFieldLabel>
                     <DpInput value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
                   </DpField>
                   <DpField>
-                    <DpFieldLabel>Email</DpFieldLabel>
+                    <DpFieldLabel>{t('users.email')}</DpFieldLabel>
                     <DpInput value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} />
                   </DpField>
                   <DpField>
-                    <DpFieldLabel>Role</DpFieldLabel>
+                    <DpFieldLabel>{t('users.role')}</DpFieldLabel>
                     <DpSelect value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}>
-                      <option value="staff">Staff</option>
-                      <option value="admin">Admin</option>
-                      <option value="super_admin">Super Admin</option>
+                      <option value="staff">{t('users.roleStaff')}</option>
+                      <option value="admin">{t('users.roleAdmin')}</option>
+                      <option value="super_admin">{t('users.roleSuperAdmin')}</option>
                     </DpSelect>
                   </DpField>
                 </DpGrid>
@@ -773,15 +773,15 @@ const Users: React.FC = () => {
                   {/* ── View Mode ── */}
                   <DpGrid>
                     <DpField>
-                      <DpFieldLabel>Email</DpFieldLabel>
+                      <DpFieldLabel>{t('users.email')}</DpFieldLabel>
                       <DpFieldValue>{selectedUser.email}</DpFieldValue>
                     </DpField>
                     <DpField>
-                      <DpFieldLabel>Role</DpFieldLabel>
+                      <DpFieldLabel>{t('users.role')}</DpFieldLabel>
                       <DpFieldValue style={{ textTransform: 'capitalize' }}>{selectedUser.role}</DpFieldValue>
                     </DpField>
                     <DpField>
-                      <DpFieldLabel>Join Date</DpFieldLabel>
+                      <DpFieldLabel>{t('users.joinDate')}</DpFieldLabel>
                       <DpFieldValue>{formatDate(selectedUser.createdAt)}</DpFieldValue>
                     </DpField>
                   </DpGrid>
@@ -789,7 +789,7 @@ const Users: React.FC = () => {
                   {/* Permissions Section */}
                   {(selectedUser.permissions ?? []).length > 0 && (
                     <div>
-                      <DpSectionTitle>Permissions</DpSectionTitle>
+                      <DpSectionTitle>{t('users.permissions')}</DpSectionTitle>
                       <DpPermGrid style={{ marginTop: 10 }}>
                         {(selectedUser.permissions ?? []).map(perm => (
                           <DpPermBadge key={perm} $active>{perm}</DpPermBadge>
@@ -803,17 +803,17 @@ const Users: React.FC = () => {
 
             <DpFooter>
               <DpFooterStatus>
-                Member since {formatDate(selectedUser.createdAt)}
+                {t('users.memberSince', { date: formatDate(selectedUser.createdAt) })}
               </DpFooterStatus>
               {editing ? (
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <DpActionBtn onClick={() => setEditing(false)}>取消</DpActionBtn>
+                  <DpActionBtn onClick={() => setEditing(false)}>{t('common.cancel')}</DpActionBtn>
                   <DpActionBtn $variant="primary" onClick={handleSaveEdit} disabled={updateUser.isPending}>
-                    {updateUser.isPending ? '儲存中...' : '儲存'}
+                    {updateUser.isPending ? t('users.saving') : t('common.save')}
                   </DpActionBtn>
                 </div>
               ) : (
-                <DpActionBtn $variant="primary" onClick={handleStartEdit}>編輯</DpActionBtn>
+                <DpActionBtn $variant="primary" onClick={handleStartEdit}>{t('common.edit')}</DpActionBtn>
               )}
             </DpFooter>
           </DpPanel>

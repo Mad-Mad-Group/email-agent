@@ -32,14 +32,14 @@ function safeParseDate(s: string): Date {
   return new Date(normalized.endsWith('Z') ? normalized : normalized + 'Z');
 }
 
-function formatTimeAgo(iso: string): string {
+function formatTimeAgo(iso: string, t: (key: string, opts?: any) => string): string {
   const diff = Date.now() - safeParseDate(iso).getTime();
   const mins = Math.floor(diff / 60_000);
-  if (mins < 1) return 'Just now';
-  if (mins < 60) return `${mins} min ago`;
+  if (mins < 1) return t('agentPanel.timeJustNow');
+  if (mins < 60) return t('agentPanel.timeMinutesAgo', { count: mins });
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `${hrs}h ago`;
-  return `${Math.floor(hrs / 24)}d ago`;
+  if (hrs < 24) return t('agentPanel.timeHoursAgo', { count: hrs });
+  return t('agentPanel.timeDaysAgo', { count: Math.floor(hrs / 24) });
 }
 
 function formatTime(iso: string): string {
@@ -74,12 +74,12 @@ const FEED_COLORS: Record<string, { accent: string; icon: string }> = {
   qualify: { accent: '#d97706', icon: '⚡' },
 };
 
-const SOURCE_LABELS: Record<string, string> = {
-  lead: 'Lead',
-  email: 'Email',
-  task: 'Task',
-  campaign: 'Campaign',
-  system: 'System',
+const SOURCE_LABEL_KEYS: Record<string, string> = {
+  lead: 'agentPanel.sourceLead',
+  email: 'agentPanel.sourceEmail',
+  task: 'agentPanel.sourceTask',
+  campaign: 'agentPanel.sourceCampaign',
+  system: 'agentPanel.sourceSystem',
 };
 
 /* ── Agent label positions (ground starts ~58%) ── */
@@ -356,7 +356,13 @@ const VILLAGE_DECO: DecoAnimal[] = [
 ];
 
 /* ── Click dialogue quotes ── */
-const VILLAGE_QUOTES: string[] = ['不努力就送去M記', '今天KPI完成了嗎', '老闆又催了…', '下班去喝一杯？', '這個月績效怎麼樣'];
+const VILLAGE_QUOTE_KEYS: string[] = [
+  'agentPanel.quote1',
+  'agentPanel.quote2',
+  'agentPanel.quote3',
+  'agentPanel.quote4',
+  'agentPanel.quote5',
+];
 
 const AgentLabelWrap = styled.div<{ $top: string; $left: string }>`
   position: absolute;
@@ -1207,11 +1213,11 @@ const AgentPanel: React.FC = () => {
   const [activeQuote, setActiveQuote] = useState<{ idx: number; text: string } | null>(null);
   const quoteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const handleDecoClick = useCallback((decoIdx: number) => {
-    const text = VILLAGE_QUOTES[Math.floor(Math.random() * VILLAGE_QUOTES.length)];
-    setActiveQuote({ idx: decoIdx, text });
+    const key = VILLAGE_QUOTE_KEYS[Math.floor(Math.random() * VILLAGE_QUOTE_KEYS.length)];
+    setActiveQuote({ idx: decoIdx, text: t(key) });
     if (quoteTimerRef.current) clearTimeout(quoteTimerRef.current);
     quoteTimerRef.current = setTimeout(() => setActiveQuote(null), 3000);
-  }, []);
+  }, [t]);
 
   /* ── Agent data from task stats ── */
   const statsArr: AgentSkillStats[] = Array.isArray(statsRaw) ? statsRaw : [];
@@ -1231,7 +1237,7 @@ const AgentPanel: React.FC = () => {
       failed,
       rate,
       status,
-      lastRun: s?.last_run ? formatTimeAgo(s.last_run) : '—',
+      lastRun: s?.last_run ? formatTimeAgo(s.last_run, t) : '—',
     };
   });
 
@@ -1282,8 +1288,8 @@ const AgentPanel: React.FC = () => {
 
       {/* ── Title bar overlay — top-left ── */}
       <TitleBar>
-        <TitleText>{scene.title}</TitleText>
-        <LiveBadge>LIVE</LiveBadge>
+        <TitleText>{t('agentPanel.villageTitle')}</TitleText>
+        <LiveBadge>{t('agentPanel.live')}</LiveBadge>
       </TitleBar>
 
       {/* ── Status panel — top-left, below title ── */}
@@ -1296,7 +1302,7 @@ const AgentPanel: React.FC = () => {
               <StatusAvatar $src={sprite?.idle ?? ''} />
               <StatusName>{ag.name}</StatusName>
               <StatusBadge $running={isRunning}>
-                {isRunning ? '開工了' : '休息中'}
+                {isRunning ? t('agentPanel.statusWorking') : t('agentPanel.statusResting')}
               </StatusBadge>
             </StatusRow>
           );
@@ -1359,7 +1365,7 @@ const AgentPanel: React.FC = () => {
       <FarmerWrap style={{ bottom: scene.farmerPos.bottom, left: scene.farmerPos.left }} onClick={() => setFarmerTalk((v) => v + 1)}>
         {farmerTalk > 0 && (
           <FarmerBubble key={farmerTalk}>
-            💢 加油努力！不然把你們送去M記！
+            {t('agentPanel.farmerBubble')}
           </FarmerBubble>
         )}
         <SpriteAnimator
@@ -1369,16 +1375,16 @@ const AgentPanel: React.FC = () => {
           scale={4.5}
           fps={3}
         />
-        <FarmerLabel>農場主</FarmerLabel>
+        <FarmerLabel>{t('agentPanel.farmerLabel')}</FarmerLabel>
       </FarmerWrap>
 
       {/* ── Activity feed overlay — right edge ── */}
       <ActivityPanel $open={feedOpen}>
         <ActivityHeader>
-          <ActivityToggle $open={feedOpen} onClick={() => setFeedOpen((v) => !v)} title={feedOpen ? 'Collapse' : 'Expand'}>
+          <ActivityToggle $open={feedOpen} onClick={() => setFeedOpen((v) => !v)} title={feedOpen ? t('agentPanel.collapse') : t('agentPanel.expand')}>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 4l-4 4 4 4"/></svg>
           </ActivityToggle>
-          <ActivityTitle>{feedOpen ? 'ACTIVITY LOG' : ''}</ActivityTitle>
+          <ActivityTitle>{feedOpen ? t('agentPanel.activityLog') : ''}</ActivityTitle>
         </ActivityHeader>
         {feedOpen && (
           <ActivityScroll>
@@ -1386,7 +1392,7 @@ const AgentPanel: React.FC = () => {
               <ActivityEmpty>{t('agents.noActivity')}</ActivityEmpty>
             )}
             {notifications.slice(0, 30).map((n) => {
-              const srcLabel = SOURCE_LABELS[n.type] || 'System';
+              const srcLabel = t(SOURCE_LABEL_KEYS[n.type] || 'agentPanel.sourceSystem');
               const ev = NOTIF_EVENT_MAP[n.type] || 'qualify';
               const color = FEED_COLORS[ev]?.accent || '#d97706';
               const icon = FEED_COLORS[ev]?.icon || '⚡';
@@ -1405,16 +1411,16 @@ const AgentPanel: React.FC = () => {
       {/* ── Stats bar overlay — bottom-center ── */}
       <StatsBar>
         <StatChip>
-          Tasks <StatNumber>{totalTasks}</StatNumber>
+          {t('agentPanel.statsTasks')} <StatNumber>{totalTasks}</StatNumber>
         </StatChip>
         <StatChip>
-          Done <StatNumber $color="#4ade80">{totalCompleted}</StatNumber>
+          {t('agentPanel.statsDone')} <StatNumber $color="#4ade80">{totalCompleted}</StatNumber>
         </StatChip>
         <StatChip>
-          Failed <StatNumber $color="#f87171">{totalFailed}</StatNumber>
+          {t('agentPanel.statsFailed')} <StatNumber $color="#f87171">{totalFailed}</StatNumber>
         </StatChip>
         <StatChip>
-          Rate <StatNumber $color="#fbbf24">{completionRate}%</StatNumber>
+          {t('agentPanel.statsRate')} <StatNumber $color="#fbbf24">{completionRate}%</StatNumber>
         </StatChip>
       </StatsBar>
 
@@ -1443,13 +1449,13 @@ const AgentPanel: React.FC = () => {
                 <PanelHeaderTitle>{t(SKILL_I18N[selectedSkill]?.nameKey ?? '') || selectedSkill}</PanelHeaderTitle>
                 <PanelHeaderSub>{t(SKILL_I18N[selectedSkill]?.typeKey ?? '')} · {selectedSkill}</PanelHeaderSub>
               </PanelHeaderLeft>
-              <CloseBtn onClick={handleClose} title="Close"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
+              <CloseBtn onClick={handleClose} title={t('agentPanel.close')}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
             </PanelHeader>
 
             <TimelineBody>
               {selectedTasks.length === 0 && (
                 <div style={{ textAlign: 'center', padding: '24px', opacity: 0.5, fontSize: 13 }}>
-                  暫無任務記錄
+                  {t('agentPanel.noTaskRecords')}
                 </div>
               )}
               <StepperWrap>
@@ -1492,19 +1498,19 @@ const AgentPanel: React.FC = () => {
 
             <PanelFooter>
               <FooterStat>
-                {selectedTasks.filter((t: any) => t.status === 'completed').length} / {selectedTasks.length} completed
+                {t('agentPanel.completedCount', { completed: selectedTasks.filter((tk: any) => tk.status === 'completed').length, total: selectedTasks.length })}
               </FooterStat>
               <ProgressMini>
                 <ProgressTrack>
                   <ProgressFill $pct={
                     selectedTasks.length > 0
-                      ? Math.round((selectedTasks.filter((t: any) => t.status === 'completed').length / selectedTasks.length) * 100)
+                      ? Math.round((selectedTasks.filter((tk: any) => tk.status === 'completed').length / selectedTasks.length) * 100)
                       : 0
                   } />
                 </ProgressTrack>
                 <ProgressLabel>
                   {selectedTasks.length > 0
-                    ? Math.round((selectedTasks.filter((t: any) => t.status === 'completed').length / selectedTasks.length) * 100)
+                    ? Math.round((selectedTasks.filter((tk: any) => tk.status === 'completed').length / selectedTasks.length) * 100)
                     : 0}%
                 </ProgressLabel>
               </ProgressMini>
