@@ -48,6 +48,15 @@ const PlusIcon = () => (
 
 const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
 
+const PageCard = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  padding: 24px;
+  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
+`;
+
 const Breadcrumb = styled.ol`
   list-style: none; margin: 0; padding: 0; display: flex; gap: ${({ theme }) => theme.spacing.sm}px;
   font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary};
@@ -55,15 +64,8 @@ const Breadcrumb = styled.ol`
   a { color: ${({ theme }) => theme.colors.textSecondary}; text-decoration: none; &:hover { text-decoration: underline; } }
 `;
 
-const PageTitle = styled.h1`
-  font-size: 1.15rem; font-weight: 600; margin: 4px 0 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  display: flex; align-items: center; gap: 8px;
-`;
-
-const PageSub = styled.small`
-  color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
-`;
+const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
+const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const ToolbarRow = styled.div`
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
@@ -90,10 +92,13 @@ const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'ghost' }>`
   }}
 `;
 
-/* ── Stats Cards (LUNO style) ── */
+/* ── Stats Cards (LUNO style — aligned with Leads) ── */
 
-const StatsRow = styled.div`
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 260px)); gap: ${({ theme }) => theme.spacing.md}px;
+const StatCardsRow = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: ${({ theme }) => theme.spacing.md}px;
+  ${media.mobile} { grid-template-columns: repeat(2, 1fr); }
 `;
 
 const LunoStatCard = styled.div<{ $accent: string; $bg1: string; $bg2: string }>`
@@ -109,32 +114,45 @@ const LunoStatCard = styled.div<{ $accent: string; $bg1: string; $bg2: string }>
   &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
 `;
 
-const StatWatermark = styled.div<{ $color: string }>`
+const StatWatermark = styled.span<{ $color: string }>`
   position: absolute; right: -4px; bottom: -6px;
   width: 56px; height: 56px; opacity: 0.10;
+  pointer-events: none;
   color: ${({ $color }) => $color};
+  line-height: 0;
   svg { width: 100%; height: 100%; }
 `;
 
-const StatLabel = styled.div`
+const StatLabel = styled.span`
   font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.06em; opacity: 0.55;
-  color: ${({ theme }) => theme.colors.textPrimary}; margin-bottom: 6px;
+  color: ${({ theme }) => theme.colors.textPrimary}; margin-bottom: 6px; display: block;
 `;
-const StatValue = styled.div`font-size: 1.75rem; font-weight: 800; color: ${({ theme }) => theme.colors.textPrimary}; line-height: 1;`;
 
-/* watermark icons */
-const WmCheck = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/></svg>
+const StatValueRow = styled.div`display: flex; align-items: baseline; gap: 6px;`;
+const StatNumber = styled.span<{ $color: string }>`font-size: 2rem; font-weight: 800; color: ${({ $color }) => $color}; line-height: 1;`;
+const StatUnit = styled.span`font-size: 0.875rem; color: ${({ theme }) => theme.colors.textTertiary};`;
+
+/* watermark icons (stroke style, matching Leads) */
+const WmShield = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="M9 12l2 2 4-4"/>
+  </svg>
 );
-const WmPulse = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16.5 3c-1.74 0-3.41.81-4.5 2.09C10.91 3.81 9.24 3 7.5 3 4.42 3 2 5.42 2 8.5c0 3.78 3.4 6.86 8.55 11.54L12 21.35l1.45-1.32C18.6 15.36 22 12.28 22 8.5 22 5.42 19.58 3 16.5 3z"/></svg>
+const WmHeart = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+  </svg>
 );
 const WmMail = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+  </svg>
 );
 const WmStar = () => (
-  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+  </svg>
 );
 
 /* ── Table ── */
@@ -292,6 +310,39 @@ const VerifiedEmailsPage: React.FC = () => {
 
   return (
     <Page>
+      <PageCard>
+      <div><PageTitle>{t('verifiedEmails.title')}</PageTitle><PageSub>{t('verifiedEmails.subtitle')}</PageSub></div>
+
+      {/* Stats — same layout as Leads */}
+      <StatCardsRow>
+        <LunoStatCard $accent="#0ea5e9" $bg1="#ecfeff" $bg2="#cffafe">
+          <StatLabel>{t('verifiedEmails.totalVerified')}</StatLabel>
+          <StatValueRow><StatNumber $color="#0ea5e9">{statTotal}</StatNumber><StatUnit>{t('verifiedEmails.unit', { defaultValue: '個' })}</StatUnit></StatValueRow>
+          <StatWatermark $color="#0ea5e9"><WmShield /></StatWatermark>
+        </LunoStatCard>
+        <LunoStatCard $accent="#16a34a" $bg1="#f0fdf4" $bg2="#dcfce7">
+          <StatLabel>{t('verifiedEmails.active')}</StatLabel>
+          <StatValueRow><StatNumber $color="#16a34a">{statActive}</StatNumber><StatUnit>{t('verifiedEmails.unit', { defaultValue: '個' })}</StatUnit></StatValueRow>
+          <StatWatermark $color="#16a34a"><WmHeart /></StatWatermark>
+        </LunoStatCard>
+        {statByMethod.map((m: any, i: number) => {
+          const palettes = [
+            { accent: '#f59e0b', bg1: '#fffbeb', bg2: '#fef3c7', Wm: WmMail },
+            { accent: '#8b5cf6', bg1: '#faf5ff', bg2: '#ede9fe', Wm: WmStar },
+            { accent: '#ec4899', bg1: '#fdf2f8', bg2: '#fce7f3', Wm: WmShield },
+          ];
+          const p = palettes[i % palettes.length];
+          return (
+            <LunoStatCard key={m._id} $accent={p.accent} $bg1={p.bg1} $bg2={p.bg2}>
+              <StatLabel>{methodLabels[m._id] ?? m._id}</StatLabel>
+              <StatValueRow><StatNumber $color={p.accent}>{m.count}</StatNumber><StatUnit>{t('verifiedEmails.unit', { defaultValue: '個' })}</StatUnit></StatValueRow>
+              <StatWatermark $color={p.accent}><p.Wm /></StatWatermark>
+            </LunoStatCard>
+          );
+        })}
+      </StatCardsRow>
+
+      {/* Toolbar */}
       <ToolbarRow>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <SearchInput
@@ -304,37 +355,7 @@ const VerifiedEmailsPage: React.FC = () => {
         </div>
       </ToolbarRow>
 
-      {/* Stats */}
-      <StatsRow>
-        <LunoStatCard $accent="#0ea5e9" $bg1="#ecfeff" $bg2="#cffafe">
-          <StatWatermark $color="#0ea5e9"><WmCheck /></StatWatermark>
-          <StatLabel>{t('verifiedEmails.totalVerified')}</StatLabel>
-          <StatValue>{statTotal}</StatValue>
-        </LunoStatCard>
-        <LunoStatCard $accent="#16a34a" $bg1="#f0fdf4" $bg2="#dcfce7">
-          <StatWatermark $color="#16a34a"><WmPulse /></StatWatermark>
-          <StatLabel>{t('verifiedEmails.active')}</StatLabel>
-          <StatValue>{statActive}</StatValue>
-        </LunoStatCard>
-        {statByMethod.map((m: any, i: number) => {
-          const palettes = [
-            { accent: '#f59e0b', bg1: '#fffbeb', bg2: '#fef3c7', Wm: WmMail },
-            { accent: '#8b5cf6', bg1: '#faf5ff', bg2: '#ede9fe', Wm: WmStar },
-            { accent: '#ec4899', bg1: '#fdf2f8', bg2: '#fce7f3', Wm: WmCheck },
-          ];
-          const p = palettes[i % palettes.length];
-          return (
-            <LunoStatCard key={m._id} $accent={p.accent} $bg1={p.bg1} $bg2={p.bg2}>
-              <StatWatermark $color={p.accent}><p.Wm /></StatWatermark>
-              <StatLabel>{methodLabels[m._id] ?? m._id}</StatLabel>
-              <StatValue>{m.count}</StatValue>
-            </LunoStatCard>
-          );
-        })}
-      </StatsRow>
-
       {/* Table */}
-      <Card>
         <TableWrap>
           {isLoading ? (
             <NoData>{t('verifiedEmails.loading')}</NoData>
@@ -405,7 +426,7 @@ const VerifiedEmailsPage: React.FC = () => {
             </>
           )}
         </TableWrap>
-      </Card>
+      </PageCard>
 
       {/* Add Modal */}
       {showAdd && (

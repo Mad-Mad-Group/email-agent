@@ -30,6 +30,22 @@ const BgLayer = styled.div`
   image-rendering: crisp-edges;
 `;
 
+/* Blue sky tint — turns the grey overcast into sunny blue via screen blend */
+const SkyOverlay = styled.div`
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(180deg,
+    rgba(105, 185, 245, 0.9)  0%,
+    rgba(120, 200, 250, 0.78) 10%,
+    rgba(140, 210, 250, 0.6)  22%,
+    rgba(160, 220, 250, 0.35) 35%,
+    rgba(180, 230, 250, 0.12) 45%,
+    transparent 52%
+  );
+  mix-blend-mode: screen;
+`;
+
 /* Warm sunlight overlay */
 const AmbientOverlay = styled.div`
   position: absolute;
@@ -131,6 +147,7 @@ const BUTTERFLIES = [
 const IsometricWorld: React.FC<{ bgUrl?: string; hideAtmosphere?: boolean }> = ({ bgUrl, hideAtmosphere }) => (
   <Container>
     <BgLayer style={bgUrl ? { backgroundImage: `url(${bgUrl})` } : undefined} />
+    <SkyOverlay />
     <AmbientOverlay />
     {!hideAtmosphere && (
       <AnimLayer>

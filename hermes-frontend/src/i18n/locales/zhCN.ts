@@ -215,6 +215,8 @@ const zhCN = {
     cardTitleFollowup: '跟进',
   },
   leads: {
+    title: '潜在客户池',
+    subtitle: '管理和追踪你的潜在客户。',
     totalLeads: '总潜在客户数',
     newLeads: '新潜在客户',
     pending: '待处理',
@@ -327,6 +329,8 @@ const zhCN = {
     align: '对齐',
   },
   emailQueue: {
+    title: '寄件匣',
+    subtitle: '查看和管理所有待发与已发邮件。',
     searchPlaceholder: '搜索邮件...',
     all: '全部',
     pending: '待处理',
@@ -401,6 +405,8 @@ const zhCN = {
     allDistricts: '全港',
   },
   tasks: {
+    title: '任务中心',
+    subtitle: '追踪 AI Agent 的自动化任务进度。',
     searchPlaceholder: '搜索任务...',
     pending: '待处理',
     processing: '处理中',
@@ -447,6 +453,8 @@ const zhCN = {
     sortSkill: '排序：技能',
   },
   users: {
+    title: '团队管理',
+    subtitle: '管理团队成员与角色权限。',
     teamOverview: '团队总览',
     membersSummary: '共 {{count}} 位成员，包含 {{admin}} 位管理员、{{manager}} 位经理、{{user}} 位用户',
     allUsers: '所有用户',
@@ -487,6 +495,8 @@ const zhCN = {
     agentIpHint: '运行 MADMAD Agent 的设备 IP 地址',
   },
   calendar: {
+    title: '行事历',
+    subtitle: '查看排程与即将到来的事项。',
     today: '今天',
     sun: '日',
     mon: '一',
@@ -673,7 +683,8 @@ const zhCN = {
   },
   verifiedEmails: {
     breadcrumb: '已验证邮箱',
-    title: '已验证邮箱池',
+    title: '已验证信箱',
+    subtitle: '管理已验证的寄件信箱。',
     searchPlaceholder: '搜索邮箱 / 公司…',
     export: '导出',
     add: '新增',

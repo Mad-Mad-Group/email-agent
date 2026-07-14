@@ -216,6 +216,8 @@ const zhTW = {
     cardTitleFollowup: '跟進',
   },
   leads: {
+    title: '潛在客戶池',
+    subtitle: '管理和追蹤你的潛在客戶。',
     totalLeads: '總潛在客戶數',
     newLeads: '新潛在客戶',
     pending: '待處理',
@@ -360,6 +362,8 @@ const zhTW = {
     align: '對齊',
   },
   emailQueue: {
+    title: '寄件匣',
+    subtitle: '查看和管理所有待發與已發郵件。',
     searchPlaceholder: '搜尋郵件...',
     all: '全部',
     pending: '待處理',
@@ -434,6 +438,8 @@ const zhTW = {
     allDistricts: '全港',
   },
   tasks: {
+    title: '任務中心',
+    subtitle: '追蹤 AI Agent 的自動化任務進度。',
     searchPlaceholder: '搜尋任務...',
     pending: '待處理',
     processing: '處理中',
@@ -480,6 +486,8 @@ const zhTW = {
     sortSkill: '排序：技能',
   },
   users: {
+    title: '團隊管理',
+    subtitle: '管理團隊成員與角色權限。',
     teamOverview: '團隊總覽',
     membersSummary: '共 {{count}} 位成員，包含 {{admin}} 位管理員、{{manager}} 位經理、{{user}} 位使用者',
     allUsers: '所有使用者',
@@ -520,6 +528,8 @@ const zhTW = {
     agentIpHint: '執行 MADMAD Agent 的設備 IP 位址',
   },
   calendar: {
+    title: '行事曆',
+    subtitle: '查看排程與即將到來的事項。',
     today: '今天',
     sun: '日',
     mon: '一',
@@ -706,7 +716,8 @@ const zhTW = {
   },
   verifiedEmails: {
     breadcrumb: '已驗證信箱',
-    title: '已驗證郵箱池',
+    title: '已驗證信箱',
+    subtitle: '管理已驗證的寄件信箱。',
     searchPlaceholder: '搜尋郵箱 / 公司…',
     export: '匯出',
     add: '新增',

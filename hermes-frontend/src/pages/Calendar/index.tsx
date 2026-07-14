@@ -11,6 +11,8 @@ import client from '../../api/client';
 /* ── Layout ── */
 
 const Page = styled.div`display: flex; flex-direction: column; gap: 16px;`;
+const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
+const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const CalLayout = styled.div`
   display: flex;
@@ -879,6 +881,7 @@ const Calendar: React.FC = () => {
 
   return (
     <Page>
+      <div><PageTitle>{t('calendar.title')}</PageTitle><PageSub>{t('calendar.subtitle')}</PageSub></div>
       <CalLayout>
         {/* ── Main Calendar Area ── */}
         <MainArea>

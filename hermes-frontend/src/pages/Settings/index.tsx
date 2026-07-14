@@ -14,27 +14,20 @@ import { settingsApi } from '../../api/services';
 
 const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
 
+const PageCard = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  padding: 24px;
+  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.lg}px;
+`;
+
 const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
   box-shadow: ${({ theme }) => theme.shadows.card};
-`;
-
-/* ── Hero Card ── */
-
-const HeroCard = styled(Card)`
-  padding: ${({ theme }) => theme.spacing.lg}px;
-  position: relative;
-  overflow: hidden;
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 4px;
-    background: linear-gradient(90deg, var(--primary, #0ea5e9), #38bdf8, #7dd3fc);
-    border-radius: ${({ theme }) => theme.radii.card}px ${({ theme }) => theme.radii.card}px 0 0;
-  }
 `;
 
 const HeroBody = styled.div`
@@ -71,10 +64,11 @@ const SettingsLayout = styled.div`
   ${media.mobile} { grid-template-columns: 1fr; }
 `;
 
-const TabNav = styled(Card)`
+const TabNav = styled.div`
   border-radius: ${({ theme }) => theme.radii.card}px;
   overflow: hidden;
   align-self: start;
+  border: 1px solid ${({ theme }) => theme.colors.border};
   ${media.mobile} {
     display: flex; flex-direction: row;
     border-radius: ${({ theme }) => theme.radii.card}px;
@@ -140,9 +134,11 @@ const TabIcon = styled.span`
   ${media.mobile} { display: none; }
 `;
 
-const ContentPanel = styled(Card)`
+const ContentPanel = styled.div`
   margin-left: ${({ theme }) => theme.spacing.md}px;
   min-width: 0;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.card}px;
   ${media.mobile} { margin-left: 0; }
 `;
 
@@ -432,16 +428,15 @@ const Settings: React.FC = () => {
 
   return (
     <Page>
-      {/* ── Hero ── */}
-      <HeroCard>
-        <HeroBody>
-          <HeroAvatar><SettingsGearIcon /></HeroAvatar>
-          <HeroInfo>
-            <HeroName>{t('settings.title')}</HeroName>
-            <HeroSub>{t('settings.agentIpHint')}</HeroSub>
-          </HeroInfo>
-        </HeroBody>
-      </HeroCard>
+      <PageCard>
+      {/* ── Header ── */}
+      <HeroBody>
+        <HeroAvatar><SettingsGearIcon /></HeroAvatar>
+        <HeroInfo>
+          <HeroName>{t('settings.title')}</HeroName>
+          <HeroSub>{t('settings.agentIpHint')}</HeroSub>
+        </HeroInfo>
+      </HeroBody>
 
       {/* ── Left tabs + Right content ── */}
       <SettingsLayout>
@@ -548,6 +543,7 @@ const Settings: React.FC = () => {
           )}
         </ContentPanel>
       </SettingsLayout>
+      </PageCard>
     </Page>
   );
 };

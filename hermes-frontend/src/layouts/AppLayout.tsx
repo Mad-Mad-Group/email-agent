@@ -69,11 +69,11 @@ const PageTransition = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  animation: pageFadeIn 0.5s ease-out both;
+  animation: pageFadeIn 0.35s ease-out both;
 
   @keyframes pageFadeIn {
-    from { opacity: 0; }
-    to   { opacity: 1; }
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 `;
 

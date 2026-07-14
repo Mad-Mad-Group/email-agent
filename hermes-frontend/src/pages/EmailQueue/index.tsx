@@ -119,6 +119,8 @@ const Page = styled.div`
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md}px;
 `;
+const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
+const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const PageTabs = styled.div`
   display: flex;
@@ -1706,6 +1708,7 @@ const EmailQueue: React.FC = () => {
 
   return (
     <Page>
+      <div><PageTitle>{t('emailQueue.title')}</PageTitle><PageSub>{t('emailQueue.subtitle')}</PageSub></div>
       <PageTabs>
         <PageTab $active={pageTab === 'queue'} onClick={() => setPageTab('queue')}>
           寄件匣

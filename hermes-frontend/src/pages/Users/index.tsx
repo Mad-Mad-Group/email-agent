@@ -47,6 +47,15 @@ const TeamIcon = () => (
 
 const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
 
+const PageCard = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  padding: 24px;
+  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
+`;
+
 const Breadcrumb = styled.ol`
   list-style: none; margin: 0; padding: 0; display: flex; gap: ${({ theme }) => theme.spacing.sm}px;
   font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary};
@@ -58,14 +67,8 @@ const ToolbarRow = styled.div`
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
 `;
 
-const PageTitle = styled.h1`
-  font-size: 1.15rem; font-weight: 600; margin: 4px 0 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const PageSub = styled.small`
-  color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
-`;
+const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
+const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const StatsRow = styled.div`
   display: flex; gap: ${({ theme }) => theme.spacing.lg}px;
@@ -98,27 +101,23 @@ const StatsGrid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: ${({ theme }) => theme.spacing.md}px;
-  margin-bottom: ${({ theme }) => theme.spacing.md}px;
   ${media.mobile} { grid-template-columns: repeat(2, 1fr); }
 `;
 
-const StatCard2 = styled.div<{ $color: string }>`
-  background: ${({ theme }) => theme.colors.surface};
+const StatCard2 = styled.div<{ $color: string; $bg1?: string; $bg2?: string }>`
+  background: ${({ theme, $bg1, $bg2 }) =>
+    theme.mode === 'dark'
+      ? theme.colors.surface
+      : `linear-gradient(135deg, ${$bg1 || '#f0fdf4'}, ${$bg2 || '#dcfce7'})`};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
+  border-left: 4px solid ${({ $color }) => $color};
   padding: 20px;
   display: flex; align-items: center; gap: 14px;
   position: relative;
   overflow: hidden;
-  &::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; bottom: 0;
-    width: 4px;
-    background: ${({ $color }) => $color};
-    border-radius: ${({ theme }) => theme.radii.card}px 0 0 ${({ theme }) => theme.radii.card}px;
-  }
+  transition: transform 0.18s, box-shadow 0.18s;
+  &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
 `;
 
 const StatCardIcon = styled.div<{ $color: string }>`
@@ -136,17 +135,17 @@ const StatCardInfo = styled.div`
 `;
 
 const StatCardValue = styled.div<{ $color: string }>`
-  font-size: 1.5rem; font-weight: 700;
+  font-size: 2rem; font-weight: 800;
   color: ${({ $color }) => $color};
   line-height: 1;
 `;
 
 const StatCardLabel = styled.div`
-  font-size: 0.75rem; font-weight: 500;
+  font-size: 0.6875rem; font-weight: 700;
   color: ${({ theme }) => theme.colors.textTertiary};
   margin-top: 4px;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.06em;
 `;
 
 /* ── Tabs ── */
@@ -612,29 +611,31 @@ const Users: React.FC = () => {
 
   return (
     <Page>
+      <PageCard>
+      <div><PageTitle>{t('users.title')}</PageTitle><PageSub>{t('users.subtitle')}</PageSub></div>
       <StatsGrid>
-        <StatCard2 $color="#0ea5e9">
+        <StatCard2 $color="#0ea5e9" $bg1="#ecfeff" $bg2="#cffafe">
           <StatCardIcon $color="#0ea5e9"><TabIconAll /></StatCardIcon>
           <StatCardInfo>
             <StatCardValue $color="#0ea5e9">{roleCounts.all}</StatCardValue>
             <StatCardLabel>{t('users.allUsers')}</StatCardLabel>
           </StatCardInfo>
         </StatCard2>
-        <StatCard2 $color="#0369a1">
+        <StatCard2 $color="#0369a1" $bg1="#f0fdf4" $bg2="#dcfce7">
           <StatCardIcon $color="#0369a1"><TabIconAdmin /></StatCardIcon>
           <StatCardInfo>
             <StatCardValue $color="#0369a1">{roleCounts.admin}</StatCardValue>
             <StatCardLabel>{t('users.admins')}</StatCardLabel>
           </StatCardInfo>
         </StatCard2>
-        <StatCard2 $color="#d97706">
+        <StatCard2 $color="#d97706" $bg1="#fffbeb" $bg2="#fef3c7">
           <StatCardIcon $color="#d97706"><TabIconManager /></StatCardIcon>
           <StatCardInfo>
             <StatCardValue $color="#d97706">{roleCounts.manager}</StatCardValue>
             <StatCardLabel>{t('users.managers')}</StatCardLabel>
           </StatCardInfo>
         </StatCard2>
-        <StatCard2 $color="#22c55e">
+        <StatCard2 $color="#22c55e" $bg1="#faf5ff" $bg2="#ede9fe">
           <StatCardIcon $color="#22c55e"><TabIconUser /></StatCardIcon>
           <StatCardInfo>
             <StatCardValue $color="#22c55e">{roleCounts.user}</StatCardValue>
@@ -642,8 +643,6 @@ const Users: React.FC = () => {
           </StatCardInfo>
         </StatCard2>
       </StatsGrid>
-
-      <Card>
 
         {/* Tabs */}
         <TabBar>
@@ -718,7 +717,7 @@ const Users: React.FC = () => {
             </Table>
           </TableWrap>
         </CardBody>
-      </Card>
+      </PageCard>
 
       {/* Footer */}
       <Footer>

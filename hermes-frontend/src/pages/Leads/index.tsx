@@ -138,6 +138,15 @@ const Page = styled.div`
   gap: ${({ theme }) => theme.spacing.md}px;
 `;
 
+const PageCard = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  padding: 24px;
+  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
+`;
+
 const Breadcrumb = styled.ol`
   list-style: none;
   margin: 0;
@@ -171,9 +180,9 @@ const PageTitle = styled.h1`
 `;
 
 const PageSub = styled.p`
-  margin: 0;
-  color: ${({ theme }) => theme.colors.textTertiary};
   font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  margin: 2px 0 0;
 `;
 
 /* ── Header Card (title + buttons + stats in one box) ── */
@@ -273,43 +282,30 @@ const HeaderDivider = styled.hr`
 const StatCardsRow = styled.div`
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
+  gap: ${({ theme }) => theme.spacing.md}px;
   ${media.mobile} { grid-template-columns: repeat(2, 1fr); }
 `;
 
-const StatCard = styled.div<{ $accent: string }>`
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  padding: 14px 18px;
-  border-radius: ${({ theme }) => theme.radii.control}px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.surface};
-  overflow: hidden;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: -1px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 4px;
-    height: 40%;
-    border-radius: 0 4px 4px 0;
-    background: ${({ $accent }) => $accent};
-    box-shadow: 0 0 8px ${({ $accent }) => $accent}66, 0 0 16px ${({ $accent }) => $accent}22;
-  }
+const StatCard = styled.div<{ $accent: string; $bg1?: string; $bg2?: string }>`
+  position: relative; overflow: hidden;
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  border-left: 4px solid ${({ $accent }) => $accent};
+  background: ${({ theme, $bg1, $bg2 }) =>
+    theme.mode === 'dark'
+      ? theme.colors.surface
+      : `linear-gradient(135deg, ${$bg1 || '#f0fdf4'}, ${$bg2 || '#dcfce7'})`};
+  padding: 18px 20px 16px;
+  transition: transform 0.18s, box-shadow 0.18s;
+  &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
 `;
 
 const StatCardWatermark = styled.span<{ $color: string }>`
-  position: absolute;
-  right: 10px;
-  bottom: 6px;
-  opacity: 0.08;
+  position: absolute; right: -4px; bottom: -6px;
+  width: 56px; height: 56px; opacity: 0.10;
   pointer-events: none;
   color: ${({ $color }) => $color};
   line-height: 0;
+  svg { width: 100%; height: 100%; }
 `;
 
 /* Watermark SVG icons for stat cards */
@@ -337,10 +333,9 @@ const WmCheck = ({ size = 44 }: { size?: number }) => (
 );
 
 const StatCardLabel = styled.span`
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  letter-spacing: 0.02em;
+  font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.06em; opacity: 0.55;
+  color: ${({ theme }) => theme.colors.textPrimary}; margin-bottom: 6px; display: block;
 `;
 
 const StatCardValue = styled.div`
@@ -2367,40 +2362,41 @@ const Leads: React.FC = () => {
 
   return (
     <Page>
-        <Card>
+        <PageCard>
+        <div><PageTitle>{t('leads.title')}</PageTitle><PageSub>{t('leads.subtitle')}</PageSub></div>
         <HeaderSection>
           <StatCardsRow>
-            <StatCard $accent="#64748b">
+            <StatCard $accent="#0ea5e9" $bg1="#ecfeff" $bg2="#cffafe">
               <StatCardLabel>{t('leads.totalLeads', { defaultValue: '全部潛在客戶' })}</StatCardLabel>
               <StatCardValue>
-                <StatCardNumber $color="#64748b">{stats.total}</StatCardNumber>
+                <StatCardNumber $color="#0ea5e9">{stats.total}</StatCardNumber>
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
               </StatCardValue>
-              <StatCardWatermark $color="#64748b"><WmUsers /></StatCardWatermark>
+              <StatCardWatermark $color="#0ea5e9"><WmUsers /></StatCardWatermark>
             </StatCard>
-            <StatCard $accent="#0ea5e9">
+            <StatCard $accent="#d97706" $bg1="#fffbeb" $bg2="#fef3c7">
               <StatCardLabel>{t('leads.tabPreparing')}</StatCardLabel>
               <StatCardValue>
-                <StatCardNumber $color="#0ea5e9">{tabCounts['preparing'] || 0}</StatCardNumber>
+                <StatCardNumber $color="#d97706">{tabCounts['preparing'] || 0}</StatCardNumber>
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
               </StatCardValue>
-              <StatCardWatermark $color="#0ea5e9"><WmEdit /></StatCardWatermark>
+              <StatCardWatermark $color="#d97706"><WmEdit /></StatCardWatermark>
             </StatCard>
-            <StatCard $accent="#ca8a04">
+            <StatCard $accent="#16a34a" $bg1="#f0fdf4" $bg2="#dcfce7">
               <StatCardLabel>{t('leads.tabAwaiting')}</StatCardLabel>
               <StatCardValue>
-                <StatCardNumber $color="#ca8a04">{tabCounts['awaiting'] || 0}</StatCardNumber>
+                <StatCardNumber $color="#16a34a">{tabCounts['awaiting'] || 0}</StatCardNumber>
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
               </StatCardValue>
-              <StatCardWatermark $color="#ca8a04"><WmClock /></StatCardWatermark>
+              <StatCardWatermark $color="#16a34a"><WmClock /></StatCardWatermark>
             </StatCard>
-            <StatCard $accent="#16a34a">
+            <StatCard $accent="#8b5cf6" $bg1="#faf5ff" $bg2="#ede9fe">
               <StatCardLabel>{t('leads.tabReplied')}</StatCardLabel>
               <StatCardValue>
-                <StatCardNumber $color="#16a34a">{tabCounts['replied'] || 0}</StatCardNumber>
+                <StatCardNumber $color="#8b5cf6">{tabCounts['replied'] || 0}</StatCardNumber>
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
               </StatCardValue>
-              <StatCardWatermark $color="#16a34a"><WmCheck /></StatCardWatermark>
+              <StatCardWatermark $color="#8b5cf6"><WmCheck /></StatCardWatermark>
             </StatCard>
           </StatCardsRow>
           <HeaderTop style={{ justifyContent: 'space-between' }}>
@@ -2664,7 +2660,7 @@ const Leads: React.FC = () => {
               </PageBtns>
             </PaginationRow>
           )}
-        </Card>
+        </PageCard>
 
       {/* Add Lead Modal */}
       {showAdd && (

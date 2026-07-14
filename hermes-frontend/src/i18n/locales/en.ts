@@ -216,6 +216,8 @@ const en = {
     cardTitleFollowup: 'FOLLOW-UP',
   },
   leads: {
+    title: 'Lead Pool',
+    subtitle: 'Manage and track your potential leads.',
     totalLeads: 'Total Leads',
     newLeads: 'New Leads',
     pending: 'Pending',
@@ -360,6 +362,8 @@ const en = {
     align: 'Align',
   },
   emailQueue: {
+    title: 'Email Queue',
+    subtitle: 'View and manage outgoing emails.',
     searchPlaceholder: 'Search emails...',
     all: 'All',
     pending: 'Pending',
@@ -434,6 +438,8 @@ const en = {
     allDistricts: 'All HK',
   },
   tasks: {
+    title: 'Task Center',
+    subtitle: 'Track AI Agent automation task progress.',
     searchPlaceholder: 'Search tasks...',
     pending: 'Pending',
     processing: 'Processing',
@@ -480,6 +486,8 @@ const en = {
     sortSkill: 'Sort: Skill',
   },
   users: {
+    title: 'Team',
+    subtitle: 'Manage team members and role permissions.',
     teamOverview: 'Team Overview',
     membersSummary: '{{count}} member(s) across {{admin}} admin, {{manager}} manager, and {{user}} user role(s)',
     allUsers: 'All Users',
@@ -520,6 +528,8 @@ const en = {
     agentIpHint: 'IP address of the device running the MADMAD agent',
   },
   calendar: {
+    title: 'Calendar',
+    subtitle: 'View schedules and upcoming events.',
     today: 'today',
     sun: 'Sun',
     mon: 'Mon',
@@ -706,7 +716,8 @@ const en = {
   },
   verifiedEmails: {
     breadcrumb: 'Verified Emails',
-    title: 'Verified Email Pool',
+    title: 'Verified Emails',
+    subtitle: 'Manage verified sender mailboxes.',
     searchPlaceholder: 'Search email / company...',
     export: 'Export',
     add: 'Add',

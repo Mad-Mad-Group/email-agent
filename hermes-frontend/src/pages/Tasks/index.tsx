@@ -194,14 +194,8 @@ const Toolbar = styled.div`
 
 const TitleBlock = styled.div``;
 
-const PageTitle = styled.h1`
-  font-size: 1.15rem; font-weight: 600; margin: 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const PageSub = styled.small`
-  color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
-`;
+const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
+const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const SearchWrap = styled.div`
   position: relative; display: flex; align-items: center;
@@ -902,6 +896,7 @@ const Tasks: React.FC = () => {
 
   return (
     <Page>
+      <div><PageTitle>{t('tasks.title')}</PageTitle><PageSub>{t('tasks.subtitle')}</PageSub></div>
       <Toolbar>
         <SearchWrap>
           <I size={14}>
