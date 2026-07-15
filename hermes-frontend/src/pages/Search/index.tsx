@@ -1247,13 +1247,8 @@ const PIPELINE_STAGES = ['search', 'enrich', 'analyze', 'draft', 'send'] as cons
 const PIPELINE_STAGE_NUMS: Record<string, number> = {
   search: 1, enrich: 2, analyze: 3, draft: 4, send: 5,
 };
-<<<<<<< Updated upstream
 const PIPELINE_STAGE_I18N_KEYS: Record<string, string> = {
   search: 'search.pipelineSearch', enrich: 'search.pipelineEnrich', analyze: 'search.pipelineAnalyze', draft: 'search.pipelineDraft', send: 'search.pipelineSend',
-=======
-const PIPELINE_STAGE_LABELS_KEY: Record<string, string> = {
-  search: 'stageSearch', enrich: 'stageEnrich', analyze: 'stageAnalyze', draft: 'stageDraft', send: 'stageSend',
->>>>>>> Stashed changes
 };
 
 const stepPulse = keyframes`
@@ -1452,7 +1447,6 @@ const PipelineLogStage = styled.span`
   margin-right: 6px;
 `;
 
-<<<<<<< Updated upstream
 const STAGE_LABEL_I18N_KEYS: Record<string, string> = {
   search: 'search.stageSearching',
   'search→enrich': 'search.stageStartEnrich',
@@ -1462,17 +1456,6 @@ const STAGE_LABEL_I18N_KEYS: Record<string, string> = {
   send: 'search.stageSending',
   pipeline: 'search.stageProcessing',
   complete: 'search.stageComplete',
-=======
-const STAGE_LABELS_KEY: Record<string, string> = {
-  search: 'stageSearching',
-  'search→enrich': 'stageStartEnrich',
-  enrich: 'stageEnriching',
-  analyze: 'stageAnalyzing',
-  draft: 'stageDrafting',
-  send: 'stageSending',
-  pipeline: 'stagePipeline',
-  complete: 'stageComplete',
->>>>>>> Stashed changes
 };
 
 /* ── Helpers ── */
@@ -1581,7 +1564,6 @@ const MOCK_SEARCH_RESULTS_TEMPLATE: Array<Omit<MockLead, 'color'> & { colorKey: 
   { name: '北投水電材料行', phone: '02-2893-0123', address: '台北市北投區中央南路一段45號', rating: 3.7, reviews: 31, source: '104人力銀行', status: 'rejected', colorKey: 'textTertiary', hasEmail: false, hasPhone: true, hasWebsite: false },
 ];
 
-<<<<<<< Updated upstream
 const STATUS_LABEL_I18N_KEYS: Record<string, string> = {
   new: 'search.statusNew',
   contacted: 'search.statusContacted',
@@ -1589,8 +1571,7 @@ const STATUS_LABEL_I18N_KEYS: Record<string, string> = {
   rejected: 'search.statusRejected',
 };
 
-=======
->>>>>>> Stashed changes
+
 function renderStars(rating: number): string {
   const full = Math.floor(rating);
   const half = rating - full >= 0.3 ? 1 : 0;
@@ -1681,11 +1662,7 @@ const SearchPage: React.FC = () => {
     void ensureNotificationPermission().then((granted) => {
       if (!granted) return;
       try {
-<<<<<<< Updated upstream
         new Notification(t('search.notificationTitle'), {
-=======
-        new Notification(t('search.notification'), {
->>>>>>> Stashed changes
           body: t('search.notificationBody', { count: leadCount }),
           tag: 'search-complete',
         });
@@ -2076,21 +2053,13 @@ const SearchPage: React.FC = () => {
                 </SearchRing>
                 {pipelineProgress && (
                   <RingStage>
-<<<<<<< Updated upstream
                     {STAGE_LABEL_I18N_KEYS[pipelineProgress.stage] ? t(STAGE_LABEL_I18N_KEYS[pipelineProgress.stage]) : pipelineProgress.stage}
-=======
-                    {t('search.' + (STAGE_LABELS_KEY[pipelineProgress.stage] || pipelineProgress.stage))}
->>>>>>> Stashed changes
                   </RingStage>
                 )}
                 <RingHint>
                   {pipelineProgress
                     ? t('search.percentComplete', { percent: Math.round(pipelineProgress.percent) })
-<<<<<<< Updated upstream
                     : search.isPending ? t('search.connectingToEngine') : t('search.waitingForPipeline')}
-=======
-                    : search.isPending ? t('search.connectingEngine') : t('search.waitingPipeline')}
->>>>>>> Stashed changes
                 </RingHint>
               </SearchRingWrap>
             )}
@@ -2102,11 +2071,7 @@ const SearchPage: React.FC = () => {
         <div style={{ width: 'calc(100% - 48px)', maxWidth: 760 }}>
           {/* Status banner — loading state handled by ring */}
           {search.isError && (
-<<<<<<< Updated upstream
             <StatusBanner $type="error">{t('search.searchFailedWithMessage', { message: (search.error as any)?.message || t('search.unknownError') })}</StatusBanner>
-=======
-            <StatusBanner $type="error">{t('search.searchFailed')}{(search.error as any)?.message || t('leads.unknownError')}</StatusBanner>
->>>>>>> Stashed changes
           )}
           {isPipelineRunning && (
             <PipelineSection>
@@ -2127,11 +2092,7 @@ const SearchPage: React.FC = () => {
                         <StepCircle $state={state}>
                           {state === 'done' ? '✓' : PIPELINE_STAGE_NUMS[stage]}
                         </StepCircle>
-<<<<<<< Updated upstream
                         <StepLabel $state={state}>{t(PIPELINE_STAGE_I18N_KEYS[stage])}</StepLabel>
-=======
-                        <StepLabel $state={state}>{t('search.' + (PIPELINE_STAGE_LABELS_KEY[stage] || stage))}</StepLabel>
->>>>>>> Stashed changes
                       </StepItem>
                     </React.Fragment>
                   );
@@ -2141,11 +2102,7 @@ const SearchPage: React.FC = () => {
               {/* Lead counter */}
               {pipelineProgress && pipelineProgress.total > 0 && (
                 <LeadCounter>
-<<<<<<< Updated upstream
                   {t('search.foundLeadsBefore')} <LeadCountNum>{pipelineProgress.current}</LeadCountNum> / {pipelineProgress.total} {t('search.foundLeadsAfter')}
-=======
-                  {t('search.foundCount')} <LeadCountNum>{pipelineProgress.current}</LeadCountNum> {t('search.ofTotal')} {pipelineProgress.total} {t('search.records')}
->>>>>>> Stashed changes
                 </LeadCounter>
               )}
 
@@ -2155,11 +2112,7 @@ const SearchPage: React.FC = () => {
                   {pipelineLogs.map((log, i) => (
                     <PipelineLogLine key={i} $level={log.level}>
                       <PipelineLogTime>[{log.time}]</PipelineLogTime>
-<<<<<<< Updated upstream
                       {log.stage && <PipelineLogStage>[{STAGE_LABEL_I18N_KEYS[log.stage] ? t(STAGE_LABEL_I18N_KEYS[log.stage]) : log.stage}]</PipelineLogStage>}
-=======
-                      {log.stage && <PipelineLogStage>[{t('search.' + (STAGE_LABELS_KEY[log.stage] || log.stage))}]</PipelineLogStage>}
->>>>>>> Stashed changes
                       {log.message}
                     </PipelineLogLine>
                   ))}
@@ -2171,11 +2124,7 @@ const SearchPage: React.FC = () => {
           {/* Complete → show results */}
           {pipelineComplete && (
             <PipelineSection>
-<<<<<<< Updated upstream
               <StatusBanner $type="success">{t('search.searchCompleteWithCount', { count: realResults.length })}</StatusBanner>
-=======
-              <StatusBanner $type="success">{t('search.searchComplete', { count: realResults.length })}</StatusBanner>
->>>>>>> Stashed changes
 
               {/* Result cards */}
               <ResultCardList>
@@ -2204,11 +2153,7 @@ const SearchPage: React.FC = () => {
                       </RcContactIcons>
                     </RcBody>
                     <RcActions>
-<<<<<<< Updated upstream
                       <RcStatusBadge $status={lead.status}>{STATUS_LABEL_I18N_KEYS[lead.status] ? t(STATUS_LABEL_I18N_KEYS[lead.status]) : lead.status}</RcStatusBadge>
-=======
-                      <RcStatusBadge $status={lead.status}>{t('common.status.' + lead.status, { defaultValue: lead.status })}</RcStatusBadge>
->>>>>>> Stashed changes
                     </RcActions>
                   </ResultCard>
                 ))}

@@ -628,7 +628,6 @@ const zhCN = {
     modeNormal: '普通',
     modeOldSite: '旧网站',
     allDistricts: '全港',
-<<<<<<< Updated upstream
     // 问候语
     greeting1: '找到你的下一个客户。',
     greeting2: '让 AI 发掘商机。',
@@ -661,22 +660,20 @@ const zhCN = {
     pipelineAnalyze: '分析',
     pipelineDraft: '撰写',
     pipelineSend: '发送',
-    // 阶段状态消息
-=======
     stageSearch: '搜索',
     stageEnrich: '充实',
     stageAnalyze: '分析',
     stageDraft: '撰写',
     stageSend: '发送',
->>>>>>> Stashed changes
+    // 阶段状态消息
     stageSearching: '搜索中',
     stageStartEnrich: '开始充实资料',
     stageEnriching: '充实资料中',
     stageAnalyzing: '分析中',
     stageDrafting: '撰写邮件中',
     stageSending: '处理发送中',
-<<<<<<< Updated upstream
     stageProcessing: '处理中',
+    stagePipeline: '处理中',
     stageComplete: '完成',
     // 状态标签
     statusNew: '新增',
@@ -692,35 +689,26 @@ const zhCN = {
     preparing: '准备中',
     percentComplete: '{{percent}}% 完成',
     connectingToEngine: '正在连接搜索引擎…',
+    connectingEngine: '正在连接搜索引擎…',
     waitingForPipeline: '等待管道启动…',
+    waitingPipeline: '等待管道启动…',
     // 消息
     searchFailedWithMessage: '搜索失败：{{message}}',
     unknownError: '未知错误',
     foundLeadsBefore: '已找到',
     foundLeadsAfter: '笔',
+    foundCount: '已找到',
+    ofTotal: '/',
+    records: '条',
     searchCompleteWithCount: '搜索完成，共找到 {{count}} 笔结果',
     noSearchResults: '本次搜索未找到结果',
     // 通知
     notificationTitle: '潜在客户搜索完成',
+    notification: '潜在客户搜索完成',
     notificationBody: '找到 {{count}} 笔新结果，点击查看 →',
     // 其他
     unknownCompany: '未知公司',
     defaultLocation: '香港',
-=======
-    stagePipeline: '处理中',
-    stageComplete: '完成',
-    submitting: '提交中',
-    preparing: '准备中',
-    connectingEngine: '正在连接搜索引擎…',
-    waitingPipeline: '等待管道启动…',
-    notification: '潜在客户搜索完成',
-    notificationBody: '找到 {{count}} 条新结果，点击查看 →',
-    foundCount: '已找到',
-    ofTotal: '/',
-    records: '条',
-    percentComplete: '{{percent}}% 完成',
-    noSearchResults: '此次搜索未找到结果',
->>>>>>> Stashed changes
   },
   tasks: {
     title: '任务中心',
