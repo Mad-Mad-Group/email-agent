@@ -25,7 +25,7 @@ const Overlay = styled.div<{ $open: boolean }>`
 
 const Shell = styled.div<{ $collapsed?: boolean }>`
   display: grid;
-  grid-template-columns: ${({ $collapsed }) => $collapsed ? '56px' : '180px'} minmax(0, 1fr);
+  grid-template-columns: ${({ $collapsed }) => $collapsed ? '56px' : '200px'} minmax(0, 1fr);
   min-height: 100vh;
   height: 100vh;
   overflow: hidden;
@@ -36,7 +36,7 @@ const Shell = styled.div<{ $collapsed?: boolean }>`
   position: relative;
 
   ${media.tablet} {
-    grid-template-columns: ${({ $collapsed }) => $collapsed ? '56px' : '180px'} minmax(0, 1fr);
+    grid-template-columns: ${({ $collapsed }) => $collapsed ? '56px' : '200px'} minmax(0, 1fr);
   }
 
   ${media.mobile} {
@@ -64,7 +64,7 @@ const JunctionHamburger = styled.button<{ $collapsed?: boolean }>`
   top: 48px;                        /* 16px shell pad + 32px (half topbar 64px) */
   left: ${({ $collapsed }) => $collapsed
     ? 'calc(16px + 56px + 8px - 18px)'     /* collapsed sidebar */
-    : 'calc(16px + 180px + 8px - 18px)'};  /* expanded sidebar */
+    : 'calc(16px + 200px + 8px - 18px)'};  /* expanded sidebar */
   transform: translateY(-50%);
   transition: left 0.3s ease, box-shadow 0.2s;
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);

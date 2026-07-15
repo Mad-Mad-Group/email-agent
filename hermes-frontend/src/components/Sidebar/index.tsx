@@ -256,21 +256,25 @@ const TitleRow = styled.div`
   height: 64px;
   padding: 0 12px 0 8px;
   flex-shrink: 0;
+  overflow: hidden;
+  width: 200px;
+  min-width: 200px;
 
   [data-collapsed="true"] & {
-    display: none;
+    opacity: 0;
+    pointer-events: none;
+    transition: none;
   }
 `;
 
 const SidebarTitle = styled.h4`
   margin: 0;
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.5rem;
+  font-size: 1.2rem;
   font-weight: 400;
-  letter-spacing: 1.5px;
+  letter-spacing: 1.8px;
   color: ${({ theme }) => theme.sidebar.text};
-  flex: 1;
-  ${collapsedHide}
+  white-space: nowrap;
 `;
 
 const ProjectSelect = styled.div`
@@ -717,7 +721,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
       {/* Title */}
       <TitleRow>
         <SidebarTitle>
-          ClientRadar AI
+          Client<span style={{ opacity: 0.35, margin: '0 6px' }}>·</span>Radar<span style={{ opacity: 0.35, margin: '0 6px' }}>·</span>AI
         </SidebarTitle>
       </TitleRow>
 

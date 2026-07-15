@@ -37,7 +37,7 @@ const GreetingDate = styled.p`
 /* ── Dashboard Grid: cards area + calendar sidebar ── */
 const DashGrid = styled.div`
   display: grid;
-  grid-template-columns: 1fr minmax(260px, 300px);
+  grid-template-columns: 1fr minmax(300px, 340px);
   gap: 20px; align-items: stretch;
   ${media.tabletDown} { grid-template-columns: 1fr; }
 `;
@@ -548,18 +548,23 @@ const CalDayHeader = styled.div`
   font-size: 0.5625rem; font-weight: 600;
   color: ${({ theme }) => theme.colors.textTertiary}; padding: 4px 0;
 `;
-const CalDayCell = styled.div<{ $today?: boolean; $muted?: boolean; $hasEvent?: boolean }>`
+const CalDayCell = styled.div<{ $today?: boolean; $selected?: boolean; $muted?: boolean; $hasEvent?: boolean }>`
   font-size: 0.6875rem;
-  font-weight: ${({ $today }) => $today ? 700 : 400};
-  color: ${({ $today, $muted, theme }) =>
+  font-weight: ${({ $today, $selected }) => ($today || $selected) ? 700 : 400};
+  color: ${({ $today, $selected, $muted, theme }) =>
     $muted ? `${theme.colors.textTertiary}60`
-    : $today ? '#fff'
+    : ($today || $selected) ? '#fff'
     : theme.colors.textPrimary};
-  background: ${({ $today, theme }) => $today ? theme.strong.mauve : 'transparent'};
-  border-radius: 50%; width: 26px; height: 26px;
+  background: ${({ $today, $selected, theme }) =>
+    $today ? theme.strong.mauve
+    : $selected ? `${theme.strong.mauve}cc`
+    : 'transparent'};
+  border-radius: 50%; width: 28px; height: 28px;
   display: flex; align-items: center; justify-content: center; margin: 1px auto;
   position: relative; cursor: ${({ $muted }) => $muted ? 'default' : 'pointer'};
-  ${({ $hasEvent, $today, theme }) => $hasEvent && !$today ? `
+  transition: background 0.15s, transform 0.1s;
+  &:hover { ${({ $muted, theme }) => !$muted ? `background: ${theme.pastel.mauve};` : ''} }
+  ${({ $hasEvent, $today, $selected, theme }) => $hasEvent && !$today && !$selected ? `
     &::after {
       content: ''; position: absolute; bottom: 1px;
       width: 4px; height: 4px; border-radius: 50%;
@@ -971,6 +976,7 @@ const Dashboard: React.FC = () => {
   }, [allLeads]);
 
   // ── Calendar state ──
+  const [selectedDate, setSelectedDate] = useState<{ year: number; month: number; day: number } | null>(null);
   const [calMonth, setCalMonth] = useState(() => {
     const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() };
   });
@@ -1254,7 +1260,14 @@ const Dashboard: React.FC = () => {
             <CalDaysGrid>
               {['S','M','T','W','T','F','S'].map((d, i) => <CalDayHeader key={i}>{d}</CalDayHeader>)}
               {calDays.map((c, i) => (
-                <CalDayCell key={i} $today={c.today} $muted={c.muted} $hasEvent={c.hasEvent}>
+                <CalDayCell
+                  key={i}
+                  $today={c.today}
+                  $selected={!c.muted && selectedDate?.year === calMonth.year && selectedDate?.month === calMonth.month && selectedDate?.day === c.day}
+                  $muted={c.muted}
+                  $hasEvent={c.hasEvent}
+                  onClick={() => { if (!c.muted) setSelectedDate({ year: calMonth.year, month: calMonth.month, day: c.day }); }}
+                >
                   {c.day}
                 </CalDayCell>
               ))}
