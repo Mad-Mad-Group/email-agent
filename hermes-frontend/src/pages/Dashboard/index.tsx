@@ -434,7 +434,7 @@ const NotebookBody = styled.div`
 `;
 const FeedList = styled.div`display: flex; flex-direction: column; gap: 0;`;
 const FeedItem = styled.div`
-  display: flex; gap: 14px; padding: 11px 0;
+  display: flex; gap: 14px; padding: 7px 0;
   /* ruled lines */
   background-image: linear-gradient(${({ theme }) => theme.mode === 'dark' ? 'rgba(148,163,184,0.06)' : 'rgba(148,163,184,0.15)'} 1px, transparent 1px);
   background-size: 100% 100%;
@@ -1121,7 +1121,7 @@ const Dashboard: React.FC = () => {
                   <Empty><EmptyDonutSvg borderColor={theme.colors.border} borderStrongColor={theme.colors.borderStrong} />{t('dashboard.noReplyData')}</Empty>
                 ) : (
                   <DonutWrap>
-                    <DonutChart size={140} slices={[
+                    <DonutChart size={170} slices={[
                       { value: replyCats.interested, color: theme.colors.textPrimary, label: t('dashboard.interested') },
                       { value: replyCats.meeting, color: `${theme.colors.textPrimary}99`, label: t('dashboard.meetingCat') },
                       { value: replyCats.question, color: `${theme.colors.textPrimary}66`, label: t('dashboard.question') },
