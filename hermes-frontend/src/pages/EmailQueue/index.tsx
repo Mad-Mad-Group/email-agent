@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { useSearchParams } from 'react-router-dom';
 import styled from 'styled-components';
 import { useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail, useBulkApproveEmails, useBulkRejectEmails, useBulkSendEmails } from '../../api/hooks';
@@ -1613,7 +1614,7 @@ const EmailQueue: React.FC = () => {
                     <ReplyCategoryBadge $bg={catStyle.bg} $fg={catStyle.fg}>{catText}</ReplyCategoryBadge>
                     {leadReply._reply_at && (
                       <span style={{ fontSize: '0.75rem', fontWeight: 400, color: '#94a3b8', marginLeft: 'auto' }}>
-                        {new Date(leadReply._reply_at).toLocaleString()}
+                        {new Date(leadReply._reply_at).toLocaleString(({ en: 'en-US', 'zh-TW': 'zh-HK', 'zh-CN': 'zh-CN' } as Record<string,string>)[i18n.language] || 'en-US')}
                       </span>
                     )}
                   </ReplySectionHeader>

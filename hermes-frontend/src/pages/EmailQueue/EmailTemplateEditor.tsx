@@ -28,7 +28,7 @@ const TEMPLATE_VARIABLES = [
   { key: '{{location}}', labelKey: 'emailTemplate.varLocation', example: 'San Francisco' },
   { key: '{{sender_name}}', labelKey: 'emailTemplate.varSenderName', example: 'Patricia' },
   { key: '{{sender_title}}', labelKey: 'emailTemplate.varSenderTitle', example: 'Sales Manager' },
-  { key: '{{product}}', labelKey: 'emailTemplate.varProductName', example: 'MADMAD CMS' },
+  { key: '{{product}}', labelKey: 'emailTemplate.varProductName', example: 'ClientRadar AI' },
   { key: '{{custom_1}}', labelKey: 'emailTemplate.varCustomField1', example: '—' },
 ];
 

@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { media } from '../../styles/media';
 import { useUsers } from '../../api/hooks';
@@ -500,7 +501,8 @@ const DpSelect = styled.select`
 function formatDate(iso?: string): string {
   if (!iso) return '—';
   try {
-    return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const locale = ({ en: 'en-US', 'zh-TW': 'zh-HK', 'zh-CN': 'zh-CN' } as Record<string,string>)[i18n.language] || 'en-US';
+    return new Date(iso).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
   } catch { return iso; }
 }
 

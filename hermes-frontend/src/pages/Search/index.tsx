@@ -1555,7 +1555,7 @@ const SearchPage: React.FC = () => {
     address: lead.address || '',
     rating: lead.rating ? parseFloat(lead.rating) : 0,
     reviews: 0,
-    source: lead.source || 'MADMAD',
+    source: lead.source || 'ClientRadar AI',
     status: lead.status || 'new',
     color: '#0ea5e9',
     hasEmail: !!(lead.email),

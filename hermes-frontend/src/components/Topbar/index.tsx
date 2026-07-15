@@ -886,7 +886,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
             <span className="line" />
           </HamburgerIcon>
         </HamburgerBtn>
-        <BrandLink href="#"><PhoneIcon /> MAD MAD</BrandLink>
+        <BrandLink href="#"><PhoneIcon /> ClientRadar AI</BrandLink>
       </LeftGroup>
 
       <SearchBar ref={searchRef}>

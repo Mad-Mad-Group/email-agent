@@ -3,6 +3,10 @@ import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
+
+const I18N_LOCALE_MAP: Record<string, string> = { en: 'en-US', 'zh-TW': 'zh-HK', 'zh-CN': 'zh-CN' };
+const getDateLocale = () => I18N_LOCALE_MAP[i18n.language] || 'en-US';
 import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail, useClearAllLeads, useReprocessLead, useMe } from '../../api/hooks';
 import { useQuery } from '@tanstack/react-query';
 import { usersApi } from '../../api/services';
@@ -1621,8 +1625,8 @@ const MOCK_LEADS: Lead[] = [
 const MOCK_EMAILS: EmailItem[] = [
   // Dragon Logistics — sent
   { _id: 'em-1', lead_id: 'mock-4', company_name: 'Dragon Logistics', to_email: 'ops@dragonlog.com',
-    subject: 'Partnership Opportunity — MADMAD x Dragon Logistics',
-    body: '<p>Hi there,</p><p>We\'d love to explore a potential partnership. Our AI-driven email automation could significantly reduce your outreach costs.</p><p>Would you be available for a 15-min call next week?</p><p>Best,<br/>MADMAD Team</p>',
+    subject: 'Partnership Opportunity — ClientRadar AI x Dragon Logistics',
+    body: '<p>Hi there,</p><p>We\'d love to explore a potential partnership. Our AI-driven email automation could significantly reduce your outreach costs.</p><p>Would you be available for a 15-min call next week?</p><p>Best,<br/>ClientRadar AI Team</p>',
     status: 'sent', _type: undefined, created_at: new Date(Date.now() - 86400000 * 8).toISOString(),
     sent_at: new Date(Date.now() - 86400000 * 8).toISOString() } as any,
   // Dragon Logistics — followup, pending
@@ -1650,19 +1654,19 @@ const MOCK_EMAILS: EmailItem[] = [
     status: 'approved', _type: 'reply', created_at: new Date(Date.now() - 3600000 * 5).toISOString() },
   // Quantum Finance — reply, pending
   { _id: 'em-6', lead_id: 'mock-8', company_name: 'Quantum Finance', to_email: 'cfo@quantumfin.hk',
-    subject: 'Re: Pricing & Compliance — MADMAD Platform',
+    subject: 'Re: Pricing & Compliance — ClientRadar AI Platform',
     body: '<p>Hi,</p><p>Thanks for your questions. Here\'s our pricing breakdown:</p><ul><li>Starter: $299/mo</li><li>Pro: $799/mo</li><li>Enterprise: Custom</li></ul><p>All plans include SOC2 compliance. Happy to discuss further.</p>',
     status: 'pending', _type: 'reply', created_at: new Date(Date.now() - 7200000).toISOString(),
     _summary: 'Detailed pricing info sent. Covers Starter/Pro/Enterprise tiers + SOC2 compliance.' } as any,
   // Acme Corp — sent first outreach
   { _id: 'em-7', lead_id: 'mock-1', company_name: 'Acme Corp', to_email: 'hello@acme.com',
-    subject: 'Intro — MADMAD AI Email Agent',
+    subject: 'Intro — ClientRadar AI Email Agent',
     body: '<p>Hello Acme Corp,</p><p>We\'re reaching out because we believe our AI email agent could help your sales team. Would you be open to a quick intro call?</p>',
     status: 'sent', created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
     sent_at: new Date(Date.now() - 86400000 * 2).toISOString() },
   // Peak Ventures — reoutreach, pending
   { _id: 'em-8', lead_id: 'mock-10', company_name: 'Peak Ventures', to_email: 'invest@peakvc.com',
-    subject: 'Re-introduction — MADMAD Series A Update',
+    subject: 'Re-introduction — ClientRadar AI Series A Update',
     body: '<p>Hi Peak Ventures,</p><p>Since we last connected, we\'ve hit some exciting milestones. Would love to share our latest traction numbers.</p>',
     status: 'pending', _type: 'reoutreach', created_at: new Date(Date.now() - 3600000).toISOString() },
 ];
@@ -1907,7 +1911,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
               {typeTag && <ReplyBadge $bg={typeTag.bg} $fg={typeTag.fg}>{typeTag.text}</ReplyBadge>}
               <ReplyBadge $bg={statusColor.bg} $fg={statusColor.fg}>{d.status || 'pending'}</ReplyBadge>
               <EmailCardDate>
-                {d.created_at ? new Date(d.created_at).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : ''}
+                {d.created_at ? new Date(d.created_at).toLocaleString(getDateLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : ''}
               </EmailCardDate>
               <div style={{ flex: 1 }} />
               {d.status === 'pending' && (
@@ -1929,7 +1933,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
                 </LeadSendBtn>
               )}
               {d.status === 'sent' && (
-                <span style={{ fontSize: '0.75rem', color: '#16a34a' }}>✓ {t('leads.sentAt')} {d.sent_at ? new Date(d.sent_at).toLocaleString('zh-HK') : ''}</span>
+                <span style={{ fontSize: '0.75rem', color: '#16a34a' }}>✓ {t('leads.sentAt')} {d.sent_at ? new Date(d.sent_at).toLocaleString(getDateLocale()) : ''}</span>
               )}
               {d.status === 'rejected' && (
                 <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>✗ {t('leads.rejected')}</span>
@@ -2899,30 +2903,30 @@ const Leads: React.FC = () => {
                 <DpTabCard>
                 <DpTimeline>
                   <DpTimelineItem>
-                    <DpTimelineTime>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
+                    <DpTimelineTime>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleString(getDateLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
                     <DpTimelineDot $active />
                     <DpTimelineText $active>{t('leads.discoveredVia', { source: selectedLead.source || 'unknown' })}</DpTimelineText>
                   </DpTimelineItem>
                   <DpTimelineItem>
-                    <DpTimelineTime>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
+                    <DpTimelineTime>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleString(getDateLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
                     <DpTimelineDot $active />
                     <DpTimelineText $active>{t('leads.addedToPool')}</DpTimelineText>
                   </DpTimelineItem>
                   <DpTimelineItem>
-                    <DpTimelineTime>{selectedLead.status !== 'new' && selectedLead.updatedAt ? new Date(selectedLead.updatedAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
+                    <DpTimelineTime>{selectedLead.status !== 'new' && selectedLead.updatedAt ? new Date(selectedLead.updatedAt).toLocaleString(getDateLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
                     <DpTimelineDot $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'} />
                     <DpTimelineText $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'}>{selectedLead.status === 'new' ? t('leads.awaitingReview') : t('leads.markedAsPending')}</DpTimelineText>
                   </DpTimelineItem>
                   {(selectedLead.status === 'contacted') && (
                     <DpTimelineItem>
-                      <DpTimelineTime>{selectedLead.updatedAt ? new Date(selectedLead.updatedAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
+                      <DpTimelineTime>{selectedLead.updatedAt ? new Date(selectedLead.updatedAt).toLocaleString(getDateLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
                       <DpTimelineDot $active />
                       <DpTimelineText $active>{t('leads.contactedStep')}</DpTimelineText>
                     </DpTimelineItem>
                   )}
                   {selectedLead._replied && (
                     <DpTimelineItem>
-                      <DpTimelineTime>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
+                      <DpTimelineTime>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString(getDateLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
                       <DpTimelineDot $active />
                       <DpTimelineText $active>{t('leads.receivedReply', { text: getReplyBadge(selectedLead, t)?.text || t('leads.replied') })}</DpTimelineText>
                     </DpTimelineItem>
@@ -2973,7 +2977,7 @@ const Leads: React.FC = () => {
                         </DpField>
                         <DpField>
                           <DpFieldLabel>{t('leads.replyTime')}</DpFieldLabel>
-                          <DpFieldValue>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString() : '—'}</DpFieldValue>
+                          <DpFieldValue>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString(getDateLocale()) : '—'}</DpFieldValue>
                         </DpField>
                       </DpGrid>
                       </DpTabCard>
