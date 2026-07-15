@@ -717,7 +717,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
       {/* Title */}
       <TitleRow>
         <SidebarTitle>
-          MAD MAD CMS
+          ClientRadar AI
         </SidebarTitle>
       </TitleRow>
 

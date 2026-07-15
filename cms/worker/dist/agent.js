@@ -835,7 +835,7 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
         let arr;
         const searchT0 = Date.now();
         try {
-            arr = await hermesJson(prompt, { array: true, timeout: 300000 });
+            arr = await hermesJson(prompt, { array: true, timeout: isOldWebsiteMode ? 600000 : 300000 });
         }
         catch (e) {
             const searchElapsed = ((Date.now() - searchT0) / 1000).toFixed(1);
