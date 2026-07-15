@@ -61,7 +61,7 @@ export const lightTheme: HermesTheme = {
   },
   status: {
     new: { bg: '#ACC0DE', fg: '#0B080B' },
-    pending: { bg: '#E9C551', fg: '#0B080B' },
+    pending: { bg: '#E5B920', fg: '#FFFFFF' },
     contacted: { bg: '#E0ACD2', fg: '#0B080B' },
     rejected: { bg: '#DBD6D5', fg: '#0B080B' },
     qualified: { bg: '#6C97D1', fg: '#FFFFFF' },

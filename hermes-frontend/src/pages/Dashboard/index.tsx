@@ -145,7 +145,7 @@ const MiniBar = styled.div<{ $color: string; $pct: number }>`
 /* ── Vertical Funnel (inside pastel card) ── */
 interface VFunnelBar { label: string; value: number; pct: string }
 const StatsRow = styled.div`
-  display: flex; align-items: flex-start; gap: 16px;
+  display: flex; align-items: flex-start; gap: 16px; padding-right: 28px;
 `;
 const StatsLeft = styled.div`
   flex: 1; min-width: 0;
@@ -1115,20 +1115,20 @@ const Dashboard: React.FC = () => {
               </ActionTrend>
               <ActionLabel>{t('dashboard.newRepliesToHandle')}</ActionLabel>
 
-              {/* Donut — dark monochrome, enlarged */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: 16 }} onClick={e => e.stopPropagation()}>
+              {/* Donut — dark monochrome */}
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', marginTop: 12 }} onClick={e => e.stopPropagation()}>
                 {stats.replied === 0 ? (
                   <Empty><EmptyDonutSvg borderColor={theme.colors.border} borderStrongColor={theme.colors.borderStrong} />{t('dashboard.noReplyData')}</Empty>
                 ) : (
-                  <DonutWrap style={{ flexDirection: 'column', gap: 16 }}>
-                    <DonutChart size={180} slices={[
+                  <DonutWrap>
+                    <DonutChart size={140} slices={[
                       { value: replyCats.interested, color: theme.colors.textPrimary, label: t('dashboard.interested') },
                       { value: replyCats.meeting, color: `${theme.colors.textPrimary}99`, label: t('dashboard.meetingCat') },
                       { value: replyCats.question, color: `${theme.colors.textPrimary}66`, label: t('dashboard.question') },
                       { value: replyCats.not_interested, color: `${theme.colors.textPrimary}44`, label: t('dashboard.notInterested') },
                       { value: replyCats.auto_reply, color: `${theme.colors.textPrimary}22`, label: t('dashboard.autoReply') },
                     ]} />
-                    <LegendList style={{ maxWidth: 'none' }}>
+                    <LegendList>
                       {[
                         { color: theme.colors.textPrimary, label: t('dashboard.interested'), value: replyCats.interested },
                         { color: `${theme.colors.textPrimary}99`, label: t('dashboard.meetingCat'), value: replyCats.meeting },
