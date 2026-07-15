@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import styled, { css, keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { media } from '../../styles/media';
+import { glassSurface, glassSurfaceLight } from '../../styles/glassSurface';
 import client from '../../api/client';
 
 /* ══════════════════════════════════════
@@ -41,15 +42,14 @@ const MainArea = styled.div`
 `;
 
 const AgendaPanel = styled.div`
+  ${glassSurface}
   width: 280px;
   flex-shrink: 0;
   padding: 16px 20px;
   align-self: flex-start;
   position: sticky;
   top: 16px;
-  background: ${({ theme }: any) => theme.colors.surface};
   border-radius: 14px;
-  box-shadow: ${({ theme }: any) => theme.shadows.card};
   ${media.mobile} {
     width: 100%;
     position: static;
@@ -57,24 +57,21 @@ const AgendaPanel = styled.div`
 `;
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface}
   border-radius: 14px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 
 const SpiralCalCard = styled(Card)`
   position: relative;
   padding: 16px;
   overflow: visible;
-  border: 1px solid ${({ theme }) => theme.colors.border};
   &::before, &::after {
     content: '';
     position: absolute;
     left: 4px; right: 4px;
     border-radius: 14px;
     z-index: -1;
-    background: ${({ theme }) => theme.colors.surface};
-    border: 1px solid ${({ theme }) => theme.colors.border};
+    ${glassSurfaceLight}
   }
   &::before { bottom: -5px; height: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.06); }
   &::after  { bottom: -9px; left: 8px; right: 8px; height: 8px; box-shadow: 0 3px 6px rgba(0,0,0,0.04); }
@@ -93,8 +90,8 @@ const CalTitle = styled.h2`font-size: 1.1rem; font-weight: 600; margin: 0;`;
 const CalNav = styled.div`display: flex; gap: 4px; align-items: center;`;
 const CalBtn = styled.button<{ $primary?: boolean; $disabled?: boolean }>`
   padding: 6px 14px; border-radius: 8px; border: none; font-size: 0.8125rem; cursor: pointer;
-  background: ${({ $primary, theme }) => $primary ? theme.colors.blue : theme.colors.surfaceMuted};
-  color: ${({ $primary, $disabled, theme }) => $disabled ? theme.colors.textTertiary : $primary ? '#fff' : theme.colors.textPrimary};
+  background: ${({ $primary, theme }) => $primary ? theme.colors.accent : theme.colors.surfaceMuted};
+  color: ${({ $primary, $disabled, theme }) => $disabled ? theme.colors.textTertiary : $primary ? theme.colors.textInverted : theme.colors.textPrimary};
   opacity: ${({ $disabled }) => $disabled ? 0.6 : 1};
   &:hover { opacity: 0.85; }
 `;
@@ -117,8 +114,8 @@ const PillBtn = styled.button<{ $active: boolean }>`
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  background: ${({ $active, theme }) => $active ? theme.colors.blue : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textSecondary};
+  background: ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.textInverted : theme.colors.textSecondary};
   &:hover { opacity: 0.85; }
 `;
 
@@ -138,19 +135,16 @@ const CalDayHeader = styled.div`
 `;
 
 const CalCell = styled.div<{ $today?: boolean; $other?: boolean; $selected?: boolean }>`
+  ${glassSurfaceLight}
   min-height: 90px; padding: 4px 6px; font-size: 0.75rem;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   border-right: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ $today, $selected, theme }) =>
-    $selected ? (theme.mode === 'dark' ? '#083344' : '#cffafe') :
-    $today ? (theme.mode === 'dark' ? '#332b00' : '#fffde7') :
-    theme.colors.surface};
+  ${({ $selected, theme }) => $selected && `background: ${theme.colors.accent}15;`}
+  ${({ $today, $selected, theme }) => !$selected && $today && `background: ${theme.strong.gold}15;`}
   color: ${({ $other, theme }) => $other ? theme.colors.textTertiary : theme.colors.textPrimary};
   cursor: pointer;
   transition: background 0.12s;
-  &:hover { background: ${({ $selected, theme }) =>
-    $selected ? (theme.mode === 'dark' ? '#083344' : '#a5f3fc') :
-    (theme.mode === 'dark' ? '#14261a' : '#ecfeff')}; }
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
   &:nth-child(7n) { border-right: none; }
   ${media.mobile} { min-height: 60px; font-size: 0.65rem; }
 `;
@@ -161,14 +155,14 @@ const CellDay = styled.div<{ $today?: boolean }>`
   ${({ $today, theme }) => $today && css`
     display: inline-flex; align-items: center; justify-content: center;
     width: 22px; height: 22px; border-radius: 50%;
-    background: ${theme.colors.blue}; color: #fff;
+    background: ${theme.colors.accent}; color: ${theme.colors.textInverted};
   `}
 `;
 
 const EventBlock = styled.div<{ $color?: string; $past?: boolean }>`
   padding: 2px 6px; margin: 1px 0; border-radius: 3px; font-size: 0.65rem;
-  background: ${({ $past, $color }) => $past ? '#b8cfb8' : ($color || '#0ea5e9')};
-  color: ${({ $past }) => $past ? '#9ca3af' : '#fff'};
+  background: ${({ $past, $color, theme }) => $past ? theme.colors.textTertiary : ($color || theme.colors.accent)};
+  color: ${({ $past, theme }) => $past ? theme.colors.textTertiary : theme.colors.textInverted};
   text-decoration: ${({ $past }) => $past ? 'line-through' : 'none'};
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   cursor: pointer;
@@ -177,12 +171,12 @@ const EventBlock = styled.div<{ $color?: string; $past?: boolean }>`
 
 const EventDot = styled.div<{ $past?: boolean }>`
   display: flex; align-items: center; gap: 4px; font-size: 0.65rem;
-  color: ${({ $past }) => $past ? '#9ca3af' : 'inherit'};
+  color: ${({ $past, theme }) => $past ? theme.colors.textTertiary : 'inherit'};
   text-decoration: ${({ $past }) => $past ? 'line-through' : 'none'};
   padding: 1px 0;
   &::before {
     content: ''; width: 6px; height: 6px; border-radius: 50%;
-    background: ${({ $past, theme }) => $past ? '#b8cfb8' : theme.colors.blue}; flex-shrink: 0;
+    background: ${({ $past, theme }) => $past ? theme.colors.textTertiary : theme.colors.accent}; flex-shrink: 0;
   }
   ${media.mobile} { font-size: 0.55rem; }
 `;
@@ -206,7 +200,7 @@ const WeekDayHeader = styled.div<{ $today?: boolean }>`
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   border-right: 1px solid ${({ theme }) => theme.colors.border};
   &:last-child { border-right: none; }
-  color: ${({ $today, theme }) => $today ? theme.colors.blue : theme.colors.textPrimary};
+  color: ${({ $today, theme }) => $today ? theme.colors.accent : theme.colors.textPrimary};
 `;
 
 const WeekDayNum = styled.div<{ $today?: boolean }>`
@@ -215,7 +209,7 @@ const WeekDayNum = styled.div<{ $today?: boolean }>`
   ${({ $today, theme }) => $today && css`
     display: inline-flex; align-items: center; justify-content: center;
     width: 28px; height: 28px; border-radius: 50%;
-    background: ${theme.colors.blue}; color: #fff;
+    background: ${theme.colors.accent}; color: ${theme.colors.textInverted};
   `}
 `;
 
@@ -253,26 +247,22 @@ const WeekCell = styled.div<{ $today?: boolean }>`
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   border-right: 1px solid ${({ theme }) => theme.colors.border};
   &:nth-child(8n) { border-right: none; } /* last col in 8-col grid */
-  background: ${({ $today, theme }) => $today ? (theme.mode === 'dark' ? '#0f1f15' : '#ecfeff') : 'transparent'};
+  background: ${({ $today, theme }) => $today ? `${theme.colors.accent}08` : 'transparent'};
 `;
 
 /* ── Week Event Card ── */
 
-const TYPE_COLORS: Record<string, { bg: string; border: string; text: string }> = {
-  meeting:   { bg: '#ede9fe', border: '#8b5cf6', text: '#6d28d9' },
-  follow_up: { bg: '#dcfce7', border: '#22c55e', text: '#15803d' },
-  deadline:  { bg: '#fee2e2', border: '#ef4444', text: '#b91c1c' },
-  other:     { bg: '#cffafe', border: '#0ea5e9', text: '#0369a1' },
+const getTypeColor = (theme: any, type: string) => {
+  const map: Record<string, string> = {
+    meeting: theme.colors.accent,
+    follow_up: theme.strong.olive,
+    deadline: theme.strong.mauve,
+    other: theme.colors.accent,
+  };
+  return map[type] || map.other;
 };
 
-const TYPE_COLORS_DARK: Record<string, { bg: string; border: string; text: string }> = {
-  meeting:   { bg: '#2e1065', border: '#8b5cf6', text: '#c4b5fd' },
-  follow_up: { bg: '#052e16', border: '#22c55e', text: '#86efac' },
-  deadline:  { bg: '#450a0a', border: '#ef4444', text: '#fca5a5' },
-  other:     { bg: '#083344', border: '#0ea5e9', text: '#67e8f9' },
-};
-
-const WeekEventCard = styled.div<{ $type: string; $dark?: boolean; $top: number; $height: number }>`
+const WeekEventCard = styled.div<{ $type: string; $top: number; $height: number }>`
   position: absolute;
   left: 3px; right: 3px;
   top: ${({ $top }) => $top}px;
@@ -287,18 +277,9 @@ const WeekEventCard = styled.div<{ $type: string; $dark?: boolean; $top: number;
   display: flex;
   flex-direction: column;
   gap: 2px;
-  background: ${({ $type, $dark }) => {
-    const c = ($dark ? TYPE_COLORS_DARK : TYPE_COLORS)[$type] || ($dark ? TYPE_COLORS_DARK : TYPE_COLORS).other;
-    return c.bg;
-  }};
-  border-left: 3px solid ${({ $type, $dark }) => {
-    const c = ($dark ? TYPE_COLORS_DARK : TYPE_COLORS)[$type] || ($dark ? TYPE_COLORS_DARK : TYPE_COLORS).other;
-    return c.border;
-  }};
-  color: ${({ $type, $dark }) => {
-    const c = ($dark ? TYPE_COLORS_DARK : TYPE_COLORS)[$type] || ($dark ? TYPE_COLORS_DARK : TYPE_COLORS).other;
-    return c.text;
-  }};
+  background: ${({ $type, theme }) => `${getTypeColor(theme, $type)}15`};
+  border-left: 3px solid ${({ $type, theme }) => getTypeColor(theme, $type)};
+  color: ${({ $type, theme }) => getTypeColor(theme, $type)};
 
   &:hover {
     transform: scale(1.02);
@@ -325,14 +306,11 @@ const WeekEvActions = styled.div`
   margin-top: auto;
 `;
 
-const WeekEvBtn = styled.button<{ $type: string; $dark?: boolean }>`
+const WeekEvBtn = styled.button<{ $type: string }>`
   padding: 2px 8px;
   border-radius: 4px;
-  border: 1px solid ${({ $type, $dark }) => {
-    const c = ($dark ? TYPE_COLORS_DARK : TYPE_COLORS)[$type] || ($dark ? TYPE_COLORS_DARK : TYPE_COLORS).other;
-    return c.border;
-  }};
-  background: ${({ $dark }) => $dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.7)'};
+  border: 1px solid ${({ $type, theme }) => getTypeColor(theme, $type)};
+  background: ${({ theme }) => theme.colors.surfaceMuted};
   color: inherit;
   font-size: 0.6rem;
   font-weight: 600;
@@ -346,7 +324,7 @@ const NowLine = styled.div`
   position: absolute;
   left: 0; right: 0;
   height: 2px;
-  background: #ef4444;
+  background: ${({ theme }) => theme.strong.mauve};
   z-index: 3;
   &::before {
     content: '';
@@ -354,7 +332,7 @@ const NowLine = styled.div`
     left: -4px; top: -3px;
     width: 8px; height: 8px;
     border-radius: 50%;
-    background: #ef4444;
+    background: ${({ theme }) => theme.strong.mauve};
   }
 `;
 
@@ -362,7 +340,7 @@ const NowBadge = styled.div`
   position: absolute;
   left: 2px; right: 2px;
   height: 2px;
-  background: #ef4444;
+  background: ${({ theme }) => theme.strong.mauve};
   z-index: 3;
 `;
 
@@ -370,7 +348,6 @@ const NowBadge = styled.div`
 
 const SideCard = styled(Card)`
   padding: 14px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const SideTitle = styled.h4`
@@ -399,11 +376,11 @@ const MiniCalHead = styled.div`
 const MiniCalDay = styled.button<{ $today?: boolean; $other?: boolean; $inWeek?: boolean }>`
   border: none;
   background: ${({ $today, $inWeek, theme }) =>
-    $today ? theme.colors.blue :
-    $inWeek ? (theme.mode === 'dark' ? '#083344' : '#cffafe') :
+    $today ? theme.colors.accent :
+    $inWeek ? `${theme.colors.accent}15` :
     'transparent'};
   color: ${({ $today, $other, theme }) =>
-    $today ? '#fff' :
+    $today ? theme.colors.textInverted :
     $other ? theme.colors.textTertiary :
     theme.colors.textPrimary};
   font-size: 0.7rem;
@@ -415,7 +392,7 @@ const MiniCalDay = styled.button<{ $today?: boolean; $other?: boolean; $inWeek?:
   margin: 0 auto;
   transition: background 0.12s;
   &:hover {
-    background: ${({ $today, theme }) => $today ? theme.colors.blue : (theme.mode === 'dark' ? '#1e3a25' : '#ecfeff')};
+    background: ${({ $today, theme }) => $today ? theme.colors.accent : theme.colors.surfaceMuted};
   }
 `;
 
@@ -463,7 +440,7 @@ const FilterDot = styled.span<{ $color: string }>`
 
 const FilterToggle = styled.div<{ $on: boolean }>`
   width: 32px; height: 18px; border-radius: 9px;
-  background: ${({ $on, theme }) => $on ? theme.colors.blue : theme.colors.border};
+  background: ${({ $on, theme }) => $on ? theme.colors.accent : theme.colors.border};
   position: relative;
   margin-left: auto;
   flex-shrink: 0;
@@ -475,7 +452,7 @@ const FilterToggle = styled.div<{ $on: boolean }>`
     left: ${({ $on }) => $on ? '16px' : '2px'};
     width: 14px; height: 14px;
     border-radius: 50%;
-    background: #fff;
+    background: ${({ theme }) => theme.colors.textInverted};
     transition: left 0.2s;
     box-shadow: 0 1px 3px rgba(0,0,0,0.2);
   }
@@ -546,7 +523,6 @@ const DayDetailWrap = styled(Card)`
   max-height: 100%;
   padding: 16px 14px;
   animation: ${dpSlideIn} 0.25s ease-out;
-  border: 1px solid ${({ theme }) => theme.colors.border};
   overflow-y: auto;
   z-index: 5;
   box-shadow: -4px 0 16px rgba(0,0,0,0.08);
@@ -567,16 +543,16 @@ const DayDetailClose = styled.button`
   background: transparent; border: none; cursor: pointer;
   width: 32px; height: 32px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   flex-shrink: 0; transition: all 0.15s;
-  &:hover { background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'}; }
+  &:hover { background: ${({ theme }) => `${theme.colors.accent}15`}; }
 `;
 const DayEventList = styled.div` display: flex; flex-direction: column; gap: 8px; `;
-const DayEventItem = styled.div<{ $color?: string; $past?: boolean }>`
+const DayEventItem = styled.div<{ $eventType?: string; $past?: boolean }>`
   display: flex; align-items: flex-start; gap: 10px;
   padding: 10px 12px; border-radius: 8px;
   background: ${({ theme }) => theme.colors.surfaceMuted};
-  border-left: 3px solid ${({ $past, $color }) => $past ? '#b8cfb8' : ($color || '#0ea5e9')};
+  border-left: 3px solid ${({ $past, $eventType, theme }) => $past ? theme.colors.textTertiary : getTypeColor(theme, $eventType || 'other')};
   opacity: ${({ $past }) => $past ? 0.6 : 1};
   transition: transform 0.1s;
   &:hover { transform: translateX(2px); }
@@ -591,6 +567,25 @@ const DayEventTitle = styled.span`
 const DayEmptyText = styled.div`
   text-align: center; padding: 24px 0;
   font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
+/* ── Footer ── */
+
+const FooterWrap = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 0;
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  a { color: ${({ theme }) => theme.colors.textTertiary}; text-decoration: none; }
+`;
+
+/* ── Agenda Date ── */
+
+const AgendaDate = styled.span`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
 `;
 
 /* ── Data ── */
@@ -613,15 +608,15 @@ interface CalEvent {
 }
 
 const FALLBACK_EVENTS: CalEvent[] = [
-  { day: 1, title: 'All Day Event', type: 'block', eventType: 'other', color: '#0ea5e9' },
-  { day: 7, title: 'Long Event', type: 'block', eventType: 'meeting', color: '#0ea5e9', span: 3 },
+  { day: 1, title: 'All Day Event', type: 'block', eventType: 'other' },
+  { day: 7, title: 'Long Event', type: 'block', eventType: 'meeting', span: 3 },
   { day: 9, title: 'Repeating Event', time: '4p', type: 'dot', eventType: 'follow_up', startHour: 16, startMin: 0, endHour: 17, endMin: 0 },
   { day: 16, title: 'Repeating Event', time: '4p', type: 'dot', eventType: 'follow_up', startHour: 16, startMin: 0, endHour: 17, endMin: 0 },
-  { day: 23, title: 'Conference', type: 'block', eventType: 'meeting', color: '#0ea5e9', span: 2 },
+  { day: 23, title: 'Conference', type: 'block', eventType: 'meeting', span: 2 },
   { day: 24, title: 'Meeting', time: '10:30a', type: 'dot', eventType: 'meeting', startHour: 10, startMin: 30, endHour: 11, endMin: 30 },
   { day: 24, title: 'Lunch', time: '12p', type: 'dot', eventType: 'other', startHour: 12, startMin: 0, endHour: 13, endMin: 0 },
   { day: 25, title: 'Birthday Party', time: '7a', type: 'dot', eventType: 'other', startHour: 7, startMin: 0, endHour: 8, endMin: 0 },
-  { day: 28, title: 'Click for Google', type: 'block', eventType: 'deadline', color: '#0ea5e9' },
+  { day: 28, title: 'Click for Google', type: 'block', eventType: 'deadline' },
 ];
 
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
@@ -636,13 +631,6 @@ const EVENT_TYPE_LABELS: Record<string, string> = {
   follow_up: 'Follow-up',
   deadline: 'Deadline',
   other: 'Other',
-};
-
-const EVENT_TYPE_DOT_COLORS: Record<string, string> = {
-  meeting: '#8b5cf6',
-  follow_up: '#22c55e',
-  deadline: '#ef4444',
-  other: '#0ea5e9',
 };
 
 function apiToCalEvents(apiEvents: any[]): CalEvent[] {
@@ -660,7 +648,7 @@ function apiToCalEvents(apiEvents: any[]): CalEvent[] {
       time,
       type: e.all_day ? 'block' as const : 'dot' as const,
       eventType: (e.type as CalEvent['eventType']) || 'other',
-      color: e.color || '#0ea5e9',
+      color: e.color,
       past: end < now,
       startHour: h,
       startMin: m,
@@ -697,8 +685,6 @@ const Calendar: React.FC = () => {
     meeting: true, follow_up: true, deadline: true, other: true,
   });
   const [expandedEvent, setExpandedEvent] = useState<string | null>(null);
-
-  const dark = typeof window !== 'undefined' && document.documentElement.getAttribute('data-theme') === 'dark';
 
   const months = useMemo(() => [
     t('calendar.january'), t('calendar.february'), t('calendar.march'),
@@ -982,7 +968,7 @@ const Calendar: React.FC = () => {
                               <WeekEventCard
                                 key={ei}
                                 $type={ev.eventType}
-                                $dark={dark}
+
                                 $top={startOffset}
                                 $height={duration}
                                 onClick={() => setExpandedEvent(isExpanded ? null : evId)}
@@ -994,8 +980,8 @@ const Calendar: React.FC = () => {
                                 </WeekEvTime>
                                 {isExpanded && duration > 40 && (
                                   <WeekEvActions>
-                                    <WeekEvBtn $type={ev.eventType} $dark={dark}>{t('calendar.detail')}</WeekEvBtn>
-                                    <WeekEvBtn $type={ev.eventType} $dark={dark}>{t('calendar.participant')}</WeekEvBtn>
+                                    <WeekEvBtn $type={ev.eventType}>{t('calendar.detail')}</WeekEvBtn>
+                                    <WeekEvBtn $type={ev.eventType}>{t('calendar.participant')}</WeekEvBtn>
                                   </WeekEvActions>
                                 )}
                               </WeekEventCard>
@@ -1026,7 +1012,7 @@ const Calendar: React.FC = () => {
                 {dayEvents.length > 0 ? (
                   <DayEventList>
                     {dayEvents.map((ev, i) => (
-                      <DayEventItem key={i} $color={EVENT_TYPE_DOT_COLORS[ev.eventType]} $past={ev.past}>
+                      <DayEventItem key={i} $eventType={ev.eventType} $past={ev.past}>
                         <DayEventTime>{ev.time || t('calendar.allDay')}</DayEventTime>
                         <DayEventTitle>{ev.title}</DayEventTitle>
                       </DayEventItem>
@@ -1045,14 +1031,14 @@ const Calendar: React.FC = () => {
           <AgendaPanel>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
               <span style={{ fontSize: '1rem', fontWeight: 600 }}>{t('calendar.todayAgenda')}</span>
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+              <AgendaDate>
                 {today.getMonth() + 1}/{today.getDate()}（{dayNames[today.getDay()]})
-              </span>
+              </AgendaDate>
             </div>
             {todayAgenda.length > 0 ? (
               <DayEventList>
                 {todayAgenda.map((ev, i) => (
-                  <DayEventItem key={i} $color={EVENT_TYPE_DOT_COLORS[ev.eventType]} $past={ev.past}>
+                  <DayEventItem key={i} $eventType={ev.eventType} $past={ev.past}>
                     <DayEventTime>{ev.time || t('calendar.allDay')}</DayEventTime>
                     <DayEventTitle>{ev.title}</DayEventTitle>
                   </DayEventItem>
@@ -1066,14 +1052,14 @@ const Calendar: React.FC = () => {
       </CalLayout>
 
       {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 0', fontSize: '0.75rem', color: '#88a890' }}>
+      <FooterWrap>
         <span>{t('footer.copyrightHermes', { year: 2026 })}</span>
         <div style={{ display: 'flex', gap: 16 }}>
-          <a href="#" style={{ color: '#88a890', textDecoration: 'none' }}>{t('footer.documentation')}</a>
-          <a href="#" style={{ color: '#88a890', textDecoration: 'none' }}>{t('footer.support')}</a>
-          <a href="#" style={{ color: '#88a890', textDecoration: 'none' }}>{t('footer.faqs')}</a>
+          <a href="#">{t('footer.documentation')}</a>
+          <a href="#">{t('footer.support')}</a>
+          <a href="#">{t('footer.faqs')}</a>
         </div>
-      </div>
+      </FooterWrap>
     </Page>
   );
 };

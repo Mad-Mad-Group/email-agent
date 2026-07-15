@@ -25,17 +25,97 @@ const Overlay = styled.div<{ $open: boolean }>`
 
 const Shell = styled.div<{ $collapsed?: boolean }>`
   display: grid;
-  grid-template-columns: ${({ $collapsed }) => $collapsed ? '61px' : '250px'} minmax(0, 1fr);
+  grid-template-columns: ${({ $collapsed }) => $collapsed ? '56px' : '180px'} minmax(0, 1fr);
   min-height: 100vh;
+  height: 100vh;
+  overflow: hidden;
+  padding: 16px;
+  gap: 16px;
   background: ${({ theme }) => theme.colors.canvas};
   transition: grid-template-columns 0.3s ease;
+  position: relative;
 
   ${media.tablet} {
-    grid-template-columns: ${({ $collapsed }) => $collapsed ? '61px' : '250px'} minmax(0, 1fr);
+    grid-template-columns: ${({ $collapsed }) => $collapsed ? '56px' : '180px'} minmax(0, 1fr);
   }
 
   ${media.mobile} {
     grid-template-columns: 1fr;
+    padding: 0;
+    gap: 0;
+  }
+`;
+
+/* ── Circular hamburger at sidebar ↔ main junction ── */
+
+const JunctionHamburger = styled.button<{ $collapsed?: boolean }>`
+  position: absolute;
+  z-index: 20;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: ${({ theme }) => theme.pastel.mauve};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Position: right edge of sidebar column + half the gap, vertically centred on topbar */
+  top: 48px;                        /* 16px shell pad + 32px (half topbar 64px) */
+  left: ${({ $collapsed }) => $collapsed
+    ? 'calc(16px + 56px + 8px - 18px)'     /* collapsed sidebar */
+    : 'calc(16px + 180px + 8px - 18px)'};  /* expanded sidebar */
+  transform: translateY(-50%);
+  transition: left 0.3s ease, box-shadow 0.2s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+
+  &:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,0.18);
+  }
+
+  ${media.mobile} { display: none; }
+`;
+
+const JunctionLines = styled.span<{ $collapsed?: boolean }>`
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  width: 18px;
+  height: 14px;
+  position: relative;
+
+  .jline {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: ${({ theme }) => theme.colors.surfaceInverted};
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    position: absolute;
+    left: 0;
+
+    &:nth-child(1) { top: 0; }
+    &:nth-child(2) { top: 6px; }
+    &:nth-child(3) { top: 12px; }
+  }
+
+  ${JunctionHamburger}:hover & {
+    .jline:nth-child(1) {
+      width: 10px;
+      transform: ${({ $collapsed }) => $collapsed
+        ? 'translateX(8px) translateY(2px) rotate(45deg)'
+        : 'translateX(0px) translateY(2px) rotate(-45deg)'};
+    }
+    .jline:nth-child(2) {
+      width: 18px;
+    }
+    .jline:nth-child(3) {
+      width: 10px;
+      transform: ${({ $collapsed }) => $collapsed
+        ? 'translateX(8px) translateY(-2px) rotate(-45deg)'
+        : 'translateX(0px) translateY(-2px) rotate(45deg)'};
+    }
   }
 `;
 
@@ -44,9 +124,18 @@ const Main = styled.main`
   flex-direction: column;
   min-height: 0;
   min-width: 0;
-  height: 100vh;
+  height: 100%;
   overflow-x: hidden;
   overflow-y: scroll;
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+
+  ${media.mobile} {
+    border-radius: 0;
+    border: none;
+    height: 100vh;
+  }
 `;
 
 const Content = styled.div`
@@ -96,7 +185,7 @@ const MobileHamburgerBtn = styled.button<{ $open?: boolean }>`
   border: none;
   border-radius: ${({ theme }) => theme.radii.control}px;
   background: transparent;
-  color: var(--primary, #0ea5e9);
+  color: ${({ theme }) => theme.colors.accent};
   cursor: pointer;
   position: fixed;
   top: 12px;
@@ -174,6 +263,13 @@ const AppLayout: React.FC = () => {
         </MobileHamburgerLines>
       </MobileHamburgerBtn>
       <Overlay $open={mobileOpen} onClick={closeMobile} />
+      <JunctionHamburger $collapsed={sidebarCollapsed} onClick={toggleSidebar} aria-label="Toggle sidebar">
+        <JunctionLines $collapsed={sidebarCollapsed}>
+          <span className="jline" />
+          <span className="jline" />
+          <span className="jline" />
+        </JunctionLines>
+      </JunctionHamburger>
       <Sidebar mobileOpen={mobileOpen} onMobileClose={closeMobile} collapsed={sidebarCollapsed} />
       <Main>
         <Topbar title={t(titleKey)} onToggleSidebar={toggleSidebar} sidebarCollapsed={sidebarCollapsed} />

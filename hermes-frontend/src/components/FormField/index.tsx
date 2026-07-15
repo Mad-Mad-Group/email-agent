@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { glassSurfaceLight } from '../../styles/glassSurface';
 
 interface Option {
   label: string;
@@ -40,12 +41,12 @@ const Input = styled.input`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurfaceLight};
   color: ${({ theme }) => theme.colors.textPrimary};
   outline: none;
 
   &:focus {
-    border-color: ${({ theme }) => theme.colors.blue};
+    border-color: ${({ theme }) => theme.colors.accent};
   }
 
   &::placeholder {
@@ -58,14 +59,13 @@ const Select = styled.select`
   font-family: ${({ theme }) => theme.fonts.primary};
   font-size: 0.875rem;
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurfaceLight};
   color: ${({ theme }) => theme.colors.textPrimary};
   outline: none;
 
   &:focus {
-    border-color: ${({ theme }) => theme.colors.blue};
+    border-color: ${({ theme }) => theme.colors.accent};
   }
 `;
 

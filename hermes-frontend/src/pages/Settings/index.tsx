@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import styled, { css } from 'styled-components';
+import styled, { css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { media } from '../../styles/media';
+import { glassSurface } from '../../styles/glassSurface';
 import { useSettings, useNotificationPrefs, useUpdateNotificationPrefs } from '../../api/hooks';
 import { settingsApi } from '../../api/services';
 
@@ -15,19 +16,17 @@ import { settingsApi } from '../../api/services';
 const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
 
 const PageCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: transparent;
+  border: none;
+  box-shadow: none;
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
   padding: 24px;
   display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.lg}px;
 `;
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 
 const HeroBody = styled.div`
@@ -38,8 +37,8 @@ const HeroBody = styled.div`
 const HeroAvatar = styled.div`
   width: 64px; height: 64px;
   border-radius: 50%;
-  background: ${({ theme }) => theme.colors.blue};
-  color: #fff;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textInverted};
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 `;
@@ -85,13 +84,13 @@ const TabItem = styled.button<{ $active?: boolean }>`
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  color: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.textSecondary};
+  color: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.textSecondary};
   transition: color 0.15s, background 0.15s;
   text-align: left;
   position: relative;
 
   ${({ $active, theme }) => $active && css`
-    background: ${theme.mode === 'dark' ? 'rgba(14,165,233,0.12)' : 'rgba(14,165,233,0.06)'};
+    background: ${theme.colors.accent}12;
     font-weight: 600;
     &::before {
       content: '';
@@ -99,13 +98,13 @@ const TabItem = styled.button<{ $active?: boolean }>`
       left: 0; top: 8px; bottom: 8px;
       width: 3px;
       border-radius: 0 3px 3px 0;
-      background: ${theme.colors.blue};
+      background: ${theme.colors.accent};
     }
   `}
 
   &:hover {
-    color: ${({ theme }) => theme.colors.blue};
-    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(14,165,233,0.08)' : 'rgba(14,165,233,0.04)'};
+    color: ${({ theme }) => theme.colors.accent};
+    background: ${({ theme }) => `${theme.colors.accent}0a`};
   }
 
   & + & {
@@ -175,7 +174,7 @@ const Input = styled.input`
   font-size: 0.875rem;
   outline: none;
   transition: border-color 0.15s;
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
 `;
 
@@ -190,8 +189,8 @@ const BtnRow = styled.div`
 
 const SaveBtn = styled.button`
   padding: 10px 24px;
-  background: ${({ theme }) => theme.colors.blue};
-  color: #fff;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textInverted};
   border: none;
   border-radius: 8px;
   font-size: 0.8125rem;
@@ -253,9 +252,7 @@ const ToggleTrack = styled.label<{ $on: boolean }>`
   height: 24px;
   border-radius: 12px;
   cursor: pointer;
-  background: ${({ $on }) => $on
-    ? 'linear-gradient(135deg, #22c55e, #16a34a)'
-    : 'linear-gradient(135deg, #b8cfb8, #88a890)'};
+  background: ${({ $on, theme }) => $on ? theme.strong.olive : theme.colors.border};
   box-shadow:
     inset 0 2px 4px rgba(0,0,0,0.15),
     0 1px 2px rgba(0,0,0,0.08);
@@ -269,7 +266,7 @@ const ToggleKnob = styled.span<{ $on: boolean }>`
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: linear-gradient(180deg, #fff 0%, #ecf2ec 100%);
+  background: ${({ theme }) => theme.colors.surface};
   box-shadow:
     0 1px 3px rgba(0,0,0,0.2),
     inset 0 1px 0 rgba(255,255,255,0.8);
@@ -371,6 +368,7 @@ type SettingsTab = 'agent-ip' | 'notifications' | 'other';
 
 const Settings: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const queryClient = useQueryClient();
   const { data, isLoading } = useSettings();
   const [busy, setBusy] = useState(false);
@@ -472,7 +470,7 @@ const Settings: React.FC = () => {
                       <FormHint>{t('settings.agentIpHint')}</FormHint>
                     </FormGroup>
 
-                    {feedback && <FormHint style={{ color: feedback === t('settings.updated') ? '#22c55e' : '#ef4444' }}>{feedback}</FormHint>}
+                    {feedback && <FormHint style={{ color: feedback === t('settings.updated') ? theme.strong.olive : theme.strong.mauve }}>{feedback}</FormHint>}
 
                     <BtnRow>
                       <SaveBtn onClick={handleSave} disabled={busy || isLoading || !ipDirty}>

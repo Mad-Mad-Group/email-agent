@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import styled, { css, keyframes } from 'styled-components';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { media } from '../../styles/media';
+import { glassSurface } from '../../styles/glassSurface';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBadge } from '../../contexts/BadgeContext';
 
@@ -205,10 +206,10 @@ const ScrollArea = styled.div`
     width: 5px;
   }
   &::-webkit-scrollbar-track {
-    background: ${({ theme }) => theme.colors.canvas};
+    background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.mode === 'dark' ? '#475569' : 'rgba(0,0,0,0.25)'};
+    background: rgba(255,255,255,0.15);
     border-radius: 3px;
   }
 
@@ -218,33 +219,17 @@ const ScrollArea = styled.div`
 `;
 
 const Wrapper = styled.aside<{ $mobileOpen?: boolean; $collapsed?: boolean }>`
-  position: sticky;
-  top: 0;
   width: 100%;
-  background: ${({ theme }) => theme.colors.canvas};
+  height: 100%;
+  background: ${({ theme }) => theme.sidebar.bg};
   border: none;
+  border-radius: 20px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   padding: 0;
-  height: 100vh;
-
-  /* White overlay hides scrollbar thumb; stops before FooterLinks so gap is consistent */
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 5px;
-    bottom: 51px;
-    background: ${({ theme }) => theme.colors.canvas};
-    pointer-events: none;
-    transition: opacity 0.4s ease;
-    z-index: 2;
-  }
-  &:hover::after {
-    opacity: 0;
-  }
+  z-index: 1;
+  transition: width 0.3s ease;
 
   ${media.mobile} {
     position: fixed;
@@ -253,16 +238,15 @@ const Wrapper = styled.aside<{ $mobileOpen?: boolean; $collapsed?: boolean }>`
     z-index: 1000;
     width: 260px;
     height: 100vh;
+    border-radius: 0;
     transform: translateX(${({ $mobileOpen }) => ($mobileOpen ? '0' : '-100%')});
     transition: transform 0.25s ease;
     box-shadow: ${({ $mobileOpen }) => ($mobileOpen ? '4px 0 20px rgba(0,0,0,0.15)' : 'none')};
-    background: ${({ theme }) => theme.colors.canvas};
   }
 
   ${({ $collapsed }) => $collapsed && css`
     padding: 0 4px 8px;
     align-items: center;
-    background: ${({ theme }: any) => theme.colors.canvas};
   `}
 `;
 
@@ -284,7 +268,7 @@ const SidebarTitle = styled.h4`
   font-size: 1.5rem;
   font-weight: 400;
   letter-spacing: 1.5px;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.sidebar.text};
   flex: 1;
   ${collapsedHide}
 `;
@@ -301,12 +285,12 @@ const Select = styled.select`
   flex: 1;
   padding: 6px 12px;
   border-radius: 20px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid ${({ theme }) => theme.sidebar.border};
   font-size: 0.8125rem;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.sidebar.text};
+  background: ${({ theme }) => theme.sidebar.hoverBg};
   outline: none;
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const PlusBtn = styled.button`
@@ -314,8 +298,8 @@ const PlusBtn = styled.button`
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: var(--primary, #0ea5e9);
-  color: #fff;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textInverted};
   font-size: 1rem;
   cursor: pointer;
   display: flex;
@@ -328,20 +312,9 @@ const MenuList = styled.ul`
   list-style: none;
   margin: 4px 6px 4px 8px;
   padding: 0;
-  border: 1.5px dashed ${({ theme }) => theme.colors.borderStrong};
-  border-radius: 14px;
-
-  & > li + li {
-    border-top: 1.5px dashed ${({ theme }) => theme.colors.borderStrong};
-  }
 
   [data-collapsed="true"] & {
     margin: 4px 2px;
-    border: none;
-
-    & > li + li {
-      border-top: none;
-    }
   }
 `;
 
@@ -359,14 +332,14 @@ const DividerLabel = styled.span`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.sidebar.textMuted};
   ${collapsedHide}
 `;
 
 const DividerSmall = styled.small`
   display: block;
   font-size: 0.625rem;
-  color: ${({ theme }) => theme.colors.textTertiary};
+  color: ${({ theme }) => theme.sidebar.textMuted};
   margin-top: 2px;
   ${collapsedHide}
 `;
@@ -386,21 +359,23 @@ const MLink = styled(NavLink)`
   padding: 8px 12px;
   border-radius: 14px;
   font-size: 0.9375rem;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.sidebar.text};
   text-decoration: none;
   transition: all 0.15s ease;
 
   svg { transition: transform 0.2s ease; }
 
   &:hover {
-    color: ${({ theme }) => theme.colors.textPrimary};
-    background: ${({ theme }) => theme.colors.surfaceMuted};
+    color: ${({ theme }) => theme.sidebar.text};
+    background: ${({ theme }) => theme.sidebar.hoverBg};
     svg { animation: ${iconFloat} 0.6s ease-in-out; }
   }
 
   &.active {
-    color: var(--primary, #0ea5e9);
+    background: ${({ theme }) => theme.strong.mauve}22;
+    color: ${({ theme }) => theme.strong.mauve};
     font-weight: 600;
+    svg { color: ${({ theme }) => theme.strong.mauve}; }
   }
 
   [data-collapsed="true"] & {
@@ -424,7 +399,7 @@ const MLinkButton = styled.button<{ $active?: boolean }>`
   padding: 8px 12px;
   border-radius: 14px;
   font-size: 0.9375rem;
-  color: ${({ theme, $active }) => $active ? 'var(--primary, #0ea5e9)' : theme.colors.textPrimary};
+  color: ${({ theme, $active }) => $active ? theme.sidebar.text : theme.sidebar.text};
   font-weight: ${({ $active }) => $active ? 600 : 400};
   text-decoration: none;
   transition: all 0.15s ease;
@@ -437,7 +412,7 @@ const MLinkButton = styled.button<{ $active?: boolean }>`
   svg { transition: transform 0.2s ease; }
 
   &:hover {
-    background: ${({ theme }) => theme.colors.surfaceMuted};
+    background: ${({ theme }) => theme.sidebar.hoverBg};
     svg { animation: ${iconFloat} 0.6s ease-in-out; }
   }
 
@@ -453,7 +428,7 @@ const ArrowIcon = styled.span<{ $open: boolean }>`
   display: inline-flex;
   transition: transform 0.2s ease;
   transform: rotate(${({ $open }) => $open ? '90deg' : '0deg'});
-  color: ${({ theme }) => theme.colors.textTertiary};
+  color: ${({ theme }) => theme.sidebar.textMuted};
   ${collapsedHide}
 `;
 
@@ -471,16 +446,16 @@ const SubLink = styled(NavLink)`
   display: block;
   padding: 6px 12px 6px 38px;
   font-size: 0.9375rem;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.sidebar.text};
   text-decoration: none;
   transition: color 0.15s;
 
   &:hover {
-    color: ${({ theme }) => theme.colors.textPrimary};
+    color: ${({ theme }) => theme.sidebar.text};
   }
 
   &.active {
-    color: var(--primary, #0ea5e9);
+    color: ${({ theme }) => theme.strong.mauve};
     font-weight: 500;
   }
 `;
@@ -488,8 +463,8 @@ const SubLink = styled(NavLink)`
 const Badge = styled.span`
   font-size: 0.625rem;
   font-weight: 700;
-  background: #ef4444;
-  color: #fff;
+  background: ${({ theme }) => theme.strong.mauve};
+  color: ${({ theme }) => theme.colors.textInverted};
   min-width: 18px;
   height: 18px;
   line-height: 18px;
@@ -509,7 +484,7 @@ const FooterLinks = styled.ul`
   justify-content: center;
   gap: 4px;
   flex-shrink: 0;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  border-top: 1px solid ${({ theme }) => theme.sidebar.border};
   margin-top: auto;
 
   /* Collapsed sidebar → stack vertically */
@@ -542,7 +517,7 @@ const FooterBtn = styled.a`
   justify-content: center;
   width: 100%;
   padding: 8px;
-  color: ${({ theme }) => theme.colors.textTertiary};
+  color: ${({ theme }) => theme.sidebar.textMuted};
   text-decoration: none;
   border-radius: 14px;
   transition: all 0.15s;
@@ -551,13 +526,13 @@ const FooterBtn = styled.a`
   svg { transition: transform 0.2s ease; }
 
   &:hover {
-    color: ${({ theme }) => theme.colors.textPrimary};
-    background: ${({ theme }) => theme.colors.surfaceMuted};
+    color: ${({ theme }) => theme.sidebar.text};
+    background: ${({ theme }) => theme.sidebar.hoverBg};
     svg { animation: ${iconFloat} 0.6s ease-in-out; }
   }
 
   &.active {
-    color: var(--primary, #0ea5e9);
+    color: ${({ theme }) => theme.sidebar.text};
   }
 
   ${media.mobile} {
@@ -591,11 +566,10 @@ const LogoutOverlay = styled.div`
 `;
 
 const LogoutDialog = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface};
   border-radius: 16px;
   padding: 28px 32px 24px;
   width: min(360px, 90vw);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
   text-align: center;
   animation: ${logoutFadeIn} 0.2s ease;
 `;
@@ -604,8 +578,8 @@ const LogoutIconWrap = styled.div`
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: ${({ theme }) => theme.colors.red}12;
-  color: ${({ theme }) => theme.colors.red};
+  background: ${({ theme }) => theme.strong.mauve}12;
+  color: ${({ theme }) => theme.strong.mauve};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -651,8 +625,8 @@ const LogoutConfirmBtn = styled.button`
   padding: 10px;
   border-radius: 10px;
   border: none;
-  background: ${({ theme }) => theme.colors.red};
-  color: #fff;
+  background: ${({ theme }) => theme.strong.mauve};
+  color: ${({ theme }) => theme.colors.textInverted};
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;

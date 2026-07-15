@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
-import styled, { css } from 'styled-components';
+import styled, { css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { media } from '../../styles/media';
+
 import { useThemeMode } from '../../contexts/ThemeModeContext';
 import { leadsApi, Lead } from '../../api/leads';
 import { emailQueueApi, EmailItem } from '../../api/emailQueue';
@@ -14,7 +15,7 @@ interface TopbarProps {
   title: string;
   actionLabel?: string;
   onAction?: () => void;
-  onToggleSidebar?: () => void;
+  onToggleSidebar?: () => void;   // kept for mobile — unused on desktop now
   sidebarCollapsed?: boolean;
 }
 
@@ -62,8 +63,8 @@ const Wrapper = styled.header`
   display: flex;
   align-items: center;
   padding: 0 16px;
+  background: ${({ theme }) => theme.colors.surface};
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.canvas};
   position: sticky;
   top: 0;
   z-index: 10;
@@ -80,68 +81,7 @@ const LeftGroup = styled.div`
   gap: 12px;
 `;
 
-/* Hamburger -> Arrow animation */
-const HamburgerBtn = styled.button`
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  position: relative;
-
-  /* Mobile: MobileHamburgerBtn in AppLayout handles the drawer. */
-  ${media.mobile} {
-    display: none;
-  }
-`;
-
-const HamburgerIcon = styled.span<{ $collapsed?: boolean }>`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 22px;
-  height: 18px;
-  position: relative;
-
-  .line {
-    display: block;
-    width: 22px;
-    height: 2px;
-    background: var(--primary, #0ea5e9);
-    border-radius: 2px;
-    transition: all 0.3s ease;
-    position: absolute;
-    left: 0;
-
-    &:nth-child(1) { top: 0; }
-    &:nth-child(2) { top: 8px; }
-    &:nth-child(3) { top: 16px; }
-  }
-
-  /* Expanded -> hover shows LEFT arrow (<-, to collapse) */
-  ${HamburgerBtn}:hover & {
-    .line:nth-child(1) {
-      width: 12px;
-      transform: ${({ $collapsed }) => $collapsed
-        ? 'translateX(10px) translateY(3px) rotate(45deg)'   /* right arrow top */
-        : 'translateX(0px) translateY(3px) rotate(-45deg)'}; /* left arrow top */
-    }
-    .line:nth-child(2) {
-      width: 22px;
-    }
-    .line:nth-child(3) {
-      width: 12px;
-      transform: ${({ $collapsed }) => $collapsed
-        ? 'translateX(10px) translateY(-3px) rotate(-45deg)'  /* right arrow bottom */
-        : 'translateX(0px) translateY(-3px) rotate(45deg)'};  /* left arrow bottom */
-    }
-  }
-`;
+/* Hamburger moved to AppLayout — only mobile variant kept in Topbar */
 
 /* Brand logo */
 const BrandLink = styled.a`
@@ -201,7 +141,7 @@ const SearchBar = styled.div`
       color: ${({ theme }) => theme.colors.textTertiary};
     }
     &:focus {
-      border-color: var(--primary, #0ea5e9);
+      border-color: ${({ theme }) => theme.colors.accent};
     }
   }
 `;
@@ -215,7 +155,7 @@ const SearchDropdown = styled.div`
   background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-shadow: ${({ theme }) => theme.shadows.card};
   max-height: 320px;
   overflow-y: auto;
   padding: 6px;
@@ -332,8 +272,8 @@ const NotifBadge = styled.span`
   height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  background: #dc2626;
-  color: #fff;
+  background: ${({ theme }) => theme.strong.mauve};
+  color: ${({ theme }) => theme.colors.textInverted};
   font-size: 0.625rem;
   font-weight: 700;
   display: flex;
@@ -359,7 +299,7 @@ const NotifPanel = styled.div<{ $open: boolean }>`
   bottom: 0;
   width: 380px;
   background: ${({ theme }) => theme.colors.surface};
-  box-shadow: -4px 0 20px rgba(0,0,0,0.1);
+  box-shadow: ${({ theme }) => theme.shadows.card};
   border-left: 1px solid ${({ theme }) => theme.colors.border};
   z-index: 2000;
   display: flex;
@@ -403,7 +343,7 @@ const NotifMarkAllBtn = styled.button`
   background: none;
   border: none;
   font-size: 0.75rem;
-  color: var(--primary, #0ea5e9);
+  color: ${({ theme }) => theme.colors.accent};
   cursor: pointer;
   padding: 2px 6px;
   border-radius: 4px;
@@ -433,12 +373,12 @@ const NotifDot = styled.div<{ $type?: string }>`
   border-radius: 50%;
   margin-top: 5px;
   flex-shrink: 0;
-  background: ${({ $type }) =>
-    $type === 'lead' ? '#16a34a' :
-    $type === 'email' ? '#0ea5e9' :
-    $type === 'task' ? '#dc2626' :
-    $type === 'campaign' ? '#9333ea' :
-    '#6b7280'};
+  background: ${({ $type, theme }) =>
+    $type === 'lead' ? theme.strong.olive :
+    $type === 'email' ? theme.colors.accent :
+    $type === 'task' ? theme.strong.mauve :
+    $type === 'campaign' ? theme.colors.accent :
+    theme.colors.textTertiary};
 `;
 
 const NotifContent = styled.div`
@@ -490,7 +430,7 @@ const NotifDismissBtn = styled.button`
   opacity: 0;
   transition: opacity 0.15s, color 0.15s;
   ${NotifItemRow}:hover & { opacity: 1; }
-  &:hover { color: #dc2626; background: rgba(220, 38, 38, 0.08); }
+  &:hover { color: ${({ theme }) => theme.strong.mauve}; background: ${({ theme }) => theme.strong.mauve}14; }
 `;
 
 const LangWrapper = styled.div`
@@ -546,7 +486,7 @@ const LangDropdown = styled.div`
   background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 12px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  box-shadow: ${({ theme }) => theme.shadows.card};
   overflow: hidden;
   z-index: 99;
 `;
@@ -601,8 +541,8 @@ const ActionButton = styled.button`
   padding: 6px 14px;
   border-radius: ${({ theme }) => theme.radii.control}px;
   border: none;
-  background: ${({ theme }) => theme.colors.blue};
-  color: #fff;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textInverted};
   cursor: pointer;
   transition: opacity 0.15s ease;
 
@@ -615,11 +555,11 @@ const UserAvatar = styled.div`
   width: 30px;
   height: 30px;
   border-radius: 50%;
-  background: var(--primary, #0ea5e9);
+  background: ${({ theme }) => theme.colors.accent};
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: ${({ theme }) => theme.colors.textInverted};
   font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
@@ -657,6 +597,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { mode, toggle: toggleTheme } = useThemeMode();
+  const theme = useTheme();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
@@ -715,7 +656,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
         label: t(item.labelKey),
         path: item.path,
         icon: item.icon,
-        color: '#0ea5e9',
+        color: theme.colors.accent,
       }));
   }, [searchQuery, t]);
 
@@ -747,7 +688,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
             sub: lead.email || lead.phone || '',
             path: `/cms-leads/${lead._id}`,
             icon: 'leads',
-            color: '#16a34a',
+            color: theme.strong.olive,
           });
         });
       }
@@ -762,7 +703,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
             sub: email.company_name || email.to_email || '',
             path: `/cms-email-queue/${email._id}`,
             icon: 'email',
-            color: '#7c3aed',
+            color: theme.colors.accent,
           });
         });
       }
@@ -787,7 +728,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
             sub: task.status || '',
             path: `/cms-tasks/${task._id}`,
             icon: 'tasks',
-            color: '#e97a0a',
+            color: theme.strong.gold,
           });
         });
       }
@@ -879,13 +820,6 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
   return (
     <Wrapper>
       <LeftGroup>
-        <HamburgerBtn onClick={onToggleSidebar} aria-label={t('topbar.toggleSidebar')}>
-          <HamburgerIcon $collapsed={sidebarCollapsed}>
-            <span className="line" />
-            <span className="line" />
-            <span className="line" />
-          </HamburgerIcon>
-        </HamburgerBtn>
         <BrandLink href="#"><PhoneIcon /> MAD MAD</BrandLink>
       </LeftGroup>
 
@@ -954,7 +888,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
                 <NotifMarkAllBtn onClick={() => markAllRead.mutate()}>{t('topbar.markAllRead')}</NotifMarkAllBtn>
               )}
               {notifications.length > 0 && (
-                <NotifMarkAllBtn onClick={() => dismissAll.mutate()} style={{ color: '#dc2626' }}>{t('topbar.clearAll')}</NotifMarkAllBtn>
+                <NotifMarkAllBtn onClick={() => dismissAll.mutate()} style={{ color: theme.strong.mauve }}>{t('topbar.clearAll')}</NotifMarkAllBtn>
               )}
               <NotifCloseBtn onClick={() => setNotifOpen(false)}>&times;</NotifCloseBtn>
             </div>

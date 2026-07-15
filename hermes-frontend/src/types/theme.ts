@@ -9,16 +9,34 @@ export interface HermesTheme {
     canvas: string;
     surface: string;
     surfaceMuted: string;
+    surfaceInverted: string;
     border: string;
     borderStrong: string;
     textPrimary: string;
     textSecondary: string;
     textTertiary: string;
-    green: string;
-    amber: string;
-    red: string;
-    blue: string;
+    textInverted: string;
     accent: string;
+  };
+  pastel: {
+    mauve: string;
+    gold: string;
+    blue: string;
+    olive: string;
+  };
+  strong: {
+    mauve: string;
+    gold: string;
+    blue: string;
+    olive: string;
+  };
+  sidebar: {
+    bg: string;
+    text: string;
+    textMuted: string;
+    active: string;
+    hoverBg: string;
+    border: string;
   };
   status: {
     new: StatusColor;
@@ -26,9 +44,24 @@ export interface HermesTheme {
     contacted: StatusColor;
     rejected: StatusColor;
     qualified: StatusColor;
+    draft: StatusColor;
+    approved: StatusColor;
+    sent: StatusColor;
+    running: StatusColor;
+    idle: StatusColor;
+    active: StatusColor;
+    [key: string]: StatusColor;
   };
   shadows: {
     card: string;
+  };
+  gradients: {
+    brand: string;
+  };
+  motion: {
+    fast: string;
+    normal: string;
+    slow: string;
   };
   radii: {
     card: number;

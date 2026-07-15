@@ -1,26 +1,11 @@
 import React from 'react';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { useTheme, keyframes, css } from 'styled-components';
 
 type Status = 'new' | 'pending' | 'contacted' | 'rejected' | 'qualified' | 'draft' | 'approved' | 'sent' | 'running' | 'idle' | 'active';
 
 interface StatusBadgeProps {
   status: Status;
 }
-
-/* 3-color semantic mapping: blue (neutral/progress), green (positive), red (negative) */
-const statusFgMap: Record<string, string> = {
-  new: '#0ea5e9',
-  pending: '#0ea5e9',
-  contacted: '#10b981',
-  rejected: '#ef4444',
-  qualified: '#10b981',
-  draft: '#0ea5e9',
-  approved: '#10b981',
-  sent: '#10b981',
-  running: '#0ea5e9',
-  idle: '#94a3b8',
-  active: '#10b981',
-};
 
 const spinDots = keyframes`
   0%   { transform: rotate(0deg); }
@@ -32,7 +17,7 @@ const ledPulse = keyframes`
   50%      { box-shadow: 0 0 8px 3px currentColor; }
 `;
 
-const Pill = styled.span<{ $fg: string; $isRunning?: boolean }>`
+const Pill = styled.span<{ $bg: string; $fg: string; $isRunning?: boolean }>`
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -41,7 +26,7 @@ const Pill = styled.span<{ $fg: string; $isRunning?: boolean }>`
   font-size: 0.75rem;
   font-weight: 500;
   font-family: ${({ theme }) => theme.fonts.primary};
-  background: ${({ theme }) => theme.colors.surfaceMuted};
+  background: ${({ $bg }) => $bg};
   color: ${({ $fg }) => $fg};
 `;
 
@@ -77,11 +62,14 @@ const SpinnerSvg = () => (
 );
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  const fg = statusFgMap[status] ?? '#0ea5e9';
+  const theme = useTheme();
+  const statusColor = theme.status[status] || theme.status.new;
+  const fg = statusColor.fg;
+  const bg = statusColor.bg;
   const isRunning = status === 'running';
   const isActive = isRunning || status === 'active';
   return (
-    <Pill $fg={fg} $isRunning={isRunning}>
+    <Pill $fg={fg} $bg={bg} $isRunning={isRunning}>
       {isRunning ? <SpinnerSvg /> : <LedDot $fg={fg} $active={isActive} />}
       {status}
     </Pill>

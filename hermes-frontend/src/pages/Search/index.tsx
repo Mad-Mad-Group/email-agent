@@ -1,21 +1,24 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useSearch } from '../../api/hooks';
 import { SearchPayload, hermesApi } from '../../api/services';
 import { sseClient, SSEEvent } from '../../api/sse';
 import { leadsApi, Lead } from '../../api/leads';
 import { media } from '../../styles/media';
+import { glassSurface } from '../../styles/glassSurface';
 import { useBadge } from '../../contexts/BadgeContext';
+import SpriteAvatar from '../../components/SpriteAvatar';
+import { AGENTS, FARMER } from '../../config/agents';
 
 /* ══════════════════════════════════════
    CMS Search — LUNO-style UI
    ══════════════════════════════════════ */
 
 /* ── Avatar helper ── */
-const avatarPalette = ['#bfdbfe', '#c4b5fd', '#a5f3fc', '#bbf7d0'];
+const avatarPalette = ['#EFEAE3', '#E8E3DB', '#E2DDD5', '#F5F2ED'];
 function hashAvatarColor(name: string): string {
   let h = 0;
   for (let i = 0; i < name.length; i++) h = name.charCodeAt(i) + ((h << 5) - h);
@@ -25,11 +28,13 @@ function hashAvatarColor(name: string): string {
 /* ── Layout primitives ── */
 
 const Page = styled.div<{ $hasResults?: boolean }>`
+  position: relative;
   display: flex; flex-direction: column; align-items: center;
   justify-content: ${({ $hasResults }) => $hasResults ? 'flex-start' : 'center'};
-  min-height: calc(100vh - 64px); gap: ${({ theme }) => theme.spacing.md}px;
-  padding-bottom: ${({ $hasResults }) => $hasResults ? '40px' : '22vh'};
-  ${({ $hasResults }) => $hasResults && 'padding-top: 40px;'}
+  min-height: calc(100vh - 64px); gap: ${({ $hasResults }) => $hasResults ? '16px' : '20px'};
+  padding-bottom: ${({ $hasResults }) => $hasResults ? '40px' : '0'};
+  padding-top: ${({ $hasResults }) => $hasResults ? '40px' : '0'};
+  overflow: hidden;
 `;
 
 const GREETING_KEYS = [
@@ -41,7 +46,7 @@ const GREETING_KEYS = [
 ];
 
 const Greeting = styled.p`
-  margin: 0 0 28px;
+  margin: 0;
   font-size: clamp(1.25rem, 4vw, 2rem);
   font-weight: 300;
   color: ${({ theme }) => theme.colors.textPrimary};
@@ -49,6 +54,122 @@ const Greeting = styled.p`
   letter-spacing: 0.01em;
   padding: 0 24px;
 `;
+
+/* ── Orbital Planet Animation ── */
+
+const orbitSpin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+const OrbitalHero = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(70vmin, 800px);
+  height: min(70vmin, 800px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  z-index: 0;
+  pointer-events: none;
+
+  /* radial glow from center */
+  &::before {
+    content: '';
+    position: absolute;
+    width: 50%;
+    height: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      ${({ theme }) => theme.colors.accent}18 0%,
+      ${({ theme }) => theme.colors.accent}0c 35%,
+      ${({ theme }) => theme.colors.accent}06 60%,
+      transparent 100%
+    );
+    filter: blur(30px);
+    pointer-events: none;
+  }
+`;
+
+const OrbitPath = styled.div<{ $frac: number; $dur: number; $reverse?: boolean }>`
+  position: absolute;
+  width: ${({ $frac }) => $frac * 100}%;
+  height: ${({ $frac }) => $frac * 100}%;
+  border-radius: 50%;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  animation: ${orbitSpin} ${({ $dur }) => $dur}s linear infinite;
+  ${({ $reverse }) => $reverse && 'animation-direction: reverse;'}
+`;
+
+const OrbitNodeWrap = styled.div<{ $dur: number; $reverse?: boolean }>`
+  position: absolute;
+  transform: translate(-50%, -50%);
+  animation: ${orbitSpin} ${({ $dur }) => $dur}s linear infinite;
+  animation-direction: ${({ $reverse }) => $reverse ? 'normal' : 'reverse'};
+`;
+
+const OrbitAvatar = styled.div`
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.surface};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  overflow: hidden;
+  border: 2px solid ${({ theme }) => theme.colors.border};
+  ${media.mobile} { width: 34px; height: 34px; }
+`;
+
+const OrbitDot = styled.div<{ $color: string; $s: number }>`
+  width: ${({ $s }) => $s}px;
+  height: ${({ $s }) => $s}px;
+  border-radius: 50%;
+  background: ${({ $color }) => $color};
+  box-shadow: 0 0 ${({ $s }) => $s * 2}px ${({ $color }) => $color}55;
+`;
+
+const GradientGreeting = styled.h1`
+  font-size: clamp(1.5rem, 4vw, 2.5rem);
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.35;
+  background: ${({ theme }) => theme.gradients.brand};
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  max-width: 300px;
+  margin: 0;
+  z-index: 2;
+  position: relative;
+  ${media.mobile} {
+    max-width: 200px;
+    font-size: clamp(1rem, 3.5vw, 1.6rem);
+  }
+`;
+
+/* Orbit config — 6 rings, fraction of hero size */
+const ORBIT_RINGS = [
+  { frac: 0.20, dur: 25, reverse: false },
+  { frac: 0.34, dur: 35, reverse: true },
+  { frac: 0.50, dur: 50, reverse: false },
+  { frac: 0.67, dur: 70, reverse: true },
+  { frac: 0.83, dur: 90, reverse: false },
+  { frac: 0.97, dur: 120, reverse: true },
+];
+
+const orbitNodePos = (angle: number) => ({
+  top: `${50 - 50 * Math.cos(angle * Math.PI / 180)}%`,
+  left: `${50 + 50 * Math.sin(angle * Math.PI / 180)}%`,
+});
 
 /* ── Glow wrapper ── */
 const haloPulse = keyframes`
@@ -66,6 +187,7 @@ const floatDot = keyframes`
 
 const GlowWrap = styled.div`
   position: relative;
+  z-index: 2;
   max-width: 760px;
   width: calc(100% - 48px);
   ${media.mobile} { width: calc(100% - 32px); }
@@ -136,8 +258,10 @@ const PageSub = styled.small`
 
 const Card = styled.div`
   background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
   box-shadow: ${({ theme }) => theme.shadows.card};
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const CardBody = styled.div`padding: 20px;`;
@@ -176,7 +300,7 @@ const UnifiedBar = styled.div<{ $morphing?: boolean; $glow?: boolean }>`
   }
 
   &:focus-within {
-    border-color: ${({ theme, $morphing }) => $morphing ? 'transparent' : theme.colors.blue};
+    border-color: ${({ theme, $morphing }) => $morphing ? 'transparent' : theme.colors.accent};
     box-shadow: ${({ $morphing }) => $morphing ? 'none' : '0 2px 20px rgba(37,99,235,0.12)'};
   }
 
@@ -189,7 +313,7 @@ const UnifiedBar = styled.div<{ $morphing?: boolean; $glow?: boolean }>`
       inset: -2px;
       border-radius: 999px;
       padding: 2px;
-      background: conic-gradient(#ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff, #ff6b6b);
+      background: conic-gradient(${({ theme }) => theme.strong.mauve}, ${({ theme }) => theme.strong.gold}, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.strong.mauve});
       -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
       mask-composite: exclude;
@@ -245,10 +369,10 @@ const BarSearchBtn = styled.button`
   display: flex; align-items: center; justify-content: center;
   width: 46px; height: 46px; margin: 5px 6px 5px 0;
   border: none; border-radius: 50%;
-  background: #0ea5e9; color: #fff;
+  background: ${({ theme }) => theme.colors.accent}; color: ${({ theme }) => theme.colors.textInverted};
   cursor: pointer; flex-shrink: 0;
   transition: background 0.15s, transform 0.15s;
-  &:hover:not(:disabled) { background: #0369a1; transform: scale(1.06); }
+  &:hover:not(:disabled) { background: ${({ theme }) => theme.colors.accent}; transform: scale(1.06); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 `;
 
@@ -269,10 +393,10 @@ const LocOption = styled.button<{ $active?: boolean }>`
   padding: 6px 10px; border: none;
   border-radius: 8px; font-size: 0.75rem; font-weight: 500;
   cursor: pointer; white-space: nowrap;
-  background: ${({ $active }) => $active ? '#e0f2fe' : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#0369a1' : theme.colors.textSecondary};
+  background: ${({ $active, theme }) => $active ? (theme.status?.new?.bg || theme.colors.accent + '1a') : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.textSecondary};
   transition: background 0.12s;
-  &:hover { background: ${({ $active }) => $active ? '#e0f2fe' : '#f1f5f9'}; }
+  &:hover { background: ${({ $active, theme }) => $active ? (theme.status?.new?.bg || theme.colors.accent + '1a') : theme.colors.surfaceMuted}; }
 `;
 
 const haloHue = keyframes`
@@ -283,7 +407,7 @@ const haloHue = keyframes`
 const ModePill = styled.div`
   display: flex; align-items: center;
   border-radius: 18px; padding: 2px;
-  background: ${({ theme }) => theme.colors.surfaceMuted || '#f1f5f9'};
+  background: ${({ theme }) => theme.colors.surfaceMuted};
   margin: 5px 0 5px 5px; flex-shrink: 0;
   position: relative;
   align-self: center;
@@ -294,7 +418,7 @@ const ModeThumb = styled.div<{ $right: boolean }>`
   top: 2px; bottom: 2px; left: 2px;
   width: calc(50% - 2px);
   border-radius: 16px;
-  background: ${({ $right }) => $right ? '#1a1a2e' : '#0ea5e9'};
+  background: ${({ $right, theme }) => $right ? theme.colors.textPrimary : theme.colors.accent};
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s;
   transform: translateX(${({ $right }) => $right ? '100%' : '0'});
   z-index: 0;
@@ -307,7 +431,7 @@ const ModeThumb = styled.div<{ $right: boolean }>`
       inset: -2px;
       border-radius: 999px;
       padding: 2px;
-      background: conic-gradient(#ff6b6b, #feca57, #48dbfb, #ff9ff3, #54a0ff, #ff6b6b);
+      background: conic-gradient(${({ theme }) => theme.strong.mauve}, ${({ theme }) => theme.strong.gold}, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.strong.mauve});
       -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
       -webkit-mask-composite: xor;
       mask-composite: exclude;
@@ -323,7 +447,7 @@ const ModeOption = styled.button<{ $active: boolean }>`
   background: transparent;
   font-size: 0.6875rem; font-weight: 600;
   cursor: pointer; white-space: nowrap;
-  color: ${({ $active }) => $active ? '#fff' : 'inherit'};
+  color: ${({ $active, theme }) => $active ? theme.colors.textInverted : 'inherit'};
   transition: color 0.25s;
 `;
 
@@ -354,7 +478,7 @@ const SearchHero = styled.div`
   justify-content: center;
   padding: 24px 56px 28px;
   border-radius: 14px;
-  background: linear-gradient(135deg, #fdfdff 0%, #f9faff 50%, #fafbff 100%);
+  ${glassSurface};
   box-shadow: 0 1px 4px rgba(37,99,235,0.04);
   ${media.mobile} { flex-direction: column; padding: 28px 20px; gap: 28px; }
 `;
@@ -390,7 +514,7 @@ const UnderlineInput = styled.input`
   transition: border-color 0.2s, background 0.2s;
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
   &:focus {
-    border-bottom-color: ${({ theme }) => theme.colors.blue};
+    border-bottom-color: ${({ theme }) => theme.colors.accent};
     background: radial-gradient(ellipse 70% 32px at 50% calc(100% + 2px), rgba(37,99,235,0.18) 0%, rgba(37,99,235,0.06) 50%, transparent 100%);
   }
 `;
@@ -398,7 +522,7 @@ const UnderlineInput = styled.input`
 const FieldLabel = styled.label`
   font-size: 0.8125rem;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   letter-spacing: 0.03em;
   padding-left: 2px;
 `;
@@ -459,7 +583,7 @@ const NumArrowBtn = styled.button`
   color: ${({ theme }) => theme.colors.textTertiary};
   cursor: pointer; padding: 0;
   transition: color 0.15s;
-  &:hover { color: ${({ theme }) => theme.colors.blue}; }
+  &:hover { color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const ChevronUp = () => (
@@ -497,8 +621,8 @@ const CircleBtn = styled.button`
   height: 56px;
   border: none;
   border-radius: 50%;
-  background: linear-gradient(135deg, #0369a1 0%, #0ea5e9 50%, #60a5fa 100%);
-  color: #fff;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textInverted};
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -520,7 +644,7 @@ const Sparkle = styled.span<{ $i: number }>`
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background: ${({ theme }) => theme.colors.blue};
+  background: ${({ theme }) => theme.colors.accent};
   opacity: 0;
   --tx: ${({ $i }) => ['-18px','20px','6px','-14px','22px','-20px','12px','-8px'][$i % 8]};
   --ty: ${({ $i }) => ['-22px','-16px','24px','20px','8px','-24px','-10px','22px'][$i % 8]};
@@ -586,7 +710,7 @@ const RingCount = styled.span`
 const RingStage = styled.span`
   font-size: 0.8125rem;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   text-align: center;
   line-height: 1.4;
 `;
@@ -609,17 +733,17 @@ const StatusBanner = styled.div<{ $type: 'success' | 'error' | 'loading' }>`
   border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.8125rem; font-weight: 500;
   background: ${({ $type, theme }) =>
-    $type === 'success' ? `${theme.colors.green}0d`
-    : $type === 'error' ? `${theme.colors.red}0d`
-    : `${theme.colors.blue}0d`};
+    $type === 'success' ? `${theme.strong.olive}0d`
+    : $type === 'error' ? `${theme.strong.mauve}0d`
+    : `${theme.colors.accent}0d`};
   color: ${({ $type, theme }) =>
-    $type === 'success' ? theme.colors.green
-    : $type === 'error' ? theme.colors.red
-    : theme.colors.blue};
+    $type === 'success' ? theme.strong.olive
+    : $type === 'error' ? theme.strong.mauve
+    : theme.colors.accent};
   border: 1px solid ${({ $type, theme }) =>
-    $type === 'success' ? `${theme.colors.green}33`
-    : $type === 'error' ? `${theme.colors.red}33`
-    : `${theme.colors.blue}33`};
+    $type === 'success' ? `${theme.strong.olive}33`
+    : $type === 'error' ? `${theme.strong.mauve}33`
+    : `${theme.colors.accent}33`};
 `;
 
 const TableWrap = styled.div`overflow-x: auto;`;
@@ -686,8 +810,8 @@ const ResultCard = styled.div`
   padding: 12px 14px;
   border-radius: 14px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-left: 3px solid #0ea5e9;
-  background: #ffffff;
+  border-left: 3px solid ${({ theme }) => theme.colors.accent};
+  background: ${({ theme }) => theme.colors.surface};
   cursor: pointer;
   transition: all 0.15s;
   &:hover {
@@ -700,7 +824,7 @@ const RcAvatar = styled.div<{ $color: string }>`
   width: 36px; height: 36px;
   border-radius: 8px;
   background: ${({ $color }) => $color};
-  color: #334155;
+  color: ${({ theme }) => theme.colors.textPrimary};
   display: flex; align-items: center; justify-content: center;
   font-size: 0.8125rem; font-weight: 700;
   flex-shrink: 0;
@@ -721,7 +845,7 @@ const RcName = styled.span`
 `;
 
 const RcStars = styled.span`
-  color: #f4b400; font-size: 0.6875rem; flex-shrink: 0;
+  color: ${({ theme }) => theme.strong.gold}; font-size: 0.6875rem; flex-shrink: 0;
 `;
 
 const RcRatingText = styled.span`
@@ -735,7 +859,7 @@ const RcMeta = styled.div`
 `;
 
 const RcPhone = styled.span`
-  font-size: 0.75rem; color: #16a34a; font-weight: 500;
+  font-size: 0.75rem; color: ${({ theme }) => theme.strong.olive}; font-weight: 500;
 `;
 
 const RcStatusBadge = styled.span<{ $status: string }>`
@@ -747,16 +871,16 @@ const RcStatusBadge = styled.span<{ $status: string }>`
   text-transform: uppercase;
   letter-spacing: 0.03em;
   flex-shrink: 0;
-  background: ${({ $status }) =>
-    $status === 'qualified' ? '#0ea5e922' :
-    $status === 'contacted' ? '#d9770622' :
-    $status === 'rejected' ? '#dc262622' :
-    '#0ea5e922'};
-  color: ${({ $status }) =>
-    $status === 'qualified' ? '#0ea5e9' :
-    $status === 'contacted' ? '#94a3b8' :
-    $status === 'rejected' ? '#dc2626' :
-    '#0ea5e9'};
+  background: ${({ $status, theme }) =>
+    $status === 'qualified' ? theme.colors.accent + '22' :
+    $status === 'contacted' ? (theme.status?.contacted?.bg || theme.strong.gold + '22') :
+    $status === 'rejected' ? theme.strong.mauve + '22' :
+    theme.colors.accent + '22'};
+  color: ${({ $status, theme }) =>
+    $status === 'qualified' ? theme.colors.accent :
+    $status === 'contacted' ? theme.colors.textTertiary :
+    $status === 'rejected' ? theme.strong.mauve :
+    theme.colors.accent};
 `;
 
 const RcActions = styled.div`
@@ -774,8 +898,8 @@ const RcSmallBtn = styled.button`
   cursor: pointer;
   white-space: nowrap;
   &:hover {
-    border-color: #0ea5e9;
-    color: #0ea5e9;
+    border-color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accent};
   }
 `;
 
@@ -788,7 +912,7 @@ const InputWrap = styled.div`
   align-items: center;
   svg {
     position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-    color: ${({ theme }) => theme.colors.blue}; pointer-events: none;
+    color: ${({ theme }) => theme.colors.accent}; pointer-events: none;
   }
 `;
 
@@ -816,10 +940,10 @@ const FilterBar = styled.div`
   gap: 8px;
   flex-wrap: wrap;
   padding: 8px 12px;
-  background: #f8fafc;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
   border-radius: 8px;
   border-bottom: 2px solid transparent;
-  border-image: linear-gradient(90deg, #0ea5e9, #8b5cf6, #ec4899) 1;
+  border-image: ${({ theme }) => theme.gradients.brand} 1;
   border-image-slice: 1;
   border-top: none;
   border-left: none;
@@ -832,14 +956,14 @@ const FilterToggle = styled.button<{ $active: boolean }>`
   gap: 5px;
   padding: 4px 12px;
   border-radius: 99px;
-  border: 1px solid ${({ $active, theme }) => $active ? '#0ea5e9' : theme.colors.border};
-  background: ${({ $active }) => $active ? '#0ea5e922' : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#0ea5e9' : theme.colors.textSecondary};
+  border: 1px solid ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.border};
+  background: ${({ $active, theme }) => $active ? theme.colors.accent + '22' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.textSecondary};
   font-size: 0.6875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
-  &:hover { border-color: #0ea5e9; color: #0ea5e9; }
+  &:hover { border-color: ${({ theme }) => theme.colors.accent}; color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const FilterDivider = styled.span`
@@ -869,7 +993,7 @@ const RatingSlider = styled.input`
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    background: #0ea5e9;
+    background: ${({ theme }) => theme.colors.accent};
     cursor: pointer;
   }
 `;
@@ -880,14 +1004,14 @@ const SourceChip = styled.button<{ $active: boolean; $color?: string }>`
   gap: 5px;
   padding: 4px 12px;
   border-radius: 99px;
-  border: 1px solid ${({ $active, $color, theme }) => $active ? ($color || '#0ea5e9') : theme.colors.border};
-  background: ${({ $active, $color }) => $active ? `${$color || '#0ea5e9'}22` : 'transparent'};
-  color: ${({ $active, $color, theme }) => $active ? ($color || '#0ea5e9') : theme.colors.textSecondary};
+  border: 1px solid ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) : theme.colors.border};
+  background: ${({ $active, $color, theme }) => $active ? `${$color || theme.colors.accent}22` : 'transparent'};
+  color: ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) : theme.colors.textSecondary};
   font-size: 0.6875rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
-  &:hover { border-color: ${({ $color }) => $color || '#0ea5e9'}; color: ${({ $color }) => $color || '#0ea5e9'}; }
+  &:hover { border-color: ${({ $color, theme }) => $color || theme.colors.accent}; color: ${({ $color, theme }) => $color || theme.colors.accent}; }
 `;
 
 /* ── Contact info icons on card ── */
@@ -904,7 +1028,7 @@ const ContactIcon = styled.span<{ $has: boolean; $color?: string }>`
   align-items: center;
   gap: 3px;
   font-size: 0.625rem;
-  color: ${({ $has, $color }) => $has ? ($color || '#0ea5e9') : '#cbd5e1'};
+  color: ${({ $has, $color, theme }) => $has ? ($color || theme.colors.accent) : theme.colors.border};
   svg { opacity: ${({ $has }) => $has ? 1 : 0.4}; }
 `;
 
@@ -990,8 +1114,8 @@ const DpTypeBadge = styled.span`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  background: #0ea5e922;
-  color: #0ea5e9;
+  background: ${({ theme }) => theme.colors.accent}22;
+  color: ${({ theme }) => theme.colors.accent};
 `;
 
 const DpCloseBtn = styled.button`
@@ -1004,11 +1128,11 @@ const DpCloseBtn = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   flex-shrink: 0;
   transition: all 0.15s;
   &:hover {
-    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'};
+    background: ${({ theme }) => theme.colors.accent + '15'};
   }
 `;
 
@@ -1089,7 +1213,7 @@ const DpRelatedIcon = styled.span`
   justify-content: center;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #fff;
+  color: ${({ theme }) => theme.colors.textInverted};
   flex-shrink: 0;
 `;
 
@@ -1111,9 +1235,9 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'default' }>`
   white-space: nowrap;
   transition: opacity 0.15s;
   background: ${({ $variant, theme }) =>
-    $variant === 'primary' ? theme.colors.blue : theme.colors.surfaceMuted};
-  color: ${({ $variant }) =>
-    $variant === 'primary' ? '#fff' : 'inherit'};
+    $variant === 'primary' ? theme.colors.accent : theme.colors.surfaceMuted};
+  color: ${({ $variant, theme }) =>
+    $variant === 'primary' ? theme.colors.textInverted : 'inherit'};
   &:hover { opacity: 0.85; }
 `;
 
@@ -1160,11 +1284,11 @@ const StepCircle = styled.div<{ $state: 'done' | 'active' | 'pending' }>`
   font-weight: 700;
   flex-shrink: 0;
   transition: all 0.3s;
-  background: ${({ $state }) =>
-    $state === 'done' ? '#22c55e' :
-    $state === 'active' ? '#0ea5e9' :
-    '#e2e8f0'};
-  color: ${({ $state }) => $state === 'pending' ? '#94a3b8' : '#fff'};
+  background: ${({ $state, theme }) =>
+    $state === 'done' ? theme.strong.olive :
+    $state === 'active' ? theme.colors.accent :
+    theme.colors.border};
+  color: ${({ $state, theme }) => $state === 'pending' ? theme.colors.textTertiary : theme.colors.textInverted};
   ${({ $state }) => $state === 'active' && css`
     animation: ${stepPulse} 2s ease-in-out infinite;
   `}
@@ -1177,7 +1301,7 @@ const StepLine = styled.div<{ $done: boolean }>`
   max-width: 72px;
   margin-top: 20px;
   border-radius: 2px;
-  background: ${({ $done }) => $done ? '#22c55e' : '#e2e8f0'};
+  background: ${({ $done, theme }) => $done ? theme.strong.olive : theme.colors.border};
   transition: background 0.3s;
 `;
 
@@ -1185,10 +1309,10 @@ const StepLabel = styled.div<{ $state: 'done' | 'active' | 'pending' }>`
   font-size: 0.8125rem;
   font-weight: 600;
   text-align: center;
-  color: ${({ $state }) =>
-    $state === 'active' ? '#0ea5e9' :
-    $state === 'done' ? '#22c55e' :
-    '#94a3b8'};
+  color: ${({ $state, theme }) =>
+    $state === 'active' ? theme.colors.accent :
+    $state === 'done' ? theme.strong.olive :
+    theme.colors.textTertiary};
   transition: color 0.3s;
 `;
 
@@ -1204,7 +1328,7 @@ const LeadCounter = styled.div`
 `;
 
 const LeadCountNum = styled.span`
-  color: #0ea5e9;
+  color: ${({ theme }) => theme.colors.accent};
   font-size: 1rem;
   font-weight: 700;
 `;
@@ -1229,7 +1353,7 @@ const ProgressBarOuter = styled.div`
 const ProgressBarInner = styled.div<{ $percent: number }>`
   height: 100%;
   width: ${({ $percent }) => $percent}%;
-  background: #0ea5e9;
+  background: ${({ theme }) => theme.colors.accent};
   border-radius: 4px;
   transition: width 0.4s ease;
 `;
@@ -1286,7 +1410,7 @@ const SkeletonSpinner = styled.div`
   flex: none;
   border-radius: 50%;
   border: 2.5px solid ${({ theme }) => theme.colors.border};
-  border-top-color: #0ea5e9;
+  border-top-color: ${({ theme }) => theme.colors.accent};
   animation: ${skeletonSpin} 0.9s linear infinite;
 `;
 
@@ -1307,18 +1431,18 @@ const PipelineLogLine = styled.div<{ $level?: string }>`
   padding: 2px 0;
   line-height: 1.6;
   color: ${({ $level, theme }) =>
-    $level === 'error' ? theme.colors.red
-    : $level === 'warn' ? '#d97706'
+    $level === 'error' ? theme.strong.mauve
+    : $level === 'warn' ? theme.strong.gold
     : theme.colors.textSecondary};
 `;
 
 const PipelineLogTime = styled.span`
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   margin-right: 6px;
 `;
 
 const PipelineLogStage = styled.span`
-  color: #0ea5e9;
+  color: ${({ theme }) => theme.colors.accent};
   font-weight: 600;
   margin-right: 6px;
 `;
@@ -1377,12 +1501,8 @@ function renderResults(data: unknown, onRowClick?: (row: Record<string, unknown>
 
 /* ── Detail panel helpers ── */
 
-const TYPE_COLORS: Record<string, string> = {
-  business: '#0ea5e9',
-  person: '#0ea5e9',
-  place: '#d97706',
-  default: '#0ea5e9',
-};
+/* TYPE_COLORS — populated at runtime via useTheme() in the component */
+let TYPE_COLORS: Record<string, string> = {};
 
 function getResultTitle(row: Record<string, unknown>): string {
   const candidates = ['name', 'title', 'company_name', 'company', 'business_name', 'label'];
@@ -1410,11 +1530,8 @@ function getResultPreview(row: Record<string, unknown>): string {
 }
 
 /* MOCK_RELATED keys — titles are i18n'd via search.relatedNearby / relatedBusiness / relatedIndustry */
-const MOCK_RELATED_KEYS = [
-  { titleKey: 'search.relatedNearby', type: 'location', color: '#0ea5e9' },
-  { titleKey: 'search.relatedBusiness', type: 'business', color: '#0ea5e9' },
-  { titleKey: 'search.relatedIndustry', type: 'industry', color: '#d97706' },
-];
+/* MOCK_RELATED_KEYS — colors populated at runtime via useTheme() */
+let MOCK_RELATED_KEYS: Array<{ titleKey: string; type: string; color: string }> = [];
 
 /* ── Mock search results (displayed by default) ── */
 
@@ -1435,15 +1552,16 @@ interface MockLead {
   website?: string;
 }
 
-const MOCK_SEARCH_RESULTS: MockLead[] = [
-  { name: '宏達水電行', phone: '02-2720-1234', address: '台北市信義區松仁路100號', rating: 4.5, reviews: 128, source: 'Google Maps', status: 'new', color: '#0ea5e9', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'info@hongda.com.tw', website: 'hongda.com.tw' },
-  { name: '永豐水電工程', phone: '02-2705-5678', address: '台北市大安區復興南路200號', rating: 4.2, reviews: 85, source: 'Google Maps', status: 'new', color: '#0ea5e9', hasEmail: false, hasPhone: true, hasWebsite: false },
-  { name: '大同水電維修', phone: '02-2562-9012', address: '台北市中山區南京東路50號', rating: 4.8, reviews: 203, source: 'Google Maps', status: 'contacted', color: '#d97706', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'service@datong-water.tw', website: 'datong-water.tw' },
-  { name: '建成水電服務', phone: '02-2302-3456', address: '台北市萬華區西園路88號', rating: 3.9, reviews: 42, source: 'LinkedIn', status: 'new', color: '#0369a1', hasEmail: true, hasPhone: true, hasWebsite: false, email: 'jiancheng.plumb@gmail.com' },
-  { name: '信義水電急修', phone: '02-2579-7890', address: '台北市松山區八德路300號', rating: 4.6, reviews: 156, source: 'Google Maps', status: 'qualified', color: '#0ea5e9', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'contact@xinyi-fix.com', website: 'xinyi-fix.com' },
-  { name: '台北水電到府', phone: '02-2771-2345', address: '台北市大安區忠孝東路四段120號', rating: 4.1, reviews: 67, source: 'LinkedIn', status: 'new', color: '#dc2626', hasEmail: false, hasPhone: true, hasWebsite: true, website: 'taipei-plumber.tw' },
-  { name: '全能水電工程行', phone: '02-2391-6789', address: '台北市中正區重慶南路一段80號', rating: 4.4, reviews: 112, source: 'Google Maps', status: 'new', color: '#0ea5e9', hasEmail: true, hasPhone: true, hasWebsite: false, email: 'allpower@gmail.com' },
-  { name: '北投水電材料行', phone: '02-2893-0123', address: '台北市北投區中央南路一段45號', rating: 3.7, reviews: 31, source: '104人力銀行', status: 'rejected', color: '#94a3b8', hasEmail: false, hasPhone: true, hasWebsite: false },
+/* MOCK_SEARCH_RESULTS — colors are token keys, resolved at runtime */
+const MOCK_SEARCH_RESULTS_TEMPLATE: Array<Omit<MockLead, 'color'> & { colorKey: 'blue' | 'amber' | 'red' | 'textTertiary' }> = [
+  { name: '宏達水電行', phone: '02-2720-1234', address: '台北市信義區松仁路100號', rating: 4.5, reviews: 128, source: 'Google Maps', status: 'new', colorKey: 'blue', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'info@hongda.com.tw', website: 'hongda.com.tw' },
+  { name: '永豐水電工程', phone: '02-2705-5678', address: '台北市大安區復興南路200號', rating: 4.2, reviews: 85, source: 'Google Maps', status: 'new', colorKey: 'blue', hasEmail: false, hasPhone: true, hasWebsite: false },
+  { name: '大同水電維修', phone: '02-2562-9012', address: '台北市中山區南京東路50號', rating: 4.8, reviews: 203, source: 'Google Maps', status: 'contacted', colorKey: 'amber', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'service@datong-water.tw', website: 'datong-water.tw' },
+  { name: '建成水電服務', phone: '02-2302-3456', address: '台北市萬華區西園路88號', rating: 3.9, reviews: 42, source: 'LinkedIn', status: 'new', colorKey: 'blue', hasEmail: true, hasPhone: true, hasWebsite: false, email: 'jiancheng.plumb@gmail.com' },
+  { name: '信義水電急修', phone: '02-2579-7890', address: '台北市松山區八德路300號', rating: 4.6, reviews: 156, source: 'Google Maps', status: 'qualified', colorKey: 'blue', hasEmail: true, hasPhone: true, hasWebsite: true, email: 'contact@xinyi-fix.com', website: 'xinyi-fix.com' },
+  { name: '台北水電到府', phone: '02-2771-2345', address: '台北市大安區忠孝東路四段120號', rating: 4.1, reviews: 67, source: 'LinkedIn', status: 'new', colorKey: 'red', hasEmail: false, hasPhone: true, hasWebsite: true, website: 'taipei-plumber.tw' },
+  { name: '全能水電工程行', phone: '02-2391-6789', address: '台北市中正區重慶南路一段80號', rating: 4.4, reviews: 112, source: 'Google Maps', status: 'new', colorKey: 'blue', hasEmail: true, hasPhone: true, hasWebsite: false, email: 'allpower@gmail.com' },
+  { name: '北投水電材料行', phone: '02-2893-0123', address: '台北市北投區中央南路一段45號', rating: 3.7, reviews: 31, source: '104人力銀行', status: 'rejected', colorKey: 'textTertiary', hasEmail: false, hasPhone: true, hasWebsite: false },
 ];
 
 const STATUS_LABEL_I18N_KEYS: Record<string, string> = {
@@ -1462,6 +1580,24 @@ function renderStars(rating: number): string {
 const SearchPage: React.FC = () => {
   const { t } = useTranslation();
   const { setBadge } = useBadge();
+  const theme = useTheme();
+
+  /* Populate runtime color maps from theme */
+  TYPE_COLORS = {
+    business: theme.colors.accent,
+    person: theme.colors.accent,
+    place: theme.strong.gold,
+    default: theme.colors.accent,
+  };
+  MOCK_RELATED_KEYS = [
+    { titleKey: 'search.relatedNearby', type: 'location', color: theme.colors.accent },
+    { titleKey: 'search.relatedBusiness', type: 'business', color: theme.colors.accent },
+    { titleKey: 'search.relatedIndustry', type: 'industry', color: theme.strong.gold },
+  ];
+  const MOCK_SEARCH_RESULTS: MockLead[] = MOCK_SEARCH_RESULTS_TEMPLATE.map(({ colorKey, ...rest }) => ({
+    ...rest,
+    color: (theme.colors as any)[colorKey] || theme.colors.accent,
+  }));
   const [greetingKey] = useState(() => GREETING_KEYS[Math.floor(Math.random() * GREETING_KEYS.length)]);
   // ponytail: restore form state from localStorage so refresh doesn't wipe it.
   // Falls back to defaults if key missing or JSON corrupt.
@@ -1557,7 +1693,7 @@ const SearchPage: React.FC = () => {
     reviews: 0,
     source: lead.source || 'MADMAD',
     status: lead.status || 'new',
-    color: '#0ea5e9',
+    color: theme.colors.accent,
     hasEmail: !!(lead.email),
     hasPhone: !!(lead.phone),
     hasWebsite: !!(lead.website),
@@ -1767,7 +1903,79 @@ const SearchPage: React.FC = () => {
 
   return (
     <Page $hasResults={search.isPending || isPipelineRunning || pipelineComplete || search.isError}>
-      <Greeting>{t(greetingKey)}</Greeting>
+      {/* Orbital hero — idle state only */}
+      {!(search.isPending || isPipelineRunning || pipelineComplete || search.isError) && (
+        <OrbitalHero>
+          {/* Ring 0 — innermost: S1 Fox + S3 Chicken */}
+          <OrbitPath $frac={ORBIT_RINGS[0].frac} $dur={ORBIT_RINGS[0].dur}>
+            <OrbitNodeWrap style={orbitNodePos(0)} $dur={ORBIT_RINGS[0].dur}>
+              <OrbitAvatar>
+                <SpriteAvatar src={AGENTS.S1.sprite} frames={AGENTS.S1.frames} frameW={AGENTS.S1.frameW} frameH={AGENTS.S1.frameH} size={36} />
+              </OrbitAvatar>
+            </OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(180)} $dur={ORBIT_RINGS[0].dur}>
+              <OrbitAvatar>
+                <SpriteAvatar src={AGENTS.S3.sprite} frames={AGENTS.S3.frames} frameW={AGENTS.S3.frameW} frameH={AGENTS.S3.frameH} size={36} />
+              </OrbitAvatar>
+            </OrbitNodeWrap>
+          </OrbitPath>
+          {/* Ring 1 — S2 Cow + S4 Duck + Farmer */}
+          <OrbitPath $frac={ORBIT_RINGS[1].frac} $dur={ORBIT_RINGS[1].dur} $reverse>
+            <OrbitNodeWrap style={orbitNodePos(30)} $dur={ORBIT_RINGS[1].dur} $reverse>
+              <OrbitAvatar>
+                <SpriteAvatar src={AGENTS.S2.sprite} frames={AGENTS.S2.frames} frameW={AGENTS.S2.frameW} frameH={AGENTS.S2.frameH} size={36} />
+              </OrbitAvatar>
+            </OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(150)} $dur={ORBIT_RINGS[1].dur} $reverse>
+              <OrbitAvatar>
+                <SpriteAvatar src={AGENTS.S4.sprite} frames={AGENTS.S4.frames} frameW={AGENTS.S4.frameW} frameH={AGENTS.S4.frameH} size={36} />
+              </OrbitAvatar>
+            </OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(270)} $dur={ORBIT_RINGS[1].dur} $reverse>
+              <OrbitAvatar>
+                <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} size={36} />
+              </OrbitAvatar>
+            </OrbitNodeWrap>
+          </OrbitPath>
+          {/* Ring 2 — planet dots */}
+          <OrbitPath $frac={ORBIT_RINGS[2].frac} $dur={ORBIT_RINGS[2].dur}>
+            <OrbitNodeWrap style={orbitNodePos(0)} $dur={ORBIT_RINGS[2].dur}><OrbitDot $color={theme.colors.accent} $s={10} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(72)} $dur={ORBIT_RINGS[2].dur}><OrbitDot $color={theme.colors.accent} $s={7} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(144)} $dur={ORBIT_RINGS[2].dur}><OrbitDot $color={theme.strong.olive} $s={9} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(216)} $dur={ORBIT_RINGS[2].dur}><OrbitDot $color={theme.strong.mauve} $s={6} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(288)} $dur={ORBIT_RINGS[2].dur}><OrbitDot $color={theme.strong.gold} $s={8} /></OrbitNodeWrap>
+          </OrbitPath>
+          {/* Ring 3 — outer dots */}
+          <OrbitPath $frac={ORBIT_RINGS[3].frac} $dur={ORBIT_RINGS[3].dur} $reverse>
+            <OrbitNodeWrap style={orbitNodePos(20)} $dur={ORBIT_RINGS[3].dur} $reverse><OrbitDot $color={theme.colors.accent} $s={8} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(110)} $dur={ORBIT_RINGS[3].dur} $reverse><OrbitDot $color={theme.colors.accent} $s={6} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(200)} $dur={ORBIT_RINGS[3].dur} $reverse><OrbitDot $color={theme.strong.olive} $s={7} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(290)} $dur={ORBIT_RINGS[3].dur} $reverse><OrbitDot $color={theme.strong.gold} $s={5} /></OrbitNodeWrap>
+          </OrbitPath>
+          {/* Ring 4 — far dots */}
+          <OrbitPath $frac={ORBIT_RINGS[4].frac} $dur={ORBIT_RINGS[4].dur}>
+            <OrbitNodeWrap style={orbitNodePos(15)} $dur={ORBIT_RINGS[4].dur}><OrbitDot $color={theme.colors.accent} $s={5} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(87)} $dur={ORBIT_RINGS[4].dur}><OrbitDot $color={theme.strong.mauve} $s={4} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(159)} $dur={ORBIT_RINGS[4].dur}><OrbitDot $color={theme.colors.accent} $s={6} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(231)} $dur={ORBIT_RINGS[4].dur}><OrbitDot $color={theme.strong.olive} $s={4} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(303)} $dur={ORBIT_RINGS[4].dur}><OrbitDot $color={theme.strong.gold} $s={5} /></OrbitNodeWrap>
+          </OrbitPath>
+          {/* Ring 5 — outermost subtle dots */}
+          <OrbitPath $frac={ORBIT_RINGS[5].frac} $dur={ORBIT_RINGS[5].dur} $reverse>
+            <OrbitNodeWrap style={orbitNodePos(0)} $dur={ORBIT_RINGS[5].dur} $reverse><OrbitDot $color={theme.colors.accent} $s={3} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(60)} $dur={ORBIT_RINGS[5].dur} $reverse><OrbitDot $color={theme.colors.accent} $s={4} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(120)} $dur={ORBIT_RINGS[5].dur} $reverse><OrbitDot $color={theme.strong.olive} $s={3} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(180)} $dur={ORBIT_RINGS[5].dur} $reverse><OrbitDot $color={theme.strong.gold} $s={4} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(240)} $dur={ORBIT_RINGS[5].dur} $reverse><OrbitDot $color={theme.strong.mauve} $s={3} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(300)} $dur={ORBIT_RINGS[5].dur} $reverse><OrbitDot $color={theme.colors.accent} $s={4} /></OrbitNodeWrap>
+          </OrbitPath>
+        </OrbitalHero>
+      )}
+
+      {/* Greeting — in flow, z-index above orbits */}
+      {!(search.isPending || isPipelineRunning || pipelineComplete || search.isError) && (
+        <GradientGreeting>{t(greetingKey)}</GradientGreeting>
+      )}
 
       <GlowWrap>
         {DOT_CONFIG.map((d, i) => (
@@ -1823,7 +2031,7 @@ const SearchPage: React.FC = () => {
                     <circle
                       cx="70" cy="70" r="62"
                       fill="none"
-                      stroke="#0ea5e9"
+                      stroke={theme.colors.accent}
                       strokeWidth="4"
                       strokeLinecap="round"
                       strokeDasharray={`${2 * Math.PI * 62}`}
@@ -1932,13 +2140,13 @@ const SearchPage: React.FC = () => {
                       </RcTopRow>
                       <RcMeta>{lead.address || '—'}</RcMeta>
                       <RcContactIcons>
-                        <ContactIcon $has={lead.hasEmail} $color="#0ea5e9">
+                        <ContactIcon $has={lead.hasEmail} $color={theme.colors.accent}>
                           <SvgIcon d="M1 3.5h14v9H1z M1 3.5l7 5 7-5" size={12} /> {lead.hasEmail ? lead.email : ''}
                         </ContactIcon>
-                        <ContactIcon $has={lead.hasPhone} $color="#16a34a">
+                        <ContactIcon $has={lead.hasPhone} $color={theme.strong.olive}>
                           <SvgIcon d="M3 1.5a1 1 0 0 1 1-1h8a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z" size={12} /> {lead.hasPhone ? lead.phone : ''}
                         </ContactIcon>
-                        <ContactIcon $has={lead.hasWebsite} $color="#d97706">
+                        <ContactIcon $has={lead.hasWebsite} $color={theme.strong.gold}>
                           <SvgIcon d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1z M1 8h14 M8 1c-2 2-2 5 0 7s2 5 0 7" size={12} /> {lead.hasWebsite ? lead.website : ''}
                         </ContactIcon>
                       </RcContactIcons>

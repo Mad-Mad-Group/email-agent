@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import styled, { css } from 'styled-components';
+import styled, { css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import { glassSurface } from '../../styles/glassSurface';
 import { media } from '../../styles/media';
 import { useMe, useUpdateProfile, useChangePassword } from '../../api/hooks';
 import toast from 'react-hot-toast';
@@ -26,10 +27,8 @@ const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }
 /* ── Card ── */
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 
 /* ── Profile Hero ── */
@@ -43,7 +42,7 @@ const HeroCard = styled(Card)`
     position: absolute;
     top: 0; left: 0; right: 0;
     height: 4px;
-    background: linear-gradient(90deg, var(--primary, #0ea5e9), #38bdf8, #7dd3fc);
+    background: ${({ theme }) => theme.gradients.brand};
     border-radius: ${({ theme }) => theme.radii.card}px ${({ theme }) => theme.radii.card}px 0 0;
   }
 `;
@@ -56,8 +55,8 @@ const HeroBody = styled.div`
 const Avatar = styled.div`
   width: 64px; height: 64px;
   border-radius: 50%;
-  background: var(--primary, #0ea5e9);
-  color: #fff;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textInverted};
   display: flex; align-items: center; justify-content: center;
   font-size: 1.35rem; font-weight: 700; letter-spacing: 1px;
   flex-shrink: 0;
@@ -85,7 +84,7 @@ const MetaChip = styled.span<{ $color?: string; $bg?: string }>`
   border-radius: 99px;
   font-size: 0.6875rem; font-weight: 600;
   background: ${({ $bg }) => $bg ?? 'rgba(107,114,128,0.08)'};
-  color: ${({ $color }) => $color ?? '#6b7280'};
+  color: ${({ $color, theme }) => $color ?? theme.colors.textTertiary};
   border: 1px solid ${({ $bg }) => $bg ? `${$bg}55` : 'rgba(107,114,128,0.12)'};
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
   text-transform: capitalize;
@@ -120,13 +119,13 @@ const TabItem = styled.button<{ $active?: boolean }>`
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  color: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.textSecondary};
+  color: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.textSecondary};
   transition: color 0.15s, background 0.15s;
   text-align: left;
   position: relative;
 
   ${({ $active, theme }) => $active && css`
-    background: ${theme.mode === 'dark' ? 'rgba(14,165,233,0.12)' : 'rgba(14,165,233,0.06)'};
+    background: ${theme.colors.accent}12;
     font-weight: 600;
     &::before {
       content: '';
@@ -134,13 +133,13 @@ const TabItem = styled.button<{ $active?: boolean }>`
       left: 0; top: 8px; bottom: 8px;
       width: 3px;
       border-radius: 0 3px 3px 0;
-      background: ${theme.colors.blue};
+      background: ${theme.colors.accent};
     }
   `}
 
   &:hover {
-    color: ${({ theme }) => theme.colors.blue};
-    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(14,165,233,0.08)' : 'rgba(14,165,233,0.04)'};
+    color: ${({ theme }) => theme.colors.accent};
+    background: ${({ theme }) => `${theme.colors.accent}0a`};
   }
 
   & + & {
@@ -213,7 +212,7 @@ const Input = styled.input`
   font-size: 0.875rem;
   outline: none;
   transition: border-color 0.15s;
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
   &:disabled { opacity: 0.6; cursor: not-allowed; }
 `;
 
@@ -223,8 +222,8 @@ const BtnRow = styled.div`
 
 const SaveBtn = styled.button`
   padding: 10px 24px;
-  background: ${({ theme }) => theme.colors.blue};
-  color: #fff;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textInverted};
   border: none;
   border-radius: 8px;
   font-size: 0.8125rem;
@@ -249,7 +248,7 @@ const DiscardBtn = styled.button`
 `;
 
 const ErrorMsg = styled.div`
-  font-size: 0.75rem; color: ${({ theme }) => theme.colors.red}; margin-top: -4px;
+  font-size: 0.75rem; color: ${({ theme }) => theme.strong.mauve}; margin-top: -4px;
 `;
 
 const PwHint = styled.div`
@@ -300,6 +299,7 @@ type SettingsTab = 'profile' | 'password';
 
 const UserInfoPage: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const { data: me, isLoading } = useMe();
   const updateProfile = useUpdateProfile();
   const changePassword = useChangePassword();
@@ -324,9 +324,9 @@ const UserInfoPage: React.FC = () => {
   const role = user?.role ?? 'staff';
 
   const ROLE_MAP: Record<string, { label: string; color: string; bg: string; icon: React.ReactNode }> = {
-    super_admin: { label: t('userInfo.roleSuper'), color: '#e87561', bg: 'rgba(232,117,97,0.08)', icon: <RoleIconSuperAdmin /> },
-    admin:       { label: t('userInfo.roleAdmin'), color: '#0ea5e9', bg: 'rgba(14,165,233,0.08)',  icon: <RoleIconAdmin /> },
-    staff:       { label: t('userInfo.roleStaff'), color: '#6b7280', bg: 'rgba(107,114,128,0.08)', icon: <RoleIconStaff /> },
+    super_admin: { label: t('userInfo.roleSuper'), color: theme.strong.mauve, bg: `${theme.strong.mauve}14`, icon: <RoleIconSuperAdmin /> },
+    admin:       { label: t('userInfo.roleAdmin'), color: theme.colors.accent, bg: `${theme.colors.accent}14`,  icon: <RoleIconAdmin /> },
+    staff:       { label: t('userInfo.roleStaff'), color: theme.colors.textTertiary, bg: `${theme.colors.textTertiary}14`, icon: <RoleIconStaff /> },
   };
 
   const roleInfo = ROLE_MAP[role] ?? ROLE_MAP.staff;

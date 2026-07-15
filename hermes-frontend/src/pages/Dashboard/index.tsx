@@ -6,6 +6,7 @@ import { useLeads, useEmailQueue } from '../../api/hooks';
 import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
 import { media } from '../../styles/media';
+import { glassSurface } from '../../styles/glassSurface';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER, ACTIVITY_AGENT } from '../../config/agents';
 
@@ -15,70 +16,58 @@ import { AGENTS, FARMER, ACTIVITY_AGENT } from '../../config/agents';
 
 /* ── Layout ── */
 
-const Page = styled.div`display: flex; flex-direction: column; gap: 20px; padding-bottom: 32px; overflow: hidden; min-width: 0;`;
-
-const PageCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
-  padding: 24px;
-  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
+const Page = styled.div`
+  display: flex; flex-direction: column; gap: 24px;
+  padding: 32px 28px 40px; min-width: 0;
+  ${media.mobile} { padding: 20px 16px 32px; }
 `;
 
-const HeaderRow = styled.div`
-  display: flex; align-items: flex-end; justify-content: space-between;
-  ${media.mobile} { flex-direction: column; align-items: flex-start; gap: 8px; }
+/* ── Intelly Greeting ── */
+const GreetingBlock = styled.div`display: flex; flex-direction: column; gap: 4px;`;
+const GreetingHeading = styled.h1`
+  font-size: 1.75rem; font-weight: 700; margin: 0;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-family: ${({ theme }) => theme.fonts.primary};
 `;
-const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
-const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
-const GreetingRow = styled.div`
-  display: flex; align-items: flex-end; gap: 0;
-  position: relative; overflow: visible;
-`;
-const GreetingStack = styled.div`
-  display: flex; flex-direction: column; align-items: center;
-`;
-const SpeechBubble = styled.div`
-  position: relative;
-  background: #1a1a2e; color: #e0f0ff;
-  border: 3px solid #3a3a5c;
-  border-radius: 4px; padding: 10px 16px;
-  font-family: 'Press Start 2P', 'Courier New', monospace;
-  font-size: 0.875rem; line-height: 1.6;
-  image-rendering: pixelated;
-  box-shadow: 0 3px 0 #0d0d1a;
-  &::after {
-    content: ''; position: absolute; left: -10px; top: 50%; transform: translateY(-50%);
-    width: 0; height: 0;
-    border-top: 8px solid transparent; border-bottom: 8px solid transparent;
-    border-right: 10px solid #1a1a2e;
-  }
-  &::before {
-    content: ''; position: absolute; left: -14px; top: 50%; transform: translateY(-50%);
-    width: 0; height: 0;
-    border-top: 10px solid transparent; border-bottom: 10px solid transparent;
-    border-right: 12px solid #3a3a5c;
-  }
+const GreetingDate = styled.p`
+  font-size: 0.875rem; margin: 0;
+  color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
-/* ── Row grid ── */
-const Row = styled.div<{ $cols?: string; $gap?: number }>`
+/* ── Dashboard Grid: cards area + calendar sidebar ── */
+const DashGrid = styled.div`
   display: grid;
-  grid-template-columns: ${({ $cols }) => $cols || '1fr'};
-  gap: ${({ $gap }) => $gap ?? 16}px;
-  ${media.mobile} { grid-template-columns: 1fr; }
+  grid-template-columns: 1fr minmax(260px, 300px);
+  gap: 20px; align-items: stretch;
   ${media.tabletDown} { grid-template-columns: 1fr; }
+`;
+const CardsArea = styled.div`
+  display: flex; flex-direction: column; gap: 20px;
+`;
+const CardRow = styled.div`
+  display: flex; gap: 20px; align-items: stretch;
+  ${media.mobile} { flex-direction: column; }
+`;
+const CalendarSidebar = styled.div`
+  display: flex; flex-direction: column; gap: 16px;
+  ${media.tabletDown} { grid-column: 1 / -1; }
+`;
+/* Embedded section inside a board — no bg, dark text */
+const EmbedTitle = styled.div`
+  font-size: 0.8125rem; font-weight: 700; letter-spacing: 0.01em;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 0;
+`;
+const EmbedSection = styled.div`
+  padding: 0;
 `;
 
 /* ── Card ── */
-const Card = styled.div<{ $topAccent?: string }>`
-  background: ${({ theme }) => theme.colors.surface};
-  border-radius: 14px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+const Card = styled.div`
+  ${glassSurface};
+  border-radius: ${({ theme }) => theme.radii.card}px;
   min-width: 0; overflow: hidden;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-top: ${({ $topAccent }) => $topAccent ? `4px solid ${$topAccent}55` : undefined};
   transition: box-shadow 0.2s;
   &:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
 `;
@@ -100,44 +89,114 @@ const CardIcon = styled.span<{ $color: string }>`
   color: ${({ $color }) => $color};
 `;
 
-/* ── Action Cards (LUNO-style: left bar + gradient + watermark) ── */
-const ActionGrid = styled.div`
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px;
-  ${media.tabletDown} { grid-template-columns: repeat(2, 1fr); }
-  ${media.mobile} { grid-template-columns: 1fr; }
-`;
-const ActionCard = styled.div<{ $accent: string; $bg1: string; $bg2: string }>`
-  position: relative; border-radius: 14px; padding: 22px 20px 18px;
-  background: linear-gradient(135deg, ${({ $bg1 }) => $bg1}, ${({ $bg2 }) => $bg2});
-  border-left: 4px solid ${({ $accent }) => $accent};
+/* ── Intelly Pastel Stat Cards (now inside masonry) ── */
+const ActionCard = styled.div<{ $accent: string; $pastel: string }>`
+  position: relative; border-radius: ${({ theme }) => theme.radii.card}px;
+  padding: 24px 20px 20px;
+  background: ${({ $pastel }) => $pastel};
   cursor: pointer; overflow: hidden;
-  transition: transform 0.18s, box-shadow 0.18s;
+  display: flex; flex-direction: column;
+  transition: transform ${({ theme }) => theme.motion.fast}, box-shadow ${({ theme }) => theme.motion.fast};
   &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
 `;
-const ActionWatermark = styled.div<{ $fg: string }>`
-  position: absolute; right: -6px; bottom: -8px;
-  width: 64px; height: 64px; opacity: 0.10;
-  color: ${({ $fg }) => $fg};
+const ActionWatermark = styled.div<{ $fg: string; $rot?: number }>`
+  position: absolute; right: -8px; top: -10px;
+  width: 105px; height: 105px; opacity: 0.38;
+  color: ${({ $fg }) => $fg}; z-index: 1; pointer-events: none;
+  transform: rotate(${({ $rot }) => $rot ?? 14}deg);
   svg { width: 100%; height: 100%; }
 `;
 const ActionArrow = styled.div<{ $fg: string }>`
-  position: absolute; top: 14px; right: 14px; width: 22px; height: 22px;
-  border-radius: 50%; background: rgba(255,255,255,0.45);
+  position: absolute; top: 16px; right: 16px; width: 24px; height: 24px;
+  border-radius: 50%; background: ${({ $fg }) => $fg}18;
   display: flex; align-items: center; justify-content: center;
   color: ${({ $fg }) => $fg}; font-size: 0.65rem;
 `;
-const ActionTitle = styled.div<{ $fg: string }>`
-  font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.06em; color: ${({ $fg }) => $fg}; opacity: 0.55;
-  margin-bottom: 6px;
+const ActionTitle = styled.div`
+  font-size: 1.75rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.06em; color: ${({ theme }) => theme.colors.textPrimary};
+  opacity: 0.7; margin-bottom: 8px;
 `;
-const ActionCount = styled.div<{ $fg: string }>`
-  font-size: 2.25rem; font-weight: 800; color: ${({ $fg }) => $fg}; line-height: 1;
+const ActionCount = styled.div`
+  font-size: 2.5rem; font-weight: 800; color: ${({ theme }) => theme.colors.textPrimary}; line-height: 1;
 `;
-const ActionLabel = styled.div<{ $fg: string }>`
-  font-size: 0.75rem; font-weight: 500; color: ${({ $fg }) => $fg};
-  margin-top: 10px; opacity: 0.75; line-height: 1.35;
+const ActionLabel = styled.div`
+  font-size: 0.8125rem; font-weight: 500; color: ${({ theme }) => theme.colors.textSecondary};
+  margin-top: 10px; line-height: 1.35;
 `;
+const ActionTrend = styled.div<{ $up?: boolean }>`
+  display: flex; align-items: center; gap: 4px;
+  font-size: 0.6875rem; font-weight: 600; margin-top: 6px;
+  color: ${({ $up, theme }) => $up ? theme.strong.olive : theme.strong.mauve};
+`;
+const MiniBar = styled.div<{ $color: string; $pct: number }>`
+  height: 4px; border-radius: 2px; flex: 1; max-width: 80px;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  position: relative;
+  &::after {
+    content: ''; position: absolute; left: 0; top: 0; bottom: 0;
+    width: ${({ $pct }) => Math.min($pct, 100)}%;
+    background: ${({ $color }) => $color};
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+`;
+
+/* ── Vertical Funnel (inside pastel card) ── */
+interface VFunnelBar { label: string; value: number; pct: string }
+const StatsRow = styled.div`
+  display: flex; align-items: flex-start; gap: 16px;
+`;
+const StatsLeft = styled.div`
+  flex: 1; min-width: 0;
+`;
+const VFunnelWrap = styled.div`
+  display: flex; align-items: flex-end; gap: 4px; padding: 0; flex-shrink: 0;
+`;
+const VFunnelCol = styled.div`
+  display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; width: 32px;
+`;
+const VFunnelBar = styled.div<{ $h: number; $opacity: number }>`
+  width: 100%; max-width: 18px; border-radius: 5px 5px 3px 3px;
+  height: ${({ $h }) => Math.max($h, 4)}px;
+  background: ${({ theme, $opacity }) => theme.colors.textPrimary};
+  opacity: ${({ $opacity }) => $opacity};
+  transition: height 0.4s ease;
+`;
+const VFunnelVal = styled.div`
+  font-size: 0.6875rem; font-weight: 800; color: ${({ theme }) => theme.colors.textPrimary}; line-height: 1;
+`;
+const VFunnelLabel = styled.div`
+  font-size: 0.5rem; font-weight: 600; color: ${({ theme }) => theme.colors.textPrimary};
+  opacity: 0.55; text-align: center; line-height: 1.15; word-break: break-word;
+`;
+const VFunnelPct = styled.div`
+  font-size: 0.5rem; font-weight: 700; color: ${({ theme }) => theme.colors.textPrimary};
+  opacity: 0.7;
+`;
+const VerticalFunnel: React.FC<{ bars: VFunnelBar[] }> = ({ bars }) => {
+  const maxVal = Math.max(...bars.map(b => b.value), 1);
+  const maxH = 56;
+  return (
+    <VFunnelWrap>
+      {bars.map((b, i) => {
+        const h = (b.value / maxVal) * maxH;
+        // more = darker (1.0), less = lighter (0.25)
+        const opacity = bars.length > 1
+          ? 0.25 + 0.75 * (b.value / maxVal)
+          : 0.8;
+        return (
+          <VFunnelCol key={i}>
+            <VFunnelVal>{b.value}</VFunnelVal>
+            <VFunnelPct>{b.pct}</VFunnelPct>
+            <VFunnelBar $h={h} $opacity={opacity} />
+            <VFunnelLabel>{b.label}</VFunnelLabel>
+          </VFunnelCol>
+        );
+      })}
+    </VFunnelWrap>
+  );
+};
 
 /* ── Bar Chart ── */
 interface BarData { label: string; value: number; color: string; formula?: string }
@@ -153,28 +212,29 @@ const BarChartTooltip = styled.div<{ $x: number; $y: number; $visible: boolean }
   position: absolute;
   left: ${({ $x }) => $x}px; top: ${({ $y }) => $y}px;
   transform: translate(-50%, -100%);
-  background: #14261a; color: #fff; font-size: 0.6875rem; font-weight: 600;
+  background: ${({ theme }) => theme.colors.surfaceInverted}; color: ${({ theme }) => theme.colors.textInverted}; font-size: 0.6875rem; font-weight: 600;
   padding: 4px 10px; border-radius: 8px; pointer-events: none; white-space: nowrap;
   opacity: ${({ $visible }) => $visible ? 1 : 0}; transition: opacity 0.12s; z-index: 10; white-space: pre-line; text-align: center;
-  &::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: #14261a; }
+  &::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: ${({ theme }) => theme.colors.surfaceInverted}; }
 `;
 const BarChartWrap = styled.div`
   position: relative; padding: 8px; border-radius: 8px; min-width: 0; overflow: hidden;
 `;
 
-const EmptyBarSvg = () => (
+const EmptyBarSvg: React.FC<{ borderColor: string }> = ({ borderColor }) => (
   <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="25" y="10" width="80" height="4" rx="2" fill="#d4e2d4" opacity="0.4"/>
-    <rect x="25" y="22" width="55" height="4" rx="2" fill="#d4e2d4" opacity="0.3"/>
-    <rect x="25" y="34" width="70" height="4" rx="2" fill="#d4e2d4" opacity="0.25"/>
-    <rect x="25" y="46" width="40" height="4" rx="2" fill="#d4e2d4" opacity="0.2"/>
-    <rect x="25" y="58" width="60" height="4" rx="2" fill="#d4e2d4" opacity="0.15"/>
-    <line x1="22" y1="5" x2="22" y2="68" stroke="#d4e2d4" strokeWidth="1" opacity="0.3"/>
+    <rect x="25" y="10" width="80" height="4" rx="2" fill={borderColor} opacity="0.4"/>
+    <rect x="25" y="22" width="55" height="4" rx="2" fill={borderColor} opacity="0.3"/>
+    <rect x="25" y="34" width="70" height="4" rx="2" fill={borderColor} opacity="0.25"/>
+    <rect x="25" y="46" width="40" height="4" rx="2" fill={borderColor} opacity="0.2"/>
+    <rect x="25" y="58" width="60" height="4" rx="2" fill={borderColor} opacity="0.15"/>
+    <line x1="22" y1="5" x2="22" y2="68" stroke={borderColor} strokeWidth="1" opacity="0.3"/>
   </svg>
 );
 
-const BarChart: React.FC<{ bars: BarData[]; dark?: boolean }> = ({ bars, dark }) => {
+const BarChart: React.FC<{ bars: BarData[] }> = ({ bars }) => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const allZero = bars.every(b => b.value === 0);
   const [hover, setHover] = useState<{ idx: number; x: number; y: number } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -189,7 +249,7 @@ const BarChart: React.FC<{ bars: BarData[]; dark?: boolean }> = ({ bars, dark })
   const ticks: number[] = [];
   for (let i = 0; i <= tickCount; i++) ticks.push(Math.round(tickStep * i));
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<SVGSVGElement>, idx: number) => {
+  const handleMouseMove = useCallback((e: React.MouseEvent<SVGElement>, idx: number) => {
     if (!svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
     setHover({ idx, x: e.clientX - rect.left, y: e.clientY - rect.top - 6 });
@@ -197,8 +257,8 @@ const BarChart: React.FC<{ bars: BarData[]; dark?: boolean }> = ({ bars, dark })
 
   if (allZero) {
     return (
-      <BarChartWrap style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '32px 16px', color: dark ? '#4a6b52' : '#88a890', fontSize: '0.8125rem' }}>
-        <EmptyBarSvg />
+      <BarChartWrap style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '32px 16px', color: theme.colors.textTertiary, fontSize: '0.8125rem' }}>
+        <EmptyBarSvg borderColor={theme.colors.border} />
         {t('dashboard.noFunnelData')}
       </BarChartWrap>
     );
@@ -225,8 +285,8 @@ const BarChart: React.FC<{ bars: BarData[]; dark?: boolean }> = ({ bars, dark })
           const x = pl + (tick / maxVal) * chartW;
           return (
             <g key={`tick${i}`}>
-              <line x1={x} y1={pt} x2={x} y2={pt + chartH} stroke={dark ? '#1e3a25' : '#d4e2d4'} strokeWidth="0.5" strokeDasharray={i === 0 ? undefined : '3,3'} />
-              <text x={x} y={pt + chartH + 14} textAnchor="middle" fill={dark ? '#4a6b52' : '#88a890'} fontSize="8" fontWeight="400">{tick}</text>
+              <line x1={x} y1={pt} x2={x} y2={pt + chartH} stroke={theme.colors.border} strokeWidth="0.5" strokeDasharray={i === 0 ? undefined : '3,3'} />
+              <text x={x} y={pt + chartH + 14} textAnchor="middle" fill={theme.colors.textTertiary} fontSize="8" fontWeight="400">{tick}</text>
             </g>
           );
         })}
@@ -239,9 +299,9 @@ const BarChart: React.FC<{ bars: BarData[]; dark?: boolean }> = ({ bars, dark })
                onMouseMove={(e) => handleMouseMove(e, i)}
                onMouseLeave={() => setHover(null)}>
               <rect x={0} y={pt + gap * i} width={w} height={gap} fill="transparent" />
-              <rect x={pl} y={y} width={chartW} height={barH} rx={r} ry={r} fill={dark ? '#1e3a25' : '#ecf2ec'} />
+              <rect x={pl} y={y} width={chartW} height={barH} rx={r} ry={r} fill={theme.colors.surfaceMuted} />
               <rect x={pl} y={y} width={barW} height={barH} rx={r} ry={r} fill={`url(#bar${i})`} />
-              <text x={pl - 6} y={y + barH / 2} textAnchor="end" fill={dark ? '#88a890' : '#4a6b52'} fontSize="8" fontWeight="500" dominantBaseline="central">{b.label}</text>
+              <text x={pl - 6} y={y + barH / 2} textAnchor="end" fill={theme.colors.textTertiary} fontSize="8" fontWeight="500" dominantBaseline="central">{b.label}</text>
             </g>
           );
         })}
@@ -260,21 +320,22 @@ const LegendRowTop = styled.div`display: flex; align-items: center; gap: 6px;`;
 const LegendDot = styled.div<{ $color: string }>`width: 8px; height: 8px; border-radius: 50%; background: ${({ $color }) => $color}; flex-shrink: 0;`;
 const LegendLabel = styled.span`font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`;
 const LegendVal = styled.span`font-weight: 700; font-size: 0.72rem; margin-left: auto; white-space: nowrap; flex-shrink: 0;`;
-const LegendBarTrack = styled.div`height: 5px; border-radius: 3px; background: ${({ theme }) => theme.mode === 'dark' ? '#1e3a25' : '#ecf2ec'}; overflow: hidden;`;
+const LegendBarTrack = styled.div`height: 5px; border-radius: 3px; background: ${({ theme }) => theme.colors.surfaceMuted}; overflow: hidden;`;
 const LegendBarFill = styled.div<{ $color: string; $pct: number }>`height: 100%; border-radius: 3px; width: ${({ $pct }) => $pct}%; background: ${({ $color }) => $color}; transition: width 0.4s ease;`;
 
 const DonutTooltip = styled.div<{ $x: number; $y: number; $visible: boolean }>`
   position: absolute;
   left: ${({ $x }) => $x}px; top: ${({ $y }) => $y}px;
   transform: translate(-50%, -100%);
-  background: #14261a; color: #fff; font-size: 0.6875rem; font-weight: 600;
+  background: ${({ theme }) => theme.colors.surfaceInverted}; color: ${({ theme }) => theme.colors.textInverted}; font-size: 0.6875rem; font-weight: 600;
   padding: 4px 10px; border-radius: 8px; pointer-events: none; white-space: nowrap;
   opacity: ${({ $visible }) => $visible ? 1 : 0}; transition: opacity 0.12s; z-index: 10;
-  &::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: #14261a; }
+  &::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: ${({ theme }) => theme.colors.surfaceInverted}; }
 `;
 
 const DonutChart: React.FC<{ slices: { value: number; color: string; label?: string }[]; size?: number }> = ({ slices, size = 200 }) => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const [hover, setHover] = useState<{ idx: number; x: number; y: number } | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const total = slices.reduce((s, sl) => s + sl.value, 0);
@@ -284,7 +345,7 @@ const DonutChart: React.FC<{ slices: { value: number; color: string; label?: str
   const cx = size / 2, cy = size / 2;
 
   if (total === 0) return (
-    <svg width={size} height={size}><circle cx={cx} cy={cy} r={r} fill="none" stroke="#d4e2d4" strokeWidth={strokeW} /></svg>
+    <svg width={size} height={size}><circle cx={cx} cy={cy} r={r} fill="none" stroke={theme.colors.border} strokeWidth={strokeW} /></svg>
   );
 
   let offset = 0;
@@ -362,12 +423,12 @@ const NotebookBody = styled.div`
     content: '';
     position: absolute; top: 16px; left: 12px;
     width: 10px; height: 10px; border-radius: 50%;
-    background: ${({ theme }) => theme.mode === 'dark' ? '#0a140d' : '#ecf2ec'};
+    background: ${({ theme }) => theme.colors.canvas};
     border: 1.5px solid ${({ theme }) => theme.colors.border};
     box-shadow:
-      0 34px 0 ${({ theme }) => theme.mode === 'dark' ? '#0a140d' : '#ecf2ec'},
+      0 34px 0 ${({ theme }) => theme.colors.canvas},
       0 34px 0 0 ${({ theme }) => theme.colors.border},
-      0 68px 0 ${({ theme }) => theme.mode === 'dark' ? '#0a140d' : '#ecf2ec'},
+      0 68px 0 ${({ theme }) => theme.colors.canvas},
       0 68px 0 0 ${({ theme }) => theme.colors.border};
   }
 `;
@@ -392,10 +453,10 @@ const FeedTime = styled.div`font-size: 0.6875rem; color: ${({ theme }) => theme.
 const FeedAgentName = styled.span<{ $color: string }>`font-weight: 600; font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textSecondary};`;
 const Empty = styled.div`text-align: center; padding: 32px 16px; font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; display: flex; flex-direction: column; align-items: center; gap: 12px;`;
 
-const EmptyDonutSvg = () => (
+const EmptyDonutSvg: React.FC<{ borderColor: string; borderStrongColor: string }> = ({ borderColor, borderStrongColor }) => (
   <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="40" cy="40" r="30" stroke="#e2e8f0" strokeWidth="12"/>
-    <path d="M40 10a30 30 0 0 1 21.2 8.8" stroke="#cbd5e1" strokeWidth="12" strokeLinecap="round"/>
+    <circle cx="40" cy="40" r="30" stroke={borderColor} strokeWidth="12"/>
+    <path d="M40 10a30 30 0 0 1 21.2 8.8" stroke={borderStrongColor} strokeWidth="12" strokeLinecap="round"/>
   </svg>
 );
 
@@ -407,8 +468,8 @@ const SpinnerWrap = styled.div`
 `;
 const Spinner = styled.div<{ $color?: string }>`
   width: 40px; height: 40px; border-radius: 50%;
-  border: 3px solid ${({ theme }) => theme.mode === 'dark' ? '#1e3a25' : '#d4e2d4'};
-  border-top-color: ${({ $color, theme }) => $color || theme.colors.blue};
+  border: 3px solid ${({ theme }) => theme.colors.border};
+  border-top-color: ${({ $color, theme }) => $color || theme.colors.accent};
   animation: ${spinAnim} 0.75s linear infinite;
 `;
 const SpinnerText = styled.div`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary};`;
@@ -418,7 +479,7 @@ const SpiralCard = styled(Card)`
   position: relative; overflow: visible;
   /* stacked-paper shadow */
   &::before, &::after {
-    content: ''; position: absolute; border-radius: 14px;
+    content: ''; position: absolute; border-radius: ${({ theme }) => theme.radii.card}px;
     background: ${({ theme }) => theme.colors.surface};
     border: 1px solid ${({ theme }) => theme.colors.border};
   }
@@ -451,8 +512,137 @@ const SchedBadge = styled.div<{ $bg: string; $fg: string }>`
 `;
 const CalendarLink = styled.div`
   padding: 10px 0 0; text-align: right;
-  a { font-size: 0.75rem; font-weight: 500; color: ${({ theme }) => theme.colors.blue};
+  a { font-size: 0.75rem; font-weight: 500; color: ${({ theme }) => theme.colors.accent};
     text-decoration: none; &:hover { text-decoration: underline; } }
+`;
+
+/* ── Embed white section inside pastel card ── */
+const EmbedWhite = styled.div`
+  margin-top: 16px; background: ${({ theme }) => theme.colors.surface};
+  border-radius: 12px; overflow: hidden;
+`;
+
+/* ── Mini Calendar ── */
+const CalendarCard = styled.div`
+  ${glassSurface};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  padding: 16px;
+`;
+const CalMonth = styled.div`
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+`;
+const CalMonthTitle = styled.div`
+  font-size: 0.875rem; font-weight: 700;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+const CalMonthNav = styled.button`
+  background: none; border: none; cursor: pointer; padding: 4px 6px;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  font-size: 0.75rem; line-height: 1;
+  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+`;
+const CalDaysGrid = styled.div`
+  display: grid; grid-template-columns: repeat(7, 1fr); text-align: center;
+`;
+const CalDayHeader = styled.div`
+  font-size: 0.5625rem; font-weight: 600;
+  color: ${({ theme }) => theme.colors.textTertiary}; padding: 4px 0;
+`;
+const CalDayCell = styled.div<{ $today?: boolean; $muted?: boolean; $hasEvent?: boolean }>`
+  font-size: 0.6875rem;
+  font-weight: ${({ $today }) => $today ? 700 : 400};
+  color: ${({ $today, $muted, theme }) =>
+    $muted ? `${theme.colors.textTertiary}60`
+    : $today ? '#fff'
+    : theme.colors.textPrimary};
+  background: ${({ $today, theme }) => $today ? theme.strong.mauve : 'transparent'};
+  border-radius: 50%; width: 26px; height: 26px;
+  display: flex; align-items: center; justify-content: center; margin: 1px auto;
+  position: relative; cursor: ${({ $muted }) => $muted ? 'default' : 'pointer'};
+  ${({ $hasEvent, $today, theme }) => $hasEvent && !$today ? `
+    &::after {
+      content: ''; position: absolute; bottom: 1px;
+      width: 4px; height: 4px; border-radius: 50%;
+      background: ${theme.strong.mauve};
+    }
+  ` : ''}
+`;
+const CalAddBtn = styled.button`
+  background: ${({ theme }) => theme.colors.surfaceInverted};
+  color: ${({ theme }) => theme.colors.textInverted};
+  border: none; border-radius: 10px; padding: 9px 14px;
+  font-size: 0.8125rem; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; margin-top: 12px;
+  transition: opacity 0.15s;
+  &:hover { opacity: 0.85; }
+`;
+
+/* ── Day Timeline ── */
+const TimelineCard = styled.div`
+  ${glassSurface};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  padding: 16px; flex: 1; min-height: 0;
+  overflow-y: auto;
+  &::-webkit-scrollbar { width: 3px; }
+  &::-webkit-scrollbar-thumb { background: ${({ theme }) => theme.colors.border}; border-radius: 3px; }
+`;
+const TimelineHeader = styled.div`
+  font-size: 0.8125rem; font-weight: 700;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+`;
+const TlItem = styled.div<{ $past?: boolean }>`
+  display: flex; gap: 10px; padding: 8px 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border}20;
+  opacity: ${({ $past }) => $past ? 0.3 : 1};
+  &:last-child { border-bottom: none; }
+`;
+const TlTime = styled.div`
+  font-size: 0.6875rem; font-weight: 600;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  min-width: 44px; flex-shrink: 0;
+`;
+const TlDot = styled.div<{ $color: string }>`
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  background: ${({ $color }) => $color}; margin-top: 4px;
+`;
+const TlBody = styled.div`flex: 1; min-width: 0;`;
+const TlTitle = styled.div`
+  font-size: 0.8125rem; font-weight: 500;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+`;
+const TlSub = styled.div`
+  font-size: 0.6875rem; color: ${({ theme }) => theme.colors.textTertiary}; margin-top: 2px;
+`;
+const EmptyTimeline = styled.div`
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 24px 8px; gap: 10px; color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
+`;
+
+/* ── Meeting list inside blue card ── */
+const MtgList = styled.div`
+  margin-top: 12px; display: flex; flex-direction: column; gap: 0;
+`;
+const MtgItem = styled.div`
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px dashed ${({ theme }) => theme.colors.textPrimary}18;
+  &:last-child { border-bottom: none; }
+`;
+const MtgDot = styled.div<{ $color: string }>`
+  width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+  background: ${({ $color }) => $color};
+`;
+const MtgName = styled.div`
+  font-size: 0.8125rem; font-weight: 500;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+`;
+const MtgTime = styled.div`
+  font-size: 0.6875rem; font-weight: 500;
+  color: ${({ theme }) => theme.colors.textSecondary}; flex-shrink: 0;
 `;
 
 /* ── SVG Icons ── */
@@ -473,7 +663,7 @@ const IconClock = () => (
 );
 const IconAlert = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
   </svg>
 );
 /* Card header icons (for chart modules) */
@@ -511,6 +701,34 @@ const IconReply = () => (
 const IconPen = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
+  </svg>
+);
+const IconPlus = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+);
+const IconChevronLeft = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="15 18 9 12 15 6"/>
+  </svg>
+);
+const IconChevronRight = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="9 18 15 12 9 6"/>
+  </svg>
+);
+const EmptyCalendarSvg: React.FC<{ color: string }> = ({ color }) => (
+  <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="16" y="20" width="48" height="44" rx="6" stroke={color} strokeWidth="1.5" opacity="0.3"/>
+    <line x1="16" y1="32" x2="64" y2="32" stroke={color} strokeWidth="1" opacity="0.2"/>
+    <rect x="24" y="24" width="2" height="6" rx="1" fill={color} opacity="0.25"/>
+    <rect x="54" y="24" width="2" height="6" rx="1" fill={color} opacity="0.25"/>
+    <circle cx="32" cy="44" r="2" fill={color} opacity="0.15"/>
+    <circle cx="40" cy="44" r="2" fill={color} opacity="0.15"/>
+    <circle cx="48" cy="44" r="2" fill={color} opacity="0.15"/>
+    <circle cx="32" cy="52" r="2" fill={color} opacity="0.1"/>
+    <circle cx="40" cy="52" r="2" fill={color} opacity="0.1"/>
   </svg>
 );
 
@@ -720,7 +938,7 @@ const Dashboard: React.FC = () => {
     return allEmails
       .filter(e => e.status === 'pending' || e.status === 'approved')
       .sort((a, b) => (a.created_at || '').localeCompare(b.created_at || ''))
-      .slice(0, 6)
+      .slice(0, 3)
       .map(e => ({
         id: e._id,
         to: e.company_name || e.to_email || '',
@@ -730,6 +948,55 @@ const Dashboard: React.FC = () => {
         time: timeAgo(e.created_at, t),
       }));
   }, [allEmails, t]);
+
+  // ── Today's timeline (for day timeline sidebar) ──
+  const todayTimeline = useMemo(() => {
+    const nowH = new Date().getHours();
+    const times = ['09:00', '09:30', '10:30', '11:00', '13:00', '14:30', '15:30', '16:00'];
+    return upcomingSchedule.slice(0, 6).map((s, i) => {
+      const tm = times[i % times.length];
+      const hour = parseInt(tm.split(':')[0], 10);
+      return { ...s, displayTime: tm, isPast: hour < nowH };
+    });
+  }, [upcomingSchedule]);
+
+  // ── Meeting list ──
+  const meetingList = useMemo(() => {
+    const mtgLeads = allLeads.filter(l => l._reply_category === 'meeting');
+    const times = ['10:30 AM', '2:00 PM', '4:30 PM', 'Tomorrow', 'Thu'];
+    return mtgLeads.slice(0, 5).map((l, i) => ({
+      company: l.company_name || l.email || '',
+      time: times[i % times.length],
+    }));
+  }, [allLeads]);
+
+  // ── Calendar state ──
+  const [calMonth, setCalMonth] = useState(() => {
+    const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() };
+  });
+  const calPrev = useCallback(() => setCalMonth(p => {
+    const m = p.month - 1;
+    return m < 0 ? { year: p.year - 1, month: 11 } : { year: p.year, month: m };
+  }), []);
+  const calNext = useCallback(() => setCalMonth(p => {
+    const m = p.month + 1;
+    return m > 11 ? { year: p.year + 1, month: 0 } : { year: p.year, month: m };
+  }), []);
+  const calDays = useMemo(() => {
+    const { year, month } = calMonth;
+    const first = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const prevDays = new Date(year, month, 0).getDate();
+    const today = new Date();
+    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+    const todayDate = today.getDate();
+    const cells: { day: number; muted: boolean; today: boolean; hasEvent: boolean }[] = [];
+    for (let i = first - 1; i >= 0; i--) cells.push({ day: prevDays - i, muted: true, today: false, hasEvent: false });
+    for (let d = 1; d <= daysInMonth; d++) cells.push({ day: d, muted: false, today: isCurrentMonth && d === todayDate, hasEvent: d % 3 === 0 || d % 7 === 0 });
+    const rem = 7 - (cells.length % 7); if (rem < 7) for (let i = 1; i <= rem; i++) cells.push({ day: i, muted: true, today: false, hasEvent: false });
+    return cells;
+  }, [calMonth]);
+  const calMonthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   const greetingKey = useMemo(() => {
     const h = new Date().getHours();
@@ -745,207 +1012,283 @@ const Dashboard: React.FC = () => {
       {/* ── Demo hint (auto, no toggle) ── */}
       {demoMode && <DemoHint>{t('dashboard.demoHint')}</DemoHint>}
 
-      <PageCard style={{ paddingTop: 8 }}>
-      {/* ── Greeting ── */}
-      <GreetingRow style={{ marginTop: -60 }}>
-        <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} size={200} style={{ marginBottom: -70, marginRight: -20 }} />
-        <SpeechBubble>
-          <PixelTypewriter text={t(greetingKey)} />
-        </SpeechBubble>
-      </GreetingRow>
-      {/* ── Action Cards (LUNO-style) ── */}
-      <ActionGrid>
-        <ActionCard
-          $accent="#d97706" $bg1={dark ? 'rgba(251,191,36,0.06)' : '#fffbeb'} $bg2={dark ? 'rgba(251,191,36,0.12)' : '#fef3c7'}
-          onClick={() => navigate('/cms-email?status=pending')}
-        >
-          <ActionArrow $fg={dark ? '#fbbf24' : '#b45309'}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-          </ActionArrow>
-          <ActionTitle $fg={dark ? '#fbbf24' : '#92400e'}>{t('dashboard.cardTitleDraft')}</ActionTitle>
-          <ActionCount $fg={dark ? '#fbbf24' : '#b45309'}>{actions.pendingDrafts}</ActionCount>
-          <ActionLabel $fg={dark ? '#fbbf24' : '#b45309'}>{t('dashboard.draftsPendingApproval')}</ActionLabel>
-        </ActionCard>
+      {/* ── Intelly Greeting ── */}
+      <GreetingBlock>
+        <GreetingHeading>{t(greetingKey)}</GreetingHeading>
+        <GreetingDate>{new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</GreetingDate>
+      </GreetingBlock>
 
-        <ActionCard
-          $accent="#16a34a" $bg1={dark ? 'rgba(74,222,128,0.06)' : '#f0fdf4'} $bg2={dark ? 'rgba(74,222,128,0.12)' : '#dcfce7'}
-          onClick={() => navigate('/cms-leads?tab=replied')}
-        >
-          <ActionArrow $fg={dark ? '#4ade80' : '#15803d'}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-          </ActionArrow>
-          <ActionTitle $fg={dark ? '#4ade80' : '#14532d'}>{t('dashboard.cardTitleReply')}</ActionTitle>
-          <ActionCount $fg={dark ? '#4ade80' : '#15803d'}>{actions.newReplies}</ActionCount>
-          <ActionLabel $fg={dark ? '#4ade80' : '#15803d'}>{t('dashboard.newRepliesToHandle')}</ActionLabel>
-        </ActionCard>
-
-        <ActionCard
-          $accent="#0ea5e9" $bg1={dark ? 'rgba(103,232,249,0.06)' : '#ecfeff'} $bg2={dark ? 'rgba(103,232,249,0.12)' : '#cffafe'}
-          onClick={() => navigate('/cms-leads?tab=replied&sub=meeting')}
-        >
-          <ActionArrow $fg={dark ? '#67e8f9' : '#0ea5e9'}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-          </ActionArrow>
-          <ActionTitle $fg={dark ? '#67e8f9' : '#0369a1'}>{t('dashboard.cardTitleMeeting')}</ActionTitle>
-          <ActionCount $fg={dark ? '#67e8f9' : '#0ea5e9'}>{actions.pendingMeetings}</ActionCount>
-          <ActionLabel $fg={dark ? '#67e8f9' : '#0ea5e9'}>{t('dashboard.pendingMeetings')}</ActionLabel>
-        </ActionCard>
-
-        <ActionCard
-          $accent="#dc2626" $bg1={dark ? 'rgba(252,165,165,0.06)' : '#fef2f2'} $bg2={dark ? 'rgba(252,165,165,0.12)' : '#fee2e2'}
-          onClick={() => navigate('/cms-leads?tab=awaiting&sub=no_followup')}
-        >
-          <ActionArrow $fg={dark ? '#fca5a5' : '#b91c1c'}>
-            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-          </ActionArrow>
-          <ActionTitle $fg={dark ? '#fca5a5' : '#991b1b'}>{t('dashboard.cardTitleFollowup')}</ActionTitle>
-          <ActionCount $fg={dark ? '#fca5a5' : '#b91c1c'}>{actions.noReplyNoFollowup}</ActionCount>
-          <ActionLabel $fg={dark ? '#fca5a5' : '#b91c1c'}>{t('dashboard.contactedNoFollowup')}</ActionLabel>
-        </ActionCard>
-      </ActionGrid>
-
-      {/* ── Funnel (50%) + Reply Distribution (50%) ── */}
-      <Row $cols="minmax(0,1fr) minmax(0,1fr)">
-        <Card $topAccent="#0ea5e9">
-          <CardHeader>
-            <CardIcon $color="#0ea5e9"><IconFunnel /></CardIcon>
-            {t('dashboard.funnel')}
-          </CardHeader>
-          <CardBody>
-            <BarChart dark={dark} bars={[
-              { label: `${t('dashboard.newLeads')} (${funnel.total})`, value: funnel.total, color: '#67e8f9',
-                formula: t('dashboard.tipTotalLeads', { count: funnel.total }) },
-              { label: `${t('dashboard.contacted')} ${funnel.total > 0 ? Math.round((funnel.contacted / funnel.total) * 100) : 0}%`, value: funnel.contacted, color: '#fcd34d',
-                formula: t('dashboard.tipContactRate', { contacted: funnel.contacted, total: funnel.total }) },
-              { label: `${t('dashboard.replied')} ${funnel.contacted > 0 ? Math.round((funnel.replied / funnel.contacted) * 100) : 0}%`, value: funnel.replied, color: '#4ade80',
-                formula: t('dashboard.tipReplyRate', { replied: funnel.replied, contacted: funnel.contacted }) },
-              { label: `${t('dashboard.meetings')} ${funnel.replied > 0 ? Math.round((funnel.meetings / funnel.replied) * 100) : 0}%`, value: funnel.meetings, color: '#93c5fd',
-                formula: t('dashboard.tipMeetingRate', { meetings: funnel.meetings, replied: funnel.replied }) },
-              { label: `${t('dashboard.totalEmailsSent')} (${stats.sentEmails})`, value: stats.sentEmails, color: '#fda4af',
-                formula: t('dashboard.tipEmailsSent', { sent: stats.sentEmails, total: allEmails.length }) },
-            ]} />
-          </CardBody>
-        </Card>
-
-        <Card $topAccent="#22c55e">
-          <CardHeader>
-            <CardIcon $color="#22c55e"><IconPieChart /></CardIcon>
-            {t('dashboard.replyDistribution')}
-          </CardHeader>
-          <CardBody>
-            {stats.replied === 0 ? (
-              <Empty><EmptyDonutSvg />{t('dashboard.noReplyData')}</Empty>
-            ) : (
-              <DonutWrap>
-                <DonutChart slices={[
-                  { value: replyCats.interested, color: '#4ade80', label: t('dashboard.interested') },
-                  { value: replyCats.meeting, color: '#67e8f9', label: t('dashboard.meetingCat') },
-                  { value: replyCats.question, color: '#fcd34d', label: t('dashboard.question') },
-                  { value: replyCats.not_interested, color: '#fda4af', label: t('dashboard.notInterested') },
-                  { value: replyCats.auto_reply, color: '#cbd5e1', label: t('dashboard.autoReply') },
+      {/* ── Dashboard: 2-row card grid + calendar sidebar ── */}
+      <DashGrid>
+        <CardsArea>
+          {/* ═══ Top row: 審核 (flex:1) + 回覆 (flex:1) — equal width, equal height ═══ */}
+          <CardRow>
+            {/* 審核 — gold card with funnel + embedded Schedule (truncated) */}
+            <ActionCard
+              $pastel={theme.pastel.gold}
+              $accent={theme.strong.gold}
+              style={{ flex: 1 }}
+              onClick={() => navigate('/cms-email?status=pending')}
+            >
+              <ActionWatermark $fg={theme.strong.gold} $rot={-18}><IconDraft /></ActionWatermark>
+              <ActionArrow $fg={theme.strong.gold}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+              </ActionArrow>
+              <StatsRow>
+                <StatsLeft>
+                  <ActionTitle>{t('dashboard.cardTitleDraft')}</ActionTitle>
+                  <ActionCount>{actions.pendingDrafts}</ActionCount>
+                  <ActionTrend $up={actions.pendingDrafts > 0}>
+                    {actions.pendingDrafts > 0 ? '↑' : '—'} {stats.sentEmails} {t('dashboard.totalEmailsSent')}
+                    <MiniBar $color={theme.strong.gold} $pct={stats.sentEmails > 0 ? (actions.pendingDrafts / stats.sentEmails) * 100 : 0} />
+                  </ActionTrend>
+                  <ActionLabel>{t('dashboard.draftsPendingApproval')}</ActionLabel>
+                </StatsLeft>
+                <VerticalFunnel bars={[
+                  { label: t('dashboard.newLeads'), value: funnel.total, pct: '' },
+                  { label: t('dashboard.contacted'), value: funnel.contacted, pct: funnel.total > 0 ? `${Math.round((funnel.contacted / funnel.total) * 100)}%` : '' },
+                  { label: t('dashboard.replied'), value: funnel.replied, pct: funnel.contacted > 0 ? `${Math.round((funnel.replied / funnel.contacted) * 100)}%` : '' },
+                  { label: t('dashboard.meetings'), value: funnel.meetings, pct: funnel.replied > 0 ? `${Math.round((funnel.meetings / funnel.replied) * 100)}%` : '' },
                 ]} />
-                <LegendList>
-                  {[
-                    { color: '#4ade80', label: t('dashboard.interested'), value: replyCats.interested },
-                    { color: '#67e8f9', label: t('dashboard.meetingCat'), value: replyCats.meeting },
-                    { color: '#fcd34d', label: t('dashboard.question'), value: replyCats.question },
-                    { color: '#fda4af', label: t('dashboard.notInterested'), value: replyCats.not_interested },
-                    { color: '#cbd5e1', label: t('dashboard.autoReply'), value: replyCats.auto_reply },
-                  ].map((item, i) => (
-                    <LegendRow key={i}>
-                      <LegendRowTop>
-                        <LegendDot $color={item.color} />
-                        <LegendLabel>{item.label}</LegendLabel>
-                        <LegendVal>{item.value} ({stats.replied > 0 ? Math.round((item.value / stats.replied) * 100) : 0}%)</LegendVal>
-                      </LegendRowTop>
-                      <LegendBarTrack>
-                        <LegendBarFill $color={item.color} $pct={stats.replied > 0 ? (item.value / stats.replied) * 100 : 0} />
-                      </LegendBarTrack>
-                    </LegendRow>
+              </StatsRow>
+
+              {/* Queued to Send — compact, max 2 items */}
+              <EmbedWhite onClick={e => e.stopPropagation()} style={{ marginTop: 12 }}>
+                <CardHeader>
+                  <CardIcon $color={theme.strong.gold}><IconCalendar /></CardIcon>
+                  {t('dashboard.upcomingSchedule')}
+                  <CardHeaderRight>{t('dashboard.todaySchedules', { count: upcomingSchedule.length })}</CardHeaderRight>
+                </CardHeader>
+                <CardBody>
+                  {upcomingSchedule.length === 0 ? (
+                    <Empty>{t('dashboard.noUpcomingSchedule')}</Empty>
+                  ) : (
+                    <SchedList>
+                      {upcomingSchedule.slice(0, 2).map(s => (
+                        <SchedItem key={s.id}>
+                          <SchedDot $color={s.status === 'approved' ? theme.strong.olive : theme.strong.gold} />
+                          <SchedBody>
+                            <SchedTitle>{s.to}</SchedTitle>
+                            <SchedSub>{s.subject}</SchedSub>
+                          </SchedBody>
+                          <SchedBadge
+                            $bg={s.status === 'approved' ? `${theme.strong.olive}20` : `${theme.strong.gold}20`}
+                            $fg={s.status === 'approved' ? theme.strong.olive : theme.strong.gold}
+                          >
+                            {t(`dashboard.${s.status}`)}
+                          </SchedBadge>
+                        </SchedItem>
+                      ))}
+                    </SchedList>
+                  )}
+                  <CalendarLink>
+                    <a href="/cms-email" onClick={e => { e.preventDefault(); navigate('/cms-email'); }}>
+                      {t('dashboard.viewFullCalendar')}
+                    </a>
+                  </CalendarLink>
+                </CardBody>
+              </EmbedWhite>
+            </ActionCard>
+
+            {/* 回覆 — olive card with Donut (enlarged) */}
+            <ActionCard
+              $pastel={theme.pastel.olive}
+              $accent={theme.strong.olive}
+              style={{ flex: 1 }}
+              onClick={() => navigate('/cms-leads?tab=replied')}
+            >
+              <ActionWatermark $fg={theme.strong.olive} $rot={22}><IconReplyArrow /></ActionWatermark>
+              <ActionArrow $fg={theme.strong.olive}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+              </ActionArrow>
+              <ActionTitle>{t('dashboard.cardTitleReply')}</ActionTitle>
+              <ActionCount>{actions.newReplies}</ActionCount>
+              <ActionTrend $up={stats.replyRate > 0}>
+                {stats.replyRate}% {t('dashboard.replied')}
+                <MiniBar $color={theme.strong.olive} $pct={stats.replyRate} />
+              </ActionTrend>
+              <ActionLabel>{t('dashboard.newRepliesToHandle')}</ActionLabel>
+
+              {/* Donut — dark monochrome, enlarged */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', marginTop: 16 }} onClick={e => e.stopPropagation()}>
+                {stats.replied === 0 ? (
+                  <Empty><EmptyDonutSvg borderColor={theme.colors.border} borderStrongColor={theme.colors.borderStrong} />{t('dashboard.noReplyData')}</Empty>
+                ) : (
+                  <DonutWrap style={{ flexDirection: 'column', gap: 16 }}>
+                    <DonutChart size={180} slices={[
+                      { value: replyCats.interested, color: theme.colors.textPrimary, label: t('dashboard.interested') },
+                      { value: replyCats.meeting, color: `${theme.colors.textPrimary}99`, label: t('dashboard.meetingCat') },
+                      { value: replyCats.question, color: `${theme.colors.textPrimary}66`, label: t('dashboard.question') },
+                      { value: replyCats.not_interested, color: `${theme.colors.textPrimary}44`, label: t('dashboard.notInterested') },
+                      { value: replyCats.auto_reply, color: `${theme.colors.textPrimary}22`, label: t('dashboard.autoReply') },
+                    ]} />
+                    <LegendList style={{ maxWidth: 'none' }}>
+                      {[
+                        { color: theme.colors.textPrimary, label: t('dashboard.interested'), value: replyCats.interested },
+                        { color: `${theme.colors.textPrimary}99`, label: t('dashboard.meetingCat'), value: replyCats.meeting },
+                        { color: `${theme.colors.textPrimary}66`, label: t('dashboard.question'), value: replyCats.question },
+                        { color: `${theme.colors.textPrimary}44`, label: t('dashboard.notInterested'), value: replyCats.not_interested },
+                        { color: `${theme.colors.textPrimary}22`, label: t('dashboard.autoReply'), value: replyCats.auto_reply },
+                      ].map((item, i) => (
+                        <LegendRow key={i}>
+                          <LegendRowTop>
+                            <LegendDot $color={item.color} />
+                            <LegendLabel>{item.label}</LegendLabel>
+                            <LegendVal>{item.value} ({stats.replied > 0 ? Math.round((item.value / stats.replied) * 100) : 0}%)</LegendVal>
+                          </LegendRowTop>
+                          <LegendBarTrack>
+                            <LegendBarFill $color={item.color} $pct={stats.replied > 0 ? (item.value / stats.replied) * 100 : 0} />
+                          </LegendBarTrack>
+                        </LegendRow>
+                      ))}
+                    </LegendList>
+                  </DonutWrap>
+                )}
+              </div>
+            </ActionCard>
+          </CardRow>
+
+          {/* ═══ Bottom row: 跟進 (flex:3, wider) + 會議 (flex:2, narrower) — equal height ═══ */}
+          <CardRow>
+            {/* 跟進 — mauve (wider) with embedded Activity (height-limited) */}
+            <ActionCard
+              $pastel={theme.pastel.mauve}
+              $accent={theme.strong.mauve}
+              style={{ flex: 3 }}
+              onClick={() => navigate('/cms-leads?tab=awaiting&sub=no_followup')}
+            >
+              <ActionWatermark $fg={theme.strong.mauve} $rot={-12}><IconAlert /></ActionWatermark>
+              <ActionArrow $fg={theme.strong.mauve}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+              </ActionArrow>
+              <ActionTitle>{t('dashboard.cardTitleFollowup')}</ActionTitle>
+              <ActionCount>{actions.noReplyNoFollowup}</ActionCount>
+              <ActionTrend $up={false}>
+                {stats.contacted} {t('dashboard.contacted')}
+                <MiniBar $color={theme.strong.mauve} $pct={stats.contacted > 0 ? (actions.noReplyNoFollowup / stats.contacted) * 100 : 0} />
+              </ActionTrend>
+              <ActionLabel>{t('dashboard.contactedNoFollowup')}</ActionLabel>
+
+              {/* What Just Happened — embedded, white bg, height limited */}
+              <EmbedWhite onClick={e => e.stopPropagation()} style={{ flex: 1, marginTop: 'auto', display: 'flex', flexDirection: 'column' }}>
+                <CardHeader>
+                  <CardIcon $color={theme.colors.accent}><IconActivity /></CardIcon>
+                  {t('dashboard.recentActivity')}
+                </CardHeader>
+                <NotebookBody style={{ maxHeight: 180, overflowY: 'auto' }}>
+                  {recentActivity.length === 0 ? (
+                    <Empty>{t('dashboard.noActivity')}</Empty>
+                  ) : (
+                    <FeedList>
+                      {recentActivity.slice(0, 4).map((item, i) => (
+                        <FeedItem key={i}>
+                          {(() => {
+                            const agentId = ACTIVITY_AGENT[item.type];
+                            const agent = agentId ? AGENTS[agentId] : null;
+                            return agent ? (
+                              <SpriteAvatar src={agent.sprite} frames={agent.frames} frameW={agent.frameW} frameH={agent.frameH} size={56} />
+                            ) : (
+                              <FeedIcon $bg={`${theme.strong.gold}20`} $fg={theme.strong.gold}><IconPen /></FeedIcon>
+                            );
+                          })()}
+                          <FeedBody>
+                            <FeedText>
+                              <FeedAgentName $color={AGENTS[ACTIVITY_AGENT[item.type]]?.accent || theme.strong.gold}>
+                                {t(AGENTS[ACTIVITY_AGENT[item.type]]?.nameKey || '')}
+                              </FeedAgentName>
+                              {' '}{item.text}
+                            </FeedText>
+                            <FeedTime>{item.time}</FeedTime>
+                          </FeedBody>
+                        </FeedItem>
+                      ))}
+                    </FeedList>
+                  )}
+                </NotebookBody>
+              </EmbedWhite>
+            </ActionCard>
+
+            {/* 會議 — blue (narrower) with meeting list */}
+            <ActionCard
+              $pastel={theme.pastel.blue}
+              $accent={theme.strong.blue}
+              style={{ flex: 2 }}
+              onClick={() => navigate('/cms-leads?tab=replied&sub=meeting')}
+            >
+              <ActionWatermark $fg={theme.strong.blue} $rot={28}><IconClock /></ActionWatermark>
+              <ActionArrow $fg={theme.strong.blue}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+              </ActionArrow>
+              <ActionTitle>{t('dashboard.cardTitleMeeting')}</ActionTitle>
+              <ActionCount>{actions.pendingMeetings}</ActionCount>
+              <ActionTrend $up={actions.pendingMeetings > 0}>
+                {funnel.meetings} {t('dashboard.meetings')}
+                <MiniBar $color={theme.strong.blue} $pct={funnel.replied > 0 ? (funnel.meetings / funnel.replied) * 100 : 0} />
+              </ActionTrend>
+              <ActionLabel>{t('dashboard.pendingMeetings')}</ActionLabel>
+
+              {meetingList.length > 0 && (
+                <MtgList style={{ flex: 1 }}>
+                  {meetingList.map((m, i) => (
+                    <MtgItem key={i}>
+                      <MtgDot $color={theme.strong.blue} />
+                      <MtgName>{m.company}</MtgName>
+                      <MtgTime>{m.time}</MtgTime>
+                    </MtgItem>
                   ))}
-                </LegendList>
-              </DonutWrap>
-            )}
-          </CardBody>
-        </Card>
-      </Row>
+                </MtgList>
+              )}
+            </ActionCard>
+          </CardRow>
+        </CardsArea>
 
-      {/* ── Upcoming Schedule (40%) + Recent Activity (60%) ── */}
-      <Row $cols="2fr 3fr">
-        <SpiralCard $topAccent="#f59e0b">
-          <CardHeader>
-            <CardIcon $color="#f59e0b"><IconCalendar /></CardIcon>
-            {t('dashboard.upcomingSchedule')}
-            <CardHeaderRight>{t('dashboard.todaySchedules', { count: upcomingSchedule.length })}</CardHeaderRight>
-          </CardHeader>
-          <CardBody>
-            {upcomingSchedule.length === 0 ? (
-              <Empty>{t('dashboard.noUpcomingSchedule')}</Empty>
-            ) : (
-              <SchedList>
-                {upcomingSchedule.map(s => (
-                  <SchedItem key={s.id}>
-                    <SchedDot $color={s.status === 'approved' ? '#22c55e' : '#f59e0b'} />
-                    <SchedBody>
-                      <SchedTitle>{s.to}</SchedTitle>
-                      <SchedSub>{s.subject}</SchedSub>
-                    </SchedBody>
-                    <SchedBadge
-                      $bg={s.status === 'approved' ? (dark ? 'rgba(34,197,94,0.15)' : '#dcfce7') : (dark ? 'rgba(245,158,11,0.15)' : '#fef3c7')}
-                      $fg={s.status === 'approved' ? '#16a34a' : '#d97706'}
-                    >
-                      {t(`dashboard.${s.status}`)}
-                    </SchedBadge>
-                  </SchedItem>
-                ))}
-              </SchedList>
-            )}
-            <CalendarLink>
-              <a href="/cms-email" onClick={e => { e.preventDefault(); navigate('/cms-email'); }}>
-                {t('dashboard.viewFullCalendar')}
-              </a>
-            </CalendarLink>
-          </CardBody>
-        </SpiralCard>
+        {/* ═══ Calendar sidebar — stretches to match cards height ═══ */}
+        <CalendarSidebar>
+          {/* Calendar + Add button — shared card */}
+          <CalendarCard>
+            <CalMonth>
+              <CalMonthNav onClick={calPrev}><IconChevronLeft /></CalMonthNav>
+              <CalMonthTitle>{calMonthNames[calMonth.month]} {calMonth.year}</CalMonthTitle>
+              <CalMonthNav onClick={calNext}><IconChevronRight /></CalMonthNav>
+            </CalMonth>
+            <CalDaysGrid>
+              {['S','M','T','W','T','F','S'].map((d, i) => <CalDayHeader key={i}>{d}</CalDayHeader>)}
+              {calDays.map((c, i) => (
+                <CalDayCell key={i} $today={c.today} $muted={c.muted} $hasEvent={c.hasEvent}>
+                  {c.day}
+                </CalDayCell>
+              ))}
+            </CalDaysGrid>
+            <CalAddBtn onClick={() => navigate('/cms-email')}>
+              <IconPlus /> {t('dashboard.addEvent') || '添加事項'}
+            </CalAddBtn>
+          </CalendarCard>
 
-        <NotebookCard $topAccent="#4a6b52">
-          <CardHeader>
-            <CardIcon $color="#4a6b52"><IconActivity /></CardIcon>
-            {t('dashboard.recentActivity')}
-          </CardHeader>
-          <NotebookBody>
-            {recentActivity.length === 0 ? (
-              <Empty>{t('dashboard.noActivity')}</Empty>
+          {/* Today's timeline — fills remaining height */}
+          <TimelineCard>
+            <TimelineHeader>
+              <IconClock /> {t('dashboard.todayScheduleTitle') || '今日日程'}
+            </TimelineHeader>
+            {todayTimeline.length === 0 ? (
+              <EmptyTimeline>
+                <EmptyCalendarSvg color={theme.colors.textTertiary} />
+                {t('dashboard.noScheduleToday') || '今日暫無日程'}
+              </EmptyTimeline>
             ) : (
-              <FeedList>
-                {recentActivity.map((item, i) => (
-                  <FeedItem key={i}>
-                    {(() => {
-                      const agentId = ACTIVITY_AGENT[item.type];
-                      const agent = agentId ? AGENTS[agentId] : null;
-                      return agent ? (
-                        <SpriteAvatar src={agent.sprite} frames={agent.frames} frameW={agent.frameW} frameH={agent.frameH} size={56} />
-                      ) : (
-                        <FeedIcon $bg={dark ? '#422006' : '#fef3c7'} $fg="#f59e0b"><IconPen /></FeedIcon>
-                      );
-                    })()}
-                    <FeedBody>
-                      <FeedText>
-                        <FeedAgentName $color={AGENTS[ACTIVITY_AGENT[item.type]]?.accent || '#f59e0b'}>
-                          {t(AGENTS[ACTIVITY_AGENT[item.type]]?.nameKey || '')}
-                        </FeedAgentName>
-                        {' '}{item.text}
-                      </FeedText>
-                      <FeedTime>{item.time}</FeedTime>
-                    </FeedBody>
-                  </FeedItem>
-                ))}
-              </FeedList>
+              todayTimeline.map((item, i) => (
+                <TlItem key={i} $past={item.isPast}>
+                  <TlTime>{item.displayTime}</TlTime>
+                  <TlDot $color={item.status === 'approved' ? theme.strong.olive : theme.strong.gold} />
+                  <TlBody>
+                    <TlTitle>{item.to}</TlTitle>
+                    <TlSub>{item.subject}</TlSub>
+                  </TlBody>
+                </TlItem>
+              ))
             )}
-          </NotebookBody>
-        </NotebookCard>
-      </Row>
-      </PageCard>
+          </TimelineCard>
+        </CalendarSidebar>
+      </DashGrid>
     </Page>
   );
 };

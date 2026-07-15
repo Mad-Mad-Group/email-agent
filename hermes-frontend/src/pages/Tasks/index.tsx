@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes, css, useTheme, DefaultTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import { glassSurface } from '../../styles/glassSurface';
 import { useTasks } from '../../api/hooks';
 import { TaskItem } from '../../api/services';
 import { media } from '../../styles/media';
@@ -64,7 +65,7 @@ function getErrorMessage(task: TaskItem): string {
 /* i18n-aware helpers — accept t function */
 type TFunc = (key: string, opts?: Record<string, unknown>) => string;
 
-function getResultSummary(task: TaskItem, t: TFunc): React.ReactNode | string {
+function getResultSummary(task: TaskItem, t: TFunc, theme: DefaultTheme): React.ReactNode | string {
   const r = task.result ?? getField(task, 'result');
   if (!r) return '';
   if (typeof r === 'string') return r;
@@ -75,11 +76,11 @@ function getResultSummary(task: TaskItem, t: TFunc): React.ReactNode | string {
       const v = (r as Record<string, unknown>)[k];
       let valNode: React.ReactNode;
       if (v === true) {
-        valNode = <span style={{ color: '#16a34a' }}>✓</span>;
+        valNode = <span style={{ color: theme.strong.olive }}>✓</span>;
       } else if (v === false) {
-        valNode = <span style={{ color: '#88a890' }}>✗</span>;
+        valNode = <span style={{ color: theme.colors.textTertiary }}>✗</span>;
       } else if (typeof v === 'number') {
-        valNode = <span style={{ color: '#0ea5e9', fontWeight: 700 }}>{v}</span>;
+        valNode = <span style={{ color: theme.colors.accent, fontWeight: 700 }}>{v}</span>;
       } else {
         valNode = <span>{String(v).slice(0, 25)}</span>;
       }
@@ -90,11 +91,11 @@ function getResultSummary(task: TaskItem, t: TFunc): React.ReactNode | string {
   return '';
 }
 
-function friendlyParamNode(key: string, val: unknown, t: TFunc): React.ReactNode {
+function friendlyParamNode(key: string, val: unknown, t: TFunc, theme: DefaultTheme): React.ReactNode {
   const label = t(`tasks.params.${key}`, { defaultValue: key });
   if (typeof val === 'number') {
     const unit = t('tasks.batchUnit');
-    return <>{label}: <span style={{ color: '#0ea5e9', fontWeight: 700 }}>{val}</span>{unit ? ` ${unit}` : ''}</>;
+    return <>{label}: <span style={{ color: theme.colors.accent, fontWeight: 700 }}>{val}</span>{unit ? ` ${unit}` : ''}</>;
   }
   let s = typeof val === 'string' ? val : JSON.stringify(val);
   const translated = t(`tasks.paramValues.${s}`, { defaultValue: '' });
@@ -102,47 +103,62 @@ function friendlyParamNode(key: string, val: unknown, t: TFunc): React.ReactNode
   if (s.length > 30) s = s.slice(0, 30) + '…';
   return <>{label}: {s}</>;
 }
-function getParamsSummary(task: TaskItem, t: TFunc): React.ReactNode {
+function getParamsSummary(task: TaskItem, t: TFunc, theme: DefaultTheme): React.ReactNode {
   const p = getField(task, 'params') ?? task.payload;
   if (!p || typeof p !== 'object') return '';
   const obj = p as Record<string, unknown>;
   const keys = Object.keys(obj);
   if (keys.length === 0) return '';
-  return <>{keys.slice(0, 2).map((k, i) => <span key={k}>{i > 0 && ' · '}{friendlyParamNode(k, obj[k], t)}</span>)}</>;
+  return <>{keys.slice(0, 2).map((k, i) => <span key={k}>{i > 0 && ' · '}{friendlyParamNode(k, obj[k], t, theme)}</span>)}</>;
 }
 
 /* ── Column config ── */
 
 interface ColumnCfg { key: string; label: string; bg: string; }
 
-const COLUMNS: ColumnCfg[] = [
-  { key: 'pending',    label: 'Pending',    bg: '#0ea5e9' },
-  { key: 'processing', label: 'Processing', bg: '#d97706' },
-  { key: 'completed',  label: 'Completed',  bg: '#16a34a' },
-  { key: 'failed',     label: 'Failed',     bg: '#dc2626' },
-];
+function getColumns(theme: DefaultTheme): ColumnCfg[] {
+  return [
+    { key: 'pending',    label: 'Pending',    bg: theme.colors.accent },
+    { key: 'processing', label: 'Processing', bg: theme.strong.gold },
+    { key: 'completed',  label: 'Completed',  bg: theme.strong.olive },
+    { key: 'failed',     label: 'Failed',     bg: theme.strong.mauve },
+  ];
+}
 
 /* ── Human-readable labels ── */
 
 /* ── Skill visual config (color + icon) ── */
-const SKILL_CFG: Record<string, { color: string; icon: React.ReactNode }> = {
-  S1: { color: '#0ea5e9', icon: <><path d="M21 12a9 9 0 1 1-6.22-8.56" /><path d="M21 3v4h-4" /></> },          // globe-refresh = scraping
-  S2: { color: '#7c3aed', icon: <><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H8" /><path d="M16 12h-2c0-3 2-4 2-6a4 4 0 0 0-4-4" /><line x1="9" y1="18" x2="15" y2="18" /><line x1="10" y1="22" x2="14" y2="22" /></> }, // lightbulb = AI
-  S3: { color: '#d97706', icon: <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></> },                                                                     // mail
-  S4: { color: '#0ea5e9', icon: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></> },  // file-text = summary
-  S5: { color: '#16a34a', icon: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></> },                                           // download = export
-  S6: { color: '#0ea5e9', icon: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><path d="m15 15 3 3 3-3" /><path d="m15 9 3-3 3 3" /><path d="M18 6v12" /></> },                                         // arrows = sync
+const SKILL_ICONS: Record<string, React.ReactNode> = {
+  S1: <><path d="M21 12a9 9 0 1 1-6.22-8.56" /><path d="M21 3v4h-4" /></>,
+  S2: <><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H8" /><path d="M16 12h-2c0-3 2-4 2-6a4 4 0 0 0-4-4" /><line x1="9" y1="18" x2="15" y2="18" /><line x1="10" y1="22" x2="14" y2="22" /></>,
+  S3: <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></>,
+  S4: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></>,
+  S5: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></>,
+  S6: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><path d="m15 15 3 3 3-3" /><path d="m15 9 3-3 3 3" /><path d="M18 6v12" /></>,
 };
-// aliases
-SKILL_CFG.scrape = SKILL_CFG.S1;
-SKILL_CFG.email = SKILL_CFG.S3;
-SKILL_CFG.analyze = SKILL_CFG.S2;
+SKILL_ICONS.scrape = SKILL_ICONS.S1;
+SKILL_ICONS.email = SKILL_ICONS.S3;
+SKILL_ICONS.analyze = SKILL_ICONS.S2;
 
-function skillColor(id: string): string {
-  return SKILL_CFG[id]?.color || '#4a6b52';
+function getSkillColors(theme: DefaultTheme): Record<string, string> {
+  return {
+    S1: theme.colors.accent,
+    S2: theme.colors.accent,
+    S3: theme.strong.gold,
+    S4: theme.colors.accent,
+    S5: theme.strong.olive,
+    S6: theme.colors.accent,
+    scrape: theme.colors.accent,
+    email: theme.strong.gold,
+    analyze: theme.colors.accent,
+  };
+}
+
+function skillColor(id: string, theme: DefaultTheme): string {
+  return getSkillColors(theme)[id] || theme.colors.textTertiary;
 }
 function skillIcon(id: string): React.ReactNode | null {
-  return SKILL_CFG[id]?.icon || null;
+  return SKILL_ICONS[id] || null;
 }
 
 /* ── Agent → animal mapping ── */
@@ -208,12 +224,12 @@ const SortSelect = styled.select`
   outline: none; cursor: pointer;
   box-shadow: 0 1px 2px rgba(15,23,42,0.04);
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2388a890' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 8px center;
   transition: border-color 0.15s;
   &:hover { border-color: ${({ theme }) => theme.colors.borderStrong}; }
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
 `;
 
 const SearchInput = styled.input`
@@ -229,7 +245,7 @@ const SearchInput = styled.input`
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
   &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
   &:focus {
-    border-color: ${({ theme }) => theme.colors.blue};
+    border-color: ${({ theme }) => theme.colors.accent};
     box-shadow: 0 0 0 3px rgba(37,99,235,0.12), 0 1px 2px rgba(15,23,42,0.04);
   }
   ${media.mobile} { width: 100%; }
@@ -327,11 +343,9 @@ const ColBody = styled.div<{ $collapsed?: boolean }>`
 /* ── Card ── */
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.tile}px;
   padding: 12px ${({ theme }) => theme.spacing.md}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
   transition: box-shadow 0.15s, transform 0.12s, border-color 0.15s;
   cursor: default;
   display: flex; flex-direction: column;
@@ -366,7 +380,7 @@ const AvatarName = styled.span`
   position: relative; margin-top: -10px; z-index: 1;
   background: ${({ theme }) => theme.colors.surface}; border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 5px; padding: 1px 6px;
-  font-size: 0.625rem; font-weight: 700; color: ${({ theme }) => theme.colors.blue};
+  font-size: 0.625rem; font-weight: 700; color: ${({ theme }) => theme.colors.accent};
   white-space: nowrap; max-width: 64px; overflow: hidden; text-overflow: ellipsis;
   line-height: 1.5; text-align: center;
   box-shadow: 0 1px 2px rgba(0,0,0,0.06);
@@ -383,7 +397,7 @@ const PriorityDot = styled.span<{ $c: string }>`
   position: absolute; top: 12px; right: 12px;
   width: 20px; height: 20px; border-radius: 50%;
   background: ${({ $c }) => $c};
-  color: #fff; font-size: 0.5rem; font-weight: 800;
+  color: ${({ theme }) => theme.colors.textInverted}; font-size: 0.5rem; font-weight: 800;
   display: flex; align-items: center; justify-content: center;
 `;
 
@@ -422,7 +436,7 @@ const CardDate = styled.span`
 `;
 
 const ErrText = styled.span`
-  color: ${({ theme }) => theme.colors.red};
+  color: ${({ theme }) => theme.strong.mauve};
   font-size: 0.6875rem; font-style: italic;
 `;
 
@@ -434,11 +448,11 @@ const EmptyCol = styled.div`
 
 const EmptyTaskIllustration = () => (
   <svg width="100" height="80" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="15" y="10" width="70" height="55" rx="8" fill="#f0fdf4" stroke="#86efac" strokeWidth="1.5"/>
-    <rect x="28" y="24" width="10" height="10" rx="2" stroke="#86efac" strokeWidth="1.5" fill="none"/>
-    <rect x="28" y="40" width="10" height="10" rx="2" stroke="#86efac" strokeWidth="1.5" fill="none"/>
-    <line x1="44" y1="29" x2="72" y2="29" stroke="#bbf7d0" strokeWidth="3" strokeLinecap="round"/>
-    <line x1="44" y1="45" x2="66" y2="45" stroke="#bbf7d0" strokeWidth="3" strokeLinecap="round"/>
+    <rect x="15" y="10" width="70" height="55" rx="8" fill="#F5F2ED" stroke="#EFEAE3" strokeWidth="1.5"/>
+    <rect x="28" y="24" width="10" height="10" rx="2" stroke="#EFEAE3" strokeWidth="1.5" fill="none"/>
+    <rect x="28" y="40" width="10" height="10" rx="2" stroke="#EFEAE3" strokeWidth="1.5" fill="none"/>
+    <line x1="44" y1="29" x2="72" y2="29" stroke="#EFEAE3" strokeWidth="3" strokeLinecap="round"/>
+    <line x1="44" y1="45" x2="66" y2="45" stroke="#EFEAE3" strokeWidth="3" strokeLinecap="round"/>
   </svg>
 );
 
@@ -468,12 +482,12 @@ function fmtDate(iso: string): string {
   return `${month} ${day}, ${h}:${min}${ampm}`;
 }
 
-function priorityColor(p: string): string {
+function priorityColor(p: string, theme: DefaultTheme): string {
   switch (p) {
-    case 'high': case 'urgent': return '#dc2626';
-    case 'normal': return '#d97706';
-    case 'low': return '#0ea5e9';
-    default: return '#88a890';
+    case 'high': case 'urgent': return theme.strong.mauve;
+    case 'normal': return theme.strong.gold;
+    case 'low': return theme.colors.accent;
+    default: return theme.colors.textTertiary;
   }
 }
 
@@ -651,9 +665,9 @@ const FloatingPanel = styled.div`
   position: fixed; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   z-index: 1201; width: 680px; max-height: 88vh;
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface};
   border-radius: 14px;
-  box-shadow: 0 24px 80px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.1), 0 0 0 1px ${({ theme }) => theme.colors.border};
+  box-shadow: 0 24px 80px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.1);
   display: flex; flex-direction: column;
   animation: ${fadeIn} 0.2s ease;
   overflow: hidden;
@@ -685,9 +699,9 @@ const CloseBtn = styled.button`
   background: transparent; border: none; cursor: pointer;
   width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   flex-shrink: 0; transition: all 0.15s;
-  &:hover { background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(37,99,235,0.15)' : 'rgba(37,99,235,0.08)'}; }
+  &:hover { background: ${({ theme }) => `${theme.colors.accent}15`}; }
 `;
 
 const WfBody = styled.div`
@@ -719,12 +733,12 @@ const WfItem = styled.li<{ $s: 'done'|'active'|'pending' }>`
     width: 3px;
     border-radius: 1.5px;
     background: ${({ $s, theme }) =>
-      $s === 'done' ? theme.colors.green :
-      $s === 'active' ? theme.colors.blue :
+      $s === 'done' ? theme.strong.olive :
+      $s === 'active' ? theme.colors.accent :
       theme.colors.border};
     ${({ $s, theme }) => ($s === 'done' || $s === 'active') && `
-      box-shadow: 0 0 6px ${$s === 'done' ? theme.colors.green : theme.colors.blue}66,
-                  0 0 12px ${$s === 'done' ? theme.colors.green : theme.colors.blue}33;
+      box-shadow: 0 0 6px ${$s === 'done' ? theme.strong.olive : theme.colors.accent}66,
+                  0 0 12px ${$s === 'done' ? theme.strong.olive : theme.colors.accent}33;
     `}
   }
   &:last-child::after { display: none; }
@@ -743,12 +757,12 @@ const WfDot = styled.div<{ $s: 'done'|'active'|'pending' }>`
   width: 14px; height: 14px; border-radius: 50%;
   flex-shrink: 0; margin-top: 1px; position: relative; z-index: 1;
   background: ${({ $s, theme }) =>
-    $s === 'done' ? theme.colors.green :
-    $s === 'active' ? theme.colors.blue :
+    $s === 'done' ? theme.strong.olive :
+    $s === 'active' ? theme.colors.accent :
     theme.colors.border};
   ${({ $s, theme }) => ($s === 'done' || $s === 'active') && `
-    box-shadow: 0 0 8px ${$s === 'done' ? theme.colors.green : theme.colors.blue}88,
-                0 0 16px ${$s === 'done' ? theme.colors.green : theme.colors.blue}44;
+    box-shadow: 0 0 8px ${$s === 'done' ? theme.strong.olive : theme.colors.accent}88,
+                0 0 16px ${$s === 'done' ? theme.strong.olive : theme.colors.accent}44;
   `}
   ${({ $s }) => $s === 'active' && css`
     animation: ${pulseGlow} 2s ease-in-out infinite;
@@ -780,7 +794,7 @@ const WfDetail = styled.div`
   font-size: 11px; color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: 4px; line-height: 1.5; padding: 8px 10px;
   background: ${({ theme }) => theme.colors.canvas};
-  border-radius: 8px; border-left: 3px solid ${({ theme }) => theme.colors.blue};
+  border-radius: 8px; border-left: 3px solid ${({ theme }) => theme.colors.accent};
 `;
 
 const PanelFoot = styled.div`
@@ -805,13 +819,13 @@ const ProgTrack = styled.div`
 
 const ProgFill = styled.div<{ $pct: number }>`
   height: 100%; width: ${({ $pct }) => $pct}%;
-  background: ${({ theme }) => theme.colors.blue};
+  background: ${({ theme }) => theme.colors.accent};
   border-radius: 3px; transition: width 0.4s ease;
 `;
 
 const ProgPct = styled.span`
   font-size: 11px; font-weight: 600;
-  color: ${({ theme }) => theme.colors.green};
+  color: ${({ theme }) => theme.strong.olive};
 `;
 
 /* ═══════════ Component ═══════════ */
@@ -837,6 +851,7 @@ function sortTasks(arr: TaskItem[], key: SortKey): TaskItem[] {
 
 const Tasks: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortKey>('priority');
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
@@ -856,6 +871,8 @@ const Tasks: React.FC = () => {
   const { data, isLoading } = useTasks();
   const apiTasks = extractTasks(data);
   const tasks = [...apiTasks, ...MOCK_TASKS];
+
+  const COLUMNS = useMemo(() => getColumns(theme), [theme]);
 
   const translatedColumns = useMemo(() => COLUMNS.map(col => ({
     ...col,
@@ -942,8 +959,8 @@ const Tasks: React.FC = () => {
                     const priority = getPriority(task);
                     const created = getCreatedAt(task);
                     const errMsg = getErrorMessage(task);
-                    const paramStr = getParamsSummary(task, t);
-                    const resultStr = getResultSummary(task, t);
+                    const paramStr = getParamsSummary(task, t, theme);
+                    const resultStr = getResultSummary(task, t, theme);
                     const agentId = getStr(task, 'assigned_agent_id');
 
                     // Description: show error for failed, result for completed, params otherwise
@@ -955,7 +972,7 @@ const Tasks: React.FC = () => {
 
                     return (
                       <Card key={task._id} onClick={() => setSelectedTask(task)} style={{ cursor: 'pointer' }}>
-                        <PriorityDot $c={priorityColor(priority)} title={t(`tasks.priority.${priority}`, { defaultValue: priority })}>
+                        <PriorityDot $c={priorityColor(priority, theme)} title={t(`tasks.priority.${priority}`, { defaultValue: priority })}>
                           {t(`tasks.priority.${priority}`, { defaultValue: priority })}
                         </PriorityDot>
                         <CardTopRow>
@@ -965,7 +982,7 @@ const Tasks: React.FC = () => {
                               return agent ? (
                                 <SpriteAvatar src={agent.sprite} frames={agent.frames} frameW={agent.frameW} frameH={agent.frameH} size={36} />
                               ) : (
-                                <AgentAvatar $bg="#e2e8f0">
+                                <AgentAvatar $bg={theme.colors.surfaceMuted}>
                                   <I size={18}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></I>
                                 </AgentAvatar>
                               );
@@ -983,7 +1000,7 @@ const Tasks: React.FC = () => {
                           <CardDesc>
                             {status === 'failed' ? <ErrText>{desc}</ErrText> : desc}
                           </CardDesc>
-                          {skill && <SkillPill $c={skillColor(skill)}><I size={10}>{skillIcon(skill)}</I>{t(`tasks.skills.${skill}`, { defaultValue: skill })}</SkillPill>}
+                          {skill && <SkillPill $c={skillColor(skill, theme)}><I size={10}>{skillIcon(skill)}</I>{t(`tasks.skills.${skill}`, { defaultValue: skill })}</SkillPill>}
                         </CardDescRow>
                         <CardFooter>
                           <CardDate>{fmtDate(created)}</CardDate>

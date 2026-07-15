@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import { glassSurface } from '../../styles/glassSurface';
 import { media } from '../../styles/media';
 
 /* ══════════════════════════════════════
@@ -45,7 +46,7 @@ const StatValue = styled.div`font-size: 1rem; font-weight: 600; color: ${({ them
 
 const StatChange = styled.small<{ $up: boolean }>`
   font-size: 0.75rem; margin-left: 4px;
-  color: ${({ $up, theme }) => $up ? theme.colors.green : theme.colors.red};
+  color: ${({ $up, theme }) => $up ? theme.strong.olive : theme.strong.mauve};
 `;
 
 const StatLabel = styled.div`
@@ -54,9 +55,8 @@ const StatLabel = styled.div`
 `;
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 
 const CardBody = styled.div`padding: ${({ theme }) => theme.spacing.md}px;`;
@@ -79,13 +79,13 @@ const SearchInput = styled.input`
   color: ${({ theme }) => theme.colors.textPrimary};
   background: ${({ theme }) => theme.colors.surface};
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const PrimaryBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border: none; border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ theme }) => theme.colors.blue}; color: #fff;
+  background: ${({ theme }) => theme.colors.accent}; color: ${({ theme }) => theme.colors.textInverted};
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
   &:hover { opacity: 0.85; }
 `;
@@ -159,7 +159,7 @@ const Overlay = styled.div<{ $closing?: boolean }>`
 `;
 
 const Modal = styled.div<{ $closing?: boolean }>`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card}px;
   width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
   box-shadow: 0 8px 30px rgba(0,0,0,0.18);
@@ -182,9 +182,9 @@ const CloseBtn = styled.button`
   background: transparent; border: none; cursor: pointer;
   width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   flex-shrink: 0; transition: all 0.15s;
-  &:hover { background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(14,165,233,0.15)' : 'rgba(14,165,233,0.08)'}; }
+  &:hover { background: ${({ theme }) => `${theme.colors.accent}15`}; }
 `;
 
 const ModalBody = styled.div`
@@ -211,7 +211,7 @@ const Input = styled.input`
   border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.8125rem; outline: none;
   color: ${({ theme }) => theme.colors.textPrimary};
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const Select = styled.select`
@@ -221,7 +221,7 @@ const Select = styled.select`
   font-size: 0.8125rem; outline: none;
   color: ${({ theme }) => theme.colors.textPrimary};
   background: ${({ theme }) => theme.colors.surface};
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const TextArea = styled.textarea`
@@ -230,7 +230,7 @@ const TextArea = styled.textarea`
   border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.8125rem; outline: none; resize: vertical; min-height: 60px;
   color: ${({ theme }) => theme.colors.textPrimary};
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const ModalFooter = styled.div`
@@ -283,10 +283,11 @@ const CUSTOMERS: Customer[] = [
 
 const Customers: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [modalClosing, setModalClosing] = useState(false);
-  const modalTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const modalTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const closeModal = useCallback(() => {
     setModalClosing(true);
@@ -374,15 +375,15 @@ const Customers: React.FC = () => {
                     <td>{c.joinDate}</td>
                     <td>{c.address}</td>
                     <td>
-                      <ActionBtn $color="#c9a055" title={t('customers.favorite')}>&#9733;</ActionBtn>
-                      <ActionBtn $color="#6890c2" title={t('customers.settings')}>&#9881;</ActionBtn>
-                      <ActionBtn $color="#c78787" title={t('customers.delete')}>&#128465;</ActionBtn>
+                      <ActionBtn $color={theme.strong.gold} title={t('customers.favorite')}>&#9733;</ActionBtn>
+                      <ActionBtn $color={theme.colors.accent} title={t('customers.settings')}>&#9881;</ActionBtn>
+                      <ActionBtn $color={theme.strong.mauve} title={t('customers.delete')}>&#128465;</ActionBtn>
                     </td>
                   </TRow>
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: 24, color: '#88a890' }}>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: 24, color: theme.colors.textTertiary }}>
                       {t('customers.noMatch')}
                     </td>
                   </tr>

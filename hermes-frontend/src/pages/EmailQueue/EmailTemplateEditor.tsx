@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import styled, { css } from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import { glassSurface, glassSurfaceLight } from '../../styles/glassSurface';
 import { useDialog } from '../../components';
 
 /* ══════════════════════════════════════
@@ -111,9 +112,8 @@ const EditorLayout = styled.div`
   display: grid;
   grid-template-columns: 220px 1fr 320px;
   min-height: 600px;
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
   overflow: hidden;
 `;
 
@@ -151,13 +151,13 @@ const SmallBtn = styled.button<{ $danger?: boolean }>`
   padding: 4px;
   border-radius: 4px;
   cursor: pointer;
-  color: ${({ theme, $danger }) => $danger ? '#dc2626' : theme.colors.textSecondary};
+  color: ${({ theme, $danger }) => $danger ? theme.strong.mauve : theme.colors.textSecondary};
   display: flex;
   align-items: center;
   transition: background 0.15s, color 0.15s, transform 0.1s;
   &:hover {
-    background: ${({ $danger }) => $danger ? 'rgba(239,68,68,0.1)' : '#f4f5f7'};
-    color: ${({ theme, $danger }) => $danger ? '#b91c1c' : theme.colors.textPrimary};
+    background: ${({ $danger, theme }) => $danger ? theme.strong.mauve + '18' : theme.colors.surfaceMuted};
+    color: ${({ theme, $danger }) => $danger ? theme.strong.mauve : theme.colors.textPrimary};
     transform: translateY(-1px);
   }
 `;
@@ -176,14 +176,14 @@ const TemplateItem = styled.div<{ $active: boolean }>`
   ${({ $active, theme }) =>
     $active
       ? css`
-          background: #f0f7ff;
-          border-left-color: #0ea5e9;
-          box-shadow: inset 0 0 0 1px #cffafe;
+          background: ${theme.colors.surfaceMuted};
+          border-left-color: ${theme.colors.accent};
+          box-shadow: inset 0 0 0 1px ${theme.colors.border};
         `
       : css`
           &:hover {
-            background: #f4f5f7;
-            border-left-color: #cbd5e1;
+            background: ${theme.colors.surfaceMuted};
+            border-left-color: ${theme.colors.border};
           }
         `}
 `;
@@ -310,7 +310,7 @@ const CategorySelect = styled.select`
   outline: none;
   cursor: pointer;
   &:focus {
-    border-color: #0ea5e9;
+    border-color: ${({ theme }) => theme.colors.accent};
   }
 `;
 
@@ -333,7 +333,7 @@ const RichEditor = styled.div`
   .variable-tag {
     display: inline-block;
     background: rgba(37, 99, 235, 0.12);
-    color: #0ea5e9;
+    color: ${({ theme }) => theme.colors.accent};
     border: 1px solid rgba(37, 99, 235, 0.3);
     border-radius: 3px;
     padding: 0 4px;
@@ -361,12 +361,12 @@ const SaveBtn = styled.button`
   padding: 5px 12px;
   border-radius: 6px;
   border: none;
-  background: #0ea5e9;
-  color: #fff;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textInverted};
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  &:hover { background: #0369a1; }
+  &:hover { opacity: 0.85; }
 `;
 
 /* ── Right: Preview + Variables ── */
@@ -391,7 +391,7 @@ const PreviewTab = styled.button<{ $active: boolean }>`
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  border-bottom: 2px solid ${({ $active }) => $active ? '#0ea5e9' : 'transparent'};
+  border-bottom: 2px solid ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
   &:hover { background: ${({ theme }) => theme.colors.surface}; }
 `;
 
@@ -402,10 +402,9 @@ const PreviewContent = styled.div`
 `;
 
 const PreviewEmail = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurfaceLight};
   border-radius: 8px;
   padding: 16px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 `;
 
 const PreviewSubject = styled.div`
@@ -455,7 +454,7 @@ const VarItem = styled.button`
   text-align: left;
   transition: all 0.15s;
   &:hover {
-    border-color: #0ea5e9;
+    border-color: ${({ theme }) => theme.colors.accent};
     background: rgba(37, 99, 235, 0.04);
   }
 `;
@@ -463,7 +462,7 @@ const VarItem = styled.button`
 const VarKey = styled.span`
   font-size: 0.75rem;
   font-family: 'SF Mono', 'Fira Code', monospace;
-  color: #0ea5e9;
+  color: ${({ theme }) => theme.colors.accent};
   white-space: nowrap;
 `;
 

@@ -10,6 +10,7 @@ import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
 import client from '../../api/client';
 import { media } from '../../styles/media';
+import { glassSurface } from '../../styles/glassSurface';
 import { useDialog } from '../../components';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER, SOURCE_AGENT } from '../../config/agents';
@@ -80,22 +81,22 @@ const IconSortArrow = () => (
 
 const IconLeadScraper = () => (
   <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect width="40" height="40" rx="10" fill="#0ea5e9"/>
-    <path d="M13 17a7 7 0 0 1 14 0" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
-    <circle cx="20" cy="15" r="3.5" stroke="#fff" strokeWidth="1.8"/>
-    <path d="M11 28c0-3.87 4.03-7 9-7s9 3.13 9 7" stroke="#fff" strokeWidth="1.8" strokeLinecap="round"/>
+    <rect width="40" height="40" rx="10" fill="currentColor"/>
+    <path d="M13 17a7 7 0 0 1 14 0" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
+    <circle cx="20" cy="15" r="3.5" stroke="white" strokeWidth="1.8"/>
+    <path d="M11 28c0-3.87 4.03-7 9-7s9 3.13 9 7" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
   </svg>
 );
 
 /* ── Avatar color from name hash ── */
 
-const hashColor = (name: string): string => {
-  const colors = ['#bfdbfe', '#c4b5fd', '#a5f3fc', '#bbf7d0', '#fecaca', '#fde68a', '#e9d5ff', '#cffafe'];
+const AVATAR_COLOR_KEYS = ['blue', 'accent', 'blue', 'green', 'red', 'amber', 'accent', 'blue'] as const;
+const hashColorIndex = (name: string): number => {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
     hash = name.charCodeAt(i) + ((hash << 5) - hash);
   }
-  return colors[Math.abs(hash) % colors.length];
+  return Math.abs(hash) % AVATAR_COLOR_KEYS.length;
 };
 
 /* 20 distinct SVG paths (16×16 viewBox) for company avatars */
@@ -141,10 +142,10 @@ const Page = styled.div`
 `;
 
 const PageCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: transparent;
+  border: none;
+  box-shadow: none;
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
   padding: 24px;
   display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
 `;
@@ -217,7 +218,7 @@ const HeaderFeedback = styled.div`
 const FeedbackMsg = styled.span<{ $error?: boolean }>`
   font-size: 0.75rem;
   font-weight: 500;
-  color: ${({ $error, theme }) => $error ? theme.colors.red : theme.colors.green};
+  color: ${({ $error, theme }) => $error ? theme.strong.mauve : theme.strong.olive};
   animation: leadsFeedbackFade 4s ease-out forwards;
   @keyframes leadsFeedbackFade {
     0% { opacity: 0; transform: translateY(-4px); }
@@ -243,11 +244,11 @@ const ProfileIcon = styled.div`
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: ${({ theme }) => theme.colors.blue};
+  background: ${({ theme }) => theme.colors.accent};
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: ${({ theme }) => theme.colors.textInverted};
   flex-shrink: 0;
   svg { width: 28px; height: 28px; }
   ${media.tabletDown} { width: 44px; height: 44px; svg { width: 22px; height: 22px; } }
@@ -269,7 +270,7 @@ const ProfileTitle = styled.h2`
   .count-number {
     font-size: 1.5rem;
     font-weight: 800;
-    color: ${({ theme }) => theme.colors.blue};
+    color: ${({ theme }) => theme.colors.accent};
   }
 `;
 
@@ -286,14 +287,13 @@ const StatCardsRow = styled.div`
   ${media.mobile} { grid-template-columns: repeat(2, 1fr); }
 `;
 
-const StatCard = styled.div<{ $accent: string; $bg1?: string; $bg2?: string }>`
+const StatCard = styled.div<{ $accent: string }>`
   position: relative; overflow: hidden;
   border-radius: ${({ theme }) => theme.radii.card}px;
-  border-left: 4px solid ${({ $accent }) => $accent};
-  background: ${({ theme, $bg1, $bg2 }) =>
-    theme.mode === 'dark'
-      ? theme.colors.surface
-      : `linear-gradient(135deg, ${$bg1 || '#f0fdf4'}, ${$bg2 || '#dcfce7'})`};
+  background: ${({ theme }) => theme.colors.surface};
+
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-left: 4px solid ${({ $accent, theme }) => (theme.colors as any)[$accent] || theme.colors.accent};
   padding: 18px 20px 16px;
   transition: transform 0.18s, box-shadow 0.18s;
   &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
@@ -303,7 +303,7 @@ const StatCardWatermark = styled.span<{ $color: string }>`
   position: absolute; right: -4px; bottom: -6px;
   width: 56px; height: 56px; opacity: 0.10;
   pointer-events: none;
-  color: ${({ $color }) => $color};
+  color: ${({ $color, theme }) => (theme.colors as any)[$color] || theme.colors.accent};
   line-height: 0;
   svg { width: 100%; height: 100%; }
 `;
@@ -347,7 +347,7 @@ const StatCardValue = styled.div`
 const StatCardNumber = styled.span<{ $color: string }>`
   font-size: 2rem;
   font-weight: 800;
-  color: ${({ $color }) => $color};
+  color: ${({ $color, theme }) => (theme.colors as any)[$color] || theme.colors.accent};
   line-height: 1;
 `;
 
@@ -367,6 +367,7 @@ const CircleActionBtn = styled.button<{ $color?: string }>`
   border-radius: 50%;
   border: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.surface};
+
   color: ${({ $color, theme }) => $color || theme.colors.textSecondary};
   cursor: pointer;
   transition: all 0.15s;
@@ -388,8 +389,8 @@ const CircleActionBtn = styled.button<{ $color?: string }>`
     transform: translateX(-50%);
     padding: 4px 10px;
     border-radius: 6px;
-    background: ${({ theme }) => theme.mode === 'dark' ? theme.colors.borderStrong : theme.colors.textPrimary};
-    color: #fff;
+    background: ${({ theme }) => theme.colors.surfaceInverted};
+    color: ${({ theme }) => theme.colors.textInverted};
     font-size: 0.6875rem;
     font-weight: 500;
     white-space: nowrap;
@@ -412,9 +413,9 @@ const AutoCheckBtn = styled.button<{ $active?: boolean }>`
   gap: 6px;
   padding: 6px 14px;
   border-radius: 999px;
-  border: 1px solid ${({ $active, theme }) => $active ? theme.colors.green : theme.colors.border};
-  background: ${({ $active, theme }) => $active ? `${theme.colors.green}14` : 'transparent'};
-  color: ${({ $active, theme }) => $active ? theme.colors.green : theme.colors.textSecondary};
+  border: 1px solid ${({ $active, theme }) => $active ? theme.strong.olive : theme.colors.border};
+  background: ${({ $active, theme }) => $active ? `${theme.strong.olive}14` : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.strong.olive : theme.colors.textSecondary};
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
@@ -422,9 +423,9 @@ const AutoCheckBtn = styled.button<{ $active?: boolean }>`
   white-space: nowrap;
   svg { width: 14px; height: 14px; }
   &:hover {
-    border-color: ${({ theme }) => theme.colors.green};
-    color: ${({ theme }) => theme.colors.green};
-    background: ${({ theme }) => `${theme.colors.green}14`};
+    border-color: ${({ theme }) => theme.strong.olive};
+    color: ${({ theme }) => theme.strong.olive};
+    background: ${({ theme }) => `${theme.strong.olive}14`};
   }
 `;
 
@@ -473,7 +474,7 @@ const StatItem = styled.div<{ $color: string }>`
 const StatNumber = styled.span<{ $color: string }>`
   font-size: 1.2rem;
   font-weight: 700;
-  color: ${({ $color }) => $color};
+  color: ${({ $color, theme }) => (theme.colors as any)[$color] || $color};
 `;
 
 const StatLabel = styled.span`
@@ -491,7 +492,7 @@ const AddBtn = styled.button`
   border: none;
   border-radius: 8px;
   background: linear-gradient(135deg, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.colors.accent}cc);
-  color: #fff;
+  color: ${({ theme }) => theme.colors.textInverted};
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
@@ -514,20 +515,20 @@ const AddBtn = styled.button`
 `;
 
 const AddBtnGreen = styled(AddBtn)`
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.green}, ${({ theme }) => theme.colors.green}cc);
-  box-shadow: 0 1px 3px ${({ theme }) => theme.colors.green}33;
+  background: linear-gradient(135deg, ${({ theme }) => theme.strong.olive}, ${({ theme }) => theme.strong.olive}cc);
+  box-shadow: 0 1px 3px ${({ theme }) => theme.strong.olive}33;
   &:hover {
-    box-shadow: 0 3px 10px ${({ theme }) => theme.colors.green}40;
+    box-shadow: 0 3px 10px ${({ theme }) => theme.strong.olive}40;
   }
 `;
 
 // ponytail: red danger button for "一鍵清空" — visually distinct from the
 // green AddBtn so the user can't misclick.
 const ClearBtn = styled(AddBtn)`
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.red}, ${({ theme }) => theme.colors.red}cc);
-  box-shadow: 0 1px 3px ${({ theme }) => theme.colors.red}33;
+  background: linear-gradient(135deg, ${({ theme }) => theme.strong.mauve}, ${({ theme }) => theme.strong.mauve}cc);
+  box-shadow: 0 1px 3px ${({ theme }) => theme.strong.mauve}33;
   &:hover:not(:disabled) {
-    box-shadow: 0 3px 10px ${({ theme }) => theme.colors.red}40;
+    box-shadow: 0 3px 10px ${({ theme }) => theme.strong.mauve}40;
   }
 `;
 
@@ -552,7 +553,7 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
   padding: 10px 24px;
   background: transparent;
   border: none;
-  border-bottom: 2px solid ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) : 'transparent'};
+  border-bottom: 2px solid ${({ $active, $color, theme }) => $active ? ((theme.colors as any)[$color || ''] || $color || theme.colors.accent) : 'transparent'};
   cursor: pointer;
   white-space: nowrap;
   position: relative;
@@ -567,7 +568,7 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
 const TabNumber = styled.span<{ $color: string }>`
   font-size: 1.35rem;
   font-weight: 700;
-  color: ${({ $color }) => $color};
+  color: ${({ $color, theme }) => (theme.colors as any)[$color] || theme.colors.accent};
 `;
 
 const TabLabel = styled.span<{ $active?: boolean }>`
@@ -587,16 +588,16 @@ const SubPillRow = styled.div`
   ${media.tabletDown} { padding: 8px 12px; gap: 4px; }
 `;
 
-const SUB_COLORS: Record<string, string> = {
-  '': '#334155',
-  new: '#ca8a04',
-  draft: '#ca8a04',
-  no_followup: '#dc2626',
-  has_followup: '#16a34a',
-  interested: '#16a34a',
-  meeting: '#16a34a',
-  question: '#334155',
-  not_interested: '#dc2626',
+const SUB_COLOR_KEYS: Record<string, string> = {
+  '': 'textPrimary',
+  new: 'amber',
+  draft: 'amber',
+  no_followup: 'red',
+  has_followup: 'green',
+  interested: 'green',
+  meeting: 'green',
+  question: 'textPrimary',
+  not_interested: 'red',
 };
 
 const SubPill = styled.button<{ $active?: boolean; $color?: string }>`
@@ -609,10 +610,9 @@ const SubPill = styled.button<{ $active?: boolean; $color?: string }>`
   font-size: 0.75rem;
   font-weight: ${({ $active }) => ($active ? 600 : 400)};
   background: ${({ $active, theme }) => $active ? `${theme.colors.accent}14` : 'transparent'};
-  backdrop-filter: ${({ $active }) => $active ? 'blur(8px)' : 'none'};
-  -webkit-backdrop-filter: ${({ $active }) => $active ? 'blur(8px)' : 'none'};
+
   box-shadow: ${({ $active, theme }) => $active ? `0 1px 4px ${theme.colors.accent}0f` : 'none'};
-  color: ${({ $active, $color, theme }) => ($active ? ($color || theme.colors.accent) : 'inherit')};
+  color: ${({ $active, $color, theme }) => ($active ? ((theme.colors as any)[$color || ''] || $color || theme.colors.accent) : 'inherit')};
   cursor: pointer;
   transition: color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
 `;
@@ -650,7 +650,7 @@ const SearchInput = styled.input`
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
   &:focus {
     background: ${({ theme }) => theme.colors.surface};
-    border-color: ${({ theme }) => theme.colors.blue};
+    border-color: ${({ theme }) => theme.colors.accent};
     box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.accent}14;
   }
   &:hover:not(:focus) {
@@ -662,10 +662,8 @@ const SearchInput = styled.input`
 /* ── Table ── */
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
   overflow: hidden;
 `;
 
@@ -716,7 +714,7 @@ const TRow = styled.tr<{ $even?: boolean; $collapsed?: boolean }>`
   transition: background 0.15s;
   cursor: pointer;
   &:hover {
-    background: ${({ theme, $collapsed }) => $collapsed ? 'transparent' : (theme.mode === 'dark' ? 'rgba(255,255,255,0.04)' : theme.colors.surfaceMuted)};
+    background: ${({ theme, $collapsed }) => $collapsed ? 'transparent' : theme.colors.surfaceMuted};
   }
   td {
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
@@ -742,11 +740,14 @@ const NameCell = styled.div`
   gap: 10px;
 `;
 
-const Avatar = styled.div<{ $color: string }>`
+const Avatar = styled.div<{ $colorIndex: number }>`
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: ${({ $color }) => $color};
+  background: ${({ $colorIndex, theme }) => {
+    const key = AVATAR_COLOR_KEYS[$colorIndex] || 'blue';
+    return `${(theme.colors as any)[key]}22`;
+  }};
   color: ${({ theme }) => theme.colors.textPrimary};
   display: flex;
   align-items: center;
@@ -823,7 +824,7 @@ const ActionBtn = styled.button<{ $color: string }>`
   &:hover {
     transform: translateY(-1px);
     background: ${({ $color }) => $color};
-    color: #fff;
+    color: ${({ theme }) => theme.colors.textInverted};
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   }
 `;
@@ -840,7 +841,7 @@ const DeleteIconBtn = styled.button`
   border-radius: 6px;
   transition: color 0.15s, transform 0.15s;
   &:hover {
-    color: ${({ theme }) => theme.colors.red};
+    color: ${({ theme }) => theme.strong.mauve};
     transform: translateY(-1px);
   }
 `;
@@ -853,35 +854,37 @@ const EmptyCell = styled.td`
   & > div { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 `;
 
+const EmptyIllustrationWrap = styled.span`
+  display: inline-flex;
+  color: ${({ theme }) => theme.colors.border};
+  .fill-muted { fill: ${({ theme }) => theme.colors.surfaceMuted}; }
+  .stroke-border { stroke: ${({ theme }) => theme.colors.border}; }
+`;
 const EmptyLeadsIllustration = () => (
-  <svg width="110" height="85" viewBox="0 0 110 85" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="15" y="12" width="80" height="56" rx="8" fill="#eff6ff" stroke="#93c5fd" strokeWidth="1.5"/>
-    <circle cx="40" cy="34" r="8" fill="#dbeafe" stroke="#93c5fd" strokeWidth="1"/>
-    <rect x="54" y="30" width="30" height="3" rx="1.5" fill="#93c5fd" opacity="0.5"/>
-    <rect x="54" y="37" width="20" height="3" rx="1.5" fill="#bfdbfe" opacity="0.5"/>
-    <line x1="20" y1="50" x2="90" y2="50" stroke="#dbeafe" strokeWidth="1"/>
-    <circle cx="40" cy="58" r="5" fill="#dbeafe" stroke="#bfdbfe" strokeWidth="0.8" strokeDasharray="2 2"/>
-    <rect x="54" y="55" width="25" height="3" rx="1.5" fill="#bfdbfe" opacity="0.3"/>
-    <rect x="54" y="61" width="16" height="3" rx="1.5" fill="#dbeafe" opacity="0.3"/>
-  </svg>
+  <EmptyIllustrationWrap>
+    <svg width="110" height="85" viewBox="0 0 110 85" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="15" y="12" width="80" height="56" rx="8" className="fill-muted stroke-border" strokeWidth="1.5"/>
+      <circle cx="40" cy="34" r="8" className="fill-muted stroke-border" strokeWidth="1"/>
+      <rect x="54" y="30" width="30" height="3" rx="1.5" fill="currentColor" opacity="0.5"/>
+      <rect x="54" y="37" width="20" height="3" rx="1.5" fill="currentColor" opacity="0.3"/>
+      <line x1="20" y1="50" x2="90" y2="50" stroke="currentColor" strokeWidth="1" opacity="0.3"/>
+      <circle cx="40" cy="58" r="5" className="fill-muted" stroke="currentColor" strokeWidth="0.8" strokeDasharray="2 2" opacity="0.5"/>
+      <rect x="54" y="55" width="25" height="3" rx="1.5" fill="currentColor" opacity="0.3"/>
+      <rect x="54" y="61" width="16" height="3" rx="1.5" fill="currentColor" opacity="0.2"/>
+    </svg>
+  </EmptyIllustrationWrap>
 );
 
 /* ── Date Group Header ── */
 
-const GROUP_COLORS: Record<string, { bg: string; bgDark: string; fg: string; fgDark: string }> = {
-  today:  { bg: '#cffafe', bgDark: '#083344', fg: '#0ea5e9', fgDark: '#67e8f9' },
-  yesterday:  { bg: '#fef3c7', bgDark: '#422006', fg: '#b45309', fgDark: '#fcd34d' },
-  earlier: { bg: '#f1f5f9', bgDark: '#1e293b', fg: '#64748b', fgDark: '#94a3b8' },
-};
-
-const GroupBar = styled.tr<{ $group: string; $dark?: boolean }>`
+const GroupBar = styled.tr<{ $group: string }>`
   td {
     padding: 6px 0;
     border-bottom: none;
   }
 `;
 
-const GroupBarInner = styled.div<{ $group: string; $dark?: boolean; $collapsed?: boolean }>`
+const GroupBarInner = styled.div<{ $group: string; $collapsed?: boolean }>`
   display: flex;
   align-items: center;
   gap: 8px;
@@ -890,13 +893,15 @@ const GroupBarInner = styled.div<{ $group: string; $dark?: boolean; $collapsed?:
   cursor: pointer;
   user-select: none;
   transition: background 0.15s;
-  background: ${({ $group, $dark }) => {
-    const c = GROUP_COLORS[$group] || GROUP_COLORS['earlier'];
-    return $dark ? c.bgDark : c.bg;
+  background: ${({ $group, theme }) => {
+    if ($group === 'today') return theme.status.contacted.bg;
+    if ($group === 'yesterday') return theme.status.pending.bg;
+    return theme.colors.surfaceMuted;
   }};
-  color: ${({ $group, $dark }) => {
-    const c = GROUP_COLORS[$group] || GROUP_COLORS['earlier'];
-    return $dark ? c.fgDark : c.fg;
+  color: ${({ $group, theme }) => {
+    if ($group === 'today') return theme.colors.accent;
+    if ($group === 'yesterday') return theme.strong.gold;
+    return theme.colors.textSecondary;
   }};
   font-size: 0.75rem;
   font-weight: 700;
@@ -952,9 +957,9 @@ const PageBtn = styled.button<{ $active?: boolean }>`
   border: 1px solid ${({ $active, theme }) => $active ? 'transparent' : theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
   background: ${({ $active, theme }) => $active
-    ? theme.colors.blue
+    ? theme.colors.accent
     : theme.colors.surface};
-  color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textSecondary};
+  color: ${({ $active, theme }) => $active ? theme.colors.textInverted : theme.colors.textSecondary};
   font-size: 0.75rem;
   font-weight: ${({ $active }) => $active ? 600 : 500};
   cursor: pointer;
@@ -1000,13 +1005,12 @@ const Overlay = styled.div<{ $closing?: boolean }>`
 `;
 
 const Modal = styled.div<{ $closing?: boolean }>`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card}px;
   width: 520px;
   max-width: 95vw;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
   animation: ${({ $closing }) => $closing ? modalSlideOut : modalSlideIn} 0.2s ease-out forwards;
   ${media.mobile} { width: 95%; }
 `;
@@ -1039,7 +1043,7 @@ const CloseBtn = styled.button`
   flex-shrink: 0;
   transition: all 0.15s;
   &:hover {
-    background: ${({ theme }) => `${theme.colors.accent}${theme.mode === 'dark' ? '26' : '14'}`};
+    background: ${({ theme }) => `${theme.colors.accent}1a`};
   }
 `;
 
@@ -1082,7 +1086,7 @@ const Input = styled.input`
   transition: border-color 0.15s, box-shadow 0.15s;
   &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
   &:focus {
-    border-color: ${({ theme }) => theme.colors.blue};
+    border-color: ${({ theme }) => theme.colors.accent};
     box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.accent}1f, 0 1px 2px rgba(15,23,42,0.04);
   }
 `;
@@ -1103,7 +1107,7 @@ const Textarea = styled.textarea`
   font-family: inherit;
   &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
   &:focus {
-    border-color: ${({ theme }) => theme.colors.blue};
+    border-color: ${({ theme }) => theme.colors.accent};
     box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.accent}1f, 0 1px 2px rgba(15,23,42,0.04);
   }
 `;
@@ -1121,8 +1125,8 @@ const PrimaryBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border: none;
   border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ theme }) => theme.colors.blue};
-  color: #fff;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textInverted};
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
@@ -1143,6 +1147,7 @@ const SecondaryBtn = styled.button`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
   background: ${({ theme }) => theme.colors.surface};
+
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 0.8125rem;
   cursor: pointer;
@@ -1200,7 +1205,7 @@ const DpOverlay = styled.div<{ $closing?: boolean }>`
   position: fixed;
   inset: 0;
   z-index: 1200;
-  background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(0,0,0,0.6)' : 'rgba(0,0,0,0.45)'};
+  background: rgba(0,0,0,0.45);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1213,12 +1218,8 @@ const DpPanel = styled.div<{ $closing?: boolean }>`
   height: 90vh;
   display: flex;
   flex-direction: column;
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card + 2}px;
-  box-shadow: ${({ theme }) => theme.mode === 'dark'
-    ? '0 20px 60px rgba(0,0,0,0.5)'
-    : '0 20px 60px rgba(0,0,0,0.18)'};
   overflow: hidden;
   animation: ${({ $closing }) => $closing ? dpSlideDown : dpSlideUp} 0.25s ease-out forwards;
   ${media.mobile} {
@@ -1233,7 +1234,7 @@ const DpHeader = styled.div`
   gap: 14px;
   padding: 18px 24px;
   border-bottom: none;
-  background: ${({ theme }) => theme.mode === 'dark' ? '#083344' : '#cffafe'};
+  background: ${({ theme }) => theme.status.contacted.bg};
   position: relative;
   overflow: hidden;
 `;
@@ -1250,7 +1251,7 @@ const DpCompanyName = styled.h2`
   margin: 0;
   font-size: 1.2rem;
   font-weight: 700;
-  color: ${({ theme }) => theme.mode === 'dark' ? '#cffafe' : '#083344'};
+  color: ${({ theme }) => theme.colors.textPrimary};
   letter-spacing: 0.01em;
   font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif;
 `;
@@ -1264,12 +1265,12 @@ const DpCloseBtn = styled.button`
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.8)' : theme.colors.accent};
+  color: ${({ theme }) => theme.colors.accent};
   cursor: pointer;
   flex-shrink: 0;
   transition: all 0.15s;
   &:hover {
-    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.1)' : `${theme.colors.accent}14`};
+    background: ${({ theme }) => `${theme.colors.accent}14`};
   }
 `;
 
@@ -1338,11 +1339,9 @@ const DpTabLabel = styled.span`
 
 const DpTabCard = styled.div`
   position: relative;
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.control}px;
   padding: 14px 16px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-  border: 1px solid ${({ theme }) => theme.colors.border}33;
 `;
 
 const DpCollapsibleHead = styled.div`
@@ -1478,8 +1477,8 @@ const DpTimelineDot = styled.span<{ $active?: boolean }>`
   border-radius: 50%;
   margin-top: 4px;
   flex-shrink: 0;
-  background: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.border};
-  ${({ $active, theme }) => $active ? `box-shadow: 0 0 6px ${theme.colors.blue}55;` : ''}
+  background: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.border};
+  ${({ $active, theme }) => $active ? `box-shadow: 0 0 6px ${theme.colors.accent}55;` : ''}
 `;
 
 const DpTimelineText = styled.span<{ $active?: boolean }>`
@@ -1506,15 +1505,13 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   white-space: nowrap;
   transition: opacity 0.15s;
   border: 1px solid ${({ $variant, theme }) =>
-    $variant === 'danger' ? (theme.mode === 'dark' ? 'rgba(239,68,68,0.4)' : `${theme.colors.red}55`) :
-    theme.mode === 'dark' ? 'rgba(255,255,255,0.15)' : `${theme.colors.accent}33`};
+    $variant === 'danger' ? `${theme.strong.mauve}55` : `${theme.colors.accent}33`};
   background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? (theme.mode === 'dark' ? 'rgba(239,68,68,0.18)' : '#fef2f2') :
-    $variant === 'primary' ? (theme.mode === 'dark' ? 'rgba(255,255,255,0.15)' : `${theme.colors.accent}1a`) :
+    $variant === 'danger' ? `${theme.strong.mauve}18` :
+    $variant === 'primary' ? `${theme.colors.accent}1a` :
     'transparent'};
   color: ${({ $variant, theme }) =>
-    $variant === 'danger' ? (theme.mode === 'dark' ? '#fca5a5' : '#dc2626') :
-    theme.colors.accent};
+    $variant === 'danger' ? theme.strong.mauve : theme.colors.accent};
   &:hover { opacity: 0.85; }
 `;
 
@@ -1531,13 +1528,13 @@ const NEXT_STATUS: Record<string, string> = {
   pending: 'contacted',
 };
 
-const getReplyCategoryLabel = (t: (k: string, opts?: any) => string) => ({
-  interested:         { text: t('leads.replyInterested'),        bg: '#dcfce7', fg: '#16a34a' },
-  interested_pending: { text: t('leads.replyInterestedPending'), bg: '#fef3c7', fg: '#b45309' },
-  not_interested:     { text: t('leads.replyNotInterested'),     bg: '#fee2e2', fg: '#dc2626' },
-  meeting:            { text: t('leads.replyMeeting'),           bg: '#cffafe', fg: '#0ea5e9' },
-  auto_reply:         { text: t('leads.replyAutoReply'),         bg: '#f3f4f6', fg: '#6b7280' },
-  question:           { text: t('leads.replyProcessing'),        bg: '#cffafe', fg: '#0ea5e9' },
+const getReplyCategoryLabel = (t: (k: string, opts?: any) => string, theme: any) => ({
+  interested:         { text: t('leads.replyInterested'),        bg: theme.status.qualified.bg, fg: theme.strong.olive },
+  interested_pending: { text: t('leads.replyInterestedPending'), bg: theme.status.pending.bg, fg: theme.strong.gold },
+  not_interested:     { text: t('leads.replyNotInterested'),     bg: theme.status.rejected.bg, fg: theme.strong.mauve },
+  meeting:            { text: t('leads.replyMeeting'),           bg: theme.status.contacted.bg, fg: theme.colors.accent },
+  auto_reply:         { text: t('leads.replyAutoReply'),         bg: theme.colors.surfaceMuted, fg: theme.colors.textSecondary },
+  question:           { text: t('leads.replyProcessing'),        bg: theme.status.contacted.bg, fg: theme.colors.accent },
 } as Record<string, { text: string; bg: string; fg: string }>);
 
 /* ── DEV MOCK DATA ── */
@@ -1668,26 +1665,26 @@ const MOCK_EMAILS: EmailItem[] = [
 ];
 
 /** 根據 lead 狀態決定顯示邊個 reply badge */
-const getReplyBadge = (lead: Lead, t: (k: string, opts?: any) => string) => {
-  const labels = getReplyCategoryLabel(t);
+const getReplyBadge = (lead: Lead, t: (k: string, opts?: any) => string, theme: any) => {
+  const labels = getReplyCategoryLabel(t, theme);
   if (lead._replied) {
     if (lead._reply_category === 'interested' && lead._pending_meeting) {
       return labels.interested_pending;
     }
-    return labels[lead._reply_category || ''] || { text: t('leads.replyProcessing'), bg: '#cffafe', fg: '#0ea5e9' };
+    return labels[lead._reply_category || ''] || { text: t('leads.replyProcessing'), bg: theme.status.contacted.bg, fg: theme.colors.accent };
   }
   if (lead.status === 'contacted') {
     return lead._has_email_draft
-      ? { text: t('leads.draftPending'), bg: '#fef3c7', fg: '#b45309' }
-      : { text: t('leads.awaitingReply'), bg: '#cffafe', fg: '#0ea5e9' };
+      ? { text: t('leads.draftPending'), bg: theme.status.pending.bg, fg: theme.strong.gold }
+      : { text: t('leads.awaitingReply'), bg: theme.status.contacted.bg, fg: theme.colors.accent };
   }
   if (lead.status === 'pending') {
-    return { text: t('leads.draftPending'), bg: '#fef3c7', fg: '#b45309' };
+    return { text: t('leads.draftPending'), bg: theme.status.pending.bg, fg: theme.strong.gold };
   }
   if (lead._has_email_draft) {
-    return { text: t('leads.draftPending'), bg: '#fef3c7', fg: '#b45309' };
+    return { text: t('leads.draftPending'), bg: theme.status.pending.bg, fg: theme.strong.gold };
   }
-  return { text: t('leads.unprocessed'), bg: '#f3f4f6', fg: '#9ca3af' };
+  return { text: t('leads.unprocessed'), bg: theme.colors.surfaceMuted, fg: theme.colors.textTertiary };
 };
 
 const ReplyBadge = styled.span<{ $bg: string; $fg: string }>`
@@ -1708,26 +1705,24 @@ const NoReplyText = styled.span`
 
 /* ── Lead Emails section（撳開 lead 就睇到所有相關 email） ── */
 
-const getEmailTypeLabel = (t: (k: string) => string) => ({
-  reply:      { text: t('leads.emailTypeReply'),      bg: '#dcfce7', fg: '#16a34a' },
-  followup:   { text: t('leads.emailTypeFollowup'),   bg: '#fef3c7', fg: '#b45309' },
-  reoutreach: { text: t('leads.emailTypeReoutreach'), bg: '#cffafe', fg: '#0ea5e9' },
+const getEmailTypeLabel = (t: (k: string) => string, theme: any) => ({
+  reply:      { text: t('leads.emailTypeReply'),      bg: theme.status.qualified.bg, fg: theme.strong.olive },
+  followup:   { text: t('leads.emailTypeFollowup'),   bg: theme.status.pending.bg, fg: theme.strong.gold },
+  reoutreach: { text: t('leads.emailTypeReoutreach'), bg: theme.status.contacted.bg, fg: theme.colors.accent },
 } as Record<string, { text: string; bg: string; fg: string }>);
 
-const EMAIL_STATUS_COLOR: Record<string, { bg: string; fg: string }> = {
-  pending:  { bg: '#fef3c7', fg: '#ca8a04' },
-  approved: { bg: '#dcfce7', fg: '#16a34a' },
-  sent:     { bg: '#cffafe', fg: '#0ea5e9' },
-  rejected: { bg: '#fee2e2', fg: '#dc2626' },
-  failed:   { bg: '#f3f4f6', fg: '#475569' },
-};
+const getEmailStatusColor = (theme: any): Record<string, { bg: string; fg: string }> => ({
+  pending:  { bg: theme.status.pending.bg, fg: theme.strong.gold },
+  approved: { bg: theme.status.qualified.bg, fg: theme.strong.olive },
+  sent:     { bg: theme.status.contacted.bg, fg: theme.colors.accent },
+  rejected: { bg: theme.status.rejected.bg, fg: theme.strong.mauve },
+  failed:   { bg: theme.colors.surfaceMuted, fg: theme.colors.textSecondary },
+});
 
 const EmailCard = styled.div<{ $expanded?: boolean }>`
-  border: none;
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card}px;
   margin-bottom: 10px;
-  background: ${({ theme }) => theme.mode === 'dark' ? theme.colors.surface : '#fffdf9'};
-  box-shadow: 0 1px 4px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.03);
   max-width: 100%;
   position: relative;
   overflow: visible;
@@ -1740,7 +1735,7 @@ const EmailCard = styled.div<{ $expanded?: boolean }>`
     right: 0;
     width: 20px;
     height: 20px;
-    background: linear-gradient(225deg, ${({ theme }) => theme.mode === 'dark' ? theme.colors.canvas : '#f1ede6'} 50%, transparent 50%);
+    background: linear-gradient(225deg, ${({ theme }) => theme.colors.surfaceMuted} 50%, transparent 50%);
     border-bottom-left-radius: 4px;
   }
 `;
@@ -1777,9 +1772,9 @@ const EmailBodyContent = styled.div`
   line-height: 1.7;
   color: ${({ theme }) => theme.colors.textSecondary};
   padding: ${({ theme }) => theme.spacing.md}px;
-  background: ${({ theme }) => theme.mode === 'dark' ? theme.colors.surfaceMuted : '#fffcf7'};
+  background: ${({ theme }) => theme.colors.surfaceMuted};
   border-radius: ${({ theme }) => theme.radii.control}px;
-  border: 1px solid ${({ theme }) => theme.mode === 'dark' ? theme.colors.border : '#e8e0d4'};
+  border: 1px solid ${({ theme }) => theme.colors.border};
   box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
   max-width: 100%;
   overflow-x: hidden;
@@ -1795,8 +1790,8 @@ const EmailCardMeta = styled.div`
 const EmailSummary = styled.div`
   margin: 0 ${({ theme }) => theme.spacing.md}px;
   padding: 8px 12px;
-  background: ${({ theme }) => theme.mode === 'dark' ? '#083344' : '#ecfeff'};
-  border: 1px solid ${({ theme }) => theme.mode === 'dark' ? `${theme.colors.accent}40` : '#99f6e4'};
+  background: ${({ theme }) => theme.status.contacted.bg};
+  border: 1px solid ${({ theme }) => `${theme.colors.accent}40`};
   border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.9rem;
   line-height: 1.5;
@@ -1838,8 +1833,8 @@ const LeadSendBtn = styled.button`
   padding: 6px 16px;
   border: none;
   border-radius: 6px;
-  background: ${({ theme }) => theme.colors.green};
-  color: #fff;
+  background: ${({ theme }) => theme.strong.olive};
+  color: ${({ theme }) => theme.colors.textInverted};
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
@@ -1851,6 +1846,7 @@ const LeadSendBtn = styled.button`
 const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ companyName, leadId }) => {
   const { t } = useTranslation();
   const { showPrompt } = useDialog();
+  const leTheme = useTheme() as any;
   const { data } = useEmailQueue({ search: companyName });
   const approve = useApproveEmail();
   const reject = useRejectEmail();
@@ -1898,8 +1894,9 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
     <>
       <DpSectionTitle>{t('leads.emailRecords')} ({emails.length})</DpSectionTitle>
       {emails.map((d) => {
-        const typeTag = d._type ? getEmailTypeLabel(t)[d._type] : null;
-        const statusColor = EMAIL_STATUS_COLOR[d.status || 'pending'] || EMAIL_STATUS_COLOR.pending;
+        const typeTag = d._type ? getEmailTypeLabel(t, leTheme)[d._type] : null;
+        const emailStatusColors = getEmailStatusColor(leTheme);
+        const statusColor = emailStatusColors[d.status || 'pending'] || emailStatusColors.pending;
 
         return (
           <EmailCard key={d._id}>
@@ -1916,7 +1913,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
                     <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     {busy ? t('leads.processing') : t('leads.approveAndSend')}
                   </LeadSendBtn>
-                  <EmailActionBtn $bg="#fef2f2" $fg="#dc2626" disabled={busy} onClick={() => handleReject(d._id)}>
+                  <EmailActionBtn $bg={`${leTheme.strong.mauve}14`} $fg={leTheme.strong.mauve} disabled={busy} onClick={() => handleReject(d._id)}>
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                     {t('leads.reject')}
                   </EmailActionBtn>
@@ -1929,10 +1926,10 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
                 </LeadSendBtn>
               )}
               {d.status === 'sent' && (
-                <span style={{ fontSize: '0.75rem', color: '#16a34a' }}>✓ {t('leads.sentAt')} {d.sent_at ? new Date(d.sent_at).toLocaleString('zh-HK') : ''}</span>
+                <span style={{ fontSize: '0.75rem', color: leTheme.strong.olive }}>✓ {t('leads.sentAt')} {d.sent_at ? new Date(d.sent_at).toLocaleString('zh-HK') : ''}</span>
               )}
               {d.status === 'rejected' && (
-                <span style={{ fontSize: '0.75rem', color: '#dc2626' }}>✗ {t('leads.rejected')}</span>
+                <span style={{ fontSize: '0.75rem', color: leTheme.strong.mauve }}>✗ {t('leads.rejected')}</span>
               )}
             </EmailCardHead>
 
@@ -2006,7 +2003,7 @@ const Leads: React.FC = () => {
     {
       key: 'preparing',
       label: t('leads.tabPreparing'),
-      color: '#0ea5e9',
+      color: 'blue',
       icon: 'preparing',
       subs: [
         { key: '', label: t('leads.subAll'), icon: '' },
@@ -2023,7 +2020,7 @@ const Leads: React.FC = () => {
     {
       key: 'awaiting',
       label: t('leads.tabAwaiting'),
-      color: '#ca8a04',
+      color: 'amber',
       icon: 'awaiting',
       subs: [
         { key: '', label: t('leads.subAll'), icon: '' },
@@ -2041,7 +2038,7 @@ const Leads: React.FC = () => {
     {
       key: 'replied',
       label: t('leads.tabReplied'),
-      color: '#16a34a',
+      color: 'green',
       icon: 'replied',
       subs: [
         { key: '', label: t('leads.subAll'), icon: '' },
@@ -2073,15 +2070,14 @@ const Leads: React.FC = () => {
   const [activeSub, setActiveSub] = useState('');
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const styledTheme = useTheme() as any;
-  const isDark = styledTheme?.mode === 'dark';
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAdd, setShowAdd] = useState(false);
   const [addClosing, setAddClosing] = useState(false);
-  const addTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const addTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [detailClosing, setDetailClosing] = useState(false);
-  const detailTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const detailTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [form, setForm] = useState({
@@ -2366,51 +2362,51 @@ const Leads: React.FC = () => {
         <div><PageTitle>{t('leads.title')}</PageTitle><PageSub>{t('leads.subtitle')}</PageSub></div>
         <HeaderSection>
           <StatCardsRow>
-            <StatCard $accent="#0ea5e9" $bg1="#ecfeff" $bg2="#cffafe">
+            <StatCard $accent="blue">
               <StatCardLabel>{t('leads.totalLeads')}</StatCardLabel>
               <StatCardValue>
-                <StatCardNumber $color="#0ea5e9">{stats.total}</StatCardNumber>
+                <StatCardNumber $color="blue">{stats.total}</StatCardNumber>
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
               </StatCardValue>
-              <StatCardWatermark $color="#0ea5e9"><WmUsers /></StatCardWatermark>
+              <StatCardWatermark $color="blue"><WmUsers /></StatCardWatermark>
             </StatCard>
-            <StatCard $accent="#d97706" $bg1="#fffbeb" $bg2="#fef3c7">
+            <StatCard $accent="amber">
               <StatCardLabel>{t('leads.tabPreparing')}</StatCardLabel>
               <StatCardValue>
-                <StatCardNumber $color="#d97706">{tabCounts['preparing'] || 0}</StatCardNumber>
+                <StatCardNumber $color="amber">{tabCounts['preparing'] || 0}</StatCardNumber>
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
               </StatCardValue>
-              <StatCardWatermark $color="#d97706"><WmEdit /></StatCardWatermark>
+              <StatCardWatermark $color="amber"><WmEdit /></StatCardWatermark>
             </StatCard>
-            <StatCard $accent="#16a34a" $bg1="#f0fdf4" $bg2="#dcfce7">
+            <StatCard $accent="green">
               <StatCardLabel>{t('leads.tabAwaiting')}</StatCardLabel>
               <StatCardValue>
-                <StatCardNumber $color="#16a34a">{tabCounts['awaiting'] || 0}</StatCardNumber>
+                <StatCardNumber $color="green">{tabCounts['awaiting'] || 0}</StatCardNumber>
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
               </StatCardValue>
-              <StatCardWatermark $color="#16a34a"><WmClock /></StatCardWatermark>
+              <StatCardWatermark $color="green"><WmClock /></StatCardWatermark>
             </StatCard>
-            <StatCard $accent="#8b5cf6" $bg1="#faf5ff" $bg2="#ede9fe">
+            <StatCard $accent="accent">
               <StatCardLabel>{t('leads.tabReplied')}</StatCardLabel>
               <StatCardValue>
-                <StatCardNumber $color="#8b5cf6">{tabCounts['replied'] || 0}</StatCardNumber>
+                <StatCardNumber $color="accent">{tabCounts['replied'] || 0}</StatCardNumber>
                 <StatCardUnit>{t('leads.unit')}</StatCardUnit>
               </StatCardValue>
-              <StatCardWatermark $color="#8b5cf6"><WmCheck /></StatCardWatermark>
+              <StatCardWatermark $color="accent"><WmCheck /></StatCardWatermark>
             </StatCard>
           </StatCardsRow>
           <HeaderTop style={{ justifyContent: 'space-between' }}>
             <HeaderBtns style={{ gap: '8px' }}>
-              <CircleActionBtn $color="#0ea5e9" aria-label={t('leads.checkReplies')} onClick={handleCheckReplies} disabled={replyChecking}>
+              <CircleActionBtn $color={styledTheme.colors.accent} aria-label={t('leads.checkReplies')} onClick={handleCheckReplies} disabled={replyChecking}>
                 <IconCheckCircle />
               </CircleActionBtn>
-              <CircleActionBtn $color="#ca8a04" aria-label={t('leads.checkFollowups')} onClick={handleCheckFollowups} disabled={followupChecking}>
+              <CircleActionBtn $color={styledTheme.colors.amber} aria-label={t('leads.checkFollowups')} onClick={handleCheckFollowups} disabled={followupChecking}>
                 <IconSparkle />
               </CircleActionBtn>
-              <CircleActionBtn $color="#64748b" aria-label={t('leads.refresh')} onClick={handleRefresh} disabled={refreshing}>
+              <CircleActionBtn $color={styledTheme.colors.textSecondary} aria-label={t('leads.refresh')} onClick={handleRefresh} disabled={refreshing}>
                 <IconRefresh spinning={refreshing} />
               </CircleActionBtn>
-              <CircleActionBtn $color="#dc2626" aria-label={t('leads.clearAll')} onClick={handleClearAll} disabled={clearAllLeads.isPending}>
+              <CircleActionBtn $color={styledTheme.strong.mauve} aria-label={t('leads.clearAll')} onClick={handleClearAll} disabled={clearAllLeads.isPending}>
                 <IconTrash />
               </CircleActionBtn>
               <AutoCheckBtn $active={autoCheckReplies} onClick={() => setAutoCheckReplies(p => !p)}>
@@ -2440,7 +2436,7 @@ const Leads: React.FC = () => {
               $color={tab.color}
               onClick={() => handleTabClick(tab.key)}
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke={tab.color} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: activeTab === tab.key ? 0.7 : 0.35 }}>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke={(styledTheme.colors as any)[tab.color] || styledTheme.colors.accent} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: activeTab === tab.key ? 0.7 : 0.35 }}>
                 <path d={TAB_ICONS[tab.icon] || ''} />
               </svg>
               <TabNumber $color={tab.color}>{tabCounts[tab.key] || 0}</TabNumber>
@@ -2454,7 +2450,7 @@ const Leads: React.FC = () => {
             <SubPill
               key={sub.key}
               $active={activeSub === sub.key}
-              $color={SUB_COLORS[sub.key] || '#0ea5e9'}
+              $color={SUB_COLOR_KEYS[sub.key] || 'blue'}
               onClick={() => handleSubClick(sub.key)}
             >
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
@@ -2477,13 +2473,13 @@ const Leads: React.FC = () => {
             style={{
               padding: '4px 12px',
               borderRadius: 14,
-              border: oldWebsiteOnly ? '1.5px solid #dc2626' : '1px solid #d1d5db',
-              background: oldWebsiteOnly ? '#fef2f2' : '#fff',
-              color: oldWebsiteOnly ? '#dc2626' : '#6b7280',
+              border: oldWebsiteOnly ? `1.5px solid ${styledTheme.strong.mauve}` : `1px solid ${styledTheme.colors.border}`,
+              background: oldWebsiteOnly ? `${styledTheme.strong.mauve}14` : styledTheme.colors.surface,
+              color: oldWebsiteOnly ? styledTheme.strong.mauve : styledTheme.colors.textSecondary,
               fontSize: '0.75rem',
               fontWeight: 600,
               cursor: 'pointer',
-              whiteSpace: 'nowrap',
+              whiteSpace: 'nowrap' as const,
             }}
           >
             {oldWebsiteOnly ? t('leads.filterOldWebsiteOff') : t('leads.filterOldWebsiteOn')}
@@ -2493,13 +2489,13 @@ const Leads: React.FC = () => {
             style={{
               padding: '4px 12px',
               borderRadius: 14,
-              border: sortByTech ? '1.5px solid #f59e0b' : '1px solid #d1d5db',
-              background: sortByTech ? '#fffbeb' : '#fff',
-              color: sortByTech ? '#d97706' : '#6b7280',
+              border: sortByTech ? `1.5px solid ${styledTheme.colors.amber}` : `1px solid ${styledTheme.colors.border}`,
+              background: sortByTech ? `${styledTheme.colors.amber}1a` : styledTheme.colors.surface,
+              color: sortByTech ? styledTheme.colors.amber : styledTheme.colors.textSecondary,
               fontSize: '0.75rem',
               fontWeight: 600,
               cursor: 'pointer',
-              whiteSpace: 'nowrap',
+              whiteSpace: 'nowrap' as const,
             }}
           >
             {sortByTech ? t('leads.filterSortTechOff') : t('leads.filterSortTechOn')}
@@ -2523,8 +2519,8 @@ const Leads: React.FC = () => {
                   <tr>
                     <EmptyCell colSpan={isAdmin ? 7 : 6}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
-                        <strong style={{ color: '#dc2626' }}>{t('common.error')}</strong>
-                        <span style={{ color: '#7f8c8d', fontSize: 13 }}>
+                        <strong style={{ color: styledTheme.strong.mauve }}>{t('common.error')}</strong>
+                        <span style={{ color: styledTheme.colors.textTertiary, fontSize: 13 }}>
                           {(error as any)?.message || String(error)}
                         </span>
                         <button
@@ -2532,9 +2528,9 @@ const Leads: React.FC = () => {
                           style={{
                             marginTop: 4,
                             padding: '6px 14px',
-                            border: '1px solid #0ea5e9',
-                            background: '#0ea5e9',
-                            color: '#fff',
+                            border: `1px solid ${styledTheme.colors.accent}`,
+                            background: styledTheme.colors.accent,
+                            color: styledTheme.colors.textInverted,
                             borderRadius: 4,
                             cursor: 'pointer',
                             fontSize: 13,
@@ -2554,7 +2550,7 @@ const Leads: React.FC = () => {
                     let lastGroup = '';
                     return leads.map((lead, i) => {
                       const name = lead.company_name || 'Unknown';
-                      const color = hashColor(name);
+                      const colorIdx = hashColorIndex(name);
                       const group = getDateGroup(lead._imported_at);
                       const showHeader = group !== lastGroup;
                       if (showHeader) lastGroup = group;
@@ -2562,11 +2558,10 @@ const Leads: React.FC = () => {
                       return (
                         <React.Fragment key={lead._id}>
                           {showHeader && (
-                            <GroupBar $group={group} $dark={isDark}>
+                            <GroupBar $group={group}>
                               <td colSpan={isAdmin ? 7 : 6}>
                                 <GroupBarInner
                                   $group={group}
-                                  $dark={isDark}
                                   $collapsed={isCollapsed}
                                   onClick={() => setCollapsedGroups(prev => ({ ...prev, [group]: !prev[group] }))}
                                 >
@@ -2581,7 +2576,7 @@ const Leads: React.FC = () => {
                         </td>
                         <td>
                           <NameCell>
-                            <Avatar $color={color}><AvatarIcon name={name} /></Avatar>
+                            <Avatar $colorIndex={colorIdx}><AvatarIcon name={name} /></Avatar>
                             <NameText>
                               <strong>{name}</strong>
                               {lead.website && <small>{lead.website}</small>}
@@ -2598,19 +2593,19 @@ const Leads: React.FC = () => {
                         </td>
                         <td>
                           {(() => {
-                            const badge = getReplyBadge(lead, t);
+                            const badge = getReplyBadge(lead, t, styledTheme);
                             return <ReplyBadge $bg={badge.bg} $fg={badge.fg}>{badge.text}</ReplyBadge>;
                           })()}
                         </td>
                         {isAdmin && (
-                          <td style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          <td style={{ fontSize: '0.75rem', color: styledTheme.colors.textSecondary }}>
                             {lead.user_id ? (userMap[lead.user_id] || lead.user_id.slice(0, 8)) : '—'}
                           </td>
                         )}
                         <td style={{ textAlign: 'center' }}>
                           {(lead as any)._tech_score != null ? (() => {
                             const s = (lead as any)._tech_score as number;
-                            const bg = s >= 50 ? '#dc2626' : s >= 25 ? '#f59e0b' : '#22c55e';
+                            const bg = s >= 50 ? styledTheme.strong.mauve : s >= 25 ? styledTheme.colors.amber : styledTheme.strong.olive;
                             const label = s >= 50 ? t('leads.techOld') : s >= 25 ? t('leads.techNormal') : t('leads.techNew');
                             return (
                               <span style={{
@@ -2619,13 +2614,13 @@ const Leads: React.FC = () => {
                                 borderRadius: 12,
                                 fontSize: '0.7rem',
                                 fontWeight: 600,
-                                color: '#fff',
+                                color: styledTheme.colors.textInverted,
                                 background: bg,
                               }}>
                                 {s} {label}
                               </span>
                             );
-                          })() : <span style={{ color: '#cbd5e1', fontSize: '0.75rem' }}>—</span>}
+                          })() : <span style={{ color: styledTheme.colors.border, fontSize: '0.75rem' }}>—</span>}
                         </td>
                         <td>{(() => {
                           const g = getDateGroup(lead._imported_at);
@@ -2636,7 +2631,7 @@ const Leads: React.FC = () => {
                         <td>
                           {lead.status && lead.status !== 'contacted' && NEXT_STATUS[lead.status] && (
                             <ActionBtn
-                              $color="#0ea5e9"
+                              $color={styledTheme.colors.accent}
                               title={STATUS_LABEL[lead.status]}
                               onClick={(e) => { e.stopPropagation(); handleStatusChange(lead._id, NEXT_STATUS[lead.status!]); }}
                             >
@@ -2783,17 +2778,17 @@ const Leads: React.FC = () => {
               position: 'absolute',
               top: 0,
               left: 0,
-              background: isDark ? 'rgba(255,255,255,0.12)' : 'rgba(14,165,233,0.12)',
-              color: isDark ? '#67e8f9' : '#0ea5e9',
+              background: `${styledTheme.colors.accent}1f`,
+              color: styledTheme.colors.accent,
               fontSize: '0.625rem',
               fontWeight: 700,
               padding: '3px 16px 3px 8px',
               borderBottomRightRadius: '10px',
               letterSpacing: '0.05em',
-              textTransform: 'uppercase',
+              textTransform: 'uppercase' as const,
               backdropFilter: 'blur(4px)',
             }}>{selectedLead.status ?? 'new'}</span>
-            <Avatar $color={hashColor(selectedLead.company_name || 'Unknown')} style={{ width: 42, height: 42, fontSize: '0.875rem', border: isDark ? '2px solid rgba(255,255,255,0.3)' : '2px solid rgba(14,165,233,0.2)' }}>
+            <Avatar $colorIndex={hashColorIndex(selectedLead.company_name || 'Unknown')} style={{ width: 42, height: 42, fontSize: '0.875rem', border: `2px solid ${styledTheme.colors.border}` }}>
               <AvatarIcon name={selectedLead.company_name || 'Unknown'} />
             </Avatar>
             <DpHeaderInfo>
@@ -2830,7 +2825,7 @@ const Leads: React.FC = () => {
             <DpColLeft>
               <DpCollapsibleHead onClick={() => setAboutOpen(o => !o)}>
                 <DpSectionTitle>{t('leads.about')} — {selectedLead.email || '—'}</DpSectionTitle>
-                <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>{aboutOpen ? '▲' : '▼'}</span>
+                <span style={{ fontSize: '0.7rem', color: styledTheme.colors.textTertiary }}>{aboutOpen ? '▲' : '▼'}</span>
               </DpCollapsibleHead>
               <DpCollapsibleBody $open={aboutOpen}>
                 <DpTabSection>
@@ -2839,24 +2834,24 @@ const Leads: React.FC = () => {
                 <DpGrid>
                   <DpField>
                     <DpFieldLabel>
-                      <DpFieldIcon $color="#0ea5e9"><svg viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
+                      <DpFieldIcon $color={styledTheme.colors.accent}><svg viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
                       {t('leads.email')}
                     </DpFieldLabel>
-                    <DpFieldValue style={{ color: selectedLead.email ? '#0ea5e9' : undefined }}>{selectedLead.email || '—'}</DpFieldValue>
+                    <DpFieldValue style={{ color: selectedLead.email ? styledTheme.colors.accent : undefined }}>{selectedLead.email || '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
                     <DpFieldLabel>
-                      <DpFieldIcon $color="#16a34a"><svg viewBox="0 0 16 16" fill="none"><path d="M10 1.5a3.5 3.5 0 013.5 3.5c0 3-5 8.5-5 8.5s-5-5.5-5-8.5A3.5 3.5 0 017 1.79" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 9l1.5-3h1L10 9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
+                      <DpFieldIcon $color={styledTheme.strong.olive}><svg viewBox="0 0 16 16" fill="none"><path d="M10 1.5a3.5 3.5 0 013.5 3.5c0 3-5 8.5-5 8.5s-5-5.5-5-8.5A3.5 3.5 0 017 1.79" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 9l1.5-3h1L10 9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
                       {t('leads.phone')}
                     </DpFieldLabel>
-                    <DpFieldValue style={{ color: selectedLead.phone ? '#16a34a' : undefined }}>{selectedLead.phone || '—'}</DpFieldValue>
+                    <DpFieldValue style={{ color: selectedLead.phone ? styledTheme.strong.olive : undefined }}>{selectedLead.phone || '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
                     <DpFieldLabel>
-                      <DpFieldIcon $color="#7c3aed"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zM1 8h14M8 1c1.7 2 2.7 4 2.7 7s-1 5-2.7 7c-1.7-2-2.7-4-2.7-7s1-5 2.7-7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
+                      <DpFieldIcon $color={styledTheme.colors.accent}><svg viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zM1 8h14M8 1c1.7 2 2.7 4 2.7 7s-1 5-2.7 7c-1.7-2-2.7-4-2.7-7s1-5 2.7-7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
                       {t('leads.website')}
                     </DpFieldLabel>
-                    <DpFieldValue style={{ color: selectedLead.website ? '#7c3aed' : undefined }}>
+                    <DpFieldValue style={{ color: selectedLead.website ? styledTheme.colors.accent : undefined }}>
                       {selectedLead.website ? (
                         <a href={selectedLead.website.startsWith('http') ? selectedLead.website : `https://${selectedLead.website}`} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: '2px' }}>{selectedLead.website}</a>
                       ) : '—'}
@@ -2864,28 +2859,28 @@ const Leads: React.FC = () => {
                   </DpField>
                   <DpField>
                     <DpFieldLabel>
-                      <DpFieldIcon $color="#ea580c"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5C5 1.5 2 4.5 2 8c0 2.5 1 4.5 2.5 6h7C13 12.5 14 10.5 14 8c0-3.5-3-6.5-6-6.5zM5 14.5h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
+                      <DpFieldIcon $color={styledTheme.colors.amber}><svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5C5 1.5 2 4.5 2 8c0 2.5 1 4.5 2.5 6h7C13 12.5 14 10.5 14 8c0-3.5-3-6.5-6-6.5zM5 14.5h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
                       {t('leads.address')}
                     </DpFieldLabel>
                     <DpFieldValue>{selectedLead.address || '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
                     <DpFieldLabel>
-                      <DpFieldIcon $color="#64748b"><svg viewBox="0 0 16 16" fill="none"><path d="M2 13V3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H5l-3 2z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
+                      <DpFieldIcon $color={styledTheme.colors.textSecondary}><svg viewBox="0 0 16 16" fill="none"><path d="M2 13V3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H5l-3 2z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
                       {t('leads.source')}
                     </DpFieldLabel>
                     <DpFieldValue>{selectedLead.source || '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
                     <DpFieldLabel>
-                      <DpFieldIcon $color="#d97706"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
+                      <DpFieldIcon $color={styledTheme.colors.amber}><svg viewBox="0 0 16 16" fill="none"><path d="M8 1l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
                       {t('leads.rating')}
                     </DpFieldLabel>
-                    <DpFieldValue style={{ color: selectedLead.rating ? '#d97706' : undefined }}>{selectedLead.rating ? `${selectedLead.rating} / 5.0` : '—'}</DpFieldValue>
+                    <DpFieldValue style={{ color: selectedLead.rating ? styledTheme.colors.amber : undefined }}>{selectedLead.rating ? `${selectedLead.rating} / 5.0` : '—'}</DpFieldValue>
                   </DpField>
                   <DpField>
                     <DpFieldLabel>
-                      <DpFieldIcon $color="#94a3b8"><svg viewBox="0 0 16 16" fill="none"><path d="M2 3h12v10H2V3zm0 3h12M5 1v3M11 1v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
+                      <DpFieldIcon $color={styledTheme.colors.textTertiary}><svg viewBox="0 0 16 16" fill="none"><path d="M2 3h12v10H2V3zm0 3h12M5 1v3M11 1v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
                       {t('leads.importedAt')}
                     </DpFieldLabel>
                     <DpFieldValue>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</DpFieldValue>
@@ -2924,7 +2919,7 @@ const Leads: React.FC = () => {
                     <DpTimelineItem>
                       <DpTimelineTime>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
                       <DpTimelineDot $active />
-                      <DpTimelineText $active>{t('leads.receivedReply', { text: getReplyBadge(selectedLead, t)?.text || t('leads.replied') })}</DpTimelineText>
+                      <DpTimelineText $active>{t('leads.receivedReply', { text: getReplyBadge(selectedLead, t, styledTheme)?.text || t('leads.replied') })}</DpTimelineText>
                     </DpTimelineItem>
                   )}
                 </DpTimeline>
@@ -2945,7 +2940,7 @@ const Leads: React.FC = () => {
                 )}
 
                 {selectedLead._replied && (() => {
-                  const cat = getReplyBadge(selectedLead, t) || { text: t('leads.replied'), bg: '#cffafe', fg: '#0ea5e9' };
+                  const cat = getReplyBadge(selectedLead, t, styledTheme) || { text: t('leads.replied'), bg: styledTheme.status.contacted.bg, fg: styledTheme.colors.accent };
                   return (
                     <DpTabSection>
                       <DpTabLabel>{t('leads.replyInfo')}</DpTabLabel>

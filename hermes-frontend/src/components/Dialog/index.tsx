@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import { glassSurface, glassSurfaceLight } from '../../styles/glassSurface';
 
 /* ══════════════════════════════════════
    Custom Dialog — replaces window.prompt / window.confirm
@@ -68,10 +69,8 @@ const Panel = styled.div<{ $closing?: boolean }>`
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 10000;
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  ${glassSurface};
   border-radius: 14px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
   width: 340px;
   max-width: 90vw;
   padding: 20px 22px 16px;
@@ -94,11 +93,11 @@ const Input = styled.input`
   border-radius: 8px;
   font-size: 0.8125rem;
   color: ${({ theme }) => theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.canvas};
+  ${glassSurfaceLight};
   outline: none;
   margin-bottom: 14px;
   transition: border-color 0.15s;
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
 `;
 
@@ -115,9 +114,9 @@ const Btn = styled.button<{ $primary?: boolean }>`
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
-  border: 1px solid ${({ $primary, theme }) => $primary ? theme.colors.blue : theme.colors.border};
-  background: ${({ $primary, theme }) => $primary ? theme.colors.blue : theme.colors.surface};
-  color: ${({ $primary, theme }) => $primary ? '#fff' : theme.colors.textPrimary};
+  border: 1px solid ${({ $primary, theme }) => $primary ? theme.colors.accent : theme.colors.border};
+  background: ${({ $primary, theme }) => $primary ? theme.colors.accent : theme.colors.surface};
+  color: ${({ $primary, theme }) => $primary ? theme.colors.textInverted : theme.colors.textPrimary};
   &:hover {
     opacity: 0.88;
     transform: translateY(-1px);

@@ -34,9 +34,9 @@ const PageBtn = styled.button<{ $active?: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid ${({ theme, $active }) => ($active ? theme.colors.blue : theme.colors.border)};
+  border: 1px solid ${({ theme, $active }) => ($active ? theme.colors.accent : theme.colors.border)};
   border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ theme, $active }) => ($active ? theme.colors.blue : theme.colors.surface)};
+  background: ${({ theme, $active }) => ($active ? theme.colors.accent : theme.colors.surface)};
   color: ${({ theme, $active }) => ($active ? '#fff' : theme.colors.textPrimary)};
   font-size: 0.813rem;
   cursor: pointer;

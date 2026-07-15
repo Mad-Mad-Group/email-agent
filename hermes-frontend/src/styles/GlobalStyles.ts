@@ -1,6 +1,5 @@
 import { createGlobalStyle } from 'styled-components';
 
-// CSS 变量（让组件用 var() 也能拿到主品牌色）
 export const GlobalStyles = createGlobalStyle`
   *, *::before, *::after {
     margin: 0;
@@ -9,22 +8,13 @@ export const GlobalStyles = createGlobalStyle`
   }
 
   :root {
-    /* 主品牌色 — Logo 蓝 */
-    --primary: #0ea5e9;
-    --primary-hover: #0369a1;
-    --primary-light: #dbeafe;
-
-    /* 渐变 */
-    --gradient-primary: #0ea5e9;
-    --gradient-green: #16a34a;
-    --gradient-gold: #d97706;
-    --gradient-danger: #dc2626;
-
-    /* 状态色 */
-    --success: #16a34a;
-    --warning: #d97706;
-    --danger:  #dc2626;
-    --info:    #0ea5e9;
+    /* Derived from theme — single source of truth */
+    --primary: ${({ theme }) => theme.colors.accent};
+    --primary-hover: ${({ theme }) => theme.colors.accent};
+    --success: ${({ theme }) => theme.strong.olive};
+    --warning: ${({ theme }) => theme.strong.gold};
+    --danger: ${({ theme }) => theme.strong.mauve};
+    --info: ${({ theme }) => theme.colors.accent};
   }
 
   html {
@@ -38,7 +28,7 @@ export const GlobalStyles = createGlobalStyle`
     color: ${({ theme }) => theme.colors.textPrimary};
     background-color: ${({ theme }) => theme.colors.canvas};
     line-height: 1.5;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color ${({ theme }) => theme.motion.slow}, color ${({ theme }) => theme.motion.slow};
   }
 
   a {
@@ -74,23 +64,29 @@ export const GlobalStyles = createGlobalStyle`
     border-spacing: 0;
   }
 
+  /* Focus visible — accessible focus ring using accent color */
+  :focus-visible {
+    outline: 2px solid ${({ theme }) => theme.colors.accent};
+    outline-offset: 2px;
+  }
+
   /* ── Scrollbar — dark mode aware ── */
   * {
     scrollbar-width: thin;
-    scrollbar-color: ${({ theme }) => theme.mode === 'dark' ? '#475569 #1e293b' : 'rgba(0,0,0,0.2) transparent'};
+    scrollbar-color: ${({ theme }) => theme.mode === 'dark' ? '#3f3f46 #141418' : 'rgba(0,0,0,0.15) transparent'};
   }
   *::-webkit-scrollbar {
     width: 6px;
     height: 6px;
   }
   *::-webkit-scrollbar-track {
-    background: ${({ theme }) => theme.mode === 'dark' ? '#1e293b' : 'transparent'};
+    background: ${({ theme }) => theme.mode === 'dark' ? '#141418' : 'transparent'};
   }
   *::-webkit-scrollbar-thumb {
-    background: ${({ theme }) => theme.mode === 'dark' ? '#475569' : 'rgba(0,0,0,0.2)'};
+    background: ${({ theme }) => theme.mode === 'dark' ? '#3f3f46' : 'rgba(0,0,0,0.15)'};
     border-radius: 3px;
   }
   *::-webkit-scrollbar-thumb:hover {
-    background: ${({ theme }) => theme.mode === 'dark' ? '#64748b' : 'rgba(0,0,0,0.35)'};
+    background: ${({ theme }) => theme.mode === 'dark' ? '#52525b' : 'rgba(0,0,0,0.25)'};
   }
 `;

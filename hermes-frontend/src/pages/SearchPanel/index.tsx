@@ -38,15 +38,15 @@ const FilterTags = styled.div`
 const Tag = styled.button<{ active?: boolean }>`
   padding: 6px 12px;
   border-radius: 16px;
-  border: 1px solid ${({ active, theme }) => active ? theme.colors.blue : theme.colors.border};
-  background: ${({ active, theme }) => active ? theme.colors.blue : 'transparent'};
-  color: ${({ active, theme }) => active ? '#fff' : theme.colors.textSecondary};
+  border: 1px solid ${({ active, theme }) => active ? theme.colors.accent : theme.colors.border};
+  background: ${({ active, theme }) => active ? theme.colors.accent : 'transparent'};
+  color: ${({ active, theme }) => active ? theme.colors.textInverted : theme.colors.textSecondary};
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    border-color: ${({ theme }) => theme.colors.blue};
+    border-color: ${({ theme }) => theme.colors.accent};
   }
 `;
 

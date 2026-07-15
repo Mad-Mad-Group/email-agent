@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
+import { glassSurface } from '../../styles/glassSurface';
 import { media } from '../../styles/media';
 
 /* ══════════════════════════════════════
@@ -17,9 +18,8 @@ const Page = styled.div`
 `;
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
   display: flex;
   min-height: 620px;
   overflow: hidden;
@@ -55,8 +55,8 @@ const Sidebar = styled.div`
 const NewMessageBtn = styled.button`
   margin: 0 ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.md}px;
   padding: 10px ${({ theme }) => theme.spacing.md}px;
-  background: ${({ theme }) => theme.colors.green};
-  color: #fff;
+  background: ${({ theme }) => theme.strong.olive};
+  color: ${({ theme }) => theme.colors.textInverted};
   border: none;
   border-radius: 50px;
   font-size: 0.8125rem;
@@ -104,8 +104,8 @@ const FolderItem = styled.li<{ $active?: boolean }>`
 
 const FolderBadge = styled.span`
   margin-left: auto;
-  background: ${({ theme }) => theme.colors.red};
-  color: #fff;
+  background: ${({ theme }) => theme.strong.mauve};
+  color: ${({ theme }) => theme.colors.textInverted};
   font-size: 0.6875rem;
   font-weight: 600;
   padding: 1px 7px;
@@ -202,7 +202,7 @@ const Checkbox = styled.input.attrs({ type: 'checkbox' })`
   width: 16px;
   height: 16px;
   cursor: pointer;
-  accent-color: ${({ theme }) => theme.colors.blue};
+  accent-color: ${({ theme }) => theme.colors.accent};
 `;
 
 /* ── Email List (Inbox) ── */
@@ -240,23 +240,14 @@ const StarBtn = styled.button<{ $active?: boolean }>`
   padding: 2px;
   display: flex;
   align-items: center;
-  color: ${({ $active, theme }) => ($active ? theme.colors.amber : theme.colors.borderStrong)};
+  color: ${({ $active, theme }) => ($active ? theme.strong.gold : theme.colors.borderStrong)};
   transition: color 0.15s;
   &:hover {
-    color: ${({ theme }) => theme.colors.amber};
+    color: ${({ theme }) => theme.strong.gold};
   }
 `;
 
-/* Initial-based avatar */
-const avatarPalette = ['#5a9a8a', '#5fa088', '#c19862', '#c78787', '#5a9a8a', '#88a890', '#5fa088', '#88a890'];
-
-const getAvatarColor = (name: string): string => {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = name.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return avatarPalette[Math.abs(hash) % avatarPalette.length];
-};
+/* Initial-based avatar — palette moved inside component to use theme tokens */
 
 const AvatarCircle = styled.div<{ $bg: string }>`
   width: 40px;
@@ -264,7 +255,7 @@ const AvatarCircle = styled.div<{ $bg: string }>`
   min-width: 40px;
   border-radius: 50%;
   background: ${({ $bg }) => $bg};
-  color: #fff;
+  color: ${({ theme }) => theme.colors.textInverted};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -297,7 +288,7 @@ const SenderRow = styled.div`
 const SenderName = styled.span<{ $unread?: boolean }>`
   font-size: 0.8125rem;
   font-weight: ${({ $unread }) => ($unread ? 600 : 500)};
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   white-space: nowrap;
   cursor: pointer;
   &:hover {
@@ -353,8 +344,7 @@ const HoverActions = styled.div`
   top: 50%;
   transform: translateY(-50%);
   gap: 2px;
-  background: ${({ theme }) => theme.colors.surface};
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.control}px;
   padding: 2px;
 `;
@@ -424,7 +414,7 @@ const BackLink = styled.button`
   gap: 6px;
   background: none;
   border: none;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
@@ -463,7 +453,7 @@ const DetailSenderName = styled.span`
 
 const DetailSenderEmail = styled.span`
   font-size: 0.8125rem;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   margin-left: 6px;
 `;
 
@@ -559,7 +549,7 @@ const OutlineBtn = styled.button<{ $color?: string }>`
   cursor: pointer;
   transition: background 0.15s;
   &:hover {
-    background: ${({ $color }) => ($color ? $color + '12' : '#ecf2ec')};
+    background: ${({ $color, theme }) => ($color ? $color + '12' : theme.colors.surfaceMuted)};
   }
 `;
 
@@ -604,7 +594,7 @@ const ComposeField = styled.input`
     color: ${({ theme }) => theme.colors.textTertiary};
   }
   &:focus {
-    border-bottom-color: ${({ theme }) => theme.colors.blue};
+    border-bottom-color: ${({ theme }) => theme.colors.accent};
   }
 `;
 
@@ -665,8 +655,8 @@ const GreenBtn = styled.button`
   align-items: center;
   gap: 6px;
   padding: 9px 22px;
-  background: ${({ theme }) => theme.colors.green};
-  color: #fff;
+  background: ${({ theme }) => theme.strong.olive};
+  color: ${({ theme }) => theme.colors.textInverted};
   border: none;
   border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.8125rem;
@@ -804,7 +794,6 @@ const categories = ['Angular', 'Ui UX design', 'Development', 'Marketing'];
 interface Attachment {
   name: string;
   ext: string;
-  color: string;
   size: string;
 }
 
@@ -821,12 +810,7 @@ interface EmailData {
   subject: string;
 }
 
-const colorMap: Record<string, string> = {
-  pdf: '#c78787',
-  exc: '#5fa088',
-  zip: '#5a9a8a',
-  docx: '#5a9a8a',
-};
+/* colorMap moved inside component to use theme tokens */
 
 const emails: EmailData[] = [
   {
@@ -836,7 +820,7 @@ const emails: EmailData[] = [
     preview: 'If you are going to use a passage of Lorem Ipsum, you need to be sure there isn\'t anything embarrassing hidden...',
     unread: true,
     defaultStarred: false,
-    attachments: [{ name: 'project-report.pdf', ext: 'pdf', color: colorMap.pdf, size: '68KB' }],
+    attachments: [{ name: 'project-report.pdf', ext: 'pdf', size: '68KB' }],
     date: 'Aug 4',
     subject: 'There are many variations of passages of Lorem Ipsum available',
     body: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using \'Content here, content here\', making it look like readable English.\n\nMany desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for \'lorem ipsum\' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).',
@@ -884,7 +868,7 @@ const emails: EmailData[] = [
     preview: 'The standard chunk of Lorem Ipsum used since the 1500s is reproduced below for those interested...',
     unread: true,
     defaultStarred: true,
-    attachments: [{ name: 'analytics.pdf', ext: 'pdf', color: colorMap.pdf, size: '120KB' }],
+    attachments: [{ name: 'analytics.pdf', ext: 'pdf', size: '120KB' }],
     date: 'Aug 4',
     subject: 'Sections 1.10.32 and 1.10.33 from de Finibus Bonorum',
     body: 'The standard chunk of Lorem Ipsum used since the 1500s is reproduced below for those interested. Sections 1.10.32 and 1.10.33 from "de Finibus Bonorum et Malorum" by Cicero are also reproduced in their exact original form.',
@@ -897,8 +881,8 @@ const emails: EmailData[] = [
     unread: true,
     defaultStarred: true,
     attachments: [
-      { name: 'budget.exc', ext: 'exc', color: colorMap.exc, size: '45KB' },
-      { name: 'summary.pdf', ext: 'pdf', color: colorMap.pdf, size: '92KB' },
+      { name: 'budget.exc', ext: 'exc', size: '45KB' },
+      { name: 'summary.pdf', ext: 'pdf', size: '92KB' },
     ],
     date: 'Aug 4',
     subject: 'Contrary to popular belief, Lorem Ipsum is not simply random text',
@@ -911,7 +895,7 @@ const emails: EmailData[] = [
     preview: 'The standard chunk of Lorem Ipsum used since the 1500s is reproduced below for those interested...',
     unread: false,
     defaultStarred: false,
-    attachments: [{ name: 'assets.zip', ext: 'zip', color: colorMap.zip, size: '3.2MB' }],
+    attachments: [{ name: 'assets.zip', ext: 'zip', size: '3.2MB' }],
     date: 'Aug 4',
     subject: 'Where can I get some Lorem Ipsum?',
     body: 'There are many variations of passages of Lorem Ipsum available, but the majority have suffered alteration in some form, by injected humour, or randomised words which don\'t look even slightly believable.',
@@ -935,7 +919,7 @@ const emails: EmailData[] = [
     preview: 'It has survived not only five centuries, but also the leap into electronic typesetting...',
     unread: false,
     defaultStarred: false,
-    attachments: [{ name: 'proposal.docx', ext: 'docx', color: colorMap.docx, size: '54KB' }],
+    attachments: [{ name: 'proposal.docx', ext: 'docx', size: '54KB' }],
     date: 'Aug 4',
     subject: 'It has survived not only five centuries',
     body: 'Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged.',
@@ -950,6 +934,26 @@ type ViewType = 'inbox' | 'detail' | 'compose';
 
 const EmailApp: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
+
+  const avatarPalette = [theme.colors.accent, theme.strong.olive, theme.strong.gold, theme.strong.mauve, theme.colors.accent, theme.colors.accent, theme.strong.olive, theme.strong.gold];
+
+  const getAvatarColor = (name: string): string => {
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+      hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return avatarPalette[Math.abs(hash) % avatarPalette.length];
+  };
+
+  const colorMap: Record<string, string> = {
+    pdf: theme.strong.mauve,
+    exc: theme.strong.olive,
+    zip: theme.colors.accent,
+    docx: theme.colors.accent,
+  };
+
+  const getAttachmentColor = (ext: string): string => colorMap[ext] || theme.colors.textSecondary;
   const [view, setView] = useState<ViewType>('inbox');
   const [activeFolder, setActiveFolder] = useState('inbox');
 
@@ -1062,7 +1066,7 @@ const EmailApp: React.FC = () => {
             checked={selectedEmails.size === emails.length && emails.length > 0}
             onChange={toggleSelectAll}
           />
-          <span style={{ fontSize: '0.8125rem', color: '#6c757d' }}>{t('common.all')}</span>
+          <span style={{ fontSize: '0.8125rem', color: theme.colors.textTertiary }}>{t('common.all')}</span>
           <IconBtn onClick={() => {}}>
             <I d={icons.refresh} />
           </IconBtn>
@@ -1113,7 +1117,7 @@ const EmailApp: React.FC = () => {
               {email.attachments.length > 0 && (
                 <AttachmentPills>
                   {email.attachments.map((att, i) => (
-                    <Pill key={i} $color={att.color}>
+                    <Pill key={i} $color={getAttachmentColor(att.ext)}>
                       <I d={icons.attach} size={11} />
                       {att.name} ({att.ext})
                     </Pill>
@@ -1211,8 +1215,8 @@ const EmailApp: React.FC = () => {
           {e.attachments.length > 0 && (
             <AttachmentsRow>
               {e.attachments.map((att, i) => (
-                <AttachmentCard key={i} $accent={att.color}>
-                  <AttachmentIcon $color={att.color}>
+                <AttachmentCard key={i} $accent={getAttachmentColor(att.ext)}>
+                  <AttachmentIcon $color={getAttachmentColor(att.ext)}>
                     <I d={icons.file} />
                   </AttachmentIcon>
                   <AttachmentMeta>
@@ -1259,10 +1263,10 @@ const EmailApp: React.FC = () => {
             <RichBtn title={t('email.italic')}><I d={icons.italic} size={14} /></RichBtn>
             <RichBtn title={t('email.underline')}><I d={icons.underline} size={14} /></RichBtn>
             <RichBtn title={t('email.strikethrough')}><I d={icons.strikethrough} size={14} /></RichBtn>
-            <span style={{ width: 1, height: 18, background: '#d4e2d4', margin: '0 4px' }} />
+            <span style={{ width: 1, height: 18, background: theme.colors.border, margin: '0 4px' }} />
             <RichBtn title={t('email.unorderedList')}><I d={icons.listUl} size={14} /></RichBtn>
             <RichBtn title={t('email.orderedList')}><I d={icons.listOl} size={14} /></RichBtn>
-            <span style={{ width: 1, height: 18, background: '#d4e2d4', margin: '0 4px' }} />
+            <span style={{ width: 1, height: 18, background: theme.colors.border, margin: '0 4px' }} />
             <RichBtn title={t('email.link')}><I d={icons.link} size={14} /></RichBtn>
             <RichBtn title={t('email.image')}><I d={icons.image} size={14} /></RichBtn>
             <RichBtn title={t('email.align')}><I d={icons.alignLeft} size={14} /></RichBtn>

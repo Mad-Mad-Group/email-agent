@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { glassSurface } from '../../styles/glassSurface';
 
 interface KPICardProps {
   icon: string;
@@ -10,9 +11,8 @@ interface KPICardProps {
 }
 
 const Tile = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.tile}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
   padding: ${({ theme }) => theme.spacing.lg}px;
   display: flex;
   flex-direction: column;
@@ -44,9 +44,9 @@ const Trend = styled.span<{ $direction: string }>`
   font-size: 0.75rem;
   color: ${({ theme, $direction }) =>
     $direction === 'up'
-      ? theme.colors.green
+      ? theme.strong.olive
       : $direction === 'down'
-      ? theme.colors.red
+      ? theme.strong.mauve
       : theme.colors.textTertiary};
 `;
 

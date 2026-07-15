@@ -1,7 +1,8 @@
 import React, { useState, useCallback } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { media } from '../../styles/media';
+import { glassSurface } from '../../styles/glassSurface';
 import { useVerifiedEmails, useVerifiedEmailStats, useCreateVerifiedEmail, useDeleteVerifiedEmail } from '../../api/hooks';
 import { VerifiedEmailItem, verifiedEmailsApi } from '../../api/services';
 import SpriteAvatar from '../../components/SpriteAvatar';
@@ -51,10 +52,10 @@ const PlusIcon = () => (
 const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
 
 const PageCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: transparent;
+  border: none;
+  box-shadow: none;
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
   padding: 24px;
   display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
 `;
@@ -79,7 +80,7 @@ const SearchInput = styled.input`
   background: ${({ theme }) => theme.colors.surface}; color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 0.8125rem; width: 220px; outline: none; transition: border-color 0.15s;
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
-  &:focus { border-color: var(--primary, #0ea5e9); }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'ghost' }>`
@@ -88,8 +89,8 @@ const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'ghost' }>`
   font-size: 0.8125rem; font-weight: 500;
   cursor: pointer; border: 1px solid transparent; transition: all 0.15s;
   ${({ $variant, theme }) => {
-    if ($variant === 'primary') return `background: var(--primary, #0ea5e9); color: #fff; &:hover { opacity: 0.9; }`;
-    if ($variant === 'danger') return `background: transparent; color: ${theme.colors.red}; border-color: ${theme.colors.red}; &:hover { background: ${theme.colors.red}; color: #fff; }`;
+    if ($variant === 'primary') return `background: ${theme.colors.accent}; color: ${theme.colors.textInverted}; &:hover { opacity: 0.9; }`;
+    if ($variant === 'danger') return `background: transparent; color: ${theme.strong.mauve}; border-color: ${theme.strong.mauve}; &:hover { background: ${theme.strong.mauve}; color: ${theme.colors.textInverted}; }`;
     return `background: ${theme.colors.surface}; color: ${theme.colors.textSecondary}; border-color: ${theme.colors.border}; &:hover { background: ${theme.colors.surfaceMuted}; }`;
   }}
 `;
@@ -103,14 +104,11 @@ const StatCardsRow = styled.div`
   ${media.mobile} { grid-template-columns: repeat(2, 1fr); }
 `;
 
-const LunoStatCard = styled.div<{ $accent: string; $bg1: string; $bg2: string }>`
+const LunoStatCard = styled.div<{ $accent: string }>`
+  ${glassSurface}
   position: relative; overflow: hidden;
   border-radius: ${({ theme }) => theme.radii.card}px;
   border-left: 4px solid ${({ $accent }) => $accent};
-  background: ${({ theme, $bg1, $bg2 }) =>
-    theme.mode === 'dark'
-      ? theme.colors.surface
-      : `linear-gradient(135deg, ${$bg1}, ${$bg2})`};
   padding: 18px 20px 16px;
   transition: transform 0.18s, box-shadow 0.18s;
   &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
@@ -160,10 +158,8 @@ const WmStar = () => (
 /* ── Table ── */
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  ${glassSurface}
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
   overflow: hidden;
 `;
 
@@ -180,8 +176,8 @@ const Table = styled.table`
 
 const Badge = styled.span<{ $color?: string }>`
   display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.6875rem; font-weight: 600;
-  background: ${({ $color }) => $color ? `${$color}20` : '#0ea5e920'};
-  color: ${({ $color }) => $color || '#0ea5e9'};
+  background: ${({ $color, theme }) => $color ? `${$color}20` : `${theme.colors.accent}20`};
+  color: ${({ $color, theme }) => $color || theme.colors.accent};
 `;
 
 const NoData = styled.div`
@@ -191,12 +187,12 @@ const NoData = styled.div`
 
 const EmptyIllustration = () => (
   <svg width="120" height="100" viewBox="0 0 120 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="20" y="15" width="80" height="60" rx="8" fill="#e0f2fe" stroke="#93c5fd" strokeWidth="1.5"/>
-    <rect x="32" y="30" width="56" height="4" rx="2" fill="#93c5fd" opacity="0.6"/>
-    <rect x="32" y="40" width="40" height="4" rx="2" fill="#93c5fd" opacity="0.4"/>
-    <rect x="32" y="50" width="48" height="4" rx="2" fill="#93c5fd" opacity="0.3"/>
-    <circle cx="90" cy="72" r="20" fill="#dcfce7" stroke="#86efac" strokeWidth="1.5"/>
-    <path d="M82 72l5 5 10-10" stroke="#4ade80" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <rect x="20" y="15" width="80" height="60" rx="8" fill="#EFEAE3" stroke="#9E9E9E" strokeWidth="1.5"/>
+    <rect x="32" y="30" width="56" height="4" rx="2" fill="#9E9E9E" opacity="0.6"/>
+    <rect x="32" y="40" width="40" height="4" rx="2" fill="#9E9E9E" opacity="0.4"/>
+    <rect x="32" y="50" width="48" height="4" rx="2" fill="#9E9E9E" opacity="0.3"/>
+    <circle cx="90" cy="72" r="20" fill="#F5F2ED" stroke="#EFEAE3" strokeWidth="1.5"/>
+    <path d="M82 72l5 5 10-10" stroke="#9E9E9E" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
 );
 
@@ -214,8 +210,8 @@ const PaginationRow = styled.div`
 const PageBtn = styled.button<{ $active?: boolean }>`
   padding: 4px 10px; border-radius: ${({ theme }) => theme.radii.control}px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ $active }) => $active ? 'var(--primary, #0ea5e9)' : 'transparent'};
-  color: ${({ $active }) => $active ? '#fff' : 'inherit'};
+  background: ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.textInverted : 'inherit'};
   cursor: pointer; font-size: 0.75rem; margin: 0 2px;
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 `;
@@ -231,10 +227,9 @@ const Overlay = styled.div`
 `;
 
 const Modal = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface}
   border-radius: ${({ theme }) => theme.radii.card}px;
   padding: 24px; width: 400px; max-width: 90vw;
-  box-shadow: 0 12px 40px rgba(0,0,0,0.2);
 `;
 
 const ModalTitle = styled.h6`margin: 0 0 16px; font-size: 1rem; font-weight: 600; color: ${({ theme }) => theme.colors.textPrimary};`;
@@ -245,27 +240,28 @@ const Input = styled.input`
   width: 100%; padding: 8px 10px; border-radius: ${({ theme }) => theme.radii.control}px; font-size: 0.8125rem;
   border: 1px solid ${({ theme }) => theme.colors.border}; background: ${({ theme }) => theme.colors.canvas};
   color: ${({ theme }) => theme.colors.textPrimary}; outline: none; transition: border-color 0.15s;
-  &:focus { border-color: var(--primary, #0ea5e9); }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 const Textarea = styled.textarea`
   width: 100%; padding: 8px 10px; border-radius: ${({ theme }) => theme.radii.control}px; font-size: 0.8125rem; min-height: 60px; resize: vertical;
   border: 1px solid ${({ theme }) => theme.colors.border}; background: ${({ theme }) => theme.colors.canvas};
   color: ${({ theme }) => theme.colors.textPrimary}; outline: none; transition: border-color 0.15s;
-  &:focus { border-color: var(--primary, #0ea5e9); }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const ModalActions = styled.div`display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px;`;
 
 /* ── Component ── */
 
-const methodColors: Record<string, string> = {
-  auto_reply_count: '#10b981',
-  ai_check: '#0ea5e9',
-  manual: '#f59e0b',
-};
-
 const VerifiedEmailsPage: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
+
+  const methodColors: Record<string, string> = {
+    auto_reply_count: theme.strong.olive,
+    ai_check: theme.colors.accent,
+    manual: theme.strong.gold,
+  };
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [showAdd, setShowAdd] = useState(false);
@@ -320,25 +316,25 @@ const VerifiedEmailsPage: React.FC = () => {
 
       {/* Stats — same layout as Leads */}
       <StatCardsRow>
-        <LunoStatCard $accent="#0ea5e9" $bg1="#ecfeff" $bg2="#cffafe">
+        <LunoStatCard $accent={theme.colors.accent}>
           <StatLabel>{t('verifiedEmails.totalVerified')}</StatLabel>
-          <StatValueRow><StatNumber $color="#0ea5e9">{statTotal}</StatNumber><StatUnit>{t('verifiedEmails.unit')}</StatUnit></StatValueRow>
-          <StatWatermark $color="#0ea5e9"><WmShield /></StatWatermark>
+          <StatValueRow><StatNumber $color={theme.colors.accent}>{statTotal}</StatNumber><StatUnit>{t('verifiedEmails.unit')}</StatUnit></StatValueRow>
+          <StatWatermark $color={theme.colors.accent}><WmShield /></StatWatermark>
         </LunoStatCard>
-        <LunoStatCard $accent="#16a34a" $bg1="#f0fdf4" $bg2="#dcfce7">
+        <LunoStatCard $accent={theme.strong.olive}>
           <StatLabel>{t('verifiedEmails.active')}</StatLabel>
-          <StatValueRow><StatNumber $color="#16a34a">{statActive}</StatNumber><StatUnit>{t('verifiedEmails.unit')}</StatUnit></StatValueRow>
-          <StatWatermark $color="#16a34a"><WmHeart /></StatWatermark>
+          <StatValueRow><StatNumber $color={theme.strong.olive}>{statActive}</StatNumber><StatUnit>{t('verifiedEmails.unit')}</StatUnit></StatValueRow>
+          <StatWatermark $color={theme.strong.olive}><WmHeart /></StatWatermark>
         </LunoStatCard>
         {statByMethod.map((m: any, i: number) => {
           const palettes = [
-            { accent: '#f59e0b', bg1: '#fffbeb', bg2: '#fef3c7', Wm: WmMail },
-            { accent: '#8b5cf6', bg1: '#faf5ff', bg2: '#ede9fe', Wm: WmStar },
-            { accent: '#ec4899', bg1: '#fdf2f8', bg2: '#fce7f3', Wm: WmShield },
+            { accent: theme.strong.gold, Wm: WmMail },
+            { accent: theme.colors.accent, Wm: WmStar },
+            { accent: theme.strong.mauve, Wm: WmShield },
           ];
           const p = palettes[i % palettes.length];
           return (
-            <LunoStatCard key={m._id} $accent={p.accent} $bg1={p.bg1} $bg2={p.bg2}>
+            <LunoStatCard key={m._id} $accent={p.accent}>
               <StatLabel>{methodLabels[m._id] ?? m._id}</StatLabel>
               <StatValueRow><StatNumber $color={p.accent}>{m.count}</StatNumber><StatUnit>{t('verifiedEmails.unit')}</StatUnit></StatValueRow>
               <StatWatermark $color={p.accent}><p.Wm /></StatWatermark>
@@ -400,7 +396,7 @@ const VerifiedEmailsPage: React.FC = () => {
                       <td>{item.reply_count}</td>
                       <td>{item.match_count}</td>
                       <td>
-                        <Badge $color={item.status === 'active' ? '#10b981' : '#ef4444'}>
+                        <Badge $color={item.status === 'active' ? theme.strong.olive : theme.strong.mauve}>
                           {item.status === 'active' ? t('verifiedEmails.statusActive') : t('verifiedEmails.statusInactive')}
                         </Badge>
                       </td>

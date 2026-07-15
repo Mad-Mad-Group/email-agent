@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { media } from '../../styles/media';
+import { glassSurface } from '../../styles/glassSurface';
 import { useUsers } from '../../api/hooks';
 import { UserItem, usersApi } from '../../api/services';
 
@@ -48,10 +49,10 @@ const TeamIcon = () => (
 const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
 
 const PageCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: transparent;
+  border: none;
+  box-shadow: none;
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
   padding: 24px;
   display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
 `;
@@ -87,10 +88,8 @@ const StatLabel = styled.div`
 /* ── Card ── */
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  ${glassSurface}
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 
 const CardBody = styled.div`padding: ${({ theme }) => theme.spacing.md}px;`;
@@ -104,12 +103,8 @@ const StatsGrid = styled.div`
   ${media.mobile} { grid-template-columns: repeat(2, 1fr); }
 `;
 
-const StatCard2 = styled.div<{ $color: string; $bg1?: string; $bg2?: string }>`
-  background: ${({ theme, $bg1, $bg2 }) =>
-    theme.mode === 'dark'
-      ? theme.colors.surface
-      : `linear-gradient(135deg, ${$bg1 || '#f0fdf4'}, ${$bg2 || '#dcfce7'})`};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+const StatCard2 = styled.div<{ $color: string }>`
+  ${glassSurface}
   border-radius: ${({ theme }) => theme.radii.card}px;
   border-left: 4px solid ${({ $color }) => $color};
   padding: 20px;
@@ -162,8 +157,8 @@ const Tab = styled.button<{ $active?: boolean; $color?: string }>`
   border: none;
   background: transparent;
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-  color: ${({ $active, $color, theme }) => $active ? ($color || theme.colors.blue) : theme.colors.textTertiary};
-  border-bottom: 2px solid ${({ $active, $color, theme }) => $active ? ($color || theme.colors.blue) : 'transparent'};
+  color: ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) : theme.colors.textTertiary};
+  border-bottom: 2px solid ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) : 'transparent'};
   margin-bottom: -1px; white-space: nowrap;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
   &:hover { color: ${({ theme }) => theme.colors.textPrimary}; background: rgba(0,0,0,0.02); }
@@ -176,9 +171,9 @@ const TabCount = styled.span<{ $active?: boolean }>`
   border-radius: 9px; margin-left: 6px;
   font-size: 0.625rem; font-weight: 600;
   background: ${({ $active, theme }) => $active
-    ? theme.colors.blue
+    ? theme.colors.accent
     : theme.colors.surfaceMuted};
-  color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textTertiary};
+  color: ${({ $active, theme }) => $active ? theme.colors.textInverted : theme.colors.textTertiary};
 `;
 
 /* ── Table ── */
@@ -211,9 +206,7 @@ const TRow = styled.tr<{ $even?: boolean }>`
     ? theme.colors.surfaceMuted
     : theme.colors.surface};
   transition: background 0.15s;
-  &:hover {
-    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.04)' : '#ecfeff'};
-  }
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
   td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
   cursor: pointer;
 `;
@@ -237,11 +230,7 @@ const UserName = styled.span`
 
 /* ── Role badge ── */
 
-const ROLE_COLORS: Record<string, { bg: string; fg: string; avatar: string }> = {
-  admin:   { bg: '#0369a118', fg: '#0369a1', avatar: '#a7f3d0' },
-  manager: { bg: '#d9770618', fg: '#d97706', avatar: '#c4b5fd' },
-  user:    { bg: '#0ea5e918', fg: '#0ea5e9', avatar: '#a7f3d0' },
-};
+/* ROLE_COLORS is now built inside the component via useTheme() */
 
 const RoleBadge = styled.span<{ $bg: string; $fg: string }>`
   display: inline-block; padding: 2px 10px; border-radius: 99px;
@@ -279,16 +268,16 @@ const EmptyCell = styled.td`
 
 const EmptyTeamIllustration = () => (
   <svg width="120" height="90" viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="60" cy="30" r="16" fill="#e0f2fe" stroke="#93c5fd" strokeWidth="1.5"/>
-    <circle cx="60" cy="26" r="6" fill="#93c5fd" opacity="0.7"/>
-    <path d="M48 42c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="#93c5fd" strokeWidth="1.5" fill="#e0f2fe"/>
-    <circle cx="32" cy="38" r="10" fill="#f0f9ff" stroke="#bfdbfe" strokeWidth="1"/>
-    <circle cx="32" cy="35" r="4" fill="#bfdbfe" opacity="0.6"/>
-    <path d="M24 46c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#bfdbfe" strokeWidth="1" fill="#f0f9ff"/>
-    <circle cx="88" cy="38" r="10" fill="#f0f9ff" stroke="#bfdbfe" strokeWidth="1"/>
-    <circle cx="88" cy="35" r="4" fill="#bfdbfe" opacity="0.6"/>
-    <path d="M80 46c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#bfdbfe" strokeWidth="1" fill="#f0f9ff"/>
-    <text x="60" y="72" textAnchor="middle" fontFamily="sans-serif" fontSize="10" fill="#94a3b8">Team</text>
+    <circle cx="60" cy="30" r="16" fill="#EFEAE3" stroke="#9E9E9E" strokeWidth="1.5"/>
+    <circle cx="60" cy="26" r="6" fill="#9E9E9E" opacity="0.7"/>
+    <path d="M48 42c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="#9E9E9E" strokeWidth="1.5" fill="#EFEAE3"/>
+    <circle cx="32" cy="38" r="10" fill="#F5F2ED" stroke="#EFEAE3" strokeWidth="1"/>
+    <circle cx="32" cy="35" r="4" fill="#EFEAE3" opacity="0.6"/>
+    <path d="M24 46c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#EFEAE3" strokeWidth="1" fill="#F5F2ED"/>
+    <circle cx="88" cy="38" r="10" fill="#F5F2ED" stroke="#EFEAE3" strokeWidth="1"/>
+    <circle cx="88" cy="35" r="4" fill="#EFEAE3" opacity="0.6"/>
+    <path d="M80 46c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#EFEAE3" strokeWidth="1" fill="#F5F2ED"/>
+    <text x="60" y="72" textAnchor="middle" fontFamily="sans-serif" fontSize="10" fill="#9E9E9E">Team</text>
   </svg>
 );
 
@@ -322,6 +311,7 @@ const DpOverlay = styled.div`
 `;
 
 const DpPanel = styled.div`
+  ${glassSurface}
   position: fixed;
   top: 50%;
   left: 50%;
@@ -331,9 +321,7 @@ const DpPanel = styled.div`
   max-width: 95vw;
   max-height: 90vh;
   overflow-y: auto;
-  background: ${({ theme }) => theme.colors.surface};
   border-radius: 14px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
   animation: ${dpFadeIn} 0.2s ease-out;
   ${media.mobile} { width: 95%; }
 `;
@@ -370,11 +358,11 @@ const DpCloseBtn = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   flex-shrink: 0;
   transition: all 0.15s;
   &:hover {
-    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(14,165,233,0.15)' : 'rgba(14,165,233,0.08)'};
+    background: ${({ theme }) => `${theme.colors.accent}15`};
   }
 `;
 
@@ -434,9 +422,9 @@ const DpPermBadge = styled.span<{ $active?: boolean }>`
   border-radius: 99px;
   font-size: 0.75rem;
   font-weight: 500;
-  background: ${({ $active, theme }) => $active ? `${theme.colors.blue}18` : 'transparent'};
-  color: ${({ $active, theme }) => $active ? theme.colors.blue : theme.colors.textTertiary};
-  border: 1px solid ${({ $active, theme }) => $active ? `${theme.colors.blue}40` : theme.colors.border};
+  background: ${({ $active, theme }) => $active ? `${theme.colors.accent}18` : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.textTertiary};
+  border: 1px solid ${({ $active, theme }) => $active ? `${theme.colors.accent}40` : theme.colors.border};
 `;
 
 const DpFooter = styled.div`
@@ -463,11 +451,11 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   white-space: nowrap;
   transition: opacity 0.15s;
   background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? theme.colors.red :
-    $variant === 'primary' ? theme.colors.blue : theme.colors.surfaceMuted};
-  color: ${({ $variant }) =>
-    $variant === 'danger' ? '#fff' :
-    $variant === 'primary' ? '#fff' : 'inherit'};
+    $variant === 'danger' ? theme.strong.mauve :
+    $variant === 'primary' ? theme.colors.accent : theme.colors.surfaceMuted};
+  color: ${({ $variant, theme }) =>
+    $variant === 'danger' ? theme.colors.textInverted :
+    $variant === 'primary' ? theme.colors.textInverted : 'inherit'};
   &:hover { opacity: 0.85; }
 `;
 
@@ -481,7 +469,7 @@ const DpInput = styled.input`
   color: ${({ theme }) => theme.colors.textPrimary};
   background: ${({ theme }) => theme.colors.canvas};
   outline: none;
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const DpSelect = styled.select`
@@ -492,7 +480,7 @@ const DpSelect = styled.select`
   color: ${({ theme }) => theme.colors.textPrimary};
   background: ${({ theme }) => theme.colors.canvas};
   outline: none;
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 /* ── Helpers ── */
@@ -504,10 +492,7 @@ function formatDate(iso?: string): string {
   } catch { return iso; }
 }
 
-function roleProps(role: string) {
-  const lower = role.toLowerCase();
-  return ROLE_COLORS[lower] ?? { bg: '#0a140d18', fg: '#0a140d', avatar: '#bbf7d0' };
-}
+/* roleProps is now built inside the component via useTheme() */
 
 function getInitials(name: string): string {
   return name
@@ -559,9 +544,21 @@ type RoleFilter = 'all' | 'admin' | 'manager' | 'user';
 
 const Users: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const queryClient = useQueryClient();
   const { data, isLoading } = useUsers();
   const users: UserItem[] = (data as any)?.users ?? (Array.isArray(data) ? data : []);
+
+  const ROLE_COLORS: Record<string, { bg: string; fg: string; avatar: string }> = {
+    admin:   { bg: `${theme.colors.accent}18`, fg: theme.colors.accent, avatar: theme.colors.surfaceMuted },
+    manager: { bg: `${theme.strong.gold}18`, fg: theme.strong.gold, avatar: theme.colors.surfaceMuted },
+    user:    { bg: `${theme.colors.accent}18`, fg: theme.colors.accent, avatar: theme.colors.surfaceMuted },
+  };
+
+  const roleProps = (role: string) => {
+    const lower = role.toLowerCase();
+    return ROLE_COLORS[lower] ?? { bg: `${theme.colors.textTertiary}18`, fg: theme.colors.textTertiary, avatar: theme.colors.surfaceMuted };
+  };
 
   const [activeTab, setActiveTab] = useState<RoleFilter>('all');
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
@@ -589,11 +586,11 @@ const Users: React.FC = () => {
   }, [selectedUser, editForm, updateUser]);
 
   const translatedTabs = useMemo(() => [
-    { key: 'all' as RoleFilter, label: t('users.allUsers'), color: '#0ea5e9' },
-    { key: 'admin' as RoleFilter, label: t('users.admins'), color: '#0369a1' },
-    { key: 'manager' as RoleFilter, label: t('users.managers'), color: '#d97706' },
-    { key: 'user' as RoleFilter, label: t('users.users'), color: '#22c55e' },
-  ], [t]);
+    { key: 'all' as RoleFilter, label: t('users.allUsers'), color: theme.colors.accent },
+    { key: 'admin' as RoleFilter, label: t('users.admins'), color: theme.colors.accent },
+    { key: 'manager' as RoleFilter, label: t('users.managers'), color: theme.strong.gold },
+    { key: 'user' as RoleFilter, label: t('users.users'), color: theme.strong.olive },
+  ], [t, theme]);
 
   /* Filtered list based on active tab */
   const filtered = useMemo(() => {
@@ -614,31 +611,31 @@ const Users: React.FC = () => {
       <PageCard>
       <div><PageTitle>{t('users.title')}</PageTitle><PageSub>{t('users.subtitle')}</PageSub></div>
       <StatsGrid>
-        <StatCard2 $color="#0ea5e9" $bg1="#ecfeff" $bg2="#cffafe">
-          <StatCardIcon $color="#0ea5e9"><TabIconAll /></StatCardIcon>
+        <StatCard2 $color={theme.colors.accent}>
+          <StatCardIcon $color={theme.colors.accent}><TabIconAll /></StatCardIcon>
           <StatCardInfo>
-            <StatCardValue $color="#0ea5e9">{roleCounts.all}</StatCardValue>
+            <StatCardValue $color={theme.colors.accent}>{roleCounts.all}</StatCardValue>
             <StatCardLabel>{t('users.allUsers')}</StatCardLabel>
           </StatCardInfo>
         </StatCard2>
-        <StatCard2 $color="#0369a1" $bg1="#f0fdf4" $bg2="#dcfce7">
-          <StatCardIcon $color="#0369a1"><TabIconAdmin /></StatCardIcon>
+        <StatCard2 $color={theme.colors.accent}>
+          <StatCardIcon $color={theme.colors.accent}><TabIconAdmin /></StatCardIcon>
           <StatCardInfo>
-            <StatCardValue $color="#0369a1">{roleCounts.admin}</StatCardValue>
+            <StatCardValue $color={theme.colors.accent}>{roleCounts.admin}</StatCardValue>
             <StatCardLabel>{t('users.admins')}</StatCardLabel>
           </StatCardInfo>
         </StatCard2>
-        <StatCard2 $color="#d97706" $bg1="#fffbeb" $bg2="#fef3c7">
-          <StatCardIcon $color="#d97706"><TabIconManager /></StatCardIcon>
+        <StatCard2 $color={theme.strong.gold}>
+          <StatCardIcon $color={theme.strong.gold}><TabIconManager /></StatCardIcon>
           <StatCardInfo>
-            <StatCardValue $color="#d97706">{roleCounts.manager}</StatCardValue>
+            <StatCardValue $color={theme.strong.gold}>{roleCounts.manager}</StatCardValue>
             <StatCardLabel>{t('users.managers')}</StatCardLabel>
           </StatCardInfo>
         </StatCard2>
-        <StatCard2 $color="#22c55e" $bg1="#faf5ff" $bg2="#ede9fe">
-          <StatCardIcon $color="#22c55e"><TabIconUser /></StatCardIcon>
+        <StatCard2 $color={theme.strong.olive}>
+          <StatCardIcon $color={theme.strong.olive}><TabIconUser /></StatCardIcon>
           <StatCardInfo>
-            <StatCardValue $color="#22c55e">{roleCounts.user}</StatCardValue>
+            <StatCardValue $color={theme.strong.olive}>{roleCounts.user}</StatCardValue>
             <StatCardLabel>{t('users.users')}</StatCardLabel>
           </StatCardInfo>
         </StatCard2>

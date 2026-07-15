@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { glassSurface } from '../../styles/glassSurface';
 import { Button, FormField } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -14,12 +15,11 @@ const LoginContainer = styled.div`
 `;
 
 const LoginCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface};
   border-radius: 12px;
   padding: 40px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 `;
 
 const Logo = styled.div`
@@ -27,7 +27,7 @@ const Logo = styled.div`
   margin-bottom: 8px;
   font-size: 32px;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
 `;
 
 const Title = styled.h1`
@@ -46,7 +46,7 @@ const Form = styled.form`
 
 const ForgotLink = styled(Link)`
   font-size: 13px;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   text-decoration: none;
   text-align: right;
   display: block;
@@ -65,7 +65,7 @@ const Footer = styled.div`
 `;
 
 const FooterLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   text-decoration: none;
   font-weight: 500;
 
@@ -75,7 +75,7 @@ const FooterLink = styled(Link)`
 `;
 
 const ErrorMsg = styled.div`
-  color: ${({ theme }) => theme.colors.red};
+  color: ${({ theme }) => theme.strong.mauve};
   font-size: 0.8125rem;
   text-align: center;
 `;
