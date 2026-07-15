@@ -107,6 +107,7 @@ const REPLY_CATEGORY_STYLE: Record<string, { bg: string; fg: string }> = {
   meeting:        { bg: '#cffafe', fg: '#0ea5e9' },
   auto_reply:     { bg: '#f3f4f6', fg: '#6b7280' },
   question:       { bg: '#fef3c7', fg: '#d97706' },
+<<<<<<< Updated upstream
 };
 
 const REPLY_CATEGORY_I18N_KEY: Record<string, string> = {
@@ -115,6 +116,8 @@ const REPLY_CATEGORY_I18N_KEY: Record<string, string> = {
   meeting:        'emailQueue.replyCategoryMeeting',
   auto_reply:     'emailQueue.replyCategoryAutoReply',
   question:       'emailQueue.replyCategoryQuestion',
+=======
+>>>>>>> Stashed changes
 };
 
 /* ══════════════════════════════════════
@@ -1083,9 +1086,13 @@ const EmailQueue: React.FC = () => {
   const [leadReply, setLeadReply] = useState<Lead | null>(null);
   const [replyChecking, setReplyChecking] = useState(false);
   const [replyCheckMsg, setReplyCheckMsg] = useState('');
+  const [replyCheckError, setReplyCheckError] = useState(false);
   const [followupChecking, setFollowupChecking] = useState(false);
   const [followupCheckMsg, setFollowupCheckMsg] = useState('');
+<<<<<<< Updated upstream
   const [replyCheckError, setReplyCheckError] = useState(false);
+=======
+>>>>>>> Stashed changes
   const [followupCheckError, setFollowupCheckError] = useState(false);
 
   const handleCheckReplies = async () => {
@@ -1094,11 +1101,20 @@ const EmailQueue: React.FC = () => {
     setReplyCheckError(false);
     try {
       await client.post('/jobs/check-replies/run');
+<<<<<<< Updated upstream
       setReplyCheckMsg(t('emailQueue.replyCheckDispatched'));
       setTimeout(() => setReplyCheckMsg(''), 4000);
     } catch (err: any) {
       setReplyCheckError(true);
       setReplyCheckMsg(t('emailQueue.triggerFailed', { message: err?.message || t('emailQueue.unknownError') }));
+=======
+      setReplyCheckError(false);
+      setReplyCheckMsg(t('email.dispatchedReplyCheck'));
+      setTimeout(() => setReplyCheckMsg(''), 4000);
+    } catch (err: any) {
+      setReplyCheckError(true);
+      setReplyCheckMsg(t('email.dispatchFailed') + (err?.message || t('leads.unknownError')));
+>>>>>>> Stashed changes
       setTimeout(() => setReplyCheckMsg(''), 5000);
     } finally {
       setReplyChecking(false);
@@ -1111,11 +1127,20 @@ const EmailQueue: React.FC = () => {
     setFollowupCheckError(false);
     try {
       await client.post('/jobs/check-followups/run');
+<<<<<<< Updated upstream
       setFollowupCheckMsg(t('emailQueue.followupCheckDispatched'));
       setTimeout(() => setFollowupCheckMsg(''), 4000);
     } catch (err: any) {
       setFollowupCheckError(true);
       setFollowupCheckMsg(t('emailQueue.triggerFailed', { message: err?.message || t('emailQueue.unknownError') }));
+=======
+      setFollowupCheckError(false);
+      setFollowupCheckMsg(t('email.dispatchedFollowupCheck'));
+      setTimeout(() => setFollowupCheckMsg(''), 4000);
+    } catch (err: any) {
+      setFollowupCheckError(true);
+      setFollowupCheckMsg(t('email.dispatchFailed') + (err?.message || t('leads.unknownError')));
+>>>>>>> Stashed changes
       setTimeout(() => setFollowupCheckMsg(''), 5000);
     } finally {
       setFollowupChecking(false);
@@ -1317,7 +1342,11 @@ const EmailQueue: React.FC = () => {
               if (e.target.checked) selectAll(visibleIds);
               else deselectAll();
             }}
+<<<<<<< Updated upstream
             aria-label={t('emailQueue.selectAllLabel')}
+=======
+            aria-label={t('leads.selectAll')}
+>>>>>>> Stashed changes
           />
           <ToolbarTitle>{t('emailQueue.outbox')}</ToolbarTitle>
           <DetailToolbarBtn
@@ -1327,7 +1356,11 @@ const EmailQueue: React.FC = () => {
             style={{ marginLeft: 8 }}
           >
             <I d={icons.envelope} />
+<<<<<<< Updated upstream
             {replyChecking ? t('emailQueue.checking') : t('emailQueue.checkReplies')}
+=======
+            {replyChecking ? t('email.checking') : t('email.checkReplies')}
+>>>>>>> Stashed changes
           </DetailToolbarBtn>
           <DetailToolbarBtn
             $color="#d97706"
@@ -1336,7 +1369,11 @@ const EmailQueue: React.FC = () => {
             style={{ marginLeft: 4 }}
           >
             <I d={icons.clock} />
+<<<<<<< Updated upstream
             {followupChecking ? t('emailQueue.checking') : t('emailQueue.checkFollowups')}
+=======
+            {followupChecking ? t('email.checking') : t('email.checkFollowups')}
+>>>>>>> Stashed changes
           </DetailToolbarBtn>
         </ToolbarLeft>
         <ToolbarRight>
@@ -1419,7 +1456,11 @@ const EmailQueue: React.FC = () => {
                   $color="#0ea5e9"
                   onClick={handleBulkSend}
                   disabled={bulkSend.isPending || statusFilter !== 'approved'}
+<<<<<<< Updated upstream
                   title={statusFilter !== 'approved' ? t('emailQueue.bulkSendDisabledTip') : ''}
+=======
+                  title={statusFilter !== 'approved' ? t('leads.sendOnlyApproved') : ''}
+>>>>>>> Stashed changes
                 >
                   {t('emailQueue.bulkSend', { count: selectedIds.size })}
                 </BulkBtn>
@@ -1451,7 +1492,11 @@ const EmailQueue: React.FC = () => {
                   <SubjectLine>{item.subject || t('emailQueue.noSubject')}</SubjectLine>
                   <Preview>{(item.body || '').replace(/<[^>]*>/g, ' ').trim()}</Preview>
                 </EmailContent>
+<<<<<<< Updated upstream
                 <StatusBadge $status={status}>{t(`emailQueue.${status}` as any) || status}</StatusBadge>
+=======
+                <StatusBadge $status={status}>{t(`email.status.${status}`)}</StatusBadge>
+>>>>>>> Stashed changes
                 <DateCell>{formatDate(item.created_at)}</DateCell>
 
                 {/* Hover action buttons */}
@@ -1588,7 +1633,11 @@ const EmailQueue: React.FC = () => {
                 {item.to_email && <DetailSenderEmail>&lt;{item.to_email}&gt;</DetailSenderEmail>}
               </DetailSenderInfo>
               <DetailDateRight>
+<<<<<<< Updated upstream
                 <StatusBadge $status={status}>{t(`emailQueue.${status}` as any) || status}</StatusBadge>
+=======
+                <StatusBadge $status={status}>{t(`email.status.${status}`)}</StatusBadge>
+>>>>>>> Stashed changes
                 <span>{formatDateFull(item.created_at)}</span>
               </DetailDateRight>
             </DetailSenderRow>
@@ -1604,9 +1653,14 @@ const EmailQueue: React.FC = () => {
 
             {/* Lead Reply Section */}
             {leadReply && (() => {
+<<<<<<< Updated upstream
               const catStyle = REPLY_CATEGORY_STYLE[leadReply._reply_category || ''] || { bg: '#e0e7ff', fg: '#4338ca' };
               const catKey = REPLY_CATEGORY_I18N_KEY[leadReply._reply_category || ''];
               const catText = catKey ? t(catKey) : (leadReply._reply_category || t('emailQueue.replyCategoryDefault'));
+=======
+              const style = REPLY_CATEGORY_STYLE[leadReply._reply_category || ''] || { bg: '#e0e7ff', fg: '#4338ca' };
+              const cat = { text: t(`email.replyCategory.${leadReply._reply_category || 'replied'}`, { defaultValue: leadReply._reply_category || t('email.replyCategory.replied') }), ...style };
+>>>>>>> Stashed changes
               return (
                 <ReplySection>
                   <ReplySectionHeader>
@@ -1670,7 +1724,11 @@ const EmailQueue: React.FC = () => {
               <span>{t('emailQueue.from')}: {import.meta.env.VITE_SMTP_FROM || '—'}</span>
               <span>{t('emailQueue.to')}: {item.to_email || import.meta.env.VITE_TEST_RECIPIENT || '—'}</span>
               <span>
+<<<<<<< Updated upstream
                 {t('emailQueue.status')} <StatusBadge $status={status}>{t(`emailQueue.${status}` as any) || status}</StatusBadge>
+=======
+                {t('emailQueue.status')} <StatusBadge $status={status}>{t(`email.status.${status}`)}</StatusBadge>
+>>>>>>> Stashed changes
               </span>
               {item.error?.rejected_reason && <span>{t('emailQueue.reason')} {item.error?.rejected_reason}</span>}
               {item.lead_id && <span>{t('emailQueue.lead')} {item.lead_id}</span>}

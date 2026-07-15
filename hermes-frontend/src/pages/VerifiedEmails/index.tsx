@@ -401,7 +401,11 @@ const VerifiedEmailsPage: React.FC = () => {
                       <td>{item.match_count}</td>
                       <td>
                         <Badge $color={item.status === 'active' ? '#10b981' : '#ef4444'}>
+<<<<<<< Updated upstream
                           {item.status === 'active' ? t('verifiedEmails.statusActive') : t('verifiedEmails.statusInactive')}
+=======
+                          {item.status === 'active' ? t('verifiedEmails.active') : item.status}
+>>>>>>> Stashed changes
                         </Badge>
                       </td>
                       <td style={{ fontSize: '0.75rem', opacity: 0.7 }}>

@@ -782,7 +782,6 @@ const StatusBadge = styled.span<{ $status?: string }>`
   border-radius: 99px;
   font-size: 0.8125rem;
   font-weight: 600;
-  text-transform: capitalize;
   ${({ $status, theme }) => {
     const s = theme.status as Record<string, { bg: string; fg: string }>;
     const entry = s[$status ?? 'new'] ?? s.new;
@@ -873,9 +872,15 @@ const EmptyLeadsIllustration = () => (
 /* ── Date Group Header ── */
 
 const GROUP_COLORS: Record<string, { bg: string; bgDark: string; fg: string; fgDark: string }> = {
+<<<<<<< Updated upstream
   today:  { bg: '#cffafe', bgDark: '#083344', fg: '#0ea5e9', fgDark: '#67e8f9' },
   yesterday:  { bg: '#fef3c7', bgDark: '#422006', fg: '#b45309', fgDark: '#fcd34d' },
   earlier: { bg: '#f1f5f9', bgDark: '#1e293b', fg: '#64748b', fgDark: '#94a3b8' },
+=======
+  'today':  { bg: '#cffafe', bgDark: '#083344', fg: '#0ea5e9', fgDark: '#67e8f9' },
+  'yesterday':  { bg: '#fef3c7', bgDark: '#422006', fg: '#b45309', fgDark: '#fcd34d' },
+  'earlier': { bg: '#f1f5f9', bgDark: '#1e293b', fg: '#64748b', fgDark: '#94a3b8' },
+>>>>>>> Stashed changes
 };
 
 const GroupBar = styled.tr<{ $group: string; $dark?: boolean }>`
@@ -1909,7 +1914,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
           <EmailCard key={d._id}>
             <EmailCardHead>
               {typeTag && <ReplyBadge $bg={typeTag.bg} $fg={typeTag.fg}>{typeTag.text}</ReplyBadge>}
-              <ReplyBadge $bg={statusColor.bg} $fg={statusColor.fg}>{d.status || 'pending'}</ReplyBadge>
+              <ReplyBadge $bg={statusColor.bg} $fg={statusColor.fg}>{t(`email.status.${d.status || 'pending'}`)}</ReplyBadge>
               <EmailCardDate>
                 {d.created_at ? new Date(d.created_at).toLocaleString(getDateLocale(), { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : ''}
               </EmailCardDate>
@@ -2101,10 +2106,12 @@ const Leads: React.FC = () => {
   });
   const [replyChecking, setReplyChecking] = useState(false);
   const [replyCheckMsg, setReplyCheckMsg] = useState('');
+  const [replyCheckError, setReplyCheckError] = useState(false);
   const [autoCheckReplies, setAutoCheckReplies] = useState(false);
   const autoCheckRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [followupChecking, setFollowupChecking] = useState(false);
   const [followupCheckMsg, setFollowupCheckMsg] = useState('');
+  const [followupCheckError, setFollowupCheckError] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
 
@@ -2138,10 +2145,19 @@ const Leads: React.FC = () => {
     setReplyChecking(true); setReplyCheckMsg('');
     try {
       await client.post('/jobs/check-replies/run');
+<<<<<<< Updated upstream
       setReplyCheckMsg(t('leads.checkReplyDispatched'));
       setTimeout(() => setReplyCheckMsg(''), 4000);
     } catch (err: any) {
       setReplyCheckMsg(t('leads.triggerFailed') + (err?.message || ''));
+=======
+      setReplyCheckError(false);
+      setReplyCheckMsg(t('leads.dispatchedReplyCheck'));
+      setTimeout(() => setReplyCheckMsg(''), 4000);
+    } catch (err: any) {
+      setReplyCheckError(true);
+      setReplyCheckMsg(t('leads.dispatchFailed') + (err?.message || t('leads.unknownError')));
+>>>>>>> Stashed changes
       setTimeout(() => setReplyCheckMsg(''), 5000);
     } finally { setReplyChecking(false); }
   };
@@ -2150,10 +2166,19 @@ const Leads: React.FC = () => {
     setFollowupChecking(true); setFollowupCheckMsg('');
     try {
       await client.post('/jobs/check-followups/run');
+<<<<<<< Updated upstream
       setFollowupCheckMsg(t('leads.checkFollowupDispatched'));
       setTimeout(() => setFollowupCheckMsg(''), 4000);
     } catch (err: any) {
       setFollowupCheckMsg(t('leads.triggerFailed') + (err?.message || ''));
+=======
+      setFollowupCheckError(false);
+      setFollowupCheckMsg(t('leads.dispatchedFollowupCheck'));
+      setTimeout(() => setFollowupCheckMsg(''), 4000);
+    } catch (err: any) {
+      setFollowupCheckError(true);
+      setFollowupCheckMsg(t('leads.dispatchFailed') + (err?.message || t('leads.unknownError')));
+>>>>>>> Stashed changes
       setTimeout(() => setFollowupCheckMsg(''), 5000);
     } finally { setFollowupChecking(false); }
   };
@@ -2190,11 +2215,21 @@ const Leads: React.FC = () => {
     setClearMsg('');
     clearAllLeads.mutate(undefined, {
       onSuccess: (data) => {
+<<<<<<< Updated upstream
         setClearMsg(t('leads.clearedLeads', { count: data?.deleted ?? 0 }));
         setTimeout(() => setClearMsg(''), 4000);
       },
       onError: (err: any) => {
         setClearMsg(t('leads.clearFailed') + (err?.message || ''));
+=======
+        setClearError(false);
+        setClearMsg(`已清空 ${data?.deleted ?? 0} 筆 leads`);
+        setTimeout(() => setClearMsg(''), 4000);
+      },
+      onError: (err: any) => {
+        setClearError(true);
+        setClearMsg(t('leads.clearFailed') + (err?.message || t('leads.unknownError')));
+>>>>>>> Stashed changes
         setTimeout(() => setClearMsg(''), 5000);
       },
     });
@@ -2233,6 +2268,7 @@ const Leads: React.FC = () => {
   }, [usersData]);
 
   const [clearMsg, setClearMsg] = useState('');
+  const [clearError, setClearError] = useState(false);
   const [oldWebsiteOnly, setOldWebsiteOnly] = useState(false);
   const [sortByTech, setSortByTech] = useState(false);
 
@@ -2370,7 +2406,11 @@ const Leads: React.FC = () => {
         <div><PageTitle>{t('leads.title')}</PageTitle><PageSub>{t('leads.subtitle')}</PageSub></div>
         <HeaderSection>
           <StatCardsRow>
+<<<<<<< Updated upstream
             <StatCard $accent="#0ea5e9" $bg1="#ecfeff" $bg2="#cffafe">
+=======
+            <StatCard $accent="#64748b">
+>>>>>>> Stashed changes
               <StatCardLabel>{t('leads.totalLeads')}</StatCardLabel>
               <StatCardValue>
                 <StatCardNumber $color="#0ea5e9">{stats.total}</StatCardNumber>
@@ -2429,9 +2469,15 @@ const Leads: React.FC = () => {
           </HeaderTop>
           {(replyCheckMsg || followupCheckMsg || clearMsg) && (
             <HeaderFeedback>
+<<<<<<< Updated upstream
               {replyCheckMsg && <FeedbackMsg key={replyCheckMsg} $error={replyCheckMsg.startsWith(t('leads.triggerFailed'))}>{replyCheckMsg}</FeedbackMsg>}
               {followupCheckMsg && <FeedbackMsg key={followupCheckMsg} $error={followupCheckMsg.startsWith(t('leads.triggerFailed'))}>{followupCheckMsg}</FeedbackMsg>}
               {clearMsg && <FeedbackMsg key={clearMsg} $error={clearMsg.startsWith(t('leads.clearFailed'))}>{clearMsg}</FeedbackMsg>}
+=======
+              {replyCheckMsg && <FeedbackMsg key={replyCheckMsg} $error={replyCheckError}>{replyCheckMsg}</FeedbackMsg>}
+              {followupCheckMsg && <FeedbackMsg key={followupCheckMsg} $error={followupCheckError}>{followupCheckMsg}</FeedbackMsg>}
+              {clearMsg && <FeedbackMsg key={clearMsg} $error={clearError}>{clearMsg}</FeedbackMsg>}
+>>>>>>> Stashed changes
             </HeaderFeedback>
           )}
         </HeaderSection>
@@ -2490,7 +2536,11 @@ const Leads: React.FC = () => {
               whiteSpace: 'nowrap',
             }}
           >
+<<<<<<< Updated upstream
             {oldWebsiteOnly ? t('leads.filterOldWebsiteOff') : t('leads.filterOldWebsiteOn')}
+=======
+            {oldWebsiteOnly ? `✕ ${t('leads.hideOldWebsite')}` : `🔍 ${t('leads.showOldWebsite')}`}
+>>>>>>> Stashed changes
           </button>
           <button
             onClick={() => { setSortByTech(v => !v); setPage(1); }}
@@ -2506,7 +2556,11 @@ const Leads: React.FC = () => {
               whiteSpace: 'nowrap',
             }}
           >
+<<<<<<< Updated upstream
             {sortByTech ? t('leads.filterSortTechOff') : t('leads.filterSortTechOn')}
+=======
+            {sortByTech ? `✕ ${t('leads.sortByTechOn')}` : `↓ ${t('leads.sortByTechOff')}`}
+>>>>>>> Stashed changes
           </button>
         </SubPillRow>
           <TableWrap>
@@ -2544,7 +2598,11 @@ const Leads: React.FC = () => {
                             fontSize: 13,
                           }}
                         >
+<<<<<<< Updated upstream
                           {t('leads.retry')}
+=======
+                          {t('common.retry')}
+>>>>>>> Stashed changes
                         </button>
                       </div>
                     </EmptyCell>
@@ -2574,14 +2632,18 @@ const Leads: React.FC = () => {
                                   $collapsed={isCollapsed}
                                   onClick={() => setCollapsedGroups(prev => ({ ...prev, [group]: !prev[group] }))}
                                 >
+<<<<<<< Updated upstream
                                   {group === 'today' ? t('leads.groupToday') : group === 'yesterday' ? t('leads.groupYesterday') : t('leads.groupEarlier')}
+=======
+                                  {t(`leads.${group}`)}
+>>>>>>> Stashed changes
                                 </GroupBarInner>
                               </td>
                             </GroupBar>
                           )}
                           <TRow $even={i % 2 === 1} $collapsed={isCollapsed} style={{ cursor: isCollapsed ? 'default' : 'pointer' }} onClick={() => !isCollapsed && setSelectedLead(lead)}>
                         <td>
-                          <StatusBadge $status={lead.status ?? 'new'}>{lead.status ?? 'new'}</StatusBadge>
+                          <StatusBadge $status={lead.status ?? 'new'}>{t(`leads.${lead.status ?? 'new'}`)}</StatusBadge>
                         </td>
                         <td>
                           <NameCell>
@@ -2615,7 +2677,11 @@ const Leads: React.FC = () => {
                           {(lead as any)._tech_score != null ? (() => {
                             const s = (lead as any)._tech_score as number;
                             const bg = s >= 50 ? '#dc2626' : s >= 25 ? '#f59e0b' : '#22c55e';
+<<<<<<< Updated upstream
                             const label = s >= 50 ? t('leads.techOld') : s >= 25 ? t('leads.techNormal') : t('leads.techNew');
+=======
+                            const label = s >= 50 ? t('leads.techOld') : s >= 25 ? t('leads.techFair') : t('leads.techNew');
+>>>>>>> Stashed changes
                             return (
                               <span style={{
                                 display: 'inline-block',
@@ -2633,8 +2699,12 @@ const Leads: React.FC = () => {
                         </td>
                         <td>{(() => {
                           const g = getDateGroup(lead._imported_at);
+<<<<<<< Updated upstream
                           if (g === 'today') return t('leads.groupToday');
                           if (g === 'yesterday') return t('leads.groupYesterday');
+=======
+                          if (g === 'today' || g === 'yesterday') return t(`leads.${g}`);
+>>>>>>> Stashed changes
                           return lead._imported_at ? new Date(lead._imported_at).toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—';
                         })()}</td>
                         <td>
@@ -2796,7 +2866,7 @@ const Leads: React.FC = () => {
               letterSpacing: '0.05em',
               textTransform: 'uppercase',
               backdropFilter: 'blur(4px)',
-            }}>{selectedLead.status ?? 'new'}</span>
+            }}>{t(`leads.${selectedLead.status ?? 'new'}`)}</span>
             <Avatar $color={hashColor(selectedLead.company_name || 'Unknown')} style={{ width: 42, height: 42, fontSize: '0.875rem', border: isDark ? '2px solid rgba(255,255,255,0.3)' : '2px solid rgba(14,165,233,0.2)' }}>
               <AvatarIcon name={selectedLead.company_name || 'Unknown'} />
             </Avatar>

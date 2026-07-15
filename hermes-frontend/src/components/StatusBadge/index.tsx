@@ -1,7 +1,9 @@
 import React from 'react';
 import styled, { keyframes, css } from 'styled-components';
+import { useTranslation } from 'react-i18next';
 
 type Status = 'new' | 'pending' | 'contacted' | 'rejected' | 'qualified' | 'draft' | 'approved' | 'sent' | 'running' | 'idle' | 'active';
+
 
 interface StatusBadgeProps {
   status: Status;
@@ -77,13 +79,14 @@ const SpinnerSvg = () => (
 );
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
+  const { t } = useTranslation();
   const fg = statusFgMap[status] ?? '#0ea5e9';
   const isRunning = status === 'running';
   const isActive = isRunning || status === 'active';
   return (
     <Pill $fg={fg} $isRunning={isRunning}>
       {isRunning ? <SpinnerSvg /> : <LedDot $fg={fg} $active={isActive} />}
-      {status}
+      {t(`common.status.${status}`, { defaultValue: status })}
     </Pill>
   );
 };
