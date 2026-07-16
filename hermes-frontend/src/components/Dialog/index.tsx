@@ -14,13 +14,14 @@ interface DialogState {
   open: boolean;
   type: DialogType;
   message: string;
+  danger?: boolean;
   defaultValue?: string;
   placeholder?: string;
   resolve: ((value: string | boolean | null) => void) | null;
 }
 
 interface DialogContextValue {
-  showConfirm: (message: string) => Promise<boolean>;
+  showConfirm: (message: string, options?: { danger?: boolean }) => Promise<boolean>;
   showPrompt: (message: string, defaultValue?: string, placeholder?: string) => Promise<string | null>;
 }
 
@@ -107,19 +108,27 @@ const ButtonRow = styled.div`
   gap: 8px;
 `;
 
-const Btn = styled.button<{ $primary?: boolean }>`
+const Btn = styled.button<{ $primary?: boolean; $danger?: boolean }>`
   padding: 7px 18px;
   border-radius: 8px;
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s;
-  border: 1px solid ${({ $primary, theme }) => $primary ? theme.colors.accent : theme.colors.border};
-  background: ${({ $primary, theme }) => $primary ? theme.colors.accent : theme.colors.surface};
-  color: ${({ $primary, theme }) => $primary ? theme.colors.textInverted : theme.colors.textPrimary};
+  border: 1px solid ${({ $primary, $danger, theme }) => $danger ? '#e53e3e' : $primary ? theme.colors.accent : theme.colors.border};
+  background: ${({ $primary, $danger, theme }) => $danger ? '#e53e3e' : $primary ? theme.colors.accent : theme.colors.surface};
+  color: ${({ $primary, $danger, theme }) => ($primary || $danger) ? '#fff' : theme.colors.textPrimary};
   &:hover {
     opacity: 0.88;
     transform: translateY(-1px);
+  }
+`;
+
+const DangerMessage = styled(Message)`
+  em {
+    font-style: normal;
+    color: #e53e3e;
+    font-weight: 600;
   }
 `;
 
@@ -142,9 +151,9 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
   }, [state.open, state.type]);
 
-  const showConfirm = useCallback((message: string): Promise<boolean> => {
+  const showConfirm = useCallback((message: string, options?: { danger?: boolean }): Promise<boolean> => {
     return new Promise((resolve) => {
-      setState({ open: true, type: 'confirm', message, resolve: resolve as any });
+      setState({ open: true, type: 'confirm', message, danger: options?.danger, resolve: resolve as any });
     });
   }, []);
 
@@ -192,7 +201,11 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         <>
           <Overlay $closing={closing} onClick={handleCancel} />
           <Panel $closing={closing} onKeyDown={handleKeyDown}>
-            <Message>{state.message}</Message>
+            {state.danger ? (
+              <DangerMessage dangerouslySetInnerHTML={{ __html: state.message.replace(/\n/g, '<br/>') }} />
+            ) : (
+              <Message>{state.message}</Message>
+            )}
             {state.type === 'prompt' && (
               <Input
                 ref={inputRef}
@@ -202,7 +215,7 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
             )}
             <ButtonRow>
               <Btn onClick={handleCancel}>{t('dialog.cancel')}</Btn>
-              <Btn $primary onClick={handleConfirm}>{t('dialog.confirm')}</Btn>
+              <Btn $primary={!state.danger} $danger={state.danger} onClick={handleConfirm}>{t('dialog.confirm')}</Btn>
             </ButtonRow>
           </Panel>
         </>

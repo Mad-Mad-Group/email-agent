@@ -117,6 +117,9 @@ const ActionTitle = styled.div`
   letter-spacing: 0.06em; color: ${({ theme }) => theme.colors.textPrimary};
   opacity: 0.7; margin-bottom: 8px;
 `;
+const ActionCountRow = styled.div`
+  display: flex; align-items: baseline; gap: 10px;
+`;
 const ActionCount = styled.div`
   font-size: 2.5rem; font-weight: 800; color: ${({ theme }) => theme.colors.textPrimary}; line-height: 1;
 `;
@@ -125,19 +128,22 @@ const ActionLabel = styled.div`
   margin-top: 10px; line-height: 1.35;
 `;
 const ActionTrend = styled.div<{ $up?: boolean }>`
-  display: flex; align-items: center; gap: 4px;
-  font-size: 0.6875rem; font-weight: 600; margin-top: 6px;
-  color: ${({ $up, theme }) => $up ? theme.strong.olive : theme.strong.mauve};
+  display: flex; align-items: center; gap: 10px;
+  font-size: 1rem; font-weight: 700;
+  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 const MiniBar = styled.div<{ $color: string; $pct: number }>`
-  height: 4px; border-radius: 2px; flex: 1; max-width: 80px;
-  background: ${({ theme }) => theme.colors.surfaceMuted};
+  height: 8px; border-radius: 4px; flex: 1; min-width: 80px; max-width: 200px;
+  background: ${({ theme }) => `${theme.colors.textPrimary}18`};
   position: relative;
   &::after {
     content: ''; position: absolute; left: 0; top: 0; bottom: 0;
     width: ${({ $pct }) => Math.min($pct, 100)}%;
-    background: ${({ $color }) => $color};
-    border-radius: 2px;
+    background: ${({ $pct, theme }) => {
+      const a = 0.3 + (Math.min($pct, 100) / 100) * 0.7;
+      return `${theme.colors.textPrimary}${Math.round(a * 255).toString(16).padStart(2, '0')}`;
+    }};
+    border-radius: 4px;
     transition: width 0.4s ease;
   }
 `;
@@ -412,40 +418,20 @@ const NotebookCard = styled(Card)`
   position: relative;
 `;
 const NotebookBody = styled.div`
-  padding: 0 20px 20px 48px; position: relative;
-  /* red margin line */
-  &::before {
-    content: ''; position: absolute; top: 0; bottom: 0; left: 40px;
-    width: 1.5px; background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(239,68,68,0.25)' : 'rgba(239,68,68,0.35)'};
-  }
-  /* hole punches */
-  &::after {
-    content: '';
-    position: absolute; top: 16px; left: 12px;
-    width: 10px; height: 10px; border-radius: 50%;
-    background: ${({ theme }) => theme.colors.canvas};
-    border: 1.5px solid ${({ theme }) => theme.colors.border};
-    box-shadow:
-      0 34px 0 ${({ theme }) => theme.colors.canvas},
-      0 34px 0 0 ${({ theme }) => theme.colors.border},
-      0 68px 0 ${({ theme }) => theme.colors.canvas},
-      0 68px 0 0 ${({ theme }) => theme.colors.border};
-  }
+  padding: 0 16px 16px 16px; position: relative;
 `;
 const FeedList = styled.div`display: flex; flex-direction: column; gap: 0;`;
 const FeedItem = styled.div`
-  display: flex; gap: 14px; padding: 7px 0;
-  /* ruled lines */
-  background-image: linear-gradient(${({ theme }) => theme.mode === 'dark' ? 'rgba(148,163,184,0.06)' : 'rgba(148,163,184,0.15)'} 1px, transparent 1px);
-  background-size: 100% 100%;
-  background-position: bottom;
+  display: flex; gap: 10px; padding: 8px 0; align-items: center;
+  border-bottom: 1px solid ${({ theme }) => `${theme.colors.border}80`};
+  &:last-child { border-bottom: none; }
 `;
 const FeedIcon = styled.div<{ $bg: string; $fg: string }>`
-  width: 28px; height: 28px; border-radius: 8px;
+  width: 32px; height: 32px; border-radius: 10px;
   background: ${({ $bg }) => $bg}; color: ${({ $fg }) => $fg};
   border: 1.5px solid ${({ $fg }) => $fg}25;
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.75rem; flex-shrink: 0;
+  font-size: 0.875rem; flex-shrink: 0;
 `;
 const FeedBody = styled.div`flex: 1; min-width: 0;`;
 const FeedText = styled.div`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textPrimary}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`;
@@ -518,7 +504,7 @@ const CalendarLink = styled.div`
 
 /* ── Embed white section inside pastel card ── */
 const EmbedWhite = styled.div`
-  margin-top: 16px; background: ${({ theme }) => theme.colors.surface};
+  margin-top: 32px; background: ${({ theme }) => theme.colors.surface};
   border-radius: 12px; overflow: hidden;
 `;
 
@@ -757,28 +743,110 @@ const DemoHint = styled.div`
 `;
 
 /* ══════════ DEMO MOCK DATA ══════════ */
-const DEMO_COMPANIES = ['Stripe', 'Notion', 'Vercel', 'Figma', 'Linear', 'Retool', 'Supabase', 'Clerk', 'Resend', 'Neon',
-  'PostHog', 'Cal.com', 'Dub.co', 'Trigger.dev', 'Inngest', 'Tiptap', 'Liveblocks', 'Prisma', 'PlanetScale', 'Turso'];
+const DEMO_COMPANIES = [
+  /* 0–9   contacted + replied */
+  'Stripe', 'Notion', 'Vercel', 'Figma', 'Linear',
+  'Retool', 'Supabase', 'Clerk', 'Resend', 'Neon',
+  /* 10–14  contacted + replied (more categories) */
+  'PostHog', 'Cal.com', 'Dub.co', 'Trigger.dev', 'Inngest',
+  /* 15–22  contacted, no reply yet */
+  'Tiptap', 'Liveblocks', 'Prisma', 'PlanetScale', 'Turso',
+  'Warp', 'Railway', 'Render',
+  /* 23–28  pending (已驗證信箱，等待發信) */
+  'Loops', 'Ashby', 'Attio', 'Folk', 'Instantly', 'Apollo',
+  /* 29–34  new / null (潛在客戶) */
+  'HubSpot', 'Salesforce', 'Zoho', 'Pipedrive', 'Close', 'Freshsales',
+  /* 35–39  contacted + bounced / special */
+  'Outreach', 'Salesloft', 'Lemlist', 'Woodpecker', 'Mailshake',
+];
+
+const DEMO_INDUSTRIES: Record<string, string[]> = {
+  Stripe: ['Fintech', 'Payments'], Notion: ['Productivity', 'SaaS'], Vercel: ['DevTools', 'Cloud'],
+  Figma: ['Design', 'Collaboration'], Linear: ['Project Management'], Retool: ['Internal Tools'],
+  Supabase: ['Database', 'BaaS'], Clerk: ['Auth', 'Identity'], Resend: ['Email API'],
+  Neon: ['Database', 'Serverless'], PostHog: ['Analytics'], 'Cal.com': ['Scheduling'],
+  'Dub.co': ['Marketing', 'Links'], 'Trigger.dev': ['DevTools', 'Jobs'], Inngest: ['DevTools', 'Events'],
+  HubSpot: ['CRM', 'Marketing'], Salesforce: ['CRM', 'Enterprise'], Zoho: ['CRM', 'SaaS'],
+  Pipedrive: ['CRM', 'Sales'], Close: ['CRM', 'Sales'], Freshsales: ['CRM'],
+  Loops: ['Email Marketing'], Ashby: ['HR', 'ATS'], Attio: ['CRM'], Folk: ['CRM', 'Contacts'],
+  Instantly: ['Email Outreach'], Apollo: ['Sales Intelligence'],
+  Outreach: ['Sales Engagement'], Salesloft: ['Sales Engagement'], Lemlist: ['Cold Email'],
+  Woodpecker: ['Cold Email'], Mailshake: ['Sales Engagement'],
+};
+
+const DEMO_SOURCES = ['Google Maps', 'LinkedIn', 'Crunchbase', 'ProductHunt', 'Manual', 'Website', 'Referral', 'Conference'];
 
 function generateDemoLeads(): Lead[] {
   const now = Date.now();
   const day = 86400000;
+  const replyCats: (string | undefined)[] = [
+    'interested', 'meeting', 'question', 'not_interested', 'auto_reply',
+    'interested', 'meeting', 'interested', 'question', 'meeting',
+    'not_interested', 'auto_reply', 'interested', 'meeting', 'question',
+  ];
+  const verifications = ['verified', 'verified', 'verified', 'unverified', 'bounced'];
+
   return DEMO_COMPANIES.map((name, i) => {
-    const status = i < 17 ? 'contacted' : 'new';
-    const replied = i < 9;
-    const cats = ['interested', 'meeting', 'question', 'not_interested', 'auto_reply'];
-    const cat = replied ? cats[i % 5] : undefined;
+    const slug = name.toLowerCase().replace(/[^a-z0-9]/g, '');
+    let status: 'new' | 'pending' | 'contacted' | null;
+    let replied = false;
+    let cat: string | undefined;
+    let pendingMeeting = false;
+    let followupCount = 0;
+    let verification: string | undefined;
+    let replyAt: string | undefined;
+
+    if (i < 15) {
+      // 0–14: contacted + replied
+      status = 'contacted';
+      replied = true;
+      cat = replyCats[i];
+      pendingMeeting = cat === 'meeting';
+      followupCount = i < 6 ? 2 : i < 10 ? 1 : 0;
+      verification = 'verified';
+      replyAt = new Date(now - (i + 1) * day * 0.4).toISOString();
+    } else if (i < 23) {
+      // 15–22: contacted, no reply
+      status = 'contacted';
+      followupCount = i < 18 ? 1 : 0;
+      verification = i < 20 ? 'verified' : 'unverified';
+    } else if (i < 29) {
+      // 23–28: pending (驗證完等待發信)
+      status = 'pending';
+      verification = verifications[i % verifications.length];
+    } else if (i < 35) {
+      // 29–34: new / null (潛在客戶，剛匯入)
+      status = i % 2 === 0 ? 'new' : null;
+      verification = i < 32 ? undefined : 'unverified';
+    } else {
+      // 35–39: contacted but bounced / edge cases
+      status = 'contacted';
+      verification = i < 38 ? 'bounced' : 'verified';
+      replied = i === 38;
+      cat = replied ? 'auto_reply' : undefined;
+      followupCount = i < 37 ? 1 : 0;
+      replyAt = replied ? new Date(now - 2 * day).toISOString() : undefined;
+    }
+
     return {
       _id: `demo-lead-${i}`,
       company_name: name,
-      email: `hello@${name.toLowerCase().replace(/[^a-z]/g, '')}.com`,
+      email: `hello@${slug}.com`,
       status,
+      verification,
+      industry_tags: DEMO_INDUSTRIES[name] || ['SaaS'],
+      source: DEMO_SOURCES[i % DEMO_SOURCES.length],
+      website: `https://${slug}.com`,
       _replied: replied,
       _reply_category: cat,
-      _reply_at: replied ? new Date(now - (i + 1) * day * 0.5).toISOString() : undefined,
-      _pending_meeting: cat === 'meeting',
-      _followup_count: i < 5 ? 1 : 0,
-      created_at: new Date(now - (20 - i) * day).toISOString(),
+      _reply_at: replyAt,
+      _reply_sentiment: replied ? (cat === 'interested' || cat === 'meeting' ? 'positive' : cat === 'not_interested' ? 'negative' : 'neutral') : undefined,
+      _reply_summary: replied ? `${name} ${cat === 'interested' ? 'expressed interest in a demo' : cat === 'meeting' ? 'wants to schedule a call' : cat === 'question' ? 'asked about pricing' : cat === 'not_interested' ? 'politely declined' : 'auto-reply received'}` : undefined,
+      _pending_meeting: pendingMeeting,
+      _followup_count: followupCount,
+      _has_email_draft: i >= 23 && i < 26,
+      createdAt: new Date(now - (40 - i) * day).toISOString(),
+      created_at: new Date(now - (40 - i) * day).toISOString(),
     } as any;
   });
 }
@@ -786,17 +854,60 @@ function generateDemoLeads(): Lead[] {
 function generateDemoEmails(): EmailItem[] {
   const now = Date.now();
   const day = 86400000;
-  const statuses = ['sent', 'sent', 'sent', 'sent', 'sent', 'sent', 'sent', 'sent', 'pending', 'pending', 'pending', 'approved', 'approved'];
-  return statuses.map((status, i) => ({
-    _id: `demo-email-${i}`,
-    to_email: `hello@${DEMO_COMPANIES[i % DEMO_COMPANIES.length].toLowerCase().replace(/[^a-z]/g, '')}.com`,
-    company_name: DEMO_COMPANIES[i % DEMO_COMPANIES.length],
-    subject: `Partnership Opportunity — ${DEMO_COMPANIES[i % DEMO_COMPANIES.length]}`,
-    status,
-    _type: i < 6 ? 'outreach' : i < 8 ? 'followup' : i < 10 ? 'outreach' : 'reply',
-    sent_at: status === 'sent' ? new Date(now - (i + 1) * day * 0.3).toISOString() : undefined,
-    created_at: new Date(now - (i + 1) * day * 0.25).toISOString(),
-  } as any));
+  const items: { company: string; status: string; type: string; daysAgo: number }[] = [
+    // sent — outreach
+    { company: 'Stripe', status: 'sent', type: 'outreach', daysAgo: 8 },
+    { company: 'Notion', status: 'sent', type: 'outreach', daysAgo: 7 },
+    { company: 'Vercel', status: 'sent', type: 'outreach', daysAgo: 6 },
+    { company: 'Figma', status: 'sent', type: 'outreach', daysAgo: 5 },
+    { company: 'Linear', status: 'sent', type: 'outreach', daysAgo: 5 },
+    { company: 'Retool', status: 'sent', type: 'outreach', daysAgo: 4 },
+    // sent — followup
+    { company: 'Tiptap', status: 'sent', type: 'followup', daysAgo: 3 },
+    { company: 'Liveblocks', status: 'sent', type: 'followup', daysAgo: 3 },
+    { company: 'Prisma', status: 'sent', type: 'followup', daysAgo: 2 },
+    // sent — reply
+    { company: 'PostHog', status: 'sent', type: 'reply', daysAgo: 1 },
+    { company: 'Cal.com', status: 'sent', type: 'reply', daysAgo: 1 },
+    // pending — awaiting approval
+    { company: 'PlanetScale', status: 'pending', type: 'outreach', daysAgo: 0.5 },
+    { company: 'Turso', status: 'pending', type: 'followup', daysAgo: 0.3 },
+    { company: 'Warp', status: 'pending', type: 'outreach', daysAgo: 0.2 },
+    { company: 'Railway', status: 'pending', type: 'followup', daysAgo: 0.1 },
+    { company: 'Dub.co', status: 'pending', type: 'reply', daysAgo: 0.05 },
+    // approved — queued to send
+    { company: 'Loops', status: 'approved', type: 'outreach', daysAgo: 0.4 },
+    { company: 'Ashby', status: 'approved', type: 'outreach', daysAgo: 0.3 },
+    { company: 'Attio', status: 'approved', type: 'outreach', daysAgo: 0.2 },
+    // rejected — human declined
+    { company: 'Outreach', status: 'rejected', type: 'outreach', daysAgo: 2 },
+    { company: 'Salesloft', status: 'rejected', type: 'followup', daysAgo: 1.5 },
+    // failed — delivery error
+    { company: 'Lemlist', status: 'failed', type: 'outreach', daysAgo: 4 },
+    { company: 'Woodpecker', status: 'failed', type: 'followup', daysAgo: 3 },
+    // more sent for volume
+    { company: 'Supabase', status: 'sent', type: 'outreach', daysAgo: 6 },
+    { company: 'Clerk', status: 'sent', type: 'outreach', daysAgo: 5.5 },
+  ];
+
+  return items.map((item, i) => {
+    const slug = item.company.toLowerCase().replace(/[^a-z0-9]/g, '');
+    return {
+      _id: `demo-email-${i}`,
+      to_email: `hello@${slug}.com`,
+      company_name: item.company,
+      subject: item.type === 'followup'
+        ? `Following up — ${item.company}`
+        : item.type === 'reply'
+        ? `Re: ${item.company} Partnership`
+        : `Partnership Opportunity — ${item.company}`,
+      status: item.status,
+      _type: item.type,
+      error: item.status === 'failed' ? { rejected_reason: 'Mailbox not found (550)' } : null,
+      sent_at: item.status === 'sent' ? new Date(now - item.daysAgo * day).toISOString() : undefined,
+      created_at: new Date(now - item.daysAgo * day).toISOString(),
+    } as any;
+  });
 }
 
 /* ══════════ PIXEL TYPEWRITER ══════════ */
@@ -850,9 +961,16 @@ const Dashboard: React.FC = () => {
 
   const realLeads = leadsData?.data || [];
   const realEmails = emailData?.data || [];
+  const sparseLeads = realLeads.length < 5;
+  const sparseEmails = realEmails.length < 5;
+  const sparse = sparseLeads || sparseEmails;
   const demoMode = realLeads.length === 0 && realEmails.length === 0;
-  const allLeads: Lead[] = demoMode ? demoLeads : realLeads;
-  const allEmails: EmailItem[] = demoMode ? demoEmails : realEmails;
+  const allLeads: Lead[] = sparseLeads
+    ? [...realLeads, ...demoLeads.filter(d => !realLeads.some(r => r._id === d._id))]
+    : realLeads;
+  const allEmails: EmailItem[] = sparseEmails
+    ? [...realEmails, ...demoEmails.filter(d => !realEmails.some(r => r._id === d._id))]
+    : realEmails;
 
   // ── Stats (header pills) ──
   const stats = useMemo(() => {
@@ -1016,7 +1134,7 @@ const Dashboard: React.FC = () => {
   return (
     <Page>
       {/* ── Demo hint (auto, no toggle) ── */}
-      {demoMode && <DemoHint>{t('dashboard.demoHint')}</DemoHint>}
+      {sparse && <DemoHint>{t('dashboard.demoHint')}</DemoHint>}
 
       {/* ── Intelly Greeting ── */}
       <GreetingBlock>
@@ -1043,12 +1161,12 @@ const Dashboard: React.FC = () => {
               <StatsRow>
                 <StatsLeft>
                   <ActionTitle>{t('dashboard.cardTitleDraft')}</ActionTitle>
-                  <ActionCount>{actions.pendingDrafts}</ActionCount>
-                  <ActionTrend $up={actions.pendingDrafts > 0}>
-                    {actions.pendingDrafts > 0 ? '↑' : '—'} {stats.sentEmails} {t('dashboard.totalEmailsSent')}
-                    <MiniBar $color={theme.strong.gold} $pct={stats.sentEmails > 0 ? (actions.pendingDrafts / stats.sentEmails) * 100 : 0} />
-                  </ActionTrend>
-                  <ActionLabel>{t('dashboard.draftsPendingApproval')}</ActionLabel>
+                  <ActionCountRow>
+                    <ActionCount>{actions.pendingDrafts}</ActionCount>
+                    <ActionTrend>
+                      {actions.pendingDrafts > 0 ? '↑' : '—'} {stats.sentEmails} {t('dashboard.totalEmailsSent')}
+                    </ActionTrend>
+                  </ActionCountRow>
                 </StatsLeft>
                 <VerticalFunnel bars={[
                   { label: t('dashboard.newLeads'), value: funnel.total, pct: '' },
@@ -1059,7 +1177,7 @@ const Dashboard: React.FC = () => {
               </StatsRow>
 
               {/* Queued to Send — compact, max 2 items */}
-              <EmbedWhite onClick={e => e.stopPropagation()} style={{ marginTop: 12 }}>
+              <EmbedWhite onClick={e => e.stopPropagation()}>
                 <CardHeader>
                   <CardIcon $color={theme.strong.gold}><IconCalendar /></CardIcon>
                   {t('dashboard.upcomingSchedule')}
@@ -1108,20 +1226,21 @@ const Dashboard: React.FC = () => {
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
               </ActionArrow>
               <ActionTitle>{t('dashboard.cardTitleReply')}</ActionTitle>
-              <ActionCount>{actions.newReplies}</ActionCount>
-              <ActionTrend $up={stats.replyRate > 0}>
-                {stats.replyRate}% {t('dashboard.replied')}
-                <MiniBar $color={theme.strong.olive} $pct={stats.replyRate} />
-              </ActionTrend>
-              <ActionLabel>{t('dashboard.newRepliesToHandle')}</ActionLabel>
+              <ActionCountRow>
+                <ActionCount>{actions.newReplies}</ActionCount>
+                <ActionTrend>
+                  {stats.replyRate}% {t('dashboard.replied')}
+                  <MiniBar $color={theme.colors.textPrimary} $pct={stats.replyRate} />
+                </ActionTrend>
+              </ActionCountRow>
 
               {/* Donut — dark monochrome */}
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', marginTop: 12 }} onClick={e => e.stopPropagation()}>
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 12 }} onClick={e => e.stopPropagation()}>
                 {stats.replied === 0 ? (
                   <Empty><EmptyDonutSvg borderColor={theme.colors.border} borderStrongColor={theme.colors.borderStrong} />{t('dashboard.noReplyData')}</Empty>
                 ) : (
                   <DonutWrap>
-                    <DonutChart size={170} slices={[
+                    <DonutChart size={210} slices={[
                       { value: replyCats.interested, color: theme.colors.textPrimary, label: t('dashboard.interested') },
                       { value: replyCats.meeting, color: `${theme.colors.textPrimary}99`, label: t('dashboard.meetingCat') },
                       { value: replyCats.question, color: `${theme.colors.textPrimary}66`, label: t('dashboard.question') },
@@ -1169,14 +1288,9 @@ const Dashboard: React.FC = () => {
               </ActionArrow>
               <ActionTitle>{t('dashboard.cardTitleFollowup')}</ActionTitle>
               <ActionCount>{actions.noReplyNoFollowup}</ActionCount>
-              <ActionTrend $up={false}>
-                {stats.contacted} {t('dashboard.contacted')}
-                <MiniBar $color={theme.strong.mauve} $pct={stats.contacted > 0 ? (actions.noReplyNoFollowup / stats.contacted) * 100 : 0} />
-              </ActionTrend>
-              <ActionLabel>{t('dashboard.contactedNoFollowup')}</ActionLabel>
 
               {/* What Just Happened — embedded, white bg, height limited */}
-              <EmbedWhite onClick={e => e.stopPropagation()} style={{ flex: 1, marginTop: 'auto', display: 'flex', flexDirection: 'column' }}>
+              <EmbedWhite onClick={e => e.stopPropagation()} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <CardHeader>
                   <CardIcon $color={theme.colors.accent}><IconActivity /></CardIcon>
                   {t('dashboard.recentActivity')}
@@ -1227,11 +1341,6 @@ const Dashboard: React.FC = () => {
               </ActionArrow>
               <ActionTitle>{t('dashboard.cardTitleMeeting')}</ActionTitle>
               <ActionCount>{actions.pendingMeetings}</ActionCount>
-              <ActionTrend $up={actions.pendingMeetings > 0}>
-                {funnel.meetings} {t('dashboard.meetings')}
-                <MiniBar $color={theme.strong.blue} $pct={funnel.replied > 0 ? (funnel.meetings / funnel.replied) * 100 : 0} />
-              </ActionTrend>
-              <ActionLabel>{t('dashboard.pendingMeetings')}</ActionLabel>
 
               {meetingList.length > 0 && (
                 <MtgList style={{ flex: 1 }}>

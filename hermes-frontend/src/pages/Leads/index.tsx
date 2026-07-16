@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import styled, { keyframes, css, useTheme } from 'styled-components';
@@ -14,6 +14,7 @@ import { glassSurface } from '../../styles/glassSurface';
 import { useDialog } from '../../components';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER, SOURCE_AGENT } from '../../config/agents';
+import { getQuarterTag, matchesQuarterFilter, dateToYQ, type QuarterFilterValue } from '../../utils/quarter';
 
 /* ══════════════════════════════════════
    CMS Leads — Luno Contacts-style UI
@@ -73,10 +74,49 @@ const IconPlus = () => (
   </svg>
 );
 
+const IconOldWebsite = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="2" y="3" width="12" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+    <path d="M2 6h12M5 3v3M11 3v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+  </svg>
+);
+
 const IconSortArrow = () => (
   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ marginLeft: 4, opacity: 0.4 }}>
     <path d="M5 1v8M2 6l3 3 3-3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
   </svg>
+);
+
+/* ── Column header type icons (Orbital-style) ── */
+const ThIcon = styled.span`
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+  opacity: 0.45;
+  vertical-align: middle;
+  svg { width: 12px; height: 12px; }
+`;
+const IconFieldText = () => (
+  <ThIcon><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><text x="1" y="10" fontSize="10" fontWeight="700" fill="currentColor">A</text></svg></ThIcon>
+);
+const IconFieldTag = () => (
+  <ThIcon><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M1 3h10M1 6h7M1 9h5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/>
+  </svg></ThIcon>
+);
+const IconFieldDate = () => (
+  <ThIcon><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="2" width="10" height="9" rx="1.5" stroke="currentColor" strokeWidth="1"/>
+    <path d="M1 5h10M4 1v2M8 1v2" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+  </svg></ThIcon>
+);
+const IconFieldLink = () => (
+  <ThIcon><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M5 7l2-2M4.5 8.5a2 2 0 0 1 0-2.83l.7-.7M7.5 3.5a2 2 0 0 1 0 2.83l-.7.7" stroke="currentColor" strokeWidth="1" strokeLinecap="round"/>
+  </svg></ThIcon>
+);
+const IconFieldNum = () => (
+  <ThIcon><svg viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg"><text x="0" y="10" fontSize="9" fontWeight="700" fill="currentColor">#</text></svg></ThIcon>
 );
 
 const IconLeadScraper = () => (
@@ -188,6 +228,24 @@ const PageSub = styled.p`
   margin: 2px 0 0;
 `;
 
+/* ── Quarter filter + tag ── */
+
+const QuarterTag = styled.span`
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 99px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #2d8a4e;
+  background: #e6f4ea;
+  border: 1px solid #b7dfbf;
+  margin-left: 4px;
+  flex-shrink: 0;
+  line-height: 1.4;
+`;
+
 /* ── Header Card (title + buttons + stats in one box) ── */
 
 const HeaderSection = styled.div`
@@ -209,22 +267,30 @@ const HeaderBtns = styled.div`
   }
 `;
 
-const HeaderFeedback = styled.div`
-  min-height: 0;
+const FloatingToast = styled.div<{ $error?: boolean }>`
+  position: fixed;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9999;
   display: flex;
-  gap: 12px;
-`;
-
-const FeedbackMsg = styled.span<{ $error?: boolean }>`
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: ${({ $error, theme }) => $error ? theme.strong.mauve : theme.strong.olive};
-  animation: leadsFeedbackFade 4s ease-out forwards;
-  @keyframes leadsFeedbackFade {
-    0% { opacity: 0; transform: translateY(-4px); }
-    10% { opacity: 1; transform: translateY(0); }
-    80% { opacity: 1; }
-    100% { opacity: 0; }
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: ${({ $error, theme }) => $error ? theme.strong.mauve : theme.colors.textPrimary};
+  background: ${({ theme }) => theme.colors.surface};
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  border: 1px solid ${({ $error, theme }) => $error ? `${theme.strong.mauve}40` : theme.colors.border};
+  animation: toastSlide 3.5s ease-out forwards;
+  pointer-events: none;
+  @keyframes toastSlide {
+    0% { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+    8% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    75% { opacity: 1; }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
   }
 `;
 
@@ -281,31 +347,25 @@ const HeaderDivider = styled.hr`
 `;
 
 const StatCardsRow = styled.div`
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: ${({ theme }) => theme.spacing.md}px;
-  ${media.mobile} { grid-template-columns: repeat(2, 1fr); }
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  ${media.mobile} { flex-wrap: wrap; }
 `;
 
 const StatCard = styled.div<{ $accent: string }>`
-  position: relative; overflow: hidden;
-  border-radius: ${({ theme }) => theme.radii.card}px;
-  background: ${({ theme }) => theme.colors.surface};
-
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-left: 4px solid ${({ $accent, theme }) => (theme.colors as any)[$accent] || theme.colors.accent};
-  padding: 18px 20px 16px;
-  transition: transform 0.18s, box-shadow 0.18s;
-  &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 12px 24px;
+  border-right: 1px solid ${({ theme }) => theme.colors.border};
+  &:last-child { border-right: none; }
+  ${media.mobile} { border-right: none; padding: 8px 16px; }
 `;
 
 const StatCardWatermark = styled.span<{ $color: string }>`
-  position: absolute; right: -4px; bottom: -6px;
-  width: 56px; height: 56px; opacity: 0.10;
-  pointer-events: none;
-  color: ${({ $color, theme }) => (theme.colors as any)[$color] || theme.colors.accent};
-  line-height: 0;
-  svg { width: 100%; height: 100%; }
+  display: none;
 `;
 
 /* Watermark SVG icons for stat cards */
@@ -333,9 +393,9 @@ const WmCheck = ({ size = 44 }: { size?: number }) => (
 );
 
 const StatCardLabel = styled.span`
-  font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.06em; opacity: 0.55;
-  color: ${({ theme }) => theme.colors.textPrimary}; margin-bottom: 6px; display: block;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textTertiary};
 `;
 
 const StatCardValue = styled.div`
@@ -345,66 +405,79 @@ const StatCardValue = styled.div`
 `;
 
 const StatCardNumber = styled.span<{ $color: string }>`
-  font-size: 2rem;
-  font-weight: 800;
+  font-size: 1.25rem;
+  font-weight: 700;
   color: ${({ $color, theme }) => (theme.colors as any)[$color] || theme.colors.accent};
   line-height: 1;
 `;
 
 const StatCardUnit = styled.span`
-  font-size: 0.875rem;
-  color: ${({ theme }) => theme.colors.textTertiary};
+  display: none;
 `;
 
 /* ── Circular Action Buttons with Tooltip ── */
 
-const CircleActionBtn = styled.button<{ $color?: string }>`
+const circleSpinGlow = keyframes`
+  0% { transform: rotate(0deg); box-shadow: 0 0 0 0 rgba(108,122,36,0.5); }
+  50% { box-shadow: 0 0 12px 4px rgba(108,122,36,0.35); }
+  100% { transform: rotate(360deg); box-shadow: 0 0 0 0 rgba(108,122,36,0); }
+`;
+
+const CircleActionBtn = styled.button<{ $color?: string; $spinning?: boolean }>`
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
   border-radius: 50%;
   border: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.surface};
-
-  color: ${({ $color, theme }) => $color || theme.colors.textSecondary};
+  color: ${({ theme }) => theme.colors.textSecondary};
   cursor: pointer;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
   flex-shrink: 0;
-  position: relative;
 
-  &:hover {
-    border-color: ${({ $color, theme }) => $color || theme.colors.accent};
-    color: ${({ $color, theme }) => $color || theme.colors.accent};
-    background: ${({ $color, theme }) => `${$color || theme.colors.accent}0d`};
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-  }
-  &:hover::after {
-    content: attr(aria-label);
+  &::after {
+    content: attr(title);
     position: absolute;
     bottom: calc(100% + 6px);
     left: 50%;
-    transform: translateX(-50%);
+    transform: translateX(-50%) scale(0.95);
     padding: 4px 10px;
     border-radius: 6px;
-    background: ${({ theme }) => theme.colors.surfaceInverted};
-    color: ${({ theme }) => theme.colors.textInverted};
     font-size: 0.6875rem;
     font-weight: 500;
     white-space: nowrap;
+    background: ${({ theme }) => theme.colors.textPrimary};
+    color: ${({ theme }) => theme.colors.surface};
     pointer-events: none;
-    z-index: 50;
-    animation: tooltipIn 0.12s ease-out;
+    opacity: 0;
+    transition: opacity 0.15s, transform 0.15s;
   }
-  @keyframes tooltipIn {
-    from { opacity: 0; transform: translateX(-50%) translateY(2px); }
-    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  &:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) scale(1);
   }
-  &:disabled { opacity: 0.4; cursor: not-allowed; transform: none; box-shadow: none; }
-  &:disabled:hover::after { display: none; }
-  svg { width: 16px; height: 16px; }
+
+  &:hover {
+    border-color: ${({ theme }) => theme.colors.accent};
+    color: ${({ theme }) => theme.colors.accent};
+    background: ${({ theme }) => `${theme.colors.accent}14`};
+    transform: scale(1.1);
+    box-shadow: 0 2px 8px ${({ theme }) => `${theme.colors.accent}25`};
+  }
+  &:active { transform: scale(0.95); }
+  &:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
+  svg { width: 14px; height: 14px; }
+
+  ${({ $spinning }) => $spinning && css`
+    animation: ${circleSpinGlow} 0.8s ease-in-out;
+    border-color: #6C7A24;
+    color: #6C7A24;
+    svg { animation: none; }
+  `}
 `;
 
 const AutoCheckBtn = styled.button<{ $active?: boolean }>`
@@ -491,20 +564,15 @@ const AddBtn = styled.button`
   padding: 7px 16px;
   border: none;
   border-radius: 8px;
-  background: linear-gradient(135deg, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.colors.accent}cc);
+  background: ${({ theme }) => theme.colors.accent};
   color: ${({ theme }) => theme.colors.textInverted};
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 1px 3px ${({ theme }) => theme.colors.accent}33;
-  transition: transform 0.15s ease, box-shadow 0.2s ease, opacity 0.2s ease;
-  &:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 3px 10px ${({ theme }) => theme.colors.accent}40;
-    opacity: 0.95;
-  }
-  &:active { transform: translateY(0); }
+  transition: opacity 0.15s;
+  &:hover { opacity: 0.85; }
+  &:active { opacity: 0.75; }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
   ${media.tabletDown} {
     width: 100%;
@@ -515,11 +583,7 @@ const AddBtn = styled.button`
 `;
 
 const AddBtnGreen = styled(AddBtn)`
-  background: linear-gradient(135deg, ${({ theme }) => theme.strong.olive}, ${({ theme }) => theme.strong.olive}cc);
-  box-shadow: 0 1px 3px ${({ theme }) => theme.strong.olive}33;
-  &:hover {
-    box-shadow: 0 3px 10px ${({ theme }) => theme.strong.olive}40;
-  }
+  background: ${({ theme }) => theme.strong.olive};
 `;
 
 // ponytail: red danger button for "一鍵清空" — visually distinct from the
@@ -535,40 +599,89 @@ const ClearBtn = styled(AddBtn)`
 /* ── Tabs Row ── */
 
 const TabsRow = styled.div`
+  position: relative;
   display: flex;
-  align-items: stretch;
-  gap: 0;
-  ${media.tabletDown} {
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    &::-webkit-scrollbar { display: none; }
-  }
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: ${({ theme }) => theme.colors.canvas};
+  border-radius: 999px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar { display: none; }
+  width: fit-content;
 `;
 
 const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
+  position: relative;
+  z-index: 1;
   flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 24px;
+  gap: 7px;
+  padding: 8px 20px;
   background: transparent;
+  color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textSecondary};
   border: none;
-  border-bottom: 2px solid ${({ $active, $color, theme }) => $active ? ((theme.colors as any)[$color || ''] || $color || theme.colors.accent) : 'transparent'};
+  border-radius: 999px;
   cursor: pointer;
   white-space: nowrap;
-  position: relative;
-  font-size: 0.8125rem;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
-  svg { flex-shrink: 0; opacity: ${({ $active }) => $active ? 0.7 : 0.35}; }
-  color: ${({ $active, theme }) => $active ? 'inherit' : theme.colors.textTertiary};
-  &:hover { background: rgba(0,0,0,0.02); }
-  ${media.tabletDown} { padding: 8px 14px; flex: 1; justify-content: center; }
+  font-size: 0.875rem;
+  font-weight: ${({ $active }) => $active ? 600 : 500};
+  transition: color 0.2s;
+  svg { flex-shrink: 0; color: ${({ theme }) => theme.strong.mauve}; }
+  &:hover {
+    background: ${({ $active }) => $active ? 'transparent' : 'rgba(0,0,0,0.04)'};
+  }
+  ${media.tabletDown} { padding: 8px 16px; }
 `;
 
-const TabNumber = styled.span<{ $color: string }>`
-  font-size: 1.35rem;
+const TabSlider = styled.div<{ $left: number; $width: number }>`
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: ${({ $left }) => $left}px;
+  width: ${({ $width }) => $width}px;
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+  transition: left 0.3s cubic-bezier(.4,0,.2,1), width 0.3s cubic-bezier(.4,0,.2,1);
+  z-index: 0;
+`;
+
+const TabNumber = styled.span`
+  font-size: 1.25rem;
   font-weight: 700;
-  color: ${({ $color, theme }) => (theme.colors as any)[$color] || theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const StepBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 16px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  background: ${({ theme }) => theme.colors.border};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  flex-shrink: 0;
+`;
+
+const SubStepBadge = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  font-size: 0.5rem;
+  font-weight: 600;
+  background: ${({ theme }) => theme.colors.border};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  flex-shrink: 0;
 `;
 
 const TabLabel = styled.span<{ $active?: boolean }>`
@@ -577,51 +690,95 @@ const TabLabel = styled.span<{ $active?: boolean }>`
   color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textTertiary};
 `;
 
+const ToolbarSep = styled.div`
+  width: 100%;
+  height: 1px;
+  background: ${({ theme }) => theme.colors.border};
+`;
+
 const SubPillRow = styled.div`
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 10px ${({ theme }) => theme.spacing.xl}px;
-  flex-wrap: wrap;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  gap: 8px;
+  padding: 0;
   position: relative;
-  ${media.tabletDown} { padding: 8px 12px; gap: 4px; }
+  ${media.tabletDown} { padding: 2px 12px; gap: 6px; flex-wrap: wrap; }
+`;
+
+const SubPillTrack = styled.div`
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px;
+  background: ${({ theme }) => theme.colors.canvas};
+  border-radius: 999px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  &::-webkit-scrollbar { display: none; }
+  width: fit-content;
+  flex-shrink: 0;
+`;
+
+const RowCheckbox = styled.input.attrs({ type: 'checkbox' })`
+  width: 15px;
+  height: 15px;
+  accent-color: ${({ theme }) => theme.colors.textPrimary};
+  cursor: pointer;
+  margin: 0;
 `;
 
 const SUB_COLOR_KEYS: Record<string, string> = {
   '': 'textPrimary',
-  new: 'amber',
-  draft: 'amber',
-  no_followup: 'red',
-  has_followup: 'green',
-  interested: 'green',
-  meeting: 'green',
-  question: 'textPrimary',
-  not_interested: 'red',
+  to_enrich: 'textSecondary',
+  to_analyze: 'textSecondary',
+  draft_ready: 'textSecondary',
+  email_draft: 'textSecondary',
+  wa_draft: 'textSecondary',
+  awaiting_reply: 'textSecondary',
+  followed_up: 'textSecondary',
+  no_reply: 'textSecondary',
 };
 
 const SubPill = styled.button<{ $active?: boolean; $color?: string }>`
+  position: relative;
+  z-index: 1;
+  flex: none;
   display: inline-flex;
   align-items: center;
-  gap: 3px;
-  padding: 4px 12px;
+  gap: 5px;
+  padding: 6px 14px;
   border-radius: 999px;
-  border: ${({ $active, theme }) => $active ? `1px solid ${theme.colors.accent}40` : '1px solid transparent'};
-  font-size: 0.75rem;
-  font-weight: ${({ $active }) => ($active ? 600 : 400)};
-  background: ${({ $active, theme }) => $active ? `${theme.colors.accent}14` : 'transparent'};
-
-  box-shadow: ${({ $active, theme }) => $active ? `0 1px 4px ${theme.colors.accent}0f` : 'none'};
-  color: ${({ $active, $color, theme }) => ($active ? ((theme.colors as any)[$color || ''] || $color || theme.colors.accent) : 'inherit')};
+  border: none;
+  font-size: 0.8rem;
+  font-weight: ${({ $active }) => ($active ? 600 : 500)};
+  background: transparent;
+  color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textSecondary};
   cursor: pointer;
-  transition: color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
+  white-space: nowrap;
+  transition: color 0.2s;
+  svg { flex-shrink: 0; width: 13px; height: 13px; color: ${({ theme }) => theme.strong.mauve}; }
+  &:hover { background: ${({ $active }) => $active ? 'transparent' : 'rgba(0,0,0,0.04)'}; }
+`;
+
+const SubSlider = styled.div<{ $left: number; $width: number }>`
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: ${({ $left }) => $left}px;
+  width: ${({ $width }) => $width}px;
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: 999px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  transition: left 0.3s cubic-bezier(.4,0,.2,1), width 0.3s cubic-bezier(.4,0,.2,1);
+  z-index: 0;
 `;
 
 /* ── Search Bar (inline in SubPillRow) ── */
 
 const SearchWrap = styled.div`
   position: relative;
-  width: 360px;
+  width: 240px;
   margin-left: auto;
   ${media.mobile} { width: 100%; margin-left: 0; }
 `;
@@ -669,58 +826,67 @@ const Card = styled.div`
 
 const TableWrap = styled.div`
   overflow-x: auto;
-  padding: ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.xl}px;
+  padding: 0;
 `;
 
 const Table = styled.table`
   width: 100%;
   table-layout: fixed;
-  border-collapse: collapse;
-  font-size: 0.8125rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: ${({ theme }) => theme.fonts.primary};
+  font-size: 0.8rem;
   min-width: 960px;
-  th:nth-child(1) { width: 12%; }
-  th:nth-child(2) { width: 30%; }
-  th:nth-child(3) { width: 18%; }
-  th:nth-child(4) { width: 20%; }
-  th:nth-child(5) { width: 20%; }
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 12px;
+  overflow: hidden;
+  th:nth-child(1) { width: 4%; }    /* # / checkbox */
+  th:nth-child(2) { width: 34%; }   /* name */
+  th:nth-child(3) { width: 16%; }   /* reply */
+  th:nth-child(4) { width: 14%; }   /* source user / tech */
+  th:nth-child(5) { width: 14%; }   /* imported */
+  th:nth-child(6) { width: 9%; }    /* action */
   th, td {
-    padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
+    padding: 7px 12px;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   th {
-    font-weight: 700;
-    text-transform: uppercase;
-    font-size: 0.875rem;
+    font-weight: 600;
+    font-size: 0.78rem;
     color: ${({ theme }) => theme.colors.textSecondary};
-    letter-spacing: 0.02em;
     background: ${({ theme }) => theme.colors.canvas};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
     user-select: none;
     cursor: default;
   }
+  td {
+    background: ${({ theme }) => theme.colors.surface};
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+    font-size: 0.78rem;
+    line-height: 1.3;
+  }
   ${media.mobile} {
     min-width: 640px;
     font-size: 0.75rem;
-    th, td { padding: ${({ theme }) => theme.spacing.xs}px ${({ theme }) => theme.spacing.sm}px; }
+    th, td { padding: 5px 8px; }
     th { font-size: 0.625rem; }
   }
 `;
 
 const TRow = styled.tr<{ $even?: boolean; $collapsed?: boolean }>`
-  background: ${({ $even, theme }) => $even ? theme.colors.surfaceMuted : theme.colors.surface};
   transition: background 0.15s;
   cursor: pointer;
-  &:hover {
-    background: ${({ theme, $collapsed }) => $collapsed ? 'transparent' : theme.colors.surfaceMuted};
+  &:hover td {
+    background: ${({ theme, $collapsed }) => $collapsed ? 'transparent' : theme.colors.canvas};
   }
   td {
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
     overflow: hidden;
     transition: padding 0.3s ease, max-height 0.3s ease, opacity 0.3s ease, border-color 0.3s ease;
   }
+  &:last-child td { border-bottom: none; }
   ${({ $collapsed }) => $collapsed && `
     pointer-events: none;
     td {
@@ -773,23 +939,89 @@ const NameText = styled.div`
   }
 `;
 
+/* Status badge — uses only the 4 theme pastel colours + black text */
+const STATUS_THEME_MAP: Record<string, 'blue' | 'gold' | 'mauve' | 'olive'> = {
+  new:            'blue',
+  pending:        'gold',
+  contacted:      'mauve',
+  confirmed:      'olive',
+  qualified:      'blue',
+  rejected:       'mauve',
+  draft:          'gold',
+  interested:     'olive',
+  meeting:        'olive',
+  not_interested: 'mauve',
+};
+
+const STATUS_I18N_KEY: Record<string, string> = {
+  new: 'leads.statusNew',
+  pending: 'leads.statusPending',
+  contacted: 'leads.statusContacted',
+  confirmed: 'leads.statusConfirmed',
+  qualified: 'leads.statusQualified',
+  rejected: 'leads.statusRejected',
+  draft: 'leads.statusDraft',
+  interested: 'leads.statusInterested',
+  meeting: 'leads.statusMeeting',
+  not_interested: 'leads.statusNotInterested',
+};
+
 const StatusBadge = styled.span<{ $status?: string }>`
   display: inline-block;
-  padding: 4px 14px;
-  border-radius: 99px;
-  font-size: 0.8125rem;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.6875rem;
   font-weight: 600;
-  text-transform: capitalize;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   ${({ $status, theme }) => {
-    const s = theme.status as Record<string, { bg: string; fg: string }>;
-    const entry = s[$status ?? 'new'] ?? s.new;
-    return `
-      background: ${entry.bg};
-      color: ${entry.fg};
-      box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-    `;
+    const key = STATUS_THEME_MAP[$status ?? 'new'] ?? 'blue';
+    const fg = (theme.strong as any)[key];
+    return `color: ${fg}; background: ${fg}1a; border: 1px solid ${fg}40;`;
   }}
 `;
+
+/* Status dot — small colored circle next to name */
+const STATUS_ICON_META: Record<string, { colorKey: 'blue' | 'gold' | 'mauve' | 'olive'; path: string; hasNew?: boolean }> = {
+  new:       { colorKey: 'olive', path: 'M10 3L7 9h3l-2 5', hasNew: true },                                        // lightning bolt
+  pending:   { colorKey: 'gold',  path: 'M10 5v3.5l2 1.5M10 2.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11z' },           // clock
+  contacted: { colorKey: 'mauve', path: '__handshake__' }, // handshake (special render)
+  confirmed: { colorKey: 'olive', path: 'M5 10l3 3 5-6' },
+  qualified: { colorKey: 'olive', path: 'M10 3L7 9h3l-2 5', hasNew: true },
+  rejected:  { colorKey: 'mauve', path: 'M6 6l8 8M14 6l-8 8' },
+  draft:     { colorKey: 'gold',  path: 'M10 5v3.5l2 1.5M10 2.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11z' },
+  interested:{ colorKey: 'olive', path: 'M5 10l3 3 5-6' },
+  meeting:   { colorKey: 'olive', path: 'M5 10l3 3 5-6' },
+  not_interested: { colorKey: 'mauve', path: 'M6 6l8 8M14 6l-8 8' },
+};
+
+const HANDSHAKE_FA_PATH = 'M323.4 85.2l-96.8 78.4c-16.1 13-19.2 36.4-7 53.1c12.9 17.8 38 21.3 55.3 7.8l99.3-77.2c7-5.4 17-4.2 22.5 2.8s4.2 17-2.8 22.5l-20.9 16.2L550.2 352H592c26.5 0 48-21.5 48-48V176c0-26.5-21.5-48-48-48H516h-4-.7l-3.9-2.5L434.8 79c-15.3-9.8-33.2-15-51.4-15c-21.8 0-43 7.5-60 21.2zm22.8 124.4l-51.7 40.2C263 274.4 217.3 268 193.7 235.6c-22.2-30.5-16.6-73.1 12.7-96.8l83.2-67.3c-11.6-4.9-24.1-7.4-36.8-7.4C234 64 215.7 69.6 200 80l-72 48H48c-26.5 0-48 21.5-48 48V304c0 26.5 21.5 48 48 48H156.2l91.4 83.4c19.6 17.9 49.9 16.5 67.8-3.1c5.5-6.1 9.2-13.2 11.1-20.6l17 15.6c19.5 17.9 49.9 16.6 67.8-2.9c4.5-4.9 7.8-10.6 9.9-16.5c19.4 13 45.8 10.3 62.1-7.5c17.9-19.5 16.6-49.9-2.9-67.8l-134.2-123z';
+
+const StatusIcon = ({ $status, title }: { $status?: string; title?: string }) => {
+  const theme = useTheme() as any;
+  const meta = STATUS_ICON_META[$status ?? 'new'] ?? STATUS_ICON_META.new;
+  const color = (theme.strong as any)[meta.colorKey];
+  const size = 20;
+  const isHandshake = meta.path === '__handshake__';
+  return (
+    <svg width={meta.hasNew ? 36 : size} height={size} viewBox={meta.hasNew ? '0 0 36 20' : '0 0 20 20'} style={{ flexShrink: 0, overflow: 'visible' }} aria-label={title}>
+      <circle cx="10" cy="10" r="9.5" fill={`${color}22`} stroke={color} strokeWidth="1" />
+      {isHandshake ? (
+        <g transform="translate(3.2, 4) scale(0.0215)">
+          <path d={HANDSHAKE_FA_PATH} fill={color} />
+        </g>
+      ) : (
+        <path d={meta.path} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      )}
+      {meta.hasNew && (
+        <g>
+          <rect x="18" y="0" width="18" height="9" rx="3" fill={color} />
+          <text x="27" y="7" textAnchor="middle" fill="#fff" fontSize="6.5" fontWeight="700" fontFamily="'Plus Jakarta Sans', sans-serif">New</text>
+        </g>
+      )}
+    </svg>
+  );
+};
 
 const TagList = styled.div`
   display: flex;
@@ -1231,46 +1463,71 @@ const DpPanel = styled.div<{ $closing?: boolean }>`
 const DpHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 18px 24px;
-  border-bottom: none;
-  background: ${({ theme }) => theme.status.contacted.bg};
-  position: relative;
-  overflow: hidden;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 0.5px solid ${({ theme }) => theme.colors.border};
+  background: transparent;
 `;
 
 const DpHeaderInfo = styled.div`
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
+  min-width: 0;
 `;
 
 const DpCompanyName = styled.h2`
   margin: 0;
-  font-size: 1.2rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
-  letter-spacing: 0.01em;
-  font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', system-ui, sans-serif;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const DpHeaderMeta = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
+const STATUS_PILL_COLORS: Record<string, { bg: string; fg: string }> = {
+  new:       { bg: '#e8f5e9', fg: '#2e7d32' },
+  pending:   { bg: '#fff3e0', fg: '#e65100' },
+  contacted: { bg: '#e3f2fd', fg: '#1565c0' },
+  approved:  { bg: '#e8f5e9', fg: '#2e7d32' },
+  rejected:  { bg: '#fce4ec', fg: '#c62828' },
+};
+const DpStatusPill = styled.span<{ $status?: string }>`
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 99px;
+  text-transform: lowercase;
+  background: ${({ $status }) => STATUS_PILL_COLORS[$status || '']?.bg || '#f0f0f0'};
+  color: ${({ $status }) => STATUS_PILL_COLORS[$status || '']?.fg || '#888'};
 `;
 
 const DpCloseBtn = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textTertiary};
   cursor: pointer;
   flex-shrink: 0;
   transition: all 0.15s;
+  font-size: 18px;
   &:hover {
-    background: ${({ theme }) => `${theme.colors.accent}14`};
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+    color: ${({ theme }) => theme.colors.textPrimary};
   }
 `;
 
@@ -1279,7 +1536,7 @@ const DpBody = styled.div`
   height: 0;
   min-height: 0;
   display: grid;
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: 300px 1fr;
   grid-template-rows: 1fr;
   gap: 0;
   overflow: hidden;
@@ -1287,61 +1544,37 @@ const DpBody = styled.div`
 `;
 
 const DpColLeft = styled.div`
-  padding: 20px 22px;
+  padding: 16px 20px;
   overflow-y: auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  border-right: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.surfaceMuted};
-  ${media.tabletDown} { border-right: none; border-bottom: 1px solid ${({ theme }) => theme.colors.border}; overflow-y: visible; padding: 10px 16px; }
+  gap: 0;
+  border-right: 0.5px solid ${({ theme }) => theme.colors.border};
+  background: transparent;
+  ${media.tabletDown} { border-right: none; border-bottom: 0.5px solid ${({ theme }) => theme.colors.border}; overflow-y: visible; padding: 10px 16px; }
 `;
 
 const DpTabSection = styled.div`
   position: relative;
-  margin-top: 22px;
+  margin-top: 14px;
   &:first-of-type { margin-top: 0; }
 `;
 
 const DpTabLabel = styled.span`
-  position: absolute;
-  top: 5px;
-  left: 0;
-  transform: translateY(-100%);
-  padding: 3px 14px 2px;
-  font-size: 0.7rem;
-  font-weight: 700;
+  display: block;
+  padding: 0 0 4px;
+  font-size: 0.6875rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border}33;
-  border-bottom: none;
-  border-radius: 10px 10px 0 0;
-  z-index: 2;
+  letter-spacing: 0.06em;
+  color: ${({ theme }) => theme.colors.textTertiary};
   user-select: none;
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    right: -14px;
-    width: 14px;
-    height: 14px;
-    background: transparent;
-    border-radius: 0 0 0 14px;
-    box-shadow: -6px 0 0 0 ${({ theme }) => theme.colors.surface};
-    border-left: 1px solid ${({ theme }) => theme.colors.border}33;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border}33;
-  }
 `;
 
 const DpTabCard = styled.div`
   position: relative;
-  ${glassSurface};
-  border-radius: ${({ theme }) => theme.radii.control}px;
-  padding: 14px 16px;
+  padding: 4px 0;
 `;
 
 const DpCollapsibleHead = styled.div`
@@ -1364,7 +1597,7 @@ const DpCollapsibleBody = styled.div<{ $open?: boolean }>`
 `;
 
 const DpColCenter = styled.div`
-  padding: 16px 24px;
+  padding: 16px 20px;
   overflow-y: auto;
   min-height: 0;
   display: flex;
@@ -1382,66 +1615,70 @@ const DpGrid = styled.div`
 
 const DpField = styled.div`
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border}11;
-  &:last-child { border-bottom: none; }
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 0;
 `;
 
 const DpFieldLabel = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   font-size: 0.8125rem;
-  font-weight: 600;
+  font-weight: 500;
   color: ${({ theme }) => theme.colors.textTertiary};
-  letter-spacing: 0.02em;
-  min-width: 80px;
+  min-width: 64px;
   flex-shrink: 0;
+  padding-top: 1px;
 `;
 
 const DpFieldValue = styled.span`
-  font-size: 0.8625rem;
+  font-size: 0.875rem;
   color: ${({ theme }) => theme.colors.textPrimary};
   word-break: break-word;
   flex: 1;
   min-width: 0;
+  a { color: ${({ theme }) => theme.colors.accent}; text-decoration: none; &:hover { text-decoration: underline; } }
 `;
 
-const DpFieldIcon = styled.span<{ $color: string }>`
+const DpFieldIcon = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 22px;
-  height: 22px;
-  border-radius: 6px;
-  background: ${({ $color }) => $color}14;
-  color: ${({ $color }) => $color};
+  width: 16px;
+  height: 16px;
+  color: ${({ theme }) => theme.colors.textTertiary};
   flex-shrink: 0;
-  svg { width: 13px; height: 13px; }
+  svg { width: 15px; height: 15px; }
+`;
+
+const DpDivider = styled.div`
+  height: 0;
+  border-top: 0.5px solid ${({ theme }) => theme.colors.border};
+  margin: 14px 0;
 `;
 
 const DpSectionTitle = styled.h3`
-  margin: 6px 0 2px;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  margin: 0 0 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
+  color: ${({ theme }) => theme.colors.textTertiary};
 `;
 
 const DpTagList = styled.div`
   display: flex;
-  gap: 6px;
+  gap: 4px;
   flex-wrap: wrap;
+  margin-top: 4px;
 `;
 
 const DpTag = styled.span`
   display: inline-block;
-  padding: 2px 10px;
+  padding: 3px 10px;
   border-radius: 99px;
-  font-size: 0.7rem;
+  font-size: 0.8125rem;
   font-weight: 500;
   background: ${({ theme }) => theme.colors.surfaceMuted};
   color: ${({ theme }) => theme.colors.textSecondary};
@@ -1453,66 +1690,83 @@ const DpTimeline = styled.div`
   gap: 0;
 `;
 
-const DpTimelineItem = styled.div<{ $active?: boolean }>`
+const DpTimelineItem = styled.div<{ $active?: boolean; $last?: boolean }>`
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 8px 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border}15;
-  &:last-child { border-bottom: none; }
+  align-items: stretch;
+  gap: 0;
+  min-height: 0;
 `;
 
-const DpTimelineTime = styled.span`
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  min-width: 72px;
+const DpTimelineDotWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 16px;
   flex-shrink: 0;
-  padding-top: 1px;
+  padding-top: 5px;
 `;
 
 const DpTimelineDot = styled.span<{ $active?: boolean }>`
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  margin-top: 4px;
   flex-shrink: 0;
-  background: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.border};
-  ${({ $active, theme }) => $active ? `box-shadow: 0 0 6px ${theme.colors.accent}55;` : ''}
+  background: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.border};
+`;
+
+const DpTimelineLine = styled.span`
+  width: 1px;
+  flex: 1;
+  background: ${({ theme }) => theme.colors.border};
+  margin-top: 4px;
+  min-height: 10px;
+`;
+
+const DpTimelineContent = styled.div`
+  flex: 1;
+  padding: 2px 0 12px 10px;
 `;
 
 const DpTimelineText = styled.span<{ $active?: boolean }>`
-  font-size: 0.8rem;
-  line-height: 1.4;
+  font-size: 0.875rem;
   color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textTertiary};
-  font-weight: ${({ $active }) => $active ? 600 : 400};
+  font-weight: ${({ $active }) => $active ? 500 : 400};
+`;
+
+const DpTimelineTime = styled.div`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  margin-top: 2px;
 `;
 
 const DpFooter = styled.div`
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  padding: 12px 20px;
+  border-top: 0.5px solid ${({ theme }) => theme.colors.border};
 `;
 
 const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
-  padding: 5px 12px;
-  border-radius: 6px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 0.8125rem;
+  font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity 0.15s;
-  border: 1px solid ${({ $variant, theme }) =>
-    $variant === 'danger' ? `${theme.strong.mauve}55` : `${theme.colors.accent}33`};
-  background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? `${theme.strong.mauve}18` :
-    $variant === 'primary' ? `${theme.colors.accent}1a` :
-    'transparent'};
+  transition: all 0.15s;
+  border: 0.5px solid ${({ $variant }) =>
+    $variant === 'primary' ? '#D689BF' :
+    $variant === 'danger' ? '#e57373' :
+    '#999'};
+  background: transparent;
   color: ${({ $variant, theme }) =>
-    $variant === 'danger' ? theme.strong.mauve : theme.colors.accent};
-  &:hover { opacity: 0.85; }
+    $variant === 'primary' ? '#D689BF' :
+    $variant === 'danger' ? '#e57373' :
+    theme.colors.textPrimary};
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
 `;
 
 /* ── Helpers ── */
@@ -1525,17 +1779,30 @@ const getInitials = (name: string): string => {
 
 const NEXT_STATUS: Record<string, string> = {
   new: 'pending',
+  '': 'pending',
   pending: 'contacted',
 };
 
+const REPLY_ICONS: Record<string, string> = {
+  interested:         'M8 2l1.5 3.5L13 6l-2.5 2.5.5 3.5L8 10.5 5 12l.5-3.5L3 6l3.5-.5z',   // star
+  interested_pending: 'M8 1a7 7 0 100 14A7 7 0 008 1zm0 3v4l2.5 1.5',                        // clock
+  not_interested:     'M8 1a7 7 0 100 14A7 7 0 008 1zM5.5 5.5l5 5M10.5 5.5l-5 5',            // X
+  meeting:            'M2 3h12v10H2V3zm0 3h12M5 1v3M11 1v3',                                  // calendar
+  auto_reply:         'M1 3h14v10H1V3zm0 0l7 5 7-5',                                          // mail
+  question:           'M8 1a7 7 0 100 14A7 7 0 008 1zM6.5 5.5a1.5 1.5 0 013 0c0 1-1.5 1.25-1.5 2.5M8 11h.01', // ?
+  unprocessed:        'M8 1a7 7 0 100 14A7 7 0 008 1zM8 5v3M8 10h.01',                        // info
+  draft_pending:      'M12.146 1.146a.5.5 0 01.708 0l2 2a.5.5 0 010 .708l-9.5 9.5a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168l9.5-9.5z', // pen
+  awaiting:           'M8 1a7 7 0 100 14A7 7 0 008 1zm0 3v4l2.5 1.5',                        // clock
+};
+
 const getReplyCategoryLabel = (t: (k: string, opts?: any) => string, theme: any) => ({
-  interested:         { text: t('leads.replyInterested'),        bg: theme.status.qualified.bg, fg: theme.strong.olive },
-  interested_pending: { text: t('leads.replyInterestedPending'), bg: theme.status.pending.bg, fg: theme.strong.gold },
-  not_interested:     { text: t('leads.replyNotInterested'),     bg: theme.status.rejected.bg, fg: theme.strong.mauve },
-  meeting:            { text: t('leads.replyMeeting'),           bg: theme.status.contacted.bg, fg: theme.colors.accent },
-  auto_reply:         { text: t('leads.replyAutoReply'),         bg: theme.colors.surfaceMuted, fg: theme.colors.textSecondary },
-  question:           { text: t('leads.replyProcessing'),        bg: theme.status.contacted.bg, fg: theme.colors.accent },
-} as Record<string, { text: string; bg: string; fg: string }>);
+  interested:         { text: t('leads.replyInterested'),        bg: theme.pastel.olive,  fg: theme.colors.textPrimary, icon: 'interested' },
+  interested_pending: { text: t('leads.replyInterestedPending'), bg: theme.pastel.gold,   fg: theme.colors.textPrimary, icon: 'interested_pending' },
+  not_interested:     { text: t('leads.replyNotInterested'),     bg: theme.pastel.mauve,  fg: theme.colors.textPrimary, icon: 'not_interested' },
+  meeting:            { text: t('leads.replyMeeting'),           bg: theme.pastel.blue,   fg: theme.colors.textPrimary, icon: 'meeting' },
+  auto_reply:         { text: t('leads.replyAutoReply'),         bg: theme.pastel.gold,   fg: theme.colors.textPrimary, icon: 'auto_reply' },
+  question:           { text: t('leads.replyProcessing'),        bg: theme.pastel.blue,   fg: theme.colors.textPrimary, icon: 'question' },
+} as Record<string, { text: string; bg: string; fg: string; icon: string }>);
 
 /* ── DEV MOCK DATA ── */
 const MOCK_LEADS: Lead[] = [
@@ -1671,31 +1938,34 @@ const getReplyBadge = (lead: Lead, t: (k: string, opts?: any) => string, theme: 
     if (lead._reply_category === 'interested' && lead._pending_meeting) {
       return labels.interested_pending;
     }
-    return labels[lead._reply_category || ''] || { text: t('leads.replyProcessing'), bg: theme.status.contacted.bg, fg: theme.colors.accent };
+    return labels[lead._reply_category || ''] || { text: t('leads.replyProcessing'), bg: theme.pastel.blue, fg: theme.colors.textPrimary, icon: 'question' };
   }
   if (lead.status === 'contacted') {
     return lead._has_email_draft
-      ? { text: t('leads.draftPending'), bg: theme.status.pending.bg, fg: theme.strong.gold }
-      : { text: t('leads.awaitingReply'), bg: theme.status.contacted.bg, fg: theme.colors.accent };
+      ? { text: t('leads.draftPending'), bg: theme.pastel.gold, fg: theme.colors.textPrimary, icon: 'draft_pending' }
+      : { text: t('leads.awaitingReply'), bg: theme.pastel.mauve, fg: theme.colors.textPrimary, icon: 'awaiting' };
   }
   if (lead.status === 'pending') {
-    return { text: t('leads.draftPending'), bg: theme.status.pending.bg, fg: theme.strong.gold };
+    return { text: t('leads.draftPending'), bg: theme.pastel.gold, fg: theme.colors.textPrimary, icon: 'draft_pending' };
   }
   if (lead._has_email_draft) {
-    return { text: t('leads.draftPending'), bg: theme.status.pending.bg, fg: theme.strong.gold };
+    return { text: t('leads.draftPending'), bg: theme.pastel.gold, fg: theme.colors.textPrimary, icon: 'draft_pending' };
   }
-  return { text: t('leads.unprocessed'), bg: theme.colors.surfaceMuted, fg: theme.colors.textTertiary };
+  return { text: t('leads.unprocessed'), bg: theme.pastel.blue, fg: theme.colors.textPrimary, icon: 'unprocessed' };
 };
 
 const ReplyBadge = styled.span<{ $bg: string; $fg: string }>`
-  display: inline-block;
-  padding: 4px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 10px;
   border-radius: 99px;
-  font-size: 0.8125rem;
+  font-size: 0.75rem;
   font-weight: 600;
   background: ${({ $bg }) => $bg};
   color: ${({ $fg }) => $fg};
   white-space: nowrap;
+  svg { width: 12px; height: 12px; flex-shrink: 0; }
 `;
 
 const NoReplyText = styled.span`
@@ -1706,45 +1976,31 @@ const NoReplyText = styled.span`
 /* ── Lead Emails section（撳開 lead 就睇到所有相關 email） ── */
 
 const getEmailTypeLabel = (t: (k: string) => string, theme: any) => ({
-  reply:      { text: t('leads.emailTypeReply'),      bg: theme.status.qualified.bg, fg: theme.strong.olive },
-  followup:   { text: t('leads.emailTypeFollowup'),   bg: theme.status.pending.bg, fg: theme.strong.gold },
-  reoutreach: { text: t('leads.emailTypeReoutreach'), bg: theme.status.contacted.bg, fg: theme.colors.accent },
+  reply:      { text: t('leads.emailTypeReply'),      bg: theme.pastel.olive, fg: theme.colors.textPrimary },
+  followup:   { text: t('leads.emailTypeFollowup'),   bg: theme.pastel.gold,  fg: theme.colors.textPrimary },
+  reoutreach: { text: t('leads.emailTypeReoutreach'), bg: theme.pastel.mauve, fg: theme.colors.textPrimary },
 } as Record<string, { text: string; bg: string; fg: string }>);
 
-const getEmailStatusColor = (theme: any): Record<string, { bg: string; fg: string }> => ({
-  pending:  { bg: theme.status.pending.bg, fg: theme.strong.gold },
-  approved: { bg: theme.status.qualified.bg, fg: theme.strong.olive },
-  sent:     { bg: theme.status.contacted.bg, fg: theme.colors.accent },
-  rejected: { bg: theme.status.rejected.bg, fg: theme.strong.mauve },
-  failed:   { bg: theme.colors.surfaceMuted, fg: theme.colors.textSecondary },
+const getEmailStatusColor = (_theme: any): Record<string, { bg: string; fg: string }> => ({
+  pending:  { bg: '#fff3e0', fg: '#e65100' },
+  approved: { bg: '#e8f5e9', fg: '#2e7d32' },
+  sent:     { bg: '#e3f2fd', fg: '#1565c0' },
+  rejected: { bg: '#fce4ec', fg: '#c62828' },
+  failed:   { bg: '#fff3e0', fg: '#e65100' },
 });
 
 const EmailCard = styled.div<{ $expanded?: boolean }>`
-  ${glassSurface};
-  border-radius: ${({ theme }) => theme.radii.card}px;
+  background: #f7f7f7;
+  border-radius: 10px;
   margin-bottom: 10px;
   max-width: 100%;
-  position: relative;
-  overflow: visible;
-
-  /* Paper fold corner */
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 20px;
-    height: 20px;
-    background: linear-gradient(225deg, ${({ theme }) => theme.colors.surfaceMuted} 50%, transparent 50%);
-    border-bottom-left-radius: 4px;
-  }
+  padding: 14px 16px;
 `;
 const EmailCardHead = styled.div`
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px ${({ theme }) => theme.spacing.md}px;
-  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
 `;
 const EmailCardSubject = styled.span`
   font-weight: 600;
@@ -1757,12 +2013,12 @@ const EmailCardSubject = styled.span`
   text-overflow: ellipsis;
 `;
 const EmailCardDate = styled.span`
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: ${({ theme }) => theme.colors.textTertiary};
   white-space: nowrap;
 `;
 const EmailCardBody = styled.div`
-  padding: 0 ${({ theme }) => theme.spacing.md}px 8px;
+  padding: 0;
 `;
 const EmailBodyContent = styled.div`
   white-space: pre-wrap;
@@ -1770,39 +2026,34 @@ const EmailBodyContent = styled.div`
   overflow-wrap: break-word;
   font-size: 0.875rem;
   line-height: 1.7;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  padding: ${({ theme }) => theme.spacing.md}px;
-  background: ${({ theme }) => theme.colors.surfaceMuted};
-  border-radius: ${({ theme }) => theme.radii.control}px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.04);
+  color: #555;
   max-width: 100%;
   overflow-x: hidden;
-  &::-webkit-scrollbar { width: 5px; }
-  &::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 3px; }
-  &::-webkit-scrollbar-track { background: transparent; }
 `;
 const EmailCardMeta = styled.div`
-  margin-top: 6px;
-  font-size: 0.8rem;
-  color: ${({ theme }) => theme.colors.textTertiary};
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 0.5px solid #e2e2e2;
+  font-size: 0.8125rem;
+  color: #888;
 `;
 const EmailSummary = styled.div`
-  margin: 0 ${({ theme }) => theme.spacing.md}px;
+  margin: 0;
+  margin-bottom: 8px;
   padding: 8px 12px;
-  background: ${({ theme }) => theme.status.contacted.bg};
-  border: 1px solid ${({ theme }) => `${theme.colors.accent}40`};
-  border-radius: ${({ theme }) => theme.radii.control}px;
-  font-size: 0.9rem;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  border: 0.5px solid ${({ theme }) => theme.colors.border};
+  border-radius: 6px;
+  font-size: 0.8125rem;
   line-height: 1.5;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textSecondary};
   display: flex;
   align-items: flex-start;
   gap: 6px;
 `;
 const EmailSummaryLabel = styled.span`
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.accent};
+  font-weight: 500;
+  color: ${({ theme }) => theme.colors.textPrimary};
   white-space: nowrap;
   flex-shrink: 0;
 `;
@@ -1813,13 +2064,13 @@ const EmailCardActions = styled.div`
   margin-top: 6px;
 `;
 const EmailActionBtn = styled.button<{ $bg: string; $fg: string }>`
-  padding: 5px 14px;
-  border: none;
+  padding: 4px 10px;
+  border: 0.5px solid ${({ $fg }) => $fg}33;
   border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 500;
   color: ${({ $fg }) => $fg};
-  background: ${({ $bg }) => $bg};
+  background: transparent;
   cursor: pointer;
   transition: opacity 0.15s;
   &:hover:not(:disabled) { opacity: 0.85; }
@@ -1829,13 +2080,14 @@ const EmailActionBtn = styled.button<{ $bg: string; $fg: string }>`
 const LeadSendBtn = styled.button`
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 16px;
+  gap: 4px;
+  margin-left: auto;
+  padding: 4px 12px;
   border: none;
-  border-radius: 6px;
-  background: ${({ theme }) => theme.strong.olive};
-  color: ${({ theme }) => theme.colors.textInverted};
-  font-size: 0.85rem;
+  border-radius: 99px;
+  background: #2e7d32;
+  color: #fff;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s;
@@ -1957,32 +2209,34 @@ interface SubTab {
   key: string;
   label: string;
   icon: string;
+  step?: string;
 }
 interface TabDef {
   key: string;
   label: string;
   color: string;
   icon: string;
+  stepRange: string;
   subs: SubTab[];
   filter: (l: Lead, sub: string) => boolean;
 }
 
 /* ── Tab / Sub-pill icon SVG paths (16×16 viewBox) ── */
 const TAB_ICONS: Record<string, string> = {
-  preparing: 'M4 2h8a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1zm1 3h6M5 7h6M5 9h4',
-  awaiting: 'M8 1a7 7 0 100 14A7 7 0 008 1zm0 3v4l2.5 1.5',
-  replied: 'M1 3h14v10H1V3zm0 0l7 5 7-5',
+  processing: 'M8 1a7 7 0 100 14A7 7 0 008 1zM8 4v4M6 10h4',                        // AI brain/gear
+  review:     'M4 2h8a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1zm1 3h6M5 7h6M5 9h4', // document
+  sent:       'M1 3h14v10H1V3zm0 0l7 5 7-5',                                          // envelope
 };
 const SUB_ICONS: Record<string, string> = {
-  '': 'M2 2h12v12H2V2zm2 3h8M4 7h8M4 9h5',
-  new: 'M8 1l2 3h3l-1 3 2 2-3 1-1 3-2-2-2 2-1-3-3-1 2-2-1-3h3z',
-  draft: 'M12.146 1.146a.5.5 0 01.708 0l2 2a.5.5 0 010 .708l-9.5 9.5a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168l9.5-9.5z',
-  no_followup: 'M8 1a7 7 0 100 14A7 7 0 008 1zm3 4L7 9.5 5 7.5',
-  has_followup: 'M8 1a7 7 0 100 14A7 7 0 008 1zm-2 4l2 2 4-4',
-  interested: 'M8 2l1.5 3.5L13 6l-2.5 2.5.5 3.5L8 10.5 5 12l.5-3.5L3 6l3.5-.5z',
-  meeting: 'M2 3h12v10H2V3zm0 3h12M5 1v3M11 1v3',
-  question: 'M8 1a7 7 0 100 14A7 7 0 008 1zM6.5 5.5a1.5 1.5 0 013 0c0 1-1.5 1.25-1.5 2.5M8 11h.01',
-  not_interested: 'M8 1a7 7 0 100 14A7 7 0 008 1zM5.5 5.5l5 5M10.5 5.5l-5 5',
+  '':             'M2 2h12v12H2V2zm2 3h8M4 7h8M4 9h5',                                // list
+  to_enrich:      'M8 1l2 3h3l-1 3 2 2-3 1-1 3-2-2-2 2-1-3-3-1 2-2-1-3h3z',          // sparkle (reuse)
+  to_analyze:     'M8 1l2 3h3l-1 3 2 2-3 1-1 3-2-2-2 2-1-3-3-1 2-2-1-3h3z',          // sparkle
+  draft_ready:    'M12.146 1.146a.5.5 0 01.708 0l2 2a.5.5 0 010 .708l-9.5 9.5a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168l9.5-9.5z', // pen
+  email_draft:    'M1 3h14v10H1V3zm0 0l7 5 7-5',                                      // mail
+  wa_draft:       'M8 1a7 7 0 100 14A7 7 0 008 1zM5 6h6M5 8.5h4',                     // chat bubble
+  awaiting_reply: 'M8 1a7 7 0 100 14A7 7 0 008 1zm0 3v4l2.5 1.5',                     // clock
+  followed_up:    'M8 1a7 7 0 100 14A7 7 0 008 1zm-2 4l2 2 4-4',                      // check
+  no_reply:       'M8 1a7 7 0 100 14A7 7 0 008 1zM5.5 5.5l5 5M10.5 5.5l-5 5',         // X
 };
 
 /* ══════════════════════════════════════
@@ -2001,59 +2255,60 @@ const Leads: React.FC = () => {
 
   const TABS: TabDef[] = [
     {
-      key: 'preparing',
-      label: t('leads.tabPreparing'),
+      key: 'processing',
+      label: t('leads.tabProcessing'),
       color: 'blue',
-      icon: 'preparing',
+      icon: 'processing',
+      stepRange: '1-3',
       subs: [
         { key: '', label: t('leads.subAll'), icon: '' },
-        { key: 'new', label: t('leads.subNew'), icon: 'new' },
-        { key: 'draft', label: t('leads.subDraft'), icon: 'draft' },
+        { key: 'to_enrich', label: t('leads.subToEnrich'), icon: 'to_enrich', step: '1' },
+        { key: 'to_analyze', label: t('leads.subToAnalyze'), icon: 'to_analyze', step: '2' },
+        { key: 'draft_ready', label: t('leads.subDraftReady'), icon: 'draft_ready', step: '3' },
       ],
       filter: (l, sub) => {
-        if (!isNew(l) && l.status !== 'pending') return false;
-        if (sub === 'new') return isNew(l);
-        if (sub === 'draft') return l.status === 'pending';
+        if (!isNew(l)) return false;
+        if (sub === 'to_enrich') return !(l as any)._website_researched;
+        if (sub === 'to_analyze') return !!(l as any)._website_researched && !(l as any)._has_analysis;
+        if (sub === 'draft_ready') return !!(l as any)._has_email_draft;
         return true;
       },
     },
     {
-      key: 'awaiting',
-      label: t('leads.tabAwaiting'),
+      key: 'review',
+      label: t('leads.tabReview'),
       color: 'amber',
-      icon: 'awaiting',
+      icon: 'review',
+      stepRange: '4',
       subs: [
         { key: '', label: t('leads.subAll'), icon: '' },
-        { key: 'no_followup', label: t('leads.subNoFollowup'), icon: 'no_followup' },
-        { key: 'has_followup', label: t('leads.subHasFollowup'), icon: 'has_followup' },
+        { key: 'email_draft', label: t('leads.subEmailDraft'), icon: 'email_draft', step: '4' },
+        { key: 'wa_draft', label: t('leads.subWaDraft'), icon: 'wa_draft', step: '4' },
       ],
       filter: (l, sub) => {
-        if (l.status !== 'contacted') return false;
-        if (l._replied) return false;
-        if (sub === 'no_followup') return !l._followup_count;
-        if (sub === 'has_followup') return (l._followup_count || 0) > 0;
+        if (l.status !== 'pending') return false;
+        if (sub === 'email_draft') return !!(l as any)._has_email_draft;
+        if (sub === 'wa_draft') return !!(l as any)._has_wa_message;
         return true;
       },
     },
     {
-      key: 'replied',
-      label: t('leads.tabReplied'),
+      key: 'sent',
+      label: t('leads.tabSent'),
       color: 'green',
-      icon: 'replied',
+      icon: 'sent',
+      stepRange: '5-9',
       subs: [
         { key: '', label: t('leads.subAll'), icon: '' },
-        { key: 'interested', label: t('leads.subInterested'), icon: 'interested' },
-        { key: 'meeting', label: t('leads.subMeeting'), icon: 'meeting' },
-        { key: 'question', label: t('leads.subQuestion'), icon: 'question' },
-        { key: 'not_interested', label: t('leads.subNotInterested'), icon: 'not_interested' },
+        { key: 'awaiting_reply', label: t('leads.subAwaitingReply'), icon: 'awaiting_reply', step: '6' },
+        { key: 'followed_up', label: t('leads.subFollowedUp'), icon: 'followed_up', step: '7' },
+        { key: 'no_reply', label: t('leads.subNoReply'), icon: 'no_reply', step: '9' },
       ],
       filter: (l, sub) => {
         if (l.status !== 'contacted') return false;
-        if (!l._replied) return false;
-        if (sub === 'interested') return l._reply_category === 'interested';
-        if (sub === 'meeting') return l._reply_category === 'meeting';
-        if (sub === 'question') return l._reply_category === 'question';
-        if (sub === 'not_interested') return l._reply_category === 'not_interested';
+        if (sub === 'awaiting_reply') return !(l as any)._no_reply && !((l as any)._followup_count > 0);
+        if (sub === 'followed_up') return ((l as any)._followup_count || 0) > 0;
+        if (sub === 'no_reply') return !!(l as any)._no_reply;
         return true;
       },
     },
@@ -2061,15 +2316,47 @@ const Leads: React.FC = () => {
 
   const STATUS_LABEL: Record<string, string> = {
     new: t('leads.setPending'),
+    '': t('leads.setPending'),
     pending: t('leads.setContacted'),
   };
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('preparing');
+  const [activeTab, setActiveTab] = useState('processing');
   const [activeSub, setActiveSub] = useState('');
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const styledTheme = useTheme() as any;
+
+  /* ── Sliding indicator refs & state ── */
+  const tabsRowRef = useRef<HTMLDivElement>(null);
+  const subTrackRef = useRef<HTMLDivElement>(null);
+  const [tabSlider, setTabSlider] = useState({ left: 0, width: 0 });
+  const [subSlider, setSubSlider] = useState({ left: 0, width: 0 });
+
+  const updateTabSlider = useCallback(() => {
+    const container = tabsRowRef.current;
+    if (!container) return;
+    const btn = container.querySelector(`[data-tab-key="${activeTab}"]`) as HTMLElement | null;
+    if (btn) {
+      setTabSlider({ left: btn.offsetLeft, width: btn.offsetWidth });
+    }
+  }, [activeTab]);
+
+  const updateSubSlider = useCallback(() => {
+    const container = subTrackRef.current;
+    if (!container) return;
+    const btn = container.querySelector(`[data-sub-key="${activeSub}"]`) as HTMLElement | null;
+    if (btn) {
+      setSubSlider({ left: btn.offsetLeft, width: btn.offsetWidth });
+    }
+  }, [activeSub, activeTab]);
+
+  useLayoutEffect(() => { updateTabSlider(); }, [updateTabSlider]);
+  useLayoutEffect(() => {
+    // Small RAF delay so new sub pills are rendered before measuring
+    const id = requestAnimationFrame(updateSubSlider);
+    return () => cancelAnimationFrame(id);
+  }, [updateSubSlider]);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAdd, setShowAdd] = useState(false);
@@ -2177,6 +2464,7 @@ const Leads: React.FC = () => {
     const count = apiLeads.length;
     const ok = await showConfirm(
       t('leads.confirmClearAll', { count }),
+      { danger: true },
     );
     if (!ok) return;
     setClearMsg('');
@@ -2228,10 +2516,23 @@ const Leads: React.FC = () => {
   const [oldWebsiteOnly, setOldWebsiteOnly] = useState(false);
   const [sortByTech, setSortByTech] = useState(false);
 
+  // ── Quarter filter (driven by URL ?quarter= param, set from sidebar) ──
+  const now = useMemo(() => new Date(), []);
+  const { year: currentYear, quarter: currentQuarter } = dateToYQ(now);
+  const defaultQuarter: QuarterFilterValue = `${currentYear}Q${currentQuarter}`;
+  const quarterFilter: QuarterFilterValue = (searchParams.get('quarter') as QuarterFilterValue) || defaultQuarter;
+
   const apiLeads: Lead[] = data?.data ?? [];
-  // ponytail: was `[...MOCK_LEADS, ...apiLeads]` — removed mock per request;
-  // the "一鍵清空" button now produces a visibly empty list.
-  const allLeads: Lead[] = apiLeads;
+  // Always include MOCK_LEADS for demo richness + any real API data
+  const allLeadsRaw: Lead[] = [...MOCK_LEADS, ...apiLeads];
+
+  // Quarter filtering (applied before all other filters so counts reflect the chosen quarter)
+  const allLeads = useMemo(() =>
+    quarterFilter === 'all'
+      ? allLeadsRaw
+      : allLeadsRaw.filter(l => matchesQuarterFilter((l as any)._imported_at, quarterFilter)),
+    [allLeadsRaw, quarterFilter]
+  );
 
   /* ── Auto-open detail panel from URL ?detail=<leadId> ── */
   const detailHandled = useRef<string | null>(null);
@@ -2310,6 +2611,19 @@ const Leads: React.FC = () => {
   // 保留 stats.total 畀 KPI header
   const stats = useMemo(() => ({ total: allLeads.length }), [allLeads]);
 
+  // Dynamic page title based on quarter filter
+  const pageTitle = useMemo(() => {
+    if (quarterFilter === 'all') return t('quarter.titleAll');
+    if (quarterFilter === 'prev_years') return t('quarter.titleOlder');
+    if (quarterFilter.startsWith('year_')) {
+      const y = quarterFilter.slice(5);
+      return t('quarter.titleYear', { year: y });
+    }
+    // e.g. "2026Q3" → "Q3 接觸中的客戶"
+    const qPart = quarterFilter.slice(-2); // "Q3"
+    return t('quarter.titleCurrent', { q: qPart });
+  }, [quarterFilter, t]);
+
   const handleDelete = async (id: string) => {
     const ok = await showConfirm(t('leads.confirmDelete'));
     if (ok) {
@@ -2359,107 +2673,51 @@ const Leads: React.FC = () => {
   return (
     <Page>
         <PageCard>
-        <div><PageTitle>{t('leads.title')}</PageTitle><PageSub>{t('leads.subtitle')}</PageSub></div>
-        <HeaderSection>
-          <StatCardsRow>
-            <StatCard $accent="blue">
-              <StatCardLabel>{t('leads.totalLeads')}</StatCardLabel>
-              <StatCardValue>
-                <StatCardNumber $color="blue">{stats.total}</StatCardNumber>
-                <StatCardUnit>{t('leads.unit')}</StatCardUnit>
-              </StatCardValue>
-              <StatCardWatermark $color="blue"><WmUsers /></StatCardWatermark>
-            </StatCard>
-            <StatCard $accent="amber">
-              <StatCardLabel>{t('leads.tabPreparing')}</StatCardLabel>
-              <StatCardValue>
-                <StatCardNumber $color="amber">{tabCounts['preparing'] || 0}</StatCardNumber>
-                <StatCardUnit>{t('leads.unit')}</StatCardUnit>
-              </StatCardValue>
-              <StatCardWatermark $color="amber"><WmEdit /></StatCardWatermark>
-            </StatCard>
-            <StatCard $accent="green">
-              <StatCardLabel>{t('leads.tabAwaiting')}</StatCardLabel>
-              <StatCardValue>
-                <StatCardNumber $color="green">{tabCounts['awaiting'] || 0}</StatCardNumber>
-                <StatCardUnit>{t('leads.unit')}</StatCardUnit>
-              </StatCardValue>
-              <StatCardWatermark $color="green"><WmClock /></StatCardWatermark>
-            </StatCard>
-            <StatCard $accent="accent">
-              <StatCardLabel>{t('leads.tabReplied')}</StatCardLabel>
-              <StatCardValue>
-                <StatCardNumber $color="accent">{tabCounts['replied'] || 0}</StatCardNumber>
-                <StatCardUnit>{t('leads.unit')}</StatCardUnit>
-              </StatCardValue>
-              <StatCardWatermark $color="accent"><WmCheck /></StatCardWatermark>
-            </StatCard>
-          </StatCardsRow>
-          <HeaderTop style={{ justifyContent: 'space-between' }}>
-            <HeaderBtns style={{ gap: '8px' }}>
-              <CircleActionBtn $color={styledTheme.colors.accent} aria-label={t('leads.checkReplies')} onClick={handleCheckReplies} disabled={replyChecking}>
-                <IconCheckCircle />
-              </CircleActionBtn>
-              <CircleActionBtn $color={styledTheme.colors.amber} aria-label={t('leads.checkFollowups')} onClick={handleCheckFollowups} disabled={followupChecking}>
-                <IconSparkle />
-              </CircleActionBtn>
-              <CircleActionBtn $color={styledTheme.colors.textSecondary} aria-label={t('leads.refresh')} onClick={handleRefresh} disabled={refreshing}>
-                <IconRefresh spinning={refreshing} />
-              </CircleActionBtn>
-              <CircleActionBtn $color={styledTheme.strong.mauve} aria-label={t('leads.clearAll')} onClick={handleClearAll} disabled={clearAllLeads.isPending}>
-                <IconTrash />
-              </CircleActionBtn>
-              <AutoCheckBtn $active={autoCheckReplies} onClick={() => setAutoCheckReplies(p => !p)}>
-                <IconCheckCircle />
-                {autoCheckReplies ? t('leads.autoCheckActive') : t('leads.autoCheckReplies')}
-              </AutoCheckBtn>
-            </HeaderBtns>
-            <AddBtnGreen onClick={() => setShowAdd(true)}>
-              <IconPlus />
-              {t('leads.addLead')}
-            </AddBtnGreen>
-          </HeaderTop>
-          {(replyCheckMsg || followupCheckMsg || clearMsg) && (
-            <HeaderFeedback>
-              {replyCheckMsg && <FeedbackMsg key={replyCheckMsg} $error={replyCheckMsg.startsWith(t('leads.triggerFailed'))}>{replyCheckMsg}</FeedbackMsg>}
-              {followupCheckMsg && <FeedbackMsg key={followupCheckMsg} $error={followupCheckMsg.startsWith(t('leads.triggerFailed'))}>{followupCheckMsg}</FeedbackMsg>}
-              {clearMsg && <FeedbackMsg key={clearMsg} $error={clearMsg.startsWith(t('leads.clearFailed'))}>{clearMsg}</FeedbackMsg>}
-            </HeaderFeedback>
-          )}
-        </HeaderSection>
-        {/* Tabs */}
-        <TabsRow>
+        <div><PageTitle>{pageTitle}</PageTitle></div>
+
+        {/* ── Orbital-style View Tabs ── */}
+        <TabsRow ref={tabsRowRef}>
+          <TabSlider $left={tabSlider.left} $width={tabSlider.width} />
           {TABS.map(tab => (
             <TabItem
               key={tab.key}
+              data-tab-key={tab.key}
               $active={activeTab === tab.key}
               $color={tab.color}
               onClick={() => handleTabClick(tab.key)}
             >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke={(styledTheme.colors as any)[tab.color] || styledTheme.colors.accent} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: activeTab === tab.key ? 0.7 : 0.35 }}>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
                 <path d={TAB_ICONS[tab.icon] || ''} />
               </svg>
-              <TabNumber $color={tab.color}>{tabCounts[tab.key] || 0}</TabNumber>
-              <TabLabel $active={activeTab === tab.key}>{tab.label}</TabLabel>
+              {tab.label}
+              <TabNumber>{tabCounts[tab.key] ?? 0}</TabNumber>
             </TabItem>
           ))}
         </TabsRow>
 
+        {/* ── Sub-status pills in track bar + right-side actions ── */}
         <SubPillRow>
-          {curTab.subs.length > 1 && curTab.subs.map(sub => (
-            <SubPill
-              key={sub.key}
-              $active={activeSub === sub.key}
-              $color={SUB_COLOR_KEYS[sub.key] || 'blue'}
-              onClick={() => handleSubClick(sub.key)}
-            >
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
-                <path d={SUB_ICONS[sub.icon] || SUB_ICONS[''] || ''} />
-              </svg>
-              {sub.label}
-              <span style={{ opacity: 0.5 }}>{subCounts[sub.key] ?? 0}</span>
-            </SubPill>
-          ))}
+          <SubPillTrack ref={subTrackRef}>
+            {curTab.subs.length > 1 && <>
+              <SubSlider $left={subSlider.left} $width={subSlider.width} />
+              {curTab.subs.map(sub => (
+                <SubPill
+                  key={sub.key}
+                  data-sub-key={sub.key}
+                  $active={activeSub === sub.key}
+                  $color={SUB_COLOR_KEYS[sub.key] || 'blue'}
+                  onClick={() => handleSubClick(sub.key)}
+                >
+                  {SUB_ICONS[sub.key] && (
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+                      <path d={SUB_ICONS[sub.key]} />
+                    </svg>
+                  )}
+                  {sub.label} {subCounts[sub.key] ?? 0}
+                </SubPill>
+              ))}
+            </>}
+          </SubPillTrack>
           <SearchWrap>
             <SearchIcon><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></SearchIcon>
             <SearchInput
@@ -2468,54 +2726,48 @@ const Leads: React.FC = () => {
               onChange={e => { setSearch(e.target.value); setPage(1); }}
             />
           </SearchWrap>
-          <button
-            onClick={() => { setOldWebsiteOnly(v => !v); setPage(1); }}
-            style={{
-              padding: '4px 12px',
-              borderRadius: 14,
-              border: oldWebsiteOnly ? `1.5px solid ${styledTheme.strong.mauve}` : `1px solid ${styledTheme.colors.border}`,
-              background: oldWebsiteOnly ? `${styledTheme.strong.mauve}14` : styledTheme.colors.surface,
-              color: oldWebsiteOnly ? styledTheme.strong.mauve : styledTheme.colors.textSecondary,
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap' as const,
-            }}
-          >
-            {oldWebsiteOnly ? t('leads.filterOldWebsiteOff') : t('leads.filterOldWebsiteOn')}
-          </button>
-          <button
-            onClick={() => { setSortByTech(v => !v); setPage(1); }}
-            style={{
-              padding: '4px 12px',
-              borderRadius: 14,
-              border: sortByTech ? `1.5px solid ${styledTheme.colors.amber}` : `1px solid ${styledTheme.colors.border}`,
-              background: sortByTech ? `${styledTheme.colors.amber}1a` : styledTheme.colors.surface,
-              color: sortByTech ? styledTheme.colors.amber : styledTheme.colors.textSecondary,
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              whiteSpace: 'nowrap' as const,
-            }}
-          >
-            {sortByTech ? t('leads.filterSortTechOff') : t('leads.filterSortTechOn')}
-          </button>
+          <CircleActionBtn title={t('leads.filterOldWebsiteOn')} onClick={() => { setOldWebsiteOnly(v => !v); setPage(1); }} style={oldWebsiteOnly ? { background: styledTheme.colors.accent, color: '#fff', borderColor: 'transparent' } : undefined}>
+            <IconOldWebsite />
+          </CircleActionBtn>
+          <CircleActionBtn title={t('leads.checkReplies')} onClick={handleCheckReplies} disabled={replyChecking} $spinning={replyChecking}>
+            <IconCheckCircle />
+          </CircleActionBtn>
+          <CircleActionBtn title={t('leads.refresh')} onClick={handleRefresh} disabled={refreshing} $spinning={refreshing}>
+            <IconRefresh spinning={refreshing} />
+          </CircleActionBtn>
+          <CircleActionBtn title={t('leads.clearAll')} onClick={handleClearAll} disabled={clearAllLeads.isPending} $spinning={clearAllLeads.isPending}>
+            <IconTrash />
+          </CircleActionBtn>
+          <CircleActionBtn title={t('leads.addLead')} onClick={() => setShowAdd(true)} style={{ background: styledTheme.colors.textPrimary, color: '#fff', borderColor: 'transparent' }}>
+            <IconPlus />
+          </CircleActionBtn>
         </SubPillRow>
+        {(replyCheckMsg || followupCheckMsg || clearMsg) && createPortal(
+          <>
+            {replyCheckMsg && <FloatingToast key={`r-${replyCheckMsg}`} $error={replyCheckMsg.startsWith(t('leads.triggerFailed'))}>{replyCheckMsg}</FloatingToast>}
+            {followupCheckMsg && <FloatingToast key={`f-${followupCheckMsg}`} $error={followupCheckMsg.startsWith(t('leads.triggerFailed'))}>{followupCheckMsg}</FloatingToast>}
+            {clearMsg && <FloatingToast key={`c-${clearMsg}`} $error={clearMsg.startsWith(t('leads.clearFailed'))}>{clearMsg}</FloatingToast>}
+          </>,
+          document.body
+        )}
+          <div style={{ marginTop: 16 }}><ToolbarSep /></div>
           <TableWrap>
             <Table>
               <thead>
                 <tr>
-                  <th>{t('leads.status')}</th>
+                  <th style={{ textAlign: 'center' }}><RowCheckbox readOnly /></th>
                   <th>{t('leads.name')} <IconSortArrow /></th>
                   <th>{t('leads.reply')}</th>
                   {isAdmin && <th>{t('leads.sourceUser')}</th>}
-                  <th style={{ textAlign: 'center' }}>{t('leads.techScore')}</th>
-                  <th>{t('leads.importedAt')}</th>
+                  <th style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => { setSortByTech(v => !v); setPage(1); }}>
+                    {t('leads.techScore')} <IconSortArrow />
+                  </th>
+                  <th>{t('leads.importedAt')} <IconSortArrow /></th>
                   <th>{t('leads.action')}</th>
                 </tr>
               </thead>
               <tbody>
-                {error ? (
+                {(error && allLeads.length === 0) ? (
                   <tr>
                     <EmptyCell colSpan={isAdmin ? 7 : 6}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
@@ -2541,46 +2793,31 @@ const Leads: React.FC = () => {
                       </div>
                     </EmptyCell>
                   </tr>
-                ) : isLoading ? (
+                ) : (isLoading && allLeads.length === 0) ? (
                   <tr><EmptyCell colSpan={isAdmin ? 7 : 6}>{t('leads.loading')}</EmptyCell></tr>
                 ) : leads.length === 0 ? (
                   <tr><EmptyCell colSpan={isAdmin ? 7 : 6}><div><EmptyLeadsIllustration />{t('leads.noLeads')}</div></EmptyCell></tr>
                 ) : (
                   (() => {
-                    let lastGroup = '';
                     return leads.map((lead, i) => {
                       const name = lead.company_name || 'Unknown';
                       const colorIdx = hashColorIndex(name);
-                      const group = getDateGroup(lead._imported_at);
-                      const showHeader = group !== lastGroup;
-                      if (showHeader) lastGroup = group;
-                      const isCollapsed = !!collapsedGroups[group];
                       return (
                         <React.Fragment key={lead._id}>
-                          {showHeader && (
-                            <GroupBar $group={group}>
-                              <td colSpan={isAdmin ? 7 : 6}>
-                                <GroupBarInner
-                                  $group={group}
-                                  $collapsed={isCollapsed}
-                                  onClick={() => setCollapsedGroups(prev => ({ ...prev, [group]: !prev[group] }))}
-                                >
-                                  {group === 'today' ? t('leads.groupToday') : group === 'yesterday' ? t('leads.groupYesterday') : t('leads.groupEarlier')}
-                                </GroupBarInner>
-                              </td>
-                            </GroupBar>
-                          )}
-                          <TRow $even={i % 2 === 1} $collapsed={isCollapsed} style={{ cursor: isCollapsed ? 'default' : 'pointer' }} onClick={() => !isCollapsed && setSelectedLead(lead)}>
-                        <td>
-                          <StatusBadge $status={lead.status ?? 'new'}>{lead.status ?? 'new'}</StatusBadge>
-                        </td>
+                          <TRow $even={i % 2 === 1} style={{ cursor: 'pointer' }} onClick={() => setSelectedLead(lead)}>
+                        <td style={{ color: styledTheme.colors.textTertiary, fontSize: '0.75rem', textAlign: 'center' }}>{(page - 1) * LIMIT + i + 1}</td>
                         <td>
                           <NameCell>
+                            <StatusIcon $status={lead.status ?? 'new'} title={t(STATUS_I18N_KEY[lead.status ?? 'new'] || 'leads.statusNew')} />
                             <Avatar $colorIndex={colorIdx}><AvatarIcon name={name} /></Avatar>
                             <NameText>
                               <strong>{name}</strong>
                               {lead.website && <small>{lead.website}</small>}
                             </NameText>
+                            {(() => {
+                              const qt = getQuarterTag((lead as any)._imported_at);
+                              return qt ? <QuarterTag>{qt}</QuarterTag> : null;
+                            })()}
                             {(() => {
                               const src = lead.source || '';
                               const agentKey = SOURCE_AGENT[src];
@@ -2594,7 +2831,7 @@ const Leads: React.FC = () => {
                         <td>
                           {(() => {
                             const badge = getReplyBadge(lead, t, styledTheme);
-                            return <ReplyBadge $bg={badge.bg} $fg={badge.fg}>{badge.text}</ReplyBadge>;
+                            return <ReplyBadge $bg={badge.bg} $fg={badge.fg}>{badge.icon && REPLY_ICONS[badge.icon] && <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d={REPLY_ICONS[badge.icon]} /></svg>}{badge.text}</ReplyBadge>;
                           })()}
                         </td>
                         {isAdmin && (
@@ -2629,11 +2866,11 @@ const Leads: React.FC = () => {
                           return lead._imported_at ? new Date(lead._imported_at).toLocaleDateString('en-CA', { year: 'numeric', month: '2-digit', day: '2-digit' }) : '—';
                         })()}</td>
                         <td>
-                          {lead.status && lead.status !== 'contacted' && NEXT_STATUS[lead.status] && (
+                          {(lead.status ?? '') !== 'contacted' && NEXT_STATUS[lead.status ?? ''] && (
                             <ActionBtn
                               $color={styledTheme.colors.accent}
-                              title={STATUS_LABEL[lead.status]}
-                              onClick={(e) => { e.stopPropagation(); handleStatusChange(lead._id, NEXT_STATUS[lead.status!]); }}
+                              title={STATUS_LABEL[lead.status ?? '']}
+                              onClick={(e) => { e.stopPropagation(); handleStatusChange(lead._id, NEXT_STATUS[lead.status ?? '']); }}
                             >
                               <IconArrowRight />
                             </ActionBtn>
@@ -2774,208 +3011,158 @@ const Leads: React.FC = () => {
         <DpOverlay $closing={detailClosing} onClick={handleCloseDetail}>
         <DpPanel $closing={detailClosing} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
           <DpHeader>
-            <span style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              background: `${styledTheme.colors.accent}1f`,
-              color: styledTheme.colors.accent,
-              fontSize: '0.625rem',
-              fontWeight: 700,
-              padding: '3px 16px 3px 8px',
-              borderBottomRightRadius: '10px',
-              letterSpacing: '0.05em',
-              textTransform: 'uppercase' as const,
-              backdropFilter: 'blur(4px)',
-            }}>{selectedLead.status ?? 'new'}</span>
-            <Avatar $colorIndex={hashColorIndex(selectedLead.company_name || 'Unknown')} style={{ width: 42, height: 42, fontSize: '0.875rem', border: `2px solid ${styledTheme.colors.border}` }}>
+            <Avatar $colorIndex={hashColorIndex(selectedLead.company_name || 'Unknown')} style={{ width: 40, height: 40, fontSize: '0.8rem', borderRadius: 10 }}>
               <AvatarIcon name={selectedLead.company_name || 'Unknown'} />
             </Avatar>
             <DpHeaderInfo>
-              <DpCompanyName>{selectedLead.company_name || 'Unknown'}</DpCompanyName>
+              <DpCompanyName>
+                {selectedLead.company_name || 'Unknown'}
+                {(() => { const qt = getQuarterTag((selectedLead as any)._imported_at); return qt ? <QuarterTag>{qt}</QuarterTag> : null; })()}
+              </DpCompanyName>
+              <DpHeaderMeta>
+                <DpStatusPill $status={selectedLead.status ?? 'new'}>{selectedLead.status ?? 'new'}</DpStatusPill>
+                <span>·</span>
+                <span>{selectedLead.source || '—'}</span>
+                {selectedLead.phone && <><span>·</span><span>{selectedLead.phone}</span></>}
+              </DpHeaderMeta>
             </DpHeaderInfo>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginLeft: 'auto' }}>
-              {selectedLead.status && selectedLead.status !== 'contacted' && NEXT_STATUS[selectedLead.status] && (
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+              {(selectedLead.status ?? '') !== 'contacted' && NEXT_STATUS[selectedLead.status ?? ''] && (
                 <DpActionBtn
                   $variant="primary"
                   onClick={() => {
-                    handleStatusChange(selectedLead._id, NEXT_STATUS[selectedLead.status!]);
+                    handleStatusChange(selectedLead._id, NEXT_STATUS[selectedLead.status ?? '']);
                     handleCloseDetail();
                   }}
                 >
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ marginRight: 3 }}><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   {t('leads.advanceStatus')}
                 </DpActionBtn>
               )}
-              <DpActionBtn
-                $variant="danger"
-                onClick={() => {
-                  handleDelete(selectedLead._id);
-                  handleCloseDetail();
-                }}
-              >
-                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ marginRight: 4 }}><path d="M2.5 4h9M5 4V2.5a.5.5 0 01.5-.5h3a.5.5 0 01.5.5V4M11 4v7.5a1 1 0 01-1 1H4a1 1 0 01-1-1V4M6 6.5v3M8 6.5v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                Delete
-              </DpActionBtn>
             </div>
-            <DpCloseBtn onClick={handleCloseDetail}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></DpCloseBtn>
+            <DpCloseBtn onClick={handleCloseDetail}><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></DpCloseBtn>
           </DpHeader>
 
           <DpBody>
             {/* Left: About + Journey + Tags + Reply */}
             <DpColLeft>
-              <DpCollapsibleHead onClick={() => setAboutOpen(o => !o)}>
-                <DpSectionTitle>{t('leads.about')} — {selectedLead.email || '—'}</DpSectionTitle>
-                <span style={{ fontSize: '0.7rem', color: styledTheme.colors.textTertiary }}>{aboutOpen ? '▲' : '▼'}</span>
-              </DpCollapsibleHead>
-              <DpCollapsibleBody $open={aboutOpen}>
-                <DpTabSection>
-                <DpTabLabel>{t('leads.about')}</DpTabLabel>
-                <DpTabCard>
-                <DpGrid>
-                  <DpField>
-                    <DpFieldLabel>
-                      <DpFieldIcon $color={styledTheme.colors.accent}><svg viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
-                      {t('leads.email')}
-                    </DpFieldLabel>
-                    <DpFieldValue style={{ color: selectedLead.email ? styledTheme.colors.accent : undefined }}>{selectedLead.email || '—'}</DpFieldValue>
-                  </DpField>
-                  <DpField>
-                    <DpFieldLabel>
-                      <DpFieldIcon $color={styledTheme.strong.olive}><svg viewBox="0 0 16 16" fill="none"><path d="M10 1.5a3.5 3.5 0 013.5 3.5c0 3-5 8.5-5 8.5s-5-5.5-5-8.5A3.5 3.5 0 017 1.79" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 9l1.5-3h1L10 9" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
-                      {t('leads.phone')}
-                    </DpFieldLabel>
-                    <DpFieldValue style={{ color: selectedLead.phone ? styledTheme.strong.olive : undefined }}>{selectedLead.phone || '—'}</DpFieldValue>
-                  </DpField>
-                  <DpField>
-                    <DpFieldLabel>
-                      <DpFieldIcon $color={styledTheme.colors.accent}><svg viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zM1 8h14M8 1c1.7 2 2.7 4 2.7 7s-1 5-2.7 7c-1.7-2-2.7-4-2.7-7s1-5 2.7-7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
-                      {t('leads.website')}
-                    </DpFieldLabel>
-                    <DpFieldValue style={{ color: selectedLead.website ? styledTheme.colors.accent : undefined }}>
-                      {selectedLead.website ? (
-                        <a href={selectedLead.website.startsWith('http') ? selectedLead.website : `https://${selectedLead.website}`} target="_blank" rel="noopener noreferrer" style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: '2px' }}>{selectedLead.website}</a>
-                      ) : '—'}
-                    </DpFieldValue>
-                  </DpField>
-                  <DpField>
-                    <DpFieldLabel>
-                      <DpFieldIcon $color={styledTheme.colors.amber}><svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5C5 1.5 2 4.5 2 8c0 2.5 1 4.5 2.5 6h7C13 12.5 14 10.5 14 8c0-3.5-3-6.5-6-6.5zM5 14.5h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
-                      {t('leads.address')}
-                    </DpFieldLabel>
-                    <DpFieldValue>{selectedLead.address || '—'}</DpFieldValue>
-                  </DpField>
-                  <DpField>
-                    <DpFieldLabel>
-                      <DpFieldIcon $color={styledTheme.colors.textSecondary}><svg viewBox="0 0 16 16" fill="none"><path d="M2 13V3a1 1 0 011-1h10a1 1 0 011 1v7a1 1 0 01-1 1H5l-3 2z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
-                      {t('leads.source')}
-                    </DpFieldLabel>
-                    <DpFieldValue>{selectedLead.source || '—'}</DpFieldValue>
-                  </DpField>
-                  <DpField>
-                    <DpFieldLabel>
-                      <DpFieldIcon $color={styledTheme.colors.amber}><svg viewBox="0 0 16 16" fill="none"><path d="M8 1l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
-                      {t('leads.rating')}
-                    </DpFieldLabel>
-                    <DpFieldValue style={{ color: selectedLead.rating ? styledTheme.colors.amber : undefined }}>{selectedLead.rating ? `${selectedLead.rating} / 5.0` : '—'}</DpFieldValue>
-                  </DpField>
-                  <DpField>
-                    <DpFieldLabel>
-                      <DpFieldIcon $color={styledTheme.colors.textTertiary}><svg viewBox="0 0 16 16" fill="none"><path d="M2 3h12v10H2V3zm0 3h12M5 1v3M11 1v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>
-                      {t('leads.importedAt')}
-                    </DpFieldLabel>
-                    <DpFieldValue>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}</DpFieldValue>
-                  </DpField>
-                </DpGrid>
-                </DpTabCard>
-                </DpTabSection>
+              <DpSectionTitle>{t('leads.about')}</DpSectionTitle>
+              <DpField>
+                <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.email')}</DpFieldLabel>
+                <DpFieldValue>{selectedLead.email || '—'}</DpFieldValue>
+              </DpField>
+              <DpField>
+                <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M10 1.5a3.5 3.5 0 013.5 3.5c0 3-5 8.5-5 8.5s-5-5.5-5-8.5A3.5 3.5 0 017 1.79" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.phone')}</DpFieldLabel>
+                <DpFieldValue>{selectedLead.phone || '—'}</DpFieldValue>
+              </DpField>
+              <DpField>
+                <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zM1 8h14M8 1c1.7 2 2.7 4 2.7 7s-1 5-2.7 7c-1.7-2-2.7-4-2.7-7s1-5 2.7-7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.website')}</DpFieldLabel>
+                <DpFieldValue>{selectedLead.website ? <a href={selectedLead.website.startsWith('http') ? selectedLead.website : `https://${selectedLead.website}`} target="_blank" rel="noopener noreferrer">{selectedLead.website}</a> : '—'}</DpFieldValue>
+              </DpField>
+              <DpField>
+                <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5C5 1.5 2 4.5 2 8c0 2.5 1 4.5 2.5 6h7C13 12.5 14 10.5 14 8c0-3.5-3-6.5-6-6.5zM5 14.5h6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.address')}</DpFieldLabel>
+                <DpFieldValue>{selectedLead.address || '—'}</DpFieldValue>
+              </DpField>
+              <DpField>
+                <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M8 1l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.rating')}</DpFieldLabel>
+                <DpFieldValue>{selectedLead.rating ? `${selectedLead.rating} / 5.0` : '—'}</DpFieldValue>
+              </DpField>
 
-                <DpTabSection>
-                <DpTabLabel>{t('leads.leadJourney')}</DpTabLabel>
-                <DpTabCard>
-                <DpTimeline>
-                  <DpTimelineItem>
-                    <DpTimelineTime>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
-                    <DpTimelineDot $active />
+              <DpDivider />
+
+              <DpSectionTitle>{t('leads.leadJourney')}</DpSectionTitle>
+              <DpTimeline>
+                <DpTimelineItem>
+                  <DpTimelineDotWrap><DpTimelineDot $active /><DpTimelineLine /></DpTimelineDotWrap>
+                  <DpTimelineContent>
                     <DpTimelineText $active>{t('leads.discoveredVia', { source: selectedLead.source || 'unknown' })}</DpTimelineText>
-                  </DpTimelineItem>
-                  <DpTimelineItem>
-                    <DpTimelineTime>{selectedLead.createdAt ? new Date(selectedLead.createdAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
-                    <DpTimelineDot $active />
+                    <DpTimelineTime>{(() => { const ts = selectedLead.createdAt || (selectedLead as any)._imported_at || (selectedLead as any).created_at; return ts ? new Date(ts).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'; })()}</DpTimelineTime>
+                  </DpTimelineContent>
+                </DpTimelineItem>
+                <DpTimelineItem>
+                  <DpTimelineDotWrap><DpTimelineDot $active /><DpTimelineLine /></DpTimelineDotWrap>
+                  <DpTimelineContent>
                     <DpTimelineText $active>{t('leads.addedToPool')}</DpTimelineText>
-                  </DpTimelineItem>
-                  <DpTimelineItem>
-                    <DpTimelineTime>{selectedLead.status !== 'new' && selectedLead.updatedAt ? new Date(selectedLead.updatedAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
+                    <DpTimelineTime>{(() => { const ts = selectedLead.createdAt || (selectedLead as any)._imported_at || (selectedLead as any).created_at; return ts ? new Date(ts).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'; })()}</DpTimelineTime>
+                  </DpTimelineContent>
+                </DpTimelineItem>
+                <DpTimelineItem>
+                  <DpTimelineDotWrap>
                     <DpTimelineDot $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'} />
+                    {(selectedLead.status === 'contacted' || selectedLead._replied) && <DpTimelineLine />}
+                  </DpTimelineDotWrap>
+                  <DpTimelineContent>
                     <DpTimelineText $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'}>{selectedLead.status === 'new' ? t('leads.awaitingReview') : t('leads.markedAsPending')}</DpTimelineText>
-                  </DpTimelineItem>
-                  {(selectedLead.status === 'contacted') && (
-                    <DpTimelineItem>
-                      <DpTimelineTime>{selectedLead.updatedAt ? new Date(selectedLead.updatedAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
+                    {selectedLead.status !== 'new' && selectedLead.updatedAt && <DpTimelineTime>{new Date(selectedLead.updatedAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</DpTimelineTime>}
+                  </DpTimelineContent>
+                </DpTimelineItem>
+                {selectedLead.status === 'contacted' && (
+                  <DpTimelineItem>
+                    <DpTimelineDotWrap>
                       <DpTimelineDot $active />
+                      {selectedLead._replied && <DpTimelineLine />}
+                    </DpTimelineDotWrap>
+                    <DpTimelineContent>
                       <DpTimelineText $active>{t('leads.contactedStep')}</DpTimelineText>
-                    </DpTimelineItem>
-                  )}
-                  {selectedLead._replied && (
-                    <DpTimelineItem>
-                      <DpTimelineTime>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'}</DpTimelineTime>
-                      <DpTimelineDot $active />
-                      <DpTimelineText $active>{t('leads.receivedReply', { text: getReplyBadge(selectedLead, t, styledTheme)?.text || t('leads.replied') })}</DpTimelineText>
-                    </DpTimelineItem>
-                  )}
-                </DpTimeline>
-                </DpTabCard>
-                </DpTabSection>
-
-                {selectedLead.industry_tags && selectedLead.industry_tags.length > 0 && (
-                  <DpTabSection>
-                    <DpTabLabel>{t('leads.tags')}</DpTabLabel>
-                    <DpTabCard>
-                    <DpTagList>
-                      {selectedLead.industry_tags.map(tag => (
-                        <DpTag key={tag}>{tag}</DpTag>
-                      ))}
-                    </DpTagList>
-                    </DpTabCard>
-                  </DpTabSection>
+                      {selectedLead.updatedAt && <DpTimelineTime>{new Date(selectedLead.updatedAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</DpTimelineTime>}
+                    </DpTimelineContent>
+                  </DpTimelineItem>
                 )}
+                {selectedLead._replied && (
+                  <DpTimelineItem>
+                    <DpTimelineDotWrap><DpTimelineDot $active /></DpTimelineDotWrap>
+                    <DpTimelineContent>
+                      <DpTimelineText $active>{t('leads.receivedReply', { text: getReplyBadge(selectedLead, t, styledTheme)?.text || t('leads.replied') })}</DpTimelineText>
+                      {selectedLead._reply_at && <DpTimelineTime>{new Date(selectedLead._reply_at).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</DpTimelineTime>}
+                    </DpTimelineContent>
+                  </DpTimelineItem>
+                )}
+              </DpTimeline>
 
-                {selectedLead._replied && (() => {
-                  const cat = getReplyBadge(selectedLead, t, styledTheme) || { text: t('leads.replied'), bg: styledTheme.status.contacted.bg, fg: styledTheme.colors.accent };
-                  return (
-                    <DpTabSection>
-                      <DpTabLabel>{t('leads.replyInfo')}</DpTabLabel>
-                      <DpTabCard>
-                      <DpGrid>
-                        <DpField>
-                          <DpFieldLabel>{t('leads.replyCategory')}</DpFieldLabel>
-                          <DpFieldValue><ReplyBadge $bg={cat.bg} $fg={cat.fg}>{cat.text}</ReplyBadge></DpFieldValue>
-                        </DpField>
-                        <DpField>
-                          <DpFieldLabel>{t('leads.replySentiment')}</DpFieldLabel>
-                          <DpFieldValue>{selectedLead._reply_sentiment || '—'}</DpFieldValue>
-                        </DpField>
-                        <DpField>
-                          <DpFieldLabel>{t('leads.replySummary')}</DpFieldLabel>
-                          <DpFieldValue>{selectedLead._reply_summary || '—'}</DpFieldValue>
-                        </DpField>
-                        <DpField>
-                          <DpFieldLabel>{t('leads.replyNextStep')}</DpFieldLabel>
-                          <DpFieldValue>{selectedLead._reply_next_step || '—'}</DpFieldValue>
-                        </DpField>
-                        <DpField>
-                          <DpFieldLabel>{t('leads.replyVia')}</DpFieldLabel>
-                          <DpFieldValue>{selectedLead._reply_via || '—'}</DpFieldValue>
-                        </DpField>
-                        <DpField>
-                          <DpFieldLabel>{t('leads.replyTime')}</DpFieldLabel>
-                          <DpFieldValue>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString() : '—'}</DpFieldValue>
-                        </DpField>
-                      </DpGrid>
-                      </DpTabCard>
-                    </DpTabSection>
-                  );
-                })()}
-              </DpCollapsibleBody>
+              <DpDivider />
+              <DpSectionTitle>{t('leads.tags')}</DpSectionTitle>
+              <DpTagList>
+                {selectedLead.industry_tags && selectedLead.industry_tags.length > 0
+                  ? selectedLead.industry_tags.map(tag => (
+                      <DpTag key={tag}>{tag}</DpTag>
+                    ))
+                  : <span style={{ fontSize: '0.8125rem', color: '#888' }}>—</span>
+                }
+              </DpTagList>
+
+              {selectedLead._replied && (() => {
+                const cat = getReplyBadge(selectedLead, t, styledTheme) || { text: t('leads.replied'), bg: styledTheme.status.contacted.bg, fg: styledTheme.colors.accent };
+                return (
+                  <>
+                    <DpDivider />
+                    <DpSectionTitle>{t('leads.replyInfo')}</DpSectionTitle>
+                    <DpField>
+                      <DpFieldLabel>{t('leads.replyCategory')}</DpFieldLabel>
+                      <DpFieldValue><ReplyBadge $bg={cat.bg} $fg={cat.fg}>{cat.icon && REPLY_ICONS[cat.icon] && <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d={REPLY_ICONS[cat.icon]} /></svg>}{cat.text}</ReplyBadge></DpFieldValue>
+                    </DpField>
+                    <DpField>
+                      <DpFieldLabel>{t('leads.replySentiment')}</DpFieldLabel>
+                      <DpFieldValue>{selectedLead._reply_sentiment || '—'}</DpFieldValue>
+                    </DpField>
+                    <DpField>
+                      <DpFieldLabel>{t('leads.replySummary')}</DpFieldLabel>
+                      <DpFieldValue>{selectedLead._reply_summary || '—'}</DpFieldValue>
+                    </DpField>
+                    <DpField>
+                      <DpFieldLabel>{t('leads.replyNextStep')}</DpFieldLabel>
+                      <DpFieldValue>{selectedLead._reply_next_step || '—'}</DpFieldValue>
+                    </DpField>
+                    <DpField>
+                      <DpFieldLabel>{t('leads.replyVia')}</DpFieldLabel>
+                      <DpFieldValue>{selectedLead._reply_via || '—'}</DpFieldValue>
+                    </DpField>
+                    <DpField>
+                      <DpFieldLabel>{t('leads.replyTime')}</DpFieldLabel>
+                      <DpFieldValue>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString() : '—'}</DpFieldValue>
+                    </DpField>
+                  </>
+                );
+              })()}
             </DpColLeft>
 
             {/* Right: email feed (full width) */}
@@ -2986,17 +3173,27 @@ const Leads: React.FC = () => {
             </DpColCenter>
           </DpBody>
           <DpFooter>
+            <DpActionBtn
+              $variant="danger"
+              onClick={() => {
+                handleDelete(selectedLead._id);
+                handleCloseDetail();
+              }}
+            >
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ marginRight: 3 }}><path d="M2.5 4h9M5 4V2.5a.5.5 0 01.5-.5h3a.5.5 0 01.5.5V4M11 4v7.5a1 1 0 01-1 1H4a1 1 0 01-1-1V4M6 6.5v3M8 6.5v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              {t('leads.deleteBtn')}
+            </DpActionBtn>
+            <div style={{ flex: 1 }} />
             {(['enrich', 'analyze', 'draft', 'send'] as const).map(stage => (
               <DpActionBtn
                 key={stage}
-                $variant="primary"
                 onClick={() => {
                   reprocessLead.mutate({ id: selectedLead._id, stage });
                 }}
                 style={{ textTransform: 'capitalize' }}
               >
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" style={{ marginRight: 4 }}><path d="M13.5 8a5.5 5.5 0 0 1-9.72 3.5M2.5 8a5.5 5.5 0 0 1 9.72-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M13.5 3v3.5H10M2.5 13v-3.5H6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                {t('leads.rerunStage', { stage })}
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ marginRight: 3 }}><path d="M13.5 8a5.5 5.5 0 0 1-9.72 3.5M2.5 8a5.5 5.5 0 0 1 9.72-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M13.5 3v3.5H10M2.5 13v-3.5H6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                {stage.charAt(0).toUpperCase() + stage.slice(1)}
               </DpActionBtn>
             ))}
           </DpFooter>

@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>Detail Panel Mockup</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background:#f5f5f5; display:flex; justify-content:center; padding:40px; }
+
+.panel {
+  width: 880px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 680px;
+}
+
+/* ── Header ── */
+.dp-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 0.5px solid #e2e2e2;
+}
+.avatar {
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  background: #d4a6c8;
+  color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.85rem; font-weight: 600;
+  flex-shrink: 0;
+}
+.header-info { flex:1; min-width:0; }
+.company-name {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1a1a1a;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.quarter-tag {
+  display: inline-flex;
+  padding: 1px 6px;
+  border-radius: 99px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #2d8a4e;
+  background: #e6f4ea;
+  border: 1px solid #b7dfbf;
+}
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 3px;
+  font-size: 0.8125rem;
+  color: #888;
+}
+.status-pill {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 99px;
+}
+.status-pill.new { background: #e8f5e9; color: #2e7d32; }
+.status-pill.pending { background: #fff3e0; color: #e65100; }
+.status-pill.contacted { background: #e3f2fd; color: #1565c0; }
+.status-pill.approved { background: #e8f5e9; color: #2e7d32; }
+
+.header-actions {
+  display: flex; gap: 6px; align-items: center;
+}
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border-radius: 99px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: 0.5px solid #999;
+  background: transparent;
+  color: #1a1a1a;
+}
+.btn-outline.danger {
+  border-color: #D689BF;
+  color: #D689BF;
+}
+.close-btn {
+  width: 32px; height: 32px;
+  border: none; border-radius: 50%;
+  background: transparent;
+  color: #888;
+  cursor: pointer;
+  font-size: 18px;
+  display: flex; align-items: center; justify-content: center;
+}
+
+/* ── Body ── */
+.dp-body {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  overflow: hidden;
+}
+
+/* ── Left column ── */
+.col-left {
+  padding: 16px 20px;
+  overflow-y: auto;
+  border-right: 0.5px solid #e2e2e2;
+  display: flex;
+  flex-direction: column;
+}
+
+.section-title {
+  margin: 0 0 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #888;
+}
+.divider {
+  height: 0;
+  border-top: 0.5px solid #e2e2e2;
+  margin: 14px 0;
+}
+
+/* ── Fields ── */
+.field {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 0;
+}
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #888;
+  min-width: 64px;
+  flex-shrink: 0;
+}
+.field-icon {
+  display: inline-flex;
+  width: 16px; height: 16px;
+  color: #888;
+}
+.field-icon svg { width: 15px; height: 15px; }
+.field-value {
+  font-size: 0.875rem;
+  color: #1a1a1a;
+  word-break: break-word;
+  flex: 1;
+}
+.field-value a { color: #6366f1; text-decoration: none; }
+
+/* ── Timeline ── */
+.timeline { display: flex; flex-direction: column; }
+.timeline-item { display: flex; align-items: stretch; }
+.timeline-dot-wrap {
+  display: flex; flex-direction: column; align-items: center;
+  width: 16px; flex-shrink: 0; padding-top: 5px;
+}
+.timeline-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #e2e2e2;
+}
+.timeline-dot.active { background: #1a1a1a; }
+.timeline-line {
+  width: 1px; flex:1;
+  background: #e2e2e2;
+  margin-top: 4px; min-height: 10px;
+}
+.timeline-content {
+  flex: 1; padding: 2px 0 12px 10px;
+}
+.timeline-text {
+  font-size: 0.875rem;
+  color: #888;
+}
+.timeline-text.active { color: #1a1a1a; font-weight: 500; }
+.timeline-time {
+  font-size: 0.75rem;
+  color: #888;
+  margin-top: 2px;
+}
+
+/* ── Tags ── */
+.tag-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  background: #f0f0f0;
+  color: #555;
+}
+
+/* ── Right column ── */
+.col-right {
+  padding: 16px 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.email-card {
+  background: #f7f7f7;
+  border-radius: 8px;
+  padding: 14px 16px;
+}
+.email-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.email-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 99px;
+}
+.email-badge.approved { background: #e8f5e9; color: #2e7d32; }
+.email-badge.pending { background: #fff3e0; color: #e65100; }
+.email-date {
+  font-size: 0.75rem;
+  color: #888;
+}
+.send-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
+  padding: 4px 12px;
+  border: none;
+  border-radius: 99px;
+  background: #2e7d32;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.email-body {
+  font-size: 0.875rem;
+  line-height: 1.7;
+  color: #555;
+  white-space: pre-wrap;
+}
+.email-meta {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 0.5px solid #e2e2e2;
+  font-size: 0.8125rem;
+  color: #888;
+}
+
+/* ── Footer ── */
+.dp-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 12px 20px;
+  border-top: 0.5px solid #e2e2e2;
+}
+</style>
+</head>
+<body>
+
+<div class="panel">
+  <div class="dp-header">
+    <div class="avatar">PY</div>
+    <div class="header-info">
+      <div class="company-name">
+        Pure Yoga (Asia Standard Tower)
+        <span class="quarter-tag">2026·Q2</span>
+      </div>
+      <div class="header-meta">
+        <span class="status-pill pending">pending</span>
+        <span>·</span>
+        <span>google_maps</span>
+        <span>·</span>
+        <span>+852 8178 0000</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-outline" style="border-color:#D689BF;color:#D689BF">→ 推進狀態</button>
+    </div>
+    <button class="close-btn">✕</button>
+  </div>
+
+  <div class="dp-body">
+    <div class="col-left">
+      <h3 class="section-title">Contact</h3>
+      <div class="field">
+        <span class="field-label">
+          <span class="field-icon"><svg viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          Email
+        </span>
+        <span class="field-value">—</span>
+      </div>
+      <div class="field">
+        <span class="field-label">
+          <span class="field-icon"><svg viewBox="0 0 16 16" fill="none"><path d="M10 1.5a3.5 3.5 0 013.5 3.5c0 3-5 8.5-5 8.5s-5-5.5-5-8.5A3.5 3.5 0 017 1.79" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          Phone
+        </span>
+        <span class="field-value">+852 8178 0000</span>
+      </div>
+      <div class="field">
+        <span class="field-label">
+          <span class="field-icon"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zM1 8h14M8 1c1.7 2 2.7 4 2.7 7s-1 5-2.7 7c-1.7-2-2.7-4-2.7-7s1-5 2.7-7z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          Website
+        </span>
+        <span class="field-value"><a href="#">pure-360.com.hk</a></span>
+      </div>
+      <div class="field">
+        <span class="field-label">
+          <span class="field-icon"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5C5 1.5 2 4.5 2 8c0 2.5 1 4.5 2.5 6h7C13 12.5 14 10.5 14 8c0-3.5-3-6.5-6-6.5zM5 14.5h6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          Address
+        </span>
+        <span class="field-value">2/F Asia Standard Tower, 59-65 Queen's Road Central, Hong Kong</span>
+      </div>
+      <div class="field">
+        <span class="field-label">
+          <span class="field-icon"><svg viewBox="0 0 16 16" fill="none"><path d="M8 1l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          Rating
+        </span>
+        <span class="field-value">—</span>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 class="section-title">Journey</h3>
+      <div class="timeline">
+        <div class="timeline-item">
+          <div class="timeline-dot-wrap"><span class="timeline-dot active"></span><span class="timeline-line"></span></div>
+          <div class="timeline-content">
+            <span class="timeline-text active">Discovered via google_maps</span>
+            <div class="timeline-time">Jun 25, 10:28 AM</div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot-wrap"><span class="timeline-dot active"></span><span class="timeline-line"></span></div>
+          <div class="timeline-content">
+            <span class="timeline-text active">Added to lead pool</span>
+            <div class="timeline-time">Jun 25, 10:28 AM</div>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot-wrap"><span class="timeline-dot"></span></div>
+          <div class="timeline-content">
+            <span class="timeline-text">Awaiting review</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <h3 class="section-title">Tags</h3>
+      <div class="tag-list">
+        <span class="tag">Fitness</span>
+        <span class="tag">Yoga</span>
+        <span class="tag">Wellness</span>
+      </div>
+    </div>
+
+    <div class="col-right">
+      <h3 class="section-title">Email Records (1)</h3>
+      <div class="email-card">
+        <div class="email-head">
+          <span class="email-badge approved">approved</span>
+          <span class="email-date">Jun 28, 10:28 AM</span>
+          <button class="send-btn">→ Send</button>
+        </div>
+        <div class="email-body">Hi Pure Yoga (Asia Standard Tower),
+
+Following up on my previous email. I wanted to share a quick case study — we helped a similar 健身 company increase qualified leads by 280% in 3 months.
+
+Would love to walk you through it. Free 15-min demo this week?
+
+Thanks,
+Hermes</div>
+        <div class="email-meta">To: hello@pure-360.com.hk</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dp-footer">
+    <button class="btn-outline" style="border-color:#e57373;color:#e57373">🗑 刪除</button>
+    <div style="flex:1"></div>
+    <button class="btn-outline">Enrich</button>
+    <button class="btn-outline">Analyze</button>
+    <button class="btn-outline">Draft</button>
+    <button class="btn-outline">Send</button>
+  </div>
+</div>
+
+</body>
+</html>
