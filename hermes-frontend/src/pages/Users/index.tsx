@@ -194,6 +194,12 @@ const Table = styled.table`
     background: ${({ theme }) => theme.colors.canvas};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   }
+  ${media.tablet} {
+    min-width: 0;
+    font-size: 0.75rem;
+    th, td { padding: 6px 8px; white-space: normal; }
+    th { font-size: 0.625rem; }
+  }
   ${media.mobile} {
     min-width: 480px;
     font-size: 0.75rem;

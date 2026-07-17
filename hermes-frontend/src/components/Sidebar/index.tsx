@@ -199,6 +199,11 @@ const ScrollArea = styled.div`
   overflow-y: auto;
   min-height: 0;
   padding: 0 0 8px 8px;
+
+  [data-collapsed="true"] & {
+    padding: 0 0 8px 0;
+  }
+
   /* webkit-only: Chrome 149 ignores ::-webkit-scrollbar when scrollbar-width is set */
   &::-webkit-scrollbar {
     width: 5px;
@@ -310,6 +315,10 @@ const MenuList = styled.ul`
   list-style: none;
   margin: 4px 6px 4px 8px;
   padding: 0;
+
+  [data-collapsed="true"] & {
+    margin: 4px 0;
+  }
 `;
 
 const MenuSpacer = styled.li`
@@ -381,7 +390,9 @@ const MLink = styled(NavLink)`
   span { white-space: nowrap; }
 
   [data-collapsed="true"] & {
-    padding: 8px 12px;
+    padding: 8px 0;
+    justify-content: center;
+    gap: 0;
     overflow: hidden;
     span { opacity: 0; pointer-events: none; width: 0; height: 0; overflow: hidden; }
   }
@@ -392,6 +403,12 @@ const SearchLink = styled(MLink)`
   font-weight: 600;
   padding: 10px 12px;
   gap: 10px;
+
+  [data-collapsed="true"] & {
+    padding: 10px 0;
+    justify-content: center;
+    gap: 0;
+  }
 `;
 
 const Badge = styled.span`

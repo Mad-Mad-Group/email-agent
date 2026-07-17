@@ -13,6 +13,9 @@ const httpsConfig =
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    include: ['i18next-browser-languagedetector'],
+  },
   server: {
     host: true,
     port: 5173,

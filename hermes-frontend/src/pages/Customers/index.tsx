@@ -17,6 +17,7 @@ const Breadcrumb = styled.ol`
   font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary};
   li + li::before { content: '/'; margin-right: ${({ theme }) => theme.spacing.sm}px; }
   a { color: ${({ theme }) => theme.colors.textSecondary}; text-decoration: none; }
+  ${media.mobile} { font-size: 0.75rem; gap: 4px; }
 `;
 
 const ToolbarRow = styled.div`
@@ -26,6 +27,7 @@ const ToolbarRow = styled.div`
 const PageTitle = styled.h1`
   font-size: 1.15rem; font-weight: 600; margin: 4px 0 0;
   color: ${({ theme }) => theme.colors.textPrimary};
+  ${media.mobile} { font-size: 1rem; }
 `;
 
 const PageSub = styled.small`
@@ -80,6 +82,7 @@ const SearchInput = styled.input`
   background: ${({ theme }) => theme.colors.surface};
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
   &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
+  ${media.mobile} { min-width: 0; width: 100%; font-size: 0.8125rem; }
 `;
 
 const PrimaryBtn = styled.button`
@@ -88,6 +91,7 @@ const PrimaryBtn = styled.button`
   background: ${({ theme }) => theme.colors.accent}; color: ${({ theme }) => theme.colors.textInverted};
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
   &:hover { opacity: 0.85; }
+  ${media.mobile} { width: 100%; }
 `;
 
 /* ── Table ── */
@@ -106,6 +110,18 @@ const Table = styled.table`
     color: ${({ theme }) => theme.colors.textTertiary};
     border-bottom: 2px solid ${({ theme }) => theme.colors.border};
   }
+
+  ${media.tablet} {
+    min-width: 0;
+    font-size: 0.75rem;
+    th, td {
+      padding: 6px 8px;
+      white-space: normal;
+    }
+    th { font-size: 0.625rem; }
+    /* hide address column on tablet */
+    th:nth-child(6), td:nth-child(6) { display: none; }
+  }
 `;
 
 const TRow = styled.tr<{ $even?: boolean }>`
@@ -117,6 +133,7 @@ const TRow = styled.tr<{ $even?: boolean }>`
 const Avatar = styled.img`
   width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
   margin-right: ${({ theme }) => theme.spacing.sm}px; vertical-align: middle;
+  ${media.tablet} { width: 32px; height: 32px; }
 `;
 
 const NameCell = styled.div`
@@ -194,6 +211,7 @@ const ModalBody = styled.div`
 
 const FormRow = styled.div`
   display: grid; grid-template-columns: 1fr 1fr; gap: ${({ theme }) => theme.spacing.md}px;
+  ${media.mobile} { grid-template-columns: 1fr; }
 `;
 
 const FormGroup = styled.div`

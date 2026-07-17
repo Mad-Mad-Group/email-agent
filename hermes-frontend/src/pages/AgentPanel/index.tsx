@@ -1040,6 +1040,7 @@ const StepperWrap = styled.div`
   gap: 0;
   padding: 12px 0;
   min-width: max-content;
+  ${media.tablet} { min-width: 0; flex-wrap: wrap; justify-content: center; gap: 4px; }
 `;
 
 const StepNode = styled.div<{ $status: 'done' | 'active' | 'pending' }>`

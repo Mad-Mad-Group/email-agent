@@ -151,8 +151,8 @@ const GradientGreeting = styled.h1`
   z-index: 2;
   position: relative;
   ${media.mobile} {
-    max-width: 200px;
-    font-size: clamp(1rem, 3.5vw, 1.6rem);
+    max-width: 260px;
+    font-size: clamp(1.2rem, 5vw, 2rem);
   }
 `;
 
@@ -304,6 +304,14 @@ const UnifiedBar = styled.div<{ $morphing?: boolean; $glow?: boolean }>`
     box-shadow: ${({ $morphing }) => $morphing ? 'none' : '0 2px 20px rgba(37,99,235,0.12)'};
   }
 
+  ${media.mobile} {
+    flex-wrap: wrap;
+    border-radius: 20px;
+    padding: 6px;
+    gap: 4px;
+    justify-content: flex-end;
+  }
+
   ${({ $glow, $morphing }) => $glow && !$morphing && css`
     border-color: transparent;
     box-shadow: 0 0 10px rgba(255,107,107,0.2), 0 0 20px rgba(72,219,251,0.12), 0 0 30px rgba(255,159,243,0.08);
@@ -331,7 +339,14 @@ const BarInput = styled.input`
   border: none; outline: none;
   padding: 18px 0 18px 12px;
   font-size: 1.05rem;
-  ${media.mobile} { padding: 14px 0 14px 10px; font-size: 0.9375rem; }
+  ${media.mobile} {
+    padding: 10px 10px;
+    font-size: 0.9375rem;
+    width: 100%;
+    flex: 1 1 100%;
+    order: -1;
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  }
   background: transparent;
   color: ${({ theme }) => theme.colors.textPrimary};
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
@@ -348,6 +363,10 @@ const LocBadge = styled.button`
   transition: color 0.15s, background 0.15s;
   position: relative;
   &:hover { color: ${({ theme }) => theme.colors.textPrimary}; background: rgba(0,0,0,0.03); }
+  ${media.mobile} {
+    padding: 3px 6px; margin: 0; font-size: 0.6875rem;
+    max-width: 100px; overflow: hidden; text-overflow: ellipsis;
+  }
   &::after {
     content: ''; display: inline-block;
     width: 4px; height: 4px; margin-left: 1px;
@@ -374,6 +393,7 @@ const BarSearchBtn = styled.button`
   transition: background 0.15s, transform 0.15s;
   &:hover:not(:disabled) { background: ${({ theme }) => theme.colors.accent}; transform: scale(1.06); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
+  ${media.mobile} { width: 34px; height: 34px; margin: 2px; }
 `;
 
 /* Location picker dropdown */
@@ -411,6 +431,7 @@ const ModePill = styled.div`
   margin: 5px 0 5px 5px; flex-shrink: 0;
   position: relative;
   align-self: center;
+  ${media.mobile} { margin: 2px; margin-right: auto; }
 `;
 
 const ModeThumb = styled.div<{ $right: boolean }>`
@@ -449,6 +470,7 @@ const ModeOption = styled.button<{ $active: boolean }>`
   cursor: pointer; white-space: nowrap;
   color: ${({ $active, theme }) => $active ? theme.colors.textInverted : 'inherit'};
   transition: color 0.25s;
+  ${media.mobile} { padding: 5px 8px; font-size: 0.625rem; }
 `;
 
 const HK_DISTRICT_KEYS = [
@@ -546,6 +568,7 @@ const NumberWrap = styled.div`
   margin: 0 6px;
   gap: 0;
   position: relative;
+  ${media.mobile} { width: 32px; height: 32px; margin: 0 2px; }
   &::after {
     content: '';
     position: absolute;
@@ -801,6 +824,7 @@ const ResultCardList = styled.div`
   padding-right: 4px;
   &::-webkit-scrollbar { width: 4px; }
   &::-webkit-scrollbar-thumb { background: ${({ theme }) => theme.colors.border}; border-radius: 2px; }
+  ${media.mobile} { max-height: none; gap: 6px; margin-top: 8px; }
 `;
 
 const ResultCard = styled.div`
@@ -817,6 +841,11 @@ const ResultCard = styled.div`
   &:hover {
     box-shadow: 0 2px 8px rgba(15,23,42,0.07);
     transform: translateY(-1px);
+  }
+  ${media.mobile} {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    gap: 8px;
   }
 `;
 
@@ -886,6 +915,11 @@ const RcStatusBadge = styled.span<{ $status: string }>`
 const RcActions = styled.div`
   display: flex; flex-direction: column; align-items: flex-end;
   gap: 6px; flex-shrink: 0;
+  ${media.mobile} {
+    flex-direction: row;
+    width: 100%;
+    justify-content: flex-end;
+  }
 `;
 
 const RcSmallBtn = styled.button`
@@ -948,6 +982,7 @@ const FilterBar = styled.div`
   border-top: none;
   border-left: none;
   border-right: none;
+  ${media.mobile} { gap: 6px; padding: 6px 8px; }
 `;
 
 const FilterToggle = styled.button<{ $active: boolean }>`
@@ -1263,6 +1298,7 @@ const StepperWrap = styled.div`
   gap: 0;
   padding: 12px 0 4px;
   width: 100%;
+  ${media.mobile} { padding: 8px 0 2px; }
 `;
 
 const StepItem = styled.div`
@@ -1271,6 +1307,7 @@ const StepItem = styled.div`
   align-items: center;
   gap: 6px;
   min-width: 64px;
+  ${media.mobile} { min-width: 0; gap: 3px; }
 `;
 
 const StepCircle = styled.div<{ $state: 'done' | 'active' | 'pending' }>`
@@ -1292,6 +1329,8 @@ const StepCircle = styled.div<{ $state: 'done' | 'active' | 'pending' }>`
   ${({ $state }) => $state === 'active' && css`
     animation: ${stepPulse} 2s ease-in-out infinite;
   `}
+  ${media.tablet} { width: 36px; height: 36px; font-size: 0.875rem; }
+  ${media.mobile} { width: 30px; height: 30px; font-size: 0.75rem; }
 `;
 
 const StepLine = styled.div<{ $done: boolean }>`
@@ -1303,6 +1342,8 @@ const StepLine = styled.div<{ $done: boolean }>`
   border-radius: 2px;
   background: ${({ $done, theme }) => $done ? theme.strong.olive : theme.colors.border};
   transition: background 0.3s;
+  ${media.tablet} { min-width: 20px; max-width: 56px; margin-top: 17px; }
+  ${media.mobile} { min-width: 16px; max-width: 40px; margin-top: 14px; height: 2px; }
 `;
 
 const StepLabel = styled.div<{ $state: 'done' | 'active' | 'pending' }>`
@@ -1314,6 +1355,7 @@ const StepLabel = styled.div<{ $state: 'done' | 'active' | 'pending' }>`
     $state === 'done' ? theme.strong.olive :
     theme.colors.textTertiary};
   transition: color 0.3s;
+  ${media.mobile} { font-size: 0.5625rem; }
 `;
 
 const LeadCounter = styled.div`
@@ -1414,6 +1456,12 @@ const SkeletonSpinner = styled.div`
   animation: ${skeletonSpin} 0.9s linear infinite;
 `;
 
+const PipelineResultsWrap = styled.div`
+  width: calc(100% - 48px);
+  max-width: 760px;
+  ${media.mobile} { width: calc(100% - 20px); }
+`;
+
 const PipelineLogFeed = styled.div`
   max-height: 200px;
   overflow-y: auto;
@@ -1425,6 +1473,7 @@ const PipelineLogFeed = styled.div`
   font-size: 0.6875rem;
   &::-webkit-scrollbar { width: 4px; }
   &::-webkit-scrollbar-thumb { background: ${({ theme }) => theme.colors.border}; border-radius: 2px; }
+  ${media.mobile} { max-height: 150px; font-size: 0.625rem; padding: 6px 8px; }
 `;
 
 const PipelineLogLine = styled.div<{ $level?: string }>`
@@ -2068,7 +2117,7 @@ const SearchPage: React.FC = () => {
 
       {/* ── Pipeline progress + results ── */}
       {(search.isPending || isPipelineRunning || pipelineComplete || search.isError) && (
-        <div style={{ width: 'calc(100% - 48px)', maxWidth: 760 }}>
+        <PipelineResultsWrap>
           {/* Status banner — loading state handled by ring */}
           {search.isError && (
             <StatusBanner $type="error">{t('search.searchFailedWithMessage', { message: (search.error as any)?.message || t('search.unknownError') })}</StatusBanner>
@@ -2161,7 +2210,7 @@ const SearchPage: React.FC = () => {
               </ResultCardList>
             </PipelineSection>
           )}
-        </div>
+        </PipelineResultsWrap>
       )}
 
     </Page>

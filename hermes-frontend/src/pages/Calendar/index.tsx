@@ -19,7 +19,7 @@ const CalLayout = styled.div`
   display: flex;
   gap: 16px;
   align-items: flex-start;
-  ${media.mobile} {
+  ${media.tabletDown} {
     flex-direction: column;
   }
 `;
@@ -50,7 +50,7 @@ const AgendaPanel = styled.div`
   position: sticky;
   top: 16px;
   border-radius: 14px;
-  ${media.mobile} {
+  ${media.tabletDown} {
     width: 100%;
     position: static;
   }
@@ -75,6 +75,7 @@ const SpiralCalCard = styled(Card)`
   }
   &::before { bottom: -5px; height: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.06); }
   &::after  { bottom: -9px; left: 8px; right: 8px; height: 8px; box-shadow: 0 3px 6px rgba(0,0,0,0.04); }
+  ${media.tablet} { padding: 10px; }
   ${media.mobile} { padding: 8px; overflow-x: auto; }
 `;
 
@@ -83,6 +84,7 @@ const SpiralCalCard = styled(Card)`
 const CalHeader = styled.div`
   display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;
   flex-wrap: wrap; gap: 10px;
+  ${media.tablet} { margin-bottom: 10px; }
 `;
 
 const CalTitle = styled.h2`font-size: 1.1rem; font-weight: 600; margin: 0;`;
@@ -146,6 +148,7 @@ const CalCell = styled.div<{ $today?: boolean; $other?: boolean; $selected?: boo
   transition: background 0.12s;
   &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
   &:nth-child(7n) { border-right: none; }
+  ${media.tablet} { min-height: 56px; padding: 3px 4px; font-size: 0.7rem; }
   ${media.mobile} { min-height: 60px; font-size: 0.65rem; }
 `;
 
@@ -233,6 +236,7 @@ const TimeLabel = styled.div`
   justify-content: flex-end;
   padding-top: 2px;
   min-height: 60px;
+  ${media.tablet} { min-height: 44px; padding: 0 4px; font-size: 0.6rem; }
 `;
 
 const TimeCorner = styled.div`
@@ -248,6 +252,7 @@ const WeekCell = styled.div<{ $today?: boolean }>`
   border-right: 1px solid ${({ theme }) => theme.colors.border};
   &:nth-child(8n) { border-right: none; } /* last col in 8-col grid */
   background: ${({ $today, theme }) => $today ? `${theme.colors.accent}08` : 'transparent'};
+  ${media.tablet} { min-height: 44px; }
 `;
 
 /* ── Week Event Card ── */

@@ -19,6 +19,7 @@ import { AGENTS, FARMER, ACTIVITY_AGENT } from '../../config/agents';
 const Page = styled.div`
   display: flex; flex-direction: column; gap: 24px;
   padding: 32px 28px 40px; min-width: 0;
+  ${media.tablet} { padding: 20px 16px 28px; gap: 16px; }
   ${media.mobile} { padding: 20px 16px 32px; }
 `;
 
@@ -28,6 +29,7 @@ const GreetingHeading = styled.h1`
   font-size: 1.75rem; font-weight: 700; margin: 0;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-family: ${({ theme }) => theme.fonts.primary};
+  ${media.tablet} { font-size: 1.35rem; }
 `;
 const GreetingDate = styled.p`
   font-size: 0.875rem; margin: 0;
@@ -39,18 +41,22 @@ const DashGrid = styled.div`
   display: grid;
   grid-template-columns: 1fr minmax(300px, 340px);
   gap: 20px; align-items: stretch;
-  ${media.tabletDown} { grid-template-columns: 1fr; }
+  ${media.tablet} { grid-template-columns: 1fr; gap: 14px; }
+  ${media.mobile} { grid-template-columns: 1fr; }
 `;
 const CardsArea = styled.div`
   display: flex; flex-direction: column; gap: 20px;
+  ${media.tablet} { gap: 12px; }
 `;
 const CardRow = styled.div`
   display: flex; gap: 20px; align-items: stretch;
+  ${media.tablet} { gap: 12px; }
   ${media.mobile} { flex-direction: column; }
 `;
 const CalendarSidebar = styled.div`
   display: flex; flex-direction: column; gap: 16px;
-  ${media.tabletDown} { grid-column: 1 / -1; }
+  ${media.tablet} { flex-direction: row; gap: 12px; grid-column: 1 / -1; }
+  ${media.mobile} { grid-column: 1 / -1; }
 `;
 /* Embedded section inside a board — no bg, dark text */
 const EmbedTitle = styled.div`
@@ -76,12 +82,16 @@ const CardHeader = styled.div`
   color: ${({ theme }) => theme.colors.textPrimary};
   display: flex; align-items: center; gap: 10px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  ${media.tablet} { padding: 10px 14px; font-size: 0.8125rem; }
 `;
 const CardHeaderRight = styled.span`
   margin-left: auto; font-size: 0.6875rem; font-weight: 400;
   color: ${({ theme }) => theme.colors.textTertiary}; text-transform: none;
 `;
-const CardBody = styled.div`padding: 16px 20px 20px;`;
+const CardBody = styled.div`
+  padding: 16px 20px 20px;
+  ${media.tablet} { padding: 10px 14px 14px; }
+`;
 const CardIcon = styled.span<{ $color: string }>`
   display: flex; align-items: center; justify-content: center;
   width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
@@ -98,6 +108,7 @@ const ActionCard = styled.div<{ $accent: string; $pastel: string }>`
   display: flex; flex-direction: column;
   transition: transform ${({ theme }) => theme.motion.fast}, box-shadow ${({ theme }) => theme.motion.fast};
   &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
+  ${media.tablet} { padding: 16px 14px 14px; }
 `;
 const ActionWatermark = styled.div<{ $fg: string; $rot?: number }>`
   position: absolute; right: -8px; top: -10px;
@@ -105,6 +116,7 @@ const ActionWatermark = styled.div<{ $fg: string; $rot?: number }>`
   color: ${({ $fg }) => $fg}; z-index: 1; pointer-events: none;
   transform: rotate(${({ $rot }) => $rot ?? 14}deg);
   svg { width: 100%; height: 100%; }
+  ${media.tablet} { width: 70px; height: 70px; right: -4px; top: -6px; }
 `;
 const ActionArrow = styled.div<{ $fg: string }>`
   position: absolute; top: 16px; right: 16px; width: 24px; height: 24px;
@@ -116,21 +128,25 @@ const ActionTitle = styled.div`
   font-size: 1.75rem; font-weight: 800; text-transform: uppercase;
   letter-spacing: 0.06em; color: ${({ theme }) => theme.colors.textPrimary};
   opacity: 0.7; margin-bottom: 8px;
+  ${media.tablet} { font-size: 1.1rem; margin-bottom: 4px; }
 `;
 const ActionCountRow = styled.div`
   display: flex; align-items: baseline; gap: 10px;
 `;
 const ActionCount = styled.div`
   font-size: 2.5rem; font-weight: 800; color: ${({ theme }) => theme.colors.textPrimary}; line-height: 1;
+  ${media.tablet} { font-size: 1.75rem; }
 `;
 const ActionLabel = styled.div`
   font-size: 0.8125rem; font-weight: 500; color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: 10px; line-height: 1.35;
+  ${media.tablet} { font-size: 0.75rem; margin-top: 6px; }
 `;
 const ActionTrend = styled.div<{ $up?: boolean }>`
   display: flex; align-items: center; gap: 10px;
   font-size: 1rem; font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
+  ${media.tablet} { font-size: 0.8rem; gap: 6px; }
 `;
 const MiniBar = styled.div<{ $color: string; $pct: number }>`
   height: 8px; border-radius: 4px; flex: 1; min-width: 80px; max-width: 200px;
@@ -319,13 +335,26 @@ const BarChart: React.FC<{ bars: BarData[] }> = ({ bars }) => {
 /* ── Donut Chart (redesigned) ── */
 const DonutWrap = styled.div`
   display: flex; align-items: center; gap: 20px; justify-content: center; padding: 8px;
+  ${media.tablet} {
+    gap: 10px; padding: 2px;
+    & > div:first-child svg { width: 165px; height: 165px; }
+  }
 `;
-const LegendList = styled.div`display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0; max-width: 180px;`;
+const LegendList = styled.div`
+  display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0; max-width: 180px;
+  ${media.tablet} { gap: 10px; max-width: 160px; }
+`;
 const LegendRow = styled.div`display: flex; flex-direction: column; gap: 3px;`;
 const LegendRowTop = styled.div`display: flex; align-items: center; gap: 6px;`;
 const LegendDot = styled.div<{ $color: string }>`width: 8px; height: 8px; border-radius: 50%; background: ${({ $color }) => $color}; flex-shrink: 0;`;
-const LegendLabel = styled.span`font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`;
-const LegendVal = styled.span`font-weight: 700; font-size: 0.72rem; margin-left: auto; white-space: nowrap; flex-shrink: 0;`;
+const LegendLabel = styled.span`
+  font-size: 0.72rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  ${media.tablet} { font-size: 0.675rem; }
+`;
+const LegendVal = styled.span`
+  font-weight: 700; font-size: 0.72rem; margin-left: auto; white-space: nowrap; flex-shrink: 0;
+  ${media.tablet} { font-size: 0.675rem; }
+`;
 const LegendBarTrack = styled.div`height: 5px; border-radius: 3px; background: ${({ theme }) => theme.colors.surfaceMuted}; overflow: hidden;`;
 const LegendBarFill = styled.div<{ $color: string; $pct: number }>`height: 100%; border-radius: 3px; width: ${({ $pct }) => $pct}%; background: ${({ $color }) => $color}; transition: width 0.4s ease;`;
 
@@ -419,12 +448,14 @@ const NotebookCard = styled(Card)`
 `;
 const NotebookBody = styled.div`
   padding: 0 16px 16px 16px; position: relative;
+  ${media.tablet} { padding: 0 10px 10px 10px; max-height: 140px !important; }
 `;
 const FeedList = styled.div`display: flex; flex-direction: column; gap: 0;`;
 const FeedItem = styled.div`
   display: flex; gap: 10px; padding: 8px 0; align-items: center;
   border-bottom: 1px solid ${({ theme }) => `${theme.colors.border}80`};
   &:last-child { border-bottom: none; }
+  ${media.tablet} { gap: 8px; padding: 6px 0; }
 `;
 const FeedIcon = styled.div<{ $bg: string; $fg: string }>`
   width: 32px; height: 32px; border-radius: 10px;
@@ -434,7 +465,10 @@ const FeedIcon = styled.div<{ $bg: string; $fg: string }>`
   font-size: 0.875rem; flex-shrink: 0;
 `;
 const FeedBody = styled.div`flex: 1; min-width: 0;`;
-const FeedText = styled.div`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textPrimary}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;`;
+const FeedText = styled.div`
+  font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textPrimary}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  ${media.tablet} { font-size: 0.75rem; }
+`;
 const FeedTime = styled.div`font-size: 0.6875rem; color: ${({ theme }) => theme.colors.textTertiary}; margin-top: 2px; font-style: italic;`;
 const FeedAgentName = styled.span<{ $color: string }>`font-weight: 600; font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textSecondary};`;
 const Empty = styled.div`text-align: center; padding: 32px 16px; font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; display: flex; flex-direction: column; align-items: center; gap: 12px;`;
@@ -506,6 +540,7 @@ const CalendarLink = styled.div`
 const EmbedWhite = styled.div`
   margin-top: 32px; background: ${({ theme }) => theme.colors.surface};
   border-radius: 12px; overflow: hidden;
+  ${media.tablet} { margin-top: 14px; }
 `;
 
 /* ── Mini Calendar ── */
@@ -513,6 +548,7 @@ const CalendarCard = styled.div`
   ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card}px;
   padding: 16px;
+  ${media.tablet} { flex: 1; padding: 12px; }
 `;
 const CalMonth = styled.div`
   display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
@@ -577,6 +613,7 @@ const TimelineCard = styled.div`
   overflow-y: auto;
   &::-webkit-scrollbar { width: 3px; }
   &::-webkit-scrollbar-thumb { background: ${({ theme }) => theme.colors.border}; border-radius: 3px; }
+  ${media.tablet} { padding: 12px; }
 `;
 const TimelineHeader = styled.div`
   font-size: 0.8125rem; font-weight: 700;

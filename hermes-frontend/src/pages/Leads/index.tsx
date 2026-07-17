@@ -351,6 +351,7 @@ const StatCardsRow = styled.div`
   align-items: center;
   gap: 0;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  ${media.tablet} { flex-wrap: wrap; }
   ${media.mobile} { flex-wrap: wrap; }
 `;
 
@@ -361,6 +362,7 @@ const StatCard = styled.div<{ $accent: string }>`
   padding: 12px 24px;
   border-right: 1px solid ${({ theme }) => theme.colors.border};
   &:last-child { border-right: none; }
+  ${media.tablet} { padding: 10px 16px; gap: 6px; }
   ${media.mobile} { border-right: none; padding: 8px 16px; }
 `;
 
@@ -610,6 +612,13 @@ const TabsRow = styled.div`
   -webkit-overflow-scrolling: touch;
   &::-webkit-scrollbar { display: none; }
   width: fit-content;
+  ${media.mobile} {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+    padding: 2px;
+    gap: 1px;
+  }
 `;
 
 const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
@@ -634,6 +643,14 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
     background: ${({ $active }) => $active ? 'transparent' : 'rgba(0,0,0,0.04)'};
   }
   ${media.tabletDown} { padding: 8px 16px; }
+  ${media.mobile} {
+    flex: 1;
+    padding: 5px 4px;
+    font-size: 0.68rem;
+    gap: 3px;
+    justify-content: center;
+    min-width: 0;
+  }
 `;
 
 const TabSlider = styled.div<{ $left: number; $width: number }>`
@@ -702,7 +719,7 @@ const SubPillRow = styled.div`
   gap: 8px;
   padding: 0;
   position: relative;
-  ${media.tabletDown} { padding: 2px 12px; gap: 6px; flex-wrap: wrap; }
+  ${media.tabletDown} { padding: 2px 12px; gap: 6px; flex-wrap: wrap; row-gap: 16px; }
 `;
 
 const SubPillTrack = styled.div`
@@ -780,6 +797,7 @@ const SearchWrap = styled.div`
   position: relative;
   width: 240px;
   margin-left: auto;
+  ${media.tablet} { width: 180px; }
   ${media.mobile} { width: 100%; margin-left: 0; }
 `;
 
@@ -816,6 +834,70 @@ const SearchInput = styled.input`
   }
 `;
 
+/* ── Custom Quarter Dropdown ── */
+
+const QDropWrap = styled.div`
+  position: relative;
+  flex-shrink: 0;
+`;
+
+const QDropTrigger = styled.button<{ $open?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1.5px solid ${({ $open, theme }) => $open ? theme.strong.mauve : theme.colors.border};
+  background: #fff;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 0.8125rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  &:hover {
+    border-color: ${({ theme }) => theme.strong.mauve};
+  }
+  svg { flex-shrink: 0; transition: transform 0.2s; }
+  ${({ $open }) => $open && `svg { transform: rotate(180deg); }`}
+`;
+
+const QDropMenu = styled.div`
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 100%;
+  background: #fff;
+  border: 1.5px solid ${({ theme }) => theme.strong.mauve};
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+  padding: 4px;
+  z-index: 100;
+  max-height: 280px;
+  overflow-y: auto;
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-thumb { background: #D689BF66; border-radius: 99px; }
+`;
+
+const QDropItem = styled.button<{ $active?: boolean }>`
+  display: block;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 8px;
+  background: ${({ $active, theme }) => $active ? `${theme.strong.mauve}18` : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.strong.mauve : theme.colors.textPrimary};
+  font-size: 0.8125rem;
+  font-weight: ${({ $active }) => $active ? 600 : 400};
+  text-align: left;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+  &:hover {
+    background: ${({ $active, theme }) => $active ? `${theme.strong.mauve}22` : 'rgba(0,0,0,0.04)'};
+  }
+`;
+
 /* ── Table ── */
 
 const Card = styled.div`
@@ -827,6 +909,13 @@ const Card = styled.div`
 const TableWrap = styled.div`
   overflow-x: auto;
   padding: 0;
+  ${media.tablet} {
+    -webkit-overflow-scrolling: touch;
+    &::-webkit-scrollbar { height: 6px; }
+    &::-webkit-scrollbar-track { background: transparent; }
+    &::-webkit-scrollbar-thumb { background: #D689BF66; border-radius: 3px; }
+    &::-webkit-scrollbar-thumb:hover { background: #D689BF99; }
+  }
 `;
 
 const Table = styled.table`
@@ -867,6 +956,12 @@ const Table = styled.table`
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
     font-size: 0.78rem;
     line-height: 1.3;
+  }
+  ${media.tablet} {
+    min-width: 860px;
+    font-size: 0.75rem;
+    th, td { padding: 6px 10px; }
+    th { font-size: 0.6875rem; }
   }
   ${media.mobile} {
     min-width: 640px;
@@ -923,6 +1018,7 @@ const Avatar = styled.div<{ $colorIndex: number }>`
   flex-shrink: 0;
   box-shadow: none;
   line-height: 1;
+  ${media.tablet} { width: 28px; height: 28px; font-size: 0.85rem; svg { width: 14px; height: 14px; } }
 `;
 
 const NameText = styled.div`
@@ -1469,11 +1565,16 @@ const DpPanel = styled.div<{ $closing?: boolean }>`
     background: ${({ theme }) => theme.colors.border};
     z-index: 3;
     pointer-events: none;
+    display: none;
   }
-  ${media.mobile} {
-    width: 95vw;
-    height: 92vh;
-    &::after { display: none; }
+  @media (min-width: 1100px) {
+    &::after { display: block; }
+  }
+  @media (max-width: 1099px) {
+    inset: 6px !important;
+    width: calc(100vw - 12px) !important;
+    height: calc(100vh - 12px) !important;
+    border-radius: 14px;
   }
 `;
 
@@ -1486,6 +1587,7 @@ const DpHeader = styled.div`
   cursor: grab;
   min-height: 24px;
   &:active { cursor: grabbing; }
+  ${media.tablet} { padding: 14px 28px; }
 `;
 
 const DpHeaderInfo = styled.div`
@@ -1566,18 +1668,41 @@ const DpCloseBtn = styled.button`
 
 const DpBody = styled.div`
   flex: 1;
-  height: 0;
   min-height: 0;
   display: grid;
-  grid-template-columns: 300px 1fr;
-  grid-template-rows: 1fr;
   gap: 0;
-  overflow: hidden;
-  ${media.tabletDown} { grid-template-columns: 1fr; grid-template-rows: auto; height: auto; overflow-y: auto; }
+  overflow-y: auto;
+
+  /* Tablet: info left + journey right on top, emails full-width bottom */
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas:
+    "info journey"
+    "emails emails";
+
+  ${media.mobile} {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      "info"
+      "journey"
+      "emails";
+  }
+
+  /* Desktop: left sidebar (info+journey stacked) + right emails */
+  @media (min-width: 1100px) {
+    grid-template-columns: 300px 1fr;
+    grid-template-rows: auto 1fr;
+    grid-template-areas:
+      "info emails"
+      "journey emails";
+    overflow: hidden;
+  }
 `;
 
 const DpColLeft = styled.div`
-  padding: 4px 20px 10px 28px;
+  grid-area: info;
+  padding: 10px 16px;
   overflow-y: auto;
   min-height: 0;
   display: flex;
@@ -1588,7 +1713,33 @@ const DpColLeft = styled.div`
   &::-webkit-scrollbar-track { background: transparent; }
   &::-webkit-scrollbar-thumb { background: #D689BF99; border-radius: 99px; }
   &::-webkit-scrollbar-thumb:hover { background: #D689BFCC; }
-  ${media.tabletDown} { overflow-y: visible; padding: 10px 16px; }
+  ${media.tablet} { padding: 14px 28px; }
+  @media (min-width: 1100px) {
+    padding: 4px 20px 10px 28px;
+  }
+`;
+
+const DpColJourney = styled.div`
+  grid-area: journey;
+  padding: 10px 16px;
+  overflow-y: auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: transparent;
+  border-left: none;
+  ${media.tablet} { padding: 14px 28px; }
+  &::-webkit-scrollbar { width: 5px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: #D689BF99; border-radius: 99px; }
+  &::-webkit-scrollbar-thumb:hover { background: #D689BFCC; }
+  ${media.mobile} {
+    border-top: 1px solid ${({ theme }) => theme.colors.border};
+  }
+  @media (min-width: 1100px) {
+    padding: 4px 20px 10px 28px;
+  }
 `;
 
 const DpTabSection = styled.div`
@@ -1614,37 +1765,40 @@ const DpTabCard = styled.div`
 `;
 
 const DpCollapsibleHead = styled.div`
-  display: none;
-  ${media.tabletDown} {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    padding: 2px 0;
-  }
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  padding: 2px 0;
+  @media (min-width: 1100px) { display: none; }
 `;
 const DpCollapsibleBody = styled.div<{ $open?: boolean }>`
-  ${media.tabletDown} {
-    display: ${({ $open }) => $open ? 'flex' : 'none'};
-    flex-direction: column;
-    gap: 6px;
-    margin-top: 6px;
-  }
+  display: ${({ $open }) => $open ? 'flex' : 'none'};
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
+  @media (min-width: 1100px) { display: flex; margin-top: 0; }
 `;
 
 const DpColCenter = styled.div`
-  padding: 4px 20px 10px;
+  grid-area: emails;
+  padding: 12px 16px;
   overflow-y: auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
   &::-webkit-scrollbar { width: 5px; }
   &::-webkit-scrollbar-track { background: transparent; }
   &::-webkit-scrollbar-thumb { background: #D689BF99; border-radius: 99px; }
   &::-webkit-scrollbar-thumb:hover { background: #D689BFCC; }
-  ${media.tabletDown} { overflow-y: visible; padding: 12px 16px; }
+  ${media.tablet} { padding: 14px 28px; }
+  @media (min-width: 1100px) {
+    padding: 4px 20px 10px;
+    border-top: none;
+  }
 `;
 
 const DpGrid = styled.div`
@@ -2137,25 +2291,38 @@ const EmailCard = styled.div<{ $expanded?: boolean; $status?: string }>`
     box-shadow: 0 0 6px rgba(76,175,80,0.2);
     animation: ${glowPulseGreen} 2s ease-in-out infinite;
   `}
-  /* sent — 淡綠底 */
+  /* sent — 淡綠底 + ✓ 浮水印 */
   ${({ $status }) => $status === 'sent' && css`
     background: #f9fcf9;
     border: 1px solid #e0efe0;
+    &::after {
+      content: '✓';
+      position: absolute;
+      bottom: 4px;
+      left: 10px;
+      font-size: 5.5rem;
+      font-weight: 900;
+      color: rgba(76, 175, 80, 0.12);
+      pointer-events: none;
+      line-height: 1;
+      transform: rotate(-15deg);
+    }
   `}
-  /* rejected — 淡紅底 + 紅叉浮水印 */
+  /* rejected — 淡紅底 + ✗ 浮水印 */
   ${({ $status }) => $status === 'rejected' && css`
     background: #fff5f5;
     border: 1px solid #f5c6c6;
     &::after {
       content: '✗';
       position: absolute;
-      bottom: 6px;
-      right: 12px;
-      font-size: 4rem;
-      font-weight: 800;
+      bottom: 4px;
+      left: 10px;
+      font-size: 5.5rem;
+      font-weight: 900;
       color: rgba(211, 47, 47, 0.13);
       pointer-events: none;
       line-height: 1;
+      transform: rotate(-15deg);
     }
   `}
   /* failed — 淡紅底 */
@@ -2956,6 +3123,16 @@ const Leads: React.FC = () => {
   const defaultQuarter: QuarterFilterValue = `${currentYear}Q${currentQuarter}`;
   const quarterFilter: QuarterFilterValue = (searchParams.get('quarter') as QuarterFilterValue) || defaultQuarter;
   const quarterOptions = useMemo(() => buildQuarterOptions(now), [now]);
+  const [qDropOpen, setQDropOpen] = useState(false);
+  const qDropRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!qDropOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (qDropRef.current && !qDropRef.current.contains(e.target as Node)) setQDropOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [qDropOpen]);
 
   const apiLeads: Lead[] = data?.data ?? [];
   // Always include MOCK_LEADS for demo richness + any real API data
@@ -3103,10 +3280,11 @@ const Leads: React.FC = () => {
   // Reset panel position/size when a new lead is selected
   useEffect(() => {
     if (selectedLead) {
-      const w = Math.min(window.innerWidth * 0.88, 1400);
-      const h = window.innerHeight * 0.9;
+      const isNarrow = window.innerWidth < 1100;
+      const w = isNarrow ? window.innerWidth - 12 : Math.min(window.innerWidth * 0.88, 1400);
+      const h = isNarrow ? window.innerHeight - 12 : window.innerHeight * 0.9;
       setDpSize({ w, h });
-      setDpPos({ x: (window.innerWidth - w) / 2, y: (window.innerHeight - h) / 2 });
+      setDpPos({ x: isNarrow ? 6 : (window.innerWidth - w) / 2, y: isNarrow ? 6 : (window.innerHeight - h) / 2 });
     }
   }, [selectedLead]);
 
@@ -3202,6 +3380,32 @@ const Leads: React.FC = () => {
               ))}
             </>}
           </SubPillTrack>
+          <QDropWrap ref={qDropRef}>
+            <QDropTrigger $open={qDropOpen} onClick={() => setQDropOpen(v => !v)}>
+              {t(quarterOptions.find(o => o.value === quarterFilter)?.labelKey ?? '', quarterOptions.find(o => o.value === quarterFilter)?.labelParams)}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </QDropTrigger>
+            {qDropOpen && (
+              <QDropMenu>
+                {quarterOptions.map(opt => (
+                  <QDropItem
+                    key={opt.value}
+                    $active={quarterFilter === opt.value}
+                    onClick={() => {
+                      const q = opt.value as QuarterFilterValue;
+                      const next = new URLSearchParams(searchParams);
+                      if (q === defaultQuarter) next.delete('quarter'); else next.set('quarter', q);
+                      setSearchParams(next, { replace: true });
+                      setPage(1);
+                      setQDropOpen(false);
+                    }}
+                  >
+                    {t(opt.labelKey, opt.labelParams)}
+                  </QDropItem>
+                ))}
+              </QDropMenu>
+            )}
+          </QDropWrap>
           <SearchWrap>
             <SearchIcon><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></SearchIcon>
             <SearchInput
@@ -3210,15 +3414,6 @@ const Leads: React.FC = () => {
               onChange={e => { setSearch(e.target.value); setPage(1); }}
             />
           </SearchWrap>
-          <select
-            value={quarterFilter}
-            onChange={e => { const q = e.target.value as QuarterFilterValue; const next = new URLSearchParams(searchParams); if (q === defaultQuarter) next.delete('quarter'); else next.set('quarter', q); setSearchParams(next, { replace: true }); setPage(1); }}
-            style={{ padding: '6px 10px', borderRadius: 10, border: `1px solid ${styledTheme.colors.border}`, background: styledTheme.colors.surfaceMuted, color: styledTheme.colors.textPrimary, fontSize: 13, cursor: 'pointer', minWidth: 100 }}
-          >
-            {quarterOptions.map(opt => (
-              <option key={opt.value} value={opt.value}>{t(opt.labelKey, opt.labelParams)}</option>
-            ))}
-          </select>
           <CircleActionBtn title={t('leads.filterOldWebsiteOn')} onClick={() => { setOldWebsiteOnly(v => !v); setPage(1); }} style={oldWebsiteOnly ? { background: styledTheme.colors.accent, color: '#fff', borderColor: 'transparent' } : undefined}>
             <IconOldWebsite />
           </CircleActionBtn>
@@ -3502,7 +3697,6 @@ const Leads: React.FC = () => {
       {/* Lead Detail Panel — floating modal */}
       {selectedLead && createPortal(
         <DpOverlay $closing={detailClosing} onClick={handleCloseDetail}>
-<<<<<<< HEAD
         <DpPanel ref={dpRef} $closing={detailClosing} onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ left: dpPos.x, top: dpPos.y, width: dpSize.w, height: dpSize.h }}>
           {/* Resize handles */}
           <div onMouseDown={e => onDpResizeStart(e, 'n')} style={{ position:'absolute', top:0, left:8, right:8, height:4, cursor:'n-resize', zIndex:10 }} />
@@ -3514,27 +3708,16 @@ const Leads: React.FC = () => {
           <div onMouseDown={e => onDpResizeStart(e, 'sw')} style={{ position:'absolute', bottom:0, left:0, width:8, height:8, cursor:'sw-resize', zIndex:11 }} />
           <div onMouseDown={e => onDpResizeStart(e, 'se')} style={{ position:'absolute', bottom:0, right:0, width:8, height:8, cursor:'se-resize', zIndex:11 }} />
           <DpHeader onMouseDown={onDpDragStart}>
-            <div style={{ flex: 1 }} />
-=======
-        <DpPanel $closing={detailClosing} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-          <DpHeader>
-            <Avatar $colorIndex={hashColorIndex(selectedLead.company_name || t('common.unknown'))} style={{ width: 40, height: 40, fontSize: '0.8rem', borderRadius: 10 }}>
-              <AvatarIcon name={selectedLead.company_name || t('common.unknown')} />
-            </Avatar>
-            <DpHeaderInfo>
-              <DpCompanyName>
-                {selectedLead.company_name || t('common.unknown')}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 0 }}>
+              <Avatar $colorIndex={hashColorIndex(selectedLead.company_name || 'Unknown')} style={{ width: 32, height: 32, fontSize: '0.7rem', borderRadius: 8, flexShrink: 0 }}>
+                <AvatarIcon name={selectedLead.company_name || 'Unknown'} />
+              </Avatar>
+              <DpCompanyName style={{ fontSize: '1rem' }}>
+                {selectedLead.company_name || 'Unknown'}
                 {(() => { const qt = getQuarterTag((selectedLead as any)._imported_at); return qt ? <QuarterTag>{qt}</QuarterTag> : null; })()}
               </DpCompanyName>
-              <DpHeaderMeta>
-                <DpStatusPill $status={selectedLead.status ?? 'new'}>{selectedLead.status ?? 'new'}</DpStatusPill>
-                <span>·</span>
-                <span>{selectedLead.source || '—'}</span>
-                {selectedLead.phone && <><span>·</span><span>{selectedLead.phone}</span></>}
-              </DpHeaderMeta>
-            </DpHeaderInfo>
->>>>>>> 4c8c98703116ce0b7e2a98b0d8d125aa7591301a
-            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            </div>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexShrink: 0 }}>
               {(selectedLead.status ?? '') !== 'contacted' && NEXT_STATUS[selectedLead.status ?? ''] && (
                 <DpActionBtn
                   $variant="primary"
@@ -3552,21 +3735,8 @@ const Leads: React.FC = () => {
           </DpHeader>
 
           <DpBody>
-            {/* Left: Avatar + Name + About + Journey + Tags */}
+            {/* Left: Avatar + Name + About + Tags + Reply */}
             <DpColLeft>
-              <div style={{ position: 'sticky', top: 0, zIndex: 2, background: '#fff', paddingTop: 8, paddingBottom: 6 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <Avatar $colorIndex={hashColorIndex(selectedLead.company_name || 'Unknown')} style={{ width: 36, height: 36, fontSize: '0.75rem', borderRadius: 8 }}>
-                    <AvatarIcon name={selectedLead.company_name || 'Unknown'} />
-                  </Avatar>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <DpCompanyName>
-                      {selectedLead.company_name || 'Unknown'}
-                      {(() => { const qt = getQuarterTag((selectedLead as any)._imported_at); return qt ? <QuarterTag>{qt}</QuarterTag> : null; })()}
-                    </DpCompanyName>
-                  </div>
-                </div>
-              </div>
               <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1a5 5 0 015 5c0 2.5-2 4-5 4s-5-1.5-5-4a5 5 0 015-5zM3 13c0-1.66 2.24-3 5-3s5 1.34 5 3" stroke="#D689BF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.about')}</DpSectionTitle>
               <DpSectionContent>
               <DpField>
@@ -3597,59 +3767,6 @@ const Leads: React.FC = () => {
                 <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M2 13h12M4 9l4-6 4 6M6 9v4M10 9v4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.source')}</DpFieldLabel>
                 <DpFieldValue>{getSourceDisplay(selectedLead.source || '') || '—'}</DpFieldValue>
               </DpField>
-              </DpSectionContent>
-
-              <DpDivider />
-
-              <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 14V4l4 2 4-2 4 2v10l-4-2-4 2-4-2z" stroke="#D689BF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.leadJourney')}</DpSectionTitle>
-              <DpSectionContent>
-              <DpTimeline>
-                <DpTimelineItem>
-                  <DpTimelineDotWrap><DpTimelineDot $active /><DpTimelineLine /></DpTimelineDotWrap>
-                  <DpTimelineContent>
-                    <DpTimelineText $active>{t('leads.discoveredVia', { source: getSourceDisplay(selectedLead.source || 'unknown') })}</DpTimelineText>
-                    <DpTimelineTime>{(() => { const ts = selectedLead.createdAt || (selectedLead as any)._imported_at || (selectedLead as any).created_at; return ts ? new Date(ts).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'; })()}</DpTimelineTime>
-                  </DpTimelineContent>
-                </DpTimelineItem>
-                <DpTimelineItem>
-                  <DpTimelineDotWrap><DpTimelineDot $active /><DpTimelineLine /></DpTimelineDotWrap>
-                  <DpTimelineContent>
-                    <DpTimelineText $active>{t('leads.addedToPool')}</DpTimelineText>
-                    <DpTimelineTime>{(() => { const ts = selectedLead.createdAt || (selectedLead as any)._imported_at || (selectedLead as any).created_at; return ts ? new Date(ts).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'; })()}</DpTimelineTime>
-                  </DpTimelineContent>
-                </DpTimelineItem>
-                <DpTimelineItem>
-                  <DpTimelineDotWrap>
-                    <DpTimelineDot $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'} />
-                    {(selectedLead.status === 'contacted' || selectedLead._replied) && <DpTimelineLine />}
-                  </DpTimelineDotWrap>
-                  <DpTimelineContent>
-                    <DpTimelineText $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'}>{selectedLead.status === 'new' ? t('leads.awaitingReview') : t('leads.markedAsPending')}</DpTimelineText>
-                    {selectedLead.status !== 'new' && selectedLead.updatedAt && <DpTimelineTime>{new Date(selectedLead.updatedAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</DpTimelineTime>}
-                  </DpTimelineContent>
-                </DpTimelineItem>
-                {selectedLead.status === 'contacted' && (
-                  <DpTimelineItem>
-                    <DpTimelineDotWrap>
-                      <DpTimelineDot $active />
-                      {selectedLead._replied && <DpTimelineLine />}
-                    </DpTimelineDotWrap>
-                    <DpTimelineContent>
-                      <DpTimelineText $active>{t('leads.contactedStep')}</DpTimelineText>
-                      {selectedLead.updatedAt && <DpTimelineTime>{new Date(selectedLead.updatedAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</DpTimelineTime>}
-                    </DpTimelineContent>
-                  </DpTimelineItem>
-                )}
-                {selectedLead._replied && (
-                  <DpTimelineItem>
-                    <DpTimelineDotWrap><DpTimelineDot $active /></DpTimelineDotWrap>
-                    <DpTimelineContent>
-                      <DpTimelineText $active>{t('leads.receivedReply', { text: getReplyBadge(selectedLead, t, styledTheme)?.text || t('leads.replied') })}</DpTimelineText>
-                      {selectedLead._reply_at && <DpTimelineTime>{new Date(selectedLead._reply_at).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</DpTimelineTime>}
-                    </DpTimelineContent>
-                  </DpTimelineItem>
-                )}
-              </DpTimeline>
               </DpSectionContent>
 
               <DpDivider />
@@ -3702,7 +3819,61 @@ const Leads: React.FC = () => {
               })()}
             </DpColLeft>
 
-            {/* Right: email feed (full width) */}
+            {/* Journey timeline */}
+            <DpColJourney>
+              <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 14V4l4 2 4-2 4 2v10l-4-2-4 2-4-2z" stroke="#D689BF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.leadJourney')}</DpSectionTitle>
+              <DpSectionContent>
+              <DpTimeline>
+                <DpTimelineItem>
+                  <DpTimelineDotWrap><DpTimelineDot $active /><DpTimelineLine /></DpTimelineDotWrap>
+                  <DpTimelineContent>
+                    <DpTimelineText $active>{t('leads.discoveredVia', { source: getSourceDisplay(selectedLead.source || 'unknown') })}</DpTimelineText>
+                    <DpTimelineTime>{(() => { const ts = selectedLead.createdAt || (selectedLead as any)._imported_at || (selectedLead as any).created_at; return ts ? new Date(ts).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'; })()}</DpTimelineTime>
+                  </DpTimelineContent>
+                </DpTimelineItem>
+                <DpTimelineItem>
+                  <DpTimelineDotWrap><DpTimelineDot $active /><DpTimelineLine /></DpTimelineDotWrap>
+                  <DpTimelineContent>
+                    <DpTimelineText $active>{t('leads.addedToPool')}</DpTimelineText>
+                    <DpTimelineTime>{(() => { const ts = selectedLead.createdAt || (selectedLead as any)._imported_at || (selectedLead as any).created_at; return ts ? new Date(ts).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'; })()}</DpTimelineTime>
+                  </DpTimelineContent>
+                </DpTimelineItem>
+                <DpTimelineItem>
+                  <DpTimelineDotWrap>
+                    <DpTimelineDot $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'} />
+                    {(selectedLead.status === 'contacted' || selectedLead._replied) && <DpTimelineLine />}
+                  </DpTimelineDotWrap>
+                  <DpTimelineContent>
+                    <DpTimelineText $active={selectedLead.status === 'pending' || selectedLead.status === 'contacted'}>{selectedLead.status === 'new' ? t('leads.awaitingReview') : t('leads.markedAsPending')}</DpTimelineText>
+                    {selectedLead.status !== 'new' && selectedLead.updatedAt && <DpTimelineTime>{new Date(selectedLead.updatedAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</DpTimelineTime>}
+                  </DpTimelineContent>
+                </DpTimelineItem>
+                {selectedLead.status === 'contacted' && (
+                  <DpTimelineItem>
+                    <DpTimelineDotWrap>
+                      <DpTimelineDot $active />
+                      {selectedLead._replied && <DpTimelineLine />}
+                    </DpTimelineDotWrap>
+                    <DpTimelineContent>
+                      <DpTimelineText $active>{t('leads.contactedStep')}</DpTimelineText>
+                      {selectedLead.updatedAt && <DpTimelineTime>{new Date(selectedLead.updatedAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</DpTimelineTime>}
+                    </DpTimelineContent>
+                  </DpTimelineItem>
+                )}
+                {selectedLead._replied && (
+                  <DpTimelineItem>
+                    <DpTimelineDotWrap><DpTimelineDot $active /></DpTimelineDotWrap>
+                    <DpTimelineContent>
+                      <DpTimelineText $active>{t('leads.receivedReply', { text: getReplyBadge(selectedLead, t, styledTheme)?.text || t('leads.replied') })}</DpTimelineText>
+                      {selectedLead._reply_at && <DpTimelineTime>{new Date(selectedLead._reply_at).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</DpTimelineTime>}
+                    </DpTimelineContent>
+                  </DpTimelineItem>
+                )}
+              </DpTimeline>
+              </DpSectionContent>
+            </DpColJourney>
+
+            {/* Bottom: email feed (full width) */}
             <DpColCenter>
               {selectedLead.company_name && (
                 <LeadEmails companyName={selectedLead.company_name} leadId={selectedLead._id} />
