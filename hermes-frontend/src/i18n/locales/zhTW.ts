@@ -705,6 +705,19 @@ const zhTW = {
     stageProcessing: '處理中',
     stagePipeline: '處理中',
     stageComplete: '完成',
+    stagePoolMatch: '匹配郵箱池',
+    stageNotify: '通知',
+    stageOrchestrator: '指揮',
+    // Log 訊息
+    logPipelineStart: 'Pipeline 開始：{{keyword}} {{location}}',
+    logSearchDone: 'Search loop 完成：scouted={{scouted}} dupes={{dupes}} researched={{researched}} factCheckFailed={{factCheckFailed}} inserted={{inserted}}',
+    logStageDone: 'Lead [{{from}}] 完成 → 開始 [{{to}}]',
+    logStageRetry: 'Stage [{{stage}}] 失敗（第 {{attempt}}/{{maxRetries}} 次重試）：{{error}}',
+    logStageSkipped: 'Stage [{{stage}}] 重試 {{maxRetries}} 次仍失敗，跳過此 lead：{{error}}',
+    logPoolMatch: 'Lead "{{company}}" 命中 Verified Pool → 使用 {{email}}，跳過 S2 enrich',
+    logPoolFail: 'Pool 匹配失敗（fallback S2）：{{error}}',
+    logPipelineDone: 'Pipeline 完成（{{reason}}）',
+    logNotifyFail: 'Email 通知失敗：{{error}}',
     // 狀態標籤
     statusNew: '新增',
     statusContacted: '已聯繫',
@@ -725,7 +738,7 @@ const zhTW = {
     // 訊息
     searchFailedWithMessage: '搜尋失敗：{{message}}',
     unknownError: '未知錯誤',
-    foundLeadsBefore: '已找到',
+    foundLeadsBefore: '已處理',
     foundLeadsAfter: '筆',
     foundCount: '已找到',
     ofTotal: '/',

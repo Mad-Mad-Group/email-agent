@@ -103,6 +103,8 @@ export class HermesService implements OnModuleInit {
       level: 'info',
       stage: 'search',
       message: `Pipeline 開始：${dto.keyword} ${dto.location}`,
+      msgKey: 'search.logPipelineStart',
+      msgParams: { keyword: dto.keyword, location: dto.location },
     });
     return { campaign_id: campaignId, first_task: task.task_id };
   }
@@ -127,13 +129,27 @@ export class HermesService implements OnModuleInit {
       campaign.lead_ids = leadIds;
       campaign.pipeline_stage = 'per_lead';
       campaign._updated_at = new Date().toISOString();
+      // 記錄 search loop 統計到 campaign（State 持久化）
+      const searchStats = result.search_stats as Record<string, number> | undefined;
+      (campaign as any).search_stats = searchStats;
       await campaign.save();
 
-      this.progress(campaignId, 'search→enrich', 0, leadIds.length);
+      if (searchStats) {
+        this.sse.emit(SseEvent.HERMES_LOG, {
+          runId: campaignId,
+          level: 'info',
+          stage: 'search',
+          message: `Search loop 完成：scouted=${searchStats.scouted} dupes=${searchStats.duplicates} researched=${searchStats.researched} factCheckFailed=${searchStats.factCheckFailed} inserted=${searchStats.inserted}`,
+          msgKey: 'search.logSearchDone',
+          msgParams: { scouted: searchStats.scouted, dupes: searchStats.duplicates, researched: searchStats.researched, factCheckFailed: searchStats.factCheckFailed, inserted: searchStats.inserted },
+        });
+      }
+
+      this.progress(campaignId, 'enrich', 0, leadIds.length);
       const userId = params.user_id as string | undefined;
 
       if (leadIds.length === 0) {
-        await this.finish(campaign, '搜尋 0 結果');
+        await this.finish(campaign, `搜尋 0 結果（已嘗試 loop：scouted=${searchStats?.scouted ?? '?'}, duplicates=${searchStats?.duplicates ?? '?'}）`);
         return;
       }
 
@@ -153,6 +169,15 @@ export class HermesService implements OnModuleInit {
     // per-lead stage：派下一個
     const next = STAGE_NEXT[stage];
     if (next) {
+      this.sse.emit(SseEvent.HERMES_LOG, {
+        runId: campaignId,
+        level: 'info',
+        stage: next,
+        message: `Lead [${stage}] 完成 → 開始 [${next}]`,
+        msgKey: 'search.logStageDone',
+        msgParams: { from: stage, to: next },
+      });
+      this.progress(campaignId, next, campaign.done_count, campaign.lead_ids.length);
       await this.enqueueStage(next, campaignId, {
         lead_object_id: params.lead_object_id,
         user_id: params.user_id,
@@ -167,7 +192,7 @@ export class HermesService implements OnModuleInit {
       if (!updated) return;
       this.progress(
         campaignId,
-        'pipeline',
+        'send',
         updated.done_count,
         updated.lead_ids.length,
       );
@@ -200,6 +225,8 @@ export class HermesService implements OnModuleInit {
         level: 'warn',
         stage,
         message: `Stage [${stage}] 失敗（第 ${attempt}/${MAX_STAGE_RETRIES} 次重試）：${errorMsg}`,
+        msgKey: 'search.logStageRetry',
+        msgParams: { stage, attempt, maxRetries: MAX_STAGE_RETRIES, error: errorMsg },
       });
       // 重新 enqueue，帶上 retry_count + 原有 params
       const { campaign_id, pipeline_stage, retry_count: _rc, ...rest } = params;
@@ -213,6 +240,8 @@ export class HermesService implements OnModuleInit {
       level: 'error',
       stage,
       message: `Stage [${stage}] 重試 ${MAX_STAGE_RETRIES} 次仍失敗，跳過此 lead：${errorMsg}`,
+      msgKey: 'search.logStageSkipped',
+      msgParams: { stage, maxRetries: MAX_STAGE_RETRIES, error: errorMsg },
     });
 
     if (stage === 'search') {
@@ -229,7 +258,7 @@ export class HermesService implements OnModuleInit {
     if (!updated) return;
     this.progress(
       campaignId,
-      'pipeline',
+      'send',
       updated.done_count,
       updated.lead_ids.length,
     );
@@ -265,6 +294,8 @@ export class HermesService implements OnModuleInit {
         level: 'info',
         stage: 'pool_match',
         message: `Lead "${lead.company_name}" 命中 Verified Pool → 使用 ${verified.email}，跳過 S2 enrich`,
+        msgKey: 'search.logPoolMatch',
+        msgParams: { company: lead.company_name, email: verified.email },
       });
 
       return true;
@@ -274,6 +305,8 @@ export class HermesService implements OnModuleInit {
         level: 'warn',
         stage: 'pool_match',
         message: `Pool 匹配失敗（fallback S2）：${e?.message ?? e}`,
+        msgKey: 'search.logPoolFail',
+        msgParams: { error: e?.message ?? String(e) },
       });
       return false; // 失敗就 fallback 行正常 S2
     }
@@ -300,6 +333,8 @@ export class HermesService implements OnModuleInit {
       level: 'info',
       stage: 'complete',
       message: `Pipeline 完成（${why}）`,
+      msgKey: 'search.logPipelineDone',
+      msgParams: { reason: why },
     });
     // 根據用戶通知偏好決定是否發 email
     void this.maybeNotifyCompletion(campaign, why).catch((e) =>
@@ -308,6 +343,8 @@ export class HermesService implements OnModuleInit {
         level: 'warn',
         stage: 'notify',
         message: `Email 通知失敗：${e?.message ?? e}`,
+        msgKey: 'search.logNotifyFail',
+        msgParams: { error: e?.message ?? String(e) },
       }),
     );
   }

@@ -32,6 +32,8 @@ export interface SsePayloads {
         level: 'info' | 'warn' | 'error';
         stage: string;
         message: string;
+        msgKey?: string;
+        msgParams?: Record<string, unknown>;
     };
     [SseEvent.PIPELINE_PROGRESS]: {
         runId: string;
