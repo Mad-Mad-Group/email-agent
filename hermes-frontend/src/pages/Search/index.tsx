@@ -1,6 +1,4 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { useNavigate } from 'react-router-dom';
 import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useSearch } from '../../api/hooks';
@@ -11,6 +9,8 @@ import { media } from '../../styles/media';
 import { glassSurface } from '../../styles/glassSurface';
 import { useBadge } from '../../contexts/BadgeContext';
 import SpriteAvatar from '../../components/SpriteAvatar';
+import LeadDetailPanel from '../../components/LeadDetailPanel';
+import LeadEmails from '../../components/LeadEmails';
 import { AGENTS, FARMER } from '../../config/agents';
 
 /* ══════════════════════════════════════
@@ -1456,6 +1456,9 @@ const STAGE_LABEL_I18N_KEYS: Record<string, string> = {
   send: 'search.stageSending',
   pipeline: 'search.stageProcessing',
   complete: 'search.stageComplete',
+  pool_match: 'search.stagePoolMatch',
+  notify: 'search.stageNotify',
+  orchestrator: 'search.stageOrchestrator',
 };
 
 /* ── Helpers ── */
@@ -1621,10 +1624,26 @@ const SearchPage: React.FC = () => {
   const [location, setLocation] = useState(saved.loc);
   const [district, setDistrict] = useState(saved.dist);
   const [showLocPicker, setShowLocPicker] = useState(false);
-  const [targetCount, setTargetCount] = useState(saved.tc);
+  const [targetCount, setTargetCount] = useState<number | string>(saved.tc);
   const [searchMode, setSearchMode] = useState<'normal' | 'old_website'>('normal');
-  const navigate = useNavigate();
   const locRef = useRef<HTMLFormElement>(null);
+
+  /* ── Detail panel state ── */
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [detailClosing, setDetailClosing] = useState(false);
+  const detailTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleOpenDetail = useCallback((leadId: string) => {
+    leadsApi.get(leadId).then(r => {
+      const lead: Lead = (r.data as any)?.data ?? r.data;
+      setSelectedLead(lead);
+    }).catch(err => console.error('[Search] Failed to fetch lead detail:', err));
+  }, []);
+
+  const handleCloseDetail = useCallback(() => {
+    setDetailClosing(true);
+    detailTimerRef.current = setTimeout(() => { setSelectedLead(null); setDetailClosing(false); }, 200);
+  }, []);
 
   /* Close location picker on outside click */
   useEffect(() => {
@@ -1637,7 +1656,8 @@ const SearchPage: React.FC = () => {
 
   /* ── Pipeline SSE state ── */
   const [campaignId, setCampaignId] = useState<string | null>(null);
-  const [pipelineLogs, setPipelineLogs] = useState<Array<{time: string, stage: string, message: string, level: string}>>([]);
+  const [pipelineLogs, setPipelineLogs] = useState<Array<{time: string, stage: string, message: string, level: string, msgKey?: string, msgParams?: Record<string, any>}>>([]);
+  const [latestLogStage, setLatestLogStage] = useState<string>('');
   const [pipelineProgress, setPipelineProgress] = useState<{stage: string, current: number, total: number, percent: number} | null>(null);
   const [pipelineComplete, setPipelineComplete] = useState(false);
   const [realResults, setRealResults] = useState<MockLead[]>([]);
@@ -1746,7 +1766,7 @@ const SearchPage: React.FC = () => {
     let done = false;
 
     const unsubLog = sseClient.onEvent('hermes_log', (event: SSEEvent) => {
-      const data = event.data as { runId?: string; level?: string; stage?: string; message?: string };
+      const data = event.data as { runId?: string; level?: string; stage?: string; message?: string; msgKey?: string; msgParams?: Record<string, any> };
       if (data.runId !== campaignId) return;
 
       setPipelineLogs(prev => [...prev, {
@@ -1754,7 +1774,10 @@ const SearchPage: React.FC = () => {
         stage: data.stage || '',
         message: data.message || '',
         level: data.level || 'info',
+        msgKey: data.msgKey,
+        msgParams: data.msgParams,
       }]);
+      if (data.stage) setLatestLogStage(data.stage);
 
       if (data.stage === 'complete' && !done) {
         done = true;
@@ -1865,7 +1888,7 @@ const SearchPage: React.FC = () => {
     const payload: SearchPayload = {
       keyword: keyword.trim(),
       location: fullLocation.trim(),
-      targetCount,
+      targetCount: Number(targetCount) || 1,
       mode: searchMode,
     };
     // ponytail: persist form so a refresh during the pipeline restores inputs.
@@ -1874,7 +1897,7 @@ const SearchPage: React.FC = () => {
         kw: payload.keyword,
         loc: location,
         dist: district,
-        tc: targetCount,
+        tc: Number(targetCount) || 1,
       }));
     } catch { /* ignore quota / disabled storage */ }
     // Reset pipeline state for new search
@@ -1883,6 +1906,7 @@ const SearchPage: React.FC = () => {
     setPipelineProgress(null);
     setPipelineComplete(false);
     setRealResults([]);
+    setLatestLogStage('');
 
     search.mutate(payload, {
       onSuccess: (response) => {
@@ -2001,15 +2025,24 @@ const SearchPage: React.FC = () => {
               {t(`search.dist_${district}`)}
             </LocBadge>
             <NumberWrap>
-              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(200, c + 5))}><ChevronUp /></NumArrowBtn>
+              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(200, (Number(c) || 1) + 5))}><ChevronUp /></NumArrowBtn>
               <NumberInput
                 type="number"
                 min={1}
                 max={200}
                 value={targetCount}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTargetCount(Math.max(1, Math.min(200, Number(e.target.value) || 1)))}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  const v = e.target.value;
+                  if (v === '') { setTargetCount(''); return; }
+                  const n = Number(v);
+                  if (!isNaN(n)) setTargetCount(Math.min(200, n));
+                }}
+                onBlur={() => {
+                  const n = Number(targetCount);
+                  setTargetCount((!n || n < 1) ? 1 : Math.min(200, n));
+                }}
               />
-              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.max(1, c - 5))}><ChevronDown /></NumArrowBtn>
+              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.max(1, (Number(c) || 1) - 5))}><ChevronDown /></NumArrowBtn>
             </NumberWrap>
             <BarSearchBtn type="submit" disabled={search.isPending || !keyword.trim()}>
               {search.isPending ? <Spinner /> : <SearchBtnIcon />}
@@ -2078,9 +2111,8 @@ const SearchPage: React.FC = () => {
               {/* Stepper */}
               <StepperWrap>
                 {PIPELINE_STAGES.map((stage, i) => {
-                  const currentIdx = pipelineProgress
-                    ? PIPELINE_STAGES.indexOf(pipelineProgress.stage as typeof PIPELINE_STAGES[number])
-                    : -1;
+                  const activeStage = latestLogStage || pipelineProgress?.stage || '';
+                  const currentIdx = PIPELINE_STAGES.indexOf(activeStage as typeof PIPELINE_STAGES[number]);
                   const state: 'done' | 'active' | 'pending' =
                     i < currentIdx ? 'done' :
                     i === currentIdx ? 'active' :
@@ -2113,7 +2145,7 @@ const SearchPage: React.FC = () => {
                     <PipelineLogLine key={i} $level={log.level}>
                       <PipelineLogTime>[{log.time}]</PipelineLogTime>
                       {log.stage && <PipelineLogStage>[{STAGE_LABEL_I18N_KEYS[log.stage] ? t(STAGE_LABEL_I18N_KEYS[log.stage]) : log.stage}]</PipelineLogStage>}
-                      {log.message}
+                      {log.msgKey ? t(log.msgKey, log.msgParams) : log.message}
                     </PipelineLogLine>
                   ))}
                 </PipelineLogFeed>
@@ -2129,7 +2161,7 @@ const SearchPage: React.FC = () => {
               {/* Result cards */}
               <ResultCardList>
                 {realResults.map((lead, i) => (
-                  <ResultCard key={i} onClick={() => lead._id && navigate(`/cms-leads?detail=${lead._id}`)}>
+                  <ResultCard key={i} onClick={() => lead._id && handleOpenDetail(lead._id)}>
                     <RcAvatar $color={hashAvatarColor(lead.name)}>
                       {lead.name.slice(0, 1)}
                     </RcAvatar>
@@ -2164,6 +2196,18 @@ const SearchPage: React.FC = () => {
         </div>
       )}
 
+      {selectedLead && (
+        <LeadDetailPanel
+          lead={selectedLead}
+          closing={detailClosing}
+          onClose={handleCloseDetail}
+          rightPanel={
+            selectedLead.company_name ? (
+              <LeadEmails companyName={selectedLead.company_name} leadId={selectedLead._id} />
+            ) : undefined
+          }
+        />
+      )}
     </Page>
   );
 };

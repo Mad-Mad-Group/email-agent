@@ -711,6 +711,19 @@ const zhCN = {
     stageProcessing: '处理中',
     stagePipeline: '处理中',
     stageComplete: '完成',
+    stagePoolMatch: '匹配邮箱池',
+    stageNotify: '通知',
+    stageOrchestrator: '指挥',
+    // Log 消息
+    logPipelineStart: 'Pipeline 开始：{{keyword}} {{location}}',
+    logSearchDone: 'Search loop 完成：scouted={{scouted}} dupes={{dupes}} researched={{researched}} factCheckFailed={{factCheckFailed}} inserted={{inserted}}',
+    logStageDone: 'Lead [{{from}}] 完成 → 开始 [{{to}}]',
+    logStageRetry: 'Stage [{{stage}}] 失败（第 {{attempt}}/{{maxRetries}} 次重试）：{{error}}',
+    logStageSkipped: 'Stage [{{stage}}] 重试 {{maxRetries}} 次仍失败，跳过此 lead：{{error}}',
+    logPoolMatch: 'Lead "{{company}}" 命中 Verified Pool → 使用 {{email}}，跳过 S2 enrich',
+    logPoolFail: 'Pool 匹配失败（fallback S2）：{{error}}',
+    logPipelineDone: 'Pipeline 完成（{{reason}}）',
+    logNotifyFail: 'Email 通知失败：{{error}}',
     // 状态标签
     statusNew: '新增',
     statusContacted: '已联系',
@@ -731,7 +744,7 @@ const zhCN = {
     // 消息
     searchFailedWithMessage: '搜索失败：{{message}}',
     unknownError: '未知错误',
-    foundLeadsBefore: '已找到',
+    foundLeadsBefore: '已处理',
     foundLeadsAfter: '笔',
     foundCount: '已找到',
     ofTotal: '/',
