@@ -1433,40 +1433,58 @@ const dpSlideDown = keyframes`
   to   { opacity: 0; transform: translateY(16px); }
 `;
 
+const glowPulseGreen = keyframes`
+  0%, 100% { box-shadow: 0 0 8px rgba(76,175,80,0.3); }
+  50% { box-shadow: 0 0 16px rgba(76,175,80,0.5), 0 0 32px rgba(76,175,80,0.2); }
+`;
+const glowPulseGold = keyframes`
+  0%, 100% { box-shadow: 0 0 8px rgba(255,193,7,0.35); }
+  50% { box-shadow: 0 0 16px rgba(255,193,7,0.55), 0 0 32px rgba(255,193,7,0.2); }
+`;
+
 const DpOverlay = styled.div<{ $closing?: boolean }>`
   position: fixed;
   inset: 0;
   z-index: 1200;
   background: rgba(0,0,0,0.45);
-  display: flex;
-  align-items: center;
-  justify-content: center;
   animation: ${({ $closing }) => $closing ? dpFadeOut : dpFadeIn} 0.2s ease-out forwards;
 `;
 
 const DpPanel = styled.div<{ $closing?: boolean }>`
-  width: 88vw;
-  max-width: 1400px;
-  height: 90vh;
+  position: absolute;
   display: flex;
   flex-direction: column;
   ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card + 2}px;
   overflow: hidden;
   animation: ${({ $closing }) => $closing ? dpSlideDown : dpSlideUp} 0.25s ease-out forwards;
+  &::after {
+    content: '';
+    position: absolute;
+    left: 300px;
+    top: 0;
+    bottom: 0;
+    width: 0.5px;
+    background: ${({ theme }) => theme.colors.border};
+    z-index: 3;
+    pointer-events: none;
+  }
   ${media.mobile} {
     width: 95vw;
     height: 92vh;
+    &::after { display: none; }
   }
 `;
 
 const DpHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  border-bottom: 0.5px solid ${({ theme }) => theme.colors.border};
+  gap: 6px;
+  padding: 10px 20px;
   background: transparent;
+  cursor: grab;
+  min-height: 24px;
+  &:active { cursor: grabbing; }
 `;
 
 const DpHeaderInfo = styled.div`
@@ -1476,7 +1494,7 @@ const DpHeaderInfo = styled.div`
 
 const DpCompanyName = styled.h2`
   margin: 0;
-  font-size: 1rem;
+  font-size: 1.125rem;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
   display: flex;
@@ -1492,6 +1510,20 @@ const DpHeaderMeta = styled.div`
   font-size: 0.8125rem;
   color: ${({ theme }) => theme.colors.textTertiary};
 `;
+
+const SOURCE_DISPLAY_NAMES: Record<string, string> = {
+  google_maps: 'Google Maps',
+  google_search: 'Google Search',
+  facebook: 'Facebook',
+  instagram: 'Instagram',
+  linkedin: 'LinkedIn',
+  manual: '手動輸入',
+  import: '批量匯入',
+  referral: '推薦',
+  website: '官網',
+  cold_outreach: '主動開發',
+};
+const getSourceDisplay = (source: string): string => SOURCE_DISPLAY_NAMES[source] || source;
 
 const STATUS_PILL_COLORS: Record<string, { bg: string; fg: string }> = {
   new:       { bg: '#e8f5e9', fg: '#2e7d32' },
@@ -1544,15 +1576,18 @@ const DpBody = styled.div`
 `;
 
 const DpColLeft = styled.div`
-  padding: 16px 20px;
+  padding: 4px 20px 10px 28px;
   overflow-y: auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0;
-  border-right: 0.5px solid ${({ theme }) => theme.colors.border};
   background: transparent;
-  ${media.tabletDown} { border-right: none; border-bottom: 0.5px solid ${({ theme }) => theme.colors.border}; overflow-y: visible; padding: 10px 16px; }
+  &::-webkit-scrollbar { width: 5px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: #D689BF99; border-radius: 99px; }
+  &::-webkit-scrollbar-thumb:hover { background: #D689BFCC; }
+  ${media.tabletDown} { overflow-y: visible; padding: 10px 16px; }
 `;
 
 const DpTabSection = styled.div`
@@ -1597,13 +1632,17 @@ const DpCollapsibleBody = styled.div<{ $open?: boolean }>`
 `;
 
 const DpColCenter = styled.div`
-  padding: 16px 20px;
+  padding: 4px 20px 10px;
   overflow-y: auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
   min-width: 0;
+  &::-webkit-scrollbar { width: 5px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: #D689BF99; border-radius: 99px; }
+  &::-webkit-scrollbar-thumb:hover { background: #D689BFCC; }
   ${media.tabletDown} { overflow-y: visible; padding: 12px 16px; }
 `;
 
@@ -1616,28 +1655,29 @@ const DpGrid = styled.div`
 const DpField = styled.div`
   display: flex;
   align-items: flex-start;
-  gap: 8px;
-  padding: 7px 0;
+  gap: 6px;
+  padding: 3px 0;
 `;
 
 const DpFieldLabel = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 0.8125rem;
+  gap: 4px;
+  font-size: 0.6875rem;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textTertiary};
-  min-width: 64px;
+  min-width: 52px;
   flex-shrink: 0;
   padding-top: 1px;
 `;
 
 const DpFieldValue = styled.span`
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: ${({ theme }) => theme.colors.textPrimary};
   word-break: break-word;
   flex: 1;
   min-width: 0;
+  line-height: 1.4;
   a { color: ${({ theme }) => theme.colors.accent}; text-decoration: none; &:hover { text-decoration: underline; } }
 `;
 
@@ -1645,26 +1685,31 @@ const DpFieldIcon = styled.span`
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 13px;
+  height: 13px;
   color: ${({ theme }) => theme.colors.textTertiary};
   flex-shrink: 0;
-  svg { width: 15px; height: 15px; }
+  svg { width: 12px; height: 12px; }
 `;
 
 const DpDivider = styled.div`
   height: 0;
-  border-top: 0.5px solid ${({ theme }) => theme.colors.border};
-  margin: 14px 0;
+  margin: 6px 0;
 `;
 
 const DpSectionTitle = styled.h3`
-  margin: 0 0 10px;
-  font-size: 0.75rem;
+  margin: 0 0 6px;
+  font-size: 0.875rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: ${({ theme }) => theme.colors.textTertiary};
+  letter-spacing: 0.02em;
+  color: #D689BF;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+`;
+
+const DpSectionContent = styled.div`
+  padding-left: 12px;
 `;
 
 const DpTagList = styled.div`
@@ -1676,9 +1721,9 @@ const DpTagList = styled.div`
 
 const DpTag = styled.span`
   display: inline-block;
-  padding: 3px 10px;
+  padding: 2px 8px;
   border-radius: 99px;
-  font-size: 0.8125rem;
+  font-size: 0.6875rem;
   font-weight: 500;
   background: ${({ theme }) => theme.colors.surfaceMuted};
   color: ${({ theme }) => theme.colors.textSecondary};
@@ -1701,14 +1746,14 @@ const DpTimelineDotWrap = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 16px;
+  width: 14px;
   flex-shrink: 0;
-  padding-top: 5px;
+  padding-top: 4px;
 `;
 
 const DpTimelineDot = styled.span<{ $active?: boolean }>`
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   flex-shrink: 0;
   background: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.border};
@@ -1724,27 +1769,27 @@ const DpTimelineLine = styled.span`
 
 const DpTimelineContent = styled.div`
   flex: 1;
-  padding: 2px 0 12px 10px;
+  padding: 1px 0 8px 8px;
 `;
 
 const DpTimelineText = styled.span<{ $active?: boolean }>`
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textTertiary};
   font-weight: ${({ $active }) => $active ? 500 : 400};
+  line-height: 1.3;
 `;
 
 const DpTimelineTime = styled.div`
-  font-size: 0.75rem;
+  font-size: 0.625rem;
   color: ${({ theme }) => theme.colors.textTertiary};
-  margin-top: 2px;
+  margin-top: 1px;
 `;
 
 const DpFooter = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 12px 20px;
-  border-top: 0.5px solid ${({ theme }) => theme.colors.border};
+  padding: 6px 20px;
 `;
 
 const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
@@ -1968,9 +2013,90 @@ const ReplyBadge = styled.span<{ $bg: string; $fg: string }>`
   svg { width: 12px; height: 12px; flex-shrink: 0; }
 `;
 
+const EmailTypeBadge = styled.span<{ $bg: string; $fg: string }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: ${({ $bg }) => $bg};
+  color: ${({ $fg }) => $fg};
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+  &:hover { filter: brightness(0.95); transform: scale(1.03); }
+`;
+const ReplyPopup = styled.div<{ $open: boolean }>`
+  max-height: ${({ $open }) => $open ? '300px' : '0'};
+  opacity: ${({ $open }) => $open ? 1 : 0};
+  overflow: hidden;
+  transition: max-height 0.3s ease, opacity 0.2s ease, margin 0.2s ease, padding 0.2s ease;
+  background: #fafafa;
+  border-radius: 8px;
+  margin-top: ${({ $open }) => $open ? '8px' : '0'};
+  padding: ${({ $open }) => $open ? '10px 14px' : '0 14px'};
+  border: ${({ $open }) => $open ? '0.5px solid #e0e0e0' : 'none'};
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: #555;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: 'Times New Roman', 'Noto Serif TC', 'Noto Serif SC', serif;
+`;
+
 const NoReplyText = styled.span`
   font-size: 0.6875rem;
   color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
+/* ── Email Timeline wrapper ── */
+const EmailTimeline = styled.div`
+  position: relative;
+  padding-left: 20px;
+  &::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #e0e0e0;
+  }
+`;
+const EmailTimelineNode = styled.div`
+  position: relative;
+  margin-bottom: 18px;
+`;
+const EmailTimelineDot = styled.div<{ $color?: string }>`
+  position: absolute;
+  left: -20px;
+  top: 8px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: ${({ $color }) => $color || '#bdbdbd'};
+  border: 2px solid #fff;
+  z-index: 1;
+`;
+const EmailTimelineTime = styled.div`
+  font-size: 0.75rem;
+  color: #999;
+  margin-bottom: 4px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+`;
+const EmailStatusPill = styled.span<{ $bg: string; $fg: string }>`
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: ${({ $bg }) => $bg};
+  color: ${({ $fg }) => $fg};
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 `;
 
 /* ── Lead Emails section（撳開 lead 就睇到所有相關 email） ── */
@@ -1989,12 +2115,58 @@ const getEmailStatusColor = (_theme: any): Record<string, { bg: string; fg: stri
   failed:   { bg: '#fff3e0', fg: '#e65100' },
 });
 
-const EmailCard = styled.div<{ $expanded?: boolean }>`
-  background: #f7f7f7;
+const EmailCard = styled.div<{ $expanded?: boolean; $status?: string }>`
   border-radius: 10px;
-  margin-bottom: 10px;
   max-width: 100%;
-  padding: 14px 16px;
+  padding: 14px 18px;
+  position: relative;
+  overflow: hidden;
+  transition: background 0.2s;
+  /* pending — 金黃色發光脈衝 */
+  ${({ $status }) => $status === 'pending' && css`
+    background: #fffef5;
+    border: 1.5px solid #ffe082;
+    box-shadow: 0 0 6px rgba(255,193,7,0.2);
+    animation: ${glowPulseGold} 2s ease-in-out infinite;
+  `}
+  /* approved — 綠色發光脈衝 */
+  ${({ $status }) => $status === 'approved' && css`
+    background: #f8fcf8;
+    border: 1.5px solid #a5d6a7;
+    box-shadow: 0 0 6px rgba(76,175,80,0.2);
+    animation: ${glowPulseGreen} 2s ease-in-out infinite;
+  `}
+  /* sent — 淡綠底 */
+  ${({ $status }) => $status === 'sent' && css`
+    background: #f9fcf9;
+    border: 1px solid #e0efe0;
+  `}
+  /* rejected — 淡紅底 + 紅叉浮水印 */
+  ${({ $status }) => $status === 'rejected' && css`
+    background: #fff5f5;
+    border: 1px solid #f5c6c6;
+    &::after {
+      content: '✗';
+      position: absolute;
+      bottom: 6px;
+      right: 12px;
+      font-size: 4rem;
+      font-weight: 800;
+      color: rgba(211, 47, 47, 0.13);
+      pointer-events: none;
+      line-height: 1;
+    }
+  `}
+  /* failed — 淡紅底 */
+  ${({ $status }) => $status === 'failed' && css`
+    background: #fffafa;
+    border: 1px solid #f5d5d5;
+  `}
+  /* fallback */
+  ${({ $status }) => !$status && css`
+    background: #fafafa;
+    border: 1px solid #eee;
+  `}
 `;
 const EmailCardHead = styled.div`
   display: flex;
@@ -2018,13 +2190,14 @@ const EmailCardDate = styled.span`
   white-space: nowrap;
 `;
 const EmailCardBody = styled.div`
-  padding: 0;
+  padding: 4px 8px;
+  font-family: 'Times New Roman', 'Noto Serif TC', 'Noto Serif SC', serif;
 `;
 const EmailBodyContent = styled.div`
   white-space: pre-wrap;
   word-break: break-word;
   overflow-wrap: break-word;
-  font-size: 0.875rem;
+  font-size: 1rem;
   line-height: 1.7;
   color: #555;
   max-width: 100%;
@@ -2036,6 +2209,112 @@ const EmailCardMeta = styled.div`
   border-top: 0.5px solid #e2e2e2;
   font-size: 0.8125rem;
   color: #888;
+`;
+const EmailRecipient = styled.div`
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+`;
+const AgentAvatar = styled.div`
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #d4a6c8;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+`;
+const EmailWatermark = styled.div`
+  position: absolute;
+  bottom: 12px;
+  right: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+`;
+const EmailWatermarkBadge = styled.span<{ $bg: string; $fg: string }>`
+  font-size: 0.8125rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 99px;
+  background: ${({ $bg }) => $bg};
+  color: ${({ $fg }) => $fg};
+  opacity: 0.85;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+`;
+const EmailWatermarkTime = styled.span`
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #555;
+`;
+const EmailGreeting = styled.div`
+  font-size: 1rem;
+  color: #333;
+  margin-bottom: 12px;
+`;
+const EmailHighlight = styled.div`
+  font-size: 1rem;
+  color: #1a1a1a;
+  background: linear-gradient(90deg, #e8f5e920, #e8f5e960, #e8f5e920);
+  padding: 6px 10px;
+  border-left: 3px solid #4caf50;
+  border-radius: 0 6px 6px 0;
+  margin: 8px 0;
+  font-weight: 500;
+`;
+const EmailCta = styled.div`
+  font-size: 1rem;
+  color: #1565c0;
+  font-weight: 500;
+  margin: 8px 0;
+`;
+const EmailSignature = styled.div`
+  font-size: 0.875rem;
+  color: #888;
+  margin-top: 12px;
+  white-space: pre-wrap;
+`;
+const EmailBodyLine = styled.div`
+  font-size: 1rem;
+  line-height: 1.7;
+  color: #555;
+  margin: 4px 0;
+`;
+const EmailListItem = styled.div`
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #444;
+  padding: 3px 0 3px 16px;
+  position: relative;
+  &::before {
+    content: '•';
+    position: absolute;
+    left: 0;
+    color: #4caf50;
+    font-weight: 700;
+  }
+`;
+const EmailPS = styled.div`
+  font-size: 0.9375rem;
+  color: #1a1a1a;
+  font-style: italic;
+  margin-top: 12px;
+  padding: 6px 10px;
+  background: #fff8e1;
+  border-left: 3px solid #ffc107;
+  border-radius: 0 6px 6px 0;
 `;
 const EmailSummary = styled.div`
   margin: 0;
@@ -2064,16 +2343,19 @@ const EmailCardActions = styled.div`
   margin-top: 6px;
 `;
 const EmailActionBtn = styled.button<{ $bg: string; $fg: string }>`
-  padding: 4px 10px;
-  border: 0.5px solid ${({ $fg }) => $fg}33;
-  border-radius: 6px;
-  font-size: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border: 0.5px solid #e5737388;
+  border-radius: 99px;
+  font-size: 0.8125rem;
   font-weight: 500;
-  color: ${({ $fg }) => $fg};
-  background: transparent;
+  color: #c62828;
+  background: #fce4ec;
   cursor: pointer;
-  transition: opacity 0.15s;
-  &:hover:not(:disabled) { opacity: 0.85; }
+  transition: all 0.15s;
+  &:hover:not(:disabled) { background: #f8bbd0; }
   &:disabled { opacity: 0.45; cursor: not-allowed; }
 `;
 
@@ -2081,19 +2363,119 @@ const LeadSendBtn = styled.button`
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  margin-left: auto;
-  padding: 4px 12px;
+  padding: 6px 18px;
   border: none;
   border-radius: 99px;
-  background: #2e7d32;
+  background: #43a047;
   color: #fff;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.15s;
-  &:hover:not(:disabled) { opacity: 0.85; }
+  transition: all 0.15s;
+  &:hover:not(:disabled) { background: #388e3c; }
   &:disabled { opacity: 0.45; cursor: not-allowed; }
 `;
+
+const renderEmailBody = (text: string) => {
+  // 先把長句按句號分段，再按換行分段 — 這樣即使是一大段也能逐句識別
+  const rawLines = text.split('\n');
+  const lines: string[] = [];
+  for (const raw of rawLines) {
+    // 按句號/句點拆分長段落（保留句號），但不拆簽名區
+    if (raw.length > 60 && /[.。!！]/.test(raw)) {
+      const sentences = raw.match(/[^.。!！]+[.。!！]?\s*/g) || [raw];
+      lines.push(...sentences);
+    } else {
+      lines.push(raw);
+    }
+  }
+
+  type SegType = 'greeting' | 'body' | 'highlight' | 'cta' | 'signature' | 'list' | 'ps';
+  const segments: { type: SegType; text: string }[] = [];
+  let i = 0;
+
+  // ── 問候語（中英文）──
+  const greetingRe = /^(Hi|Hello|Dear|Hey|Good\s*(morning|afternoon|evening)|Greetings|您好|嗨|親愛的|尊敬的|亲爱的|尊敬的)\b/i;
+  while (i < lines.length && (greetingRe.test(lines[i].trim()) || lines[i].trim() === '')) {
+    if (lines[i].trim()) segments.push({ type: 'greeting', text: lines[i].trim() });
+    i++;
+  }
+
+  // ── 簽名偵測（中英文）──
+  const signatureRe = /^(Thanks|Thank\s*you|Best|Regards|Cheers|Sincerely|Best\s*regards|Kind\s*regards|Warm\s*regards|All\s*the\s*best|Yours|謝謝|此致|順祝|敬上|祝好),?\s*$/i;
+
+  // ── 重點高亮：數據/金額/量化/成果/關鍵詞 ──
+  const highlightRe = new RegExp([
+    '\\d+%',                              // 百分比
+    '\\d+x\\b',                           // 倍數
+    '[$¥€£]\\s*[\\d,.]+',                 // 金額
+    '[\\d,.]+\\s*[万億萬亿]',               // 中文金額
+    '\\d+\\s*(months?|weeks?|days?|years?|個月|周|天|年|小時|hours?)', // 時間量化
+    '\\d+\\s*(leads?|clients?|users?|customers?|companies|位|家|個|人|筆)', // 數量
+    '\\d{3,}',                             // 3位數以上的數字
+    '(increase|boost|grow|reduce|save|improve|achieve|generate|deliver|result)',
+    '(提升|增長|增长|降低|提高|節省|节省|帶來|带来|達到|达到|實現|实现|產生|产生)',
+    '(ROI|KPI|conversion|revenue|profit|cost|efficiency)',
+    '(case\\s*study|成功案例|客戶案例|客户案例)',
+    '(compared\\s*to|vs\\.?|versus|相比|對比|对比|優於|优于)',
+  ].join('|'), 'i');
+
+  // ── CTA：行動呼籲（中英文）──
+  const ctaRe = new RegExp([
+    '\\b(free|demo|call|meet|schedule|book|sign\\s*up|get\\s*started|reach\\s*out)',
+    '\\b(let\\s*me\\s*know|interested|learn\\s*more|try|contact|discuss|chat|talk)',
+    '\\b(available|open\\s*to|would\\s*love|happy\\s*to|look\\s*forward)',
+    '\\b(click|visit|check\\s*out|explore|discover|see\\s*how|find\\s*out)',
+    '(歡迎|欢迎|免費|免费|預約|预约|了解更多|聯繫|联系|立即|馬上|马上)',
+    '(期待|希望|方便|有空|抽空|商討|商讨|安排|洽談|洽谈|體驗|体验)',
+  ].join('|'), 'i');
+
+  // ── 列表項 ──
+  const listRe = /^[-•·★✓✔→▸]\s+|^\d+[.)]\s+|^[a-zA-Z][.)]\s+/;
+
+  // ── P.S. ──
+  const psRe = /^(P\.?S\.?|附[：:]|备注[：:]|備註[：:]|Note[：:]|注[：:])/i;
+
+  for (; i < lines.length; i++) {
+    const line = lines[i];
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    // P.S. — 特殊強調
+    if (psRe.test(trimmed)) {
+      segments.push({ type: 'ps', text: trimmed });
+      continue;
+    }
+
+    // 簽名 — 收集剩餘行
+    if (signatureRe.test(trimmed)) {
+      segments.push({ type: 'signature', text: lines.slice(i).filter(l => l.trim()).join('\n') });
+      break;
+    }
+
+    // 列表項
+    if (listRe.test(trimmed)) {
+      segments.push({ type: 'list', text: trimmed.replace(/^[-•·★✓✔→▸]\s+|^\d+[.)]\s+|^[a-zA-Z][.)]\s+/, '') });
+      continue;
+    }
+
+    // 重點高亮
+    if (highlightRe.test(trimmed)) {
+      segments.push({ type: 'highlight', text: trimmed });
+      continue;
+    }
+
+    // CTA：問號結尾 或 含行動呼籲詞
+    if (trimmed.endsWith('?') || trimmed.endsWith('？') || ctaRe.test(trimmed)) {
+      segments.push({ type: 'cta', text: trimmed });
+      continue;
+    }
+
+    segments.push({ type: 'body', text: trimmed });
+  }
+
+  return segments;
+};
 
 const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ companyName, leadId }) => {
   const { t } = useTranslation();
@@ -2109,6 +2491,8 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
   const emails = pool
     .filter((e) => (e.lead_id === leadId) || (e.company_name || '') === companyName)
     .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+
+  const [replyOpenId, setReplyOpenId] = useState<string | null>(null);
 
   if (!emails.length) return null;
 
@@ -2142,63 +2526,104 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
     });
   };
 
+  const dotColorMap: Record<string, string> = {
+    pending: '#ffc107', approved: '#66bb6a', sent: '#4caf50', rejected: '#bdbdbd', failed: '#ef5350',
+  };
+
   return (
     <>
-      <DpSectionTitle>{t('leads.emailRecords')} ({emails.length})</DpSectionTitle>
-      {emails.map((d) => {
-        const typeTag = d._type ? getEmailTypeLabel(t, leTheme)[d._type] : null;
-        const emailStatusColors = getEmailStatusColor(leTheme);
-        const statusColor = emailStatusColors[d.status || 'pending'] || emailStatusColors.pending;
+      <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="#D689BF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.emailRecords')} ({emails.length})</DpSectionTitle>
+      <EmailTimeline>
+        {emails.map((d) => {
+          const typeTag = d._type ? getEmailTypeLabel(t, leTheme)[d._type] : null;
+          const emailStatusColors = getEmailStatusColor(leTheme);
+          const statusColor = emailStatusColors[d.status || 'pending'] || emailStatusColors.pending;
 
-        return (
-          <EmailCard key={d._id}>
-            <EmailCardHead>
-              {typeTag && <ReplyBadge $bg={typeTag.bg} $fg={typeTag.fg}>{typeTag.text}</ReplyBadge>}
-              <ReplyBadge $bg={statusColor.bg} $fg={statusColor.fg}>{d.status || 'pending'}</ReplyBadge>
-              <EmailCardDate>
+          return (
+            <EmailTimelineNode key={d._id}>
+              <EmailTimelineDot $color={dotColorMap[d.status || 'pending']} />
+              <EmailTimelineTime>
                 {d.created_at ? new Date(d.created_at).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : ''}
-              </EmailCardDate>
-              <div style={{ flex: 1 }} />
-              {d.status === 'pending' && (
-                <>
-                  <LeadSendBtn disabled={busy} onClick={() => handleApproveAndSend(d)}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    {busy ? t('leads.processing') : t('leads.approveAndSend')}
-                  </LeadSendBtn>
-                  <EmailActionBtn $bg={`${leTheme.strong.mauve}14`} $fg={leTheme.strong.mauve} disabled={busy} onClick={() => handleReject(d._id)}>
-                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                    {t('leads.reject')}
-                  </EmailActionBtn>
-                </>
-              )}
-              {d.status === 'approved' && (
-                <LeadSendBtn disabled={busy} onClick={() => send.mutate(d._id)}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  {busy ? t('leads.processing') : t('leads.send')}
-                </LeadSendBtn>
-              )}
-              {d.status === 'sent' && (
-                <span style={{ fontSize: '0.75rem', color: leTheme.strong.olive }}>✓ {t('leads.sentAt')} {d.sent_at ? new Date(d.sent_at).toLocaleString('zh-HK') : ''}</span>
-              )}
-              {d.status === 'rejected' && (
-                <span style={{ fontSize: '0.75rem', color: leTheme.strong.mauve }}>✗ {t('leads.rejected')}</span>
-              )}
-            </EmailCardHead>
+              </EmailTimelineTime>
+              <EmailCard $status={d.status}>
+                {/* Top row: recipient left, actions right */}
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                  <EmailRecipient style={{ marginBottom: 0 }}>
+                    <AgentAvatar>{(d.to_email || '?').charAt(0).toUpperCase()}</AgentAvatar>
+                    To: {d.to_email || '—'}
+                  </EmailRecipient>
+                  {typeTag && (
+                    <EmailTypeBadge
+                      $bg={typeTag.bg}
+                      $fg={typeTag.fg}
+                      style={{ marginLeft: 8 }}
+                      onClick={(e) => { e.stopPropagation(); setReplyOpenId(replyOpenId === d._id ? null : d._id); }}
+                    >
+                      {typeTag.text} {replyOpenId === d._id ? '▾' : '▸'}
+                    </EmailTypeBadge>
+                  )}
+                  <div style={{ flex: 1 }} />
+                  {d.status === 'pending' && (
+                    <>
+                      <EmailActionBtn $bg="#fce4ec" $fg="#c62828" disabled={busy} onClick={() => handleReject(d._id)}>
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                        {t('leads.reject')}
+                      </EmailActionBtn>
+                      <LeadSendBtn disabled={busy} onClick={() => handleApproveAndSend(d)}>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        {busy ? t('leads.processing') : t('leads.approveAndSend')}
+                      </LeadSendBtn>
+                    </>
+                  )}
+                  {d.status === 'approved' && (
+                    <LeadSendBtn disabled={busy} onClick={() => send.mutate(d._id)}>
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                      {busy ? t('leads.processing') : t('leads.send')}
+                    </LeadSendBtn>
+                  )}
+                  {d.status === 'rejected' && (
+                    <span style={{ fontSize: '0.75rem', color: leTheme.strong.mauve }}>✗ {t('leads.rejected')}</span>
+                  )}
+                </div>
 
-            {(d as any)._summary && (
-              <EmailSummary>
-                <EmailSummaryLabel>{t('leads.aiSummary')}</EmailSummaryLabel>
-                {(d as any)._summary}
-              </EmailSummary>
-            )}
+                {/* 標籤展開彈窗 — 點擊標籤查看客戶回覆郵件 */}
+                {typeTag && (
+                  <ReplyPopup $open={replyOpenId === d._id}>
+                    {(d as any)._reply_body || (d as any)._reply_text || (d as any).reply_body || t('leads.noReplyContent', '暫無回覆內容')}
+                  </ReplyPopup>
+                )}
 
-            <EmailCardBody>
-              <EmailBodyContent dangerouslySetInnerHTML={{ __html: d.body || '—' }} />
-              <EmailCardMeta>{t('leads.sendTo')} {d.to_email || '—'}</EmailCardMeta>
-            </EmailCardBody>
-          </EmailCard>
-        );
-      })}
+                <EmailCardBody>
+                  {(() => {
+                    const bodyText = (d.body || '—').replace(/<[^>]*>/g, '');
+                    const segments = renderEmailBody(bodyText);
+                    return (
+                      <div>
+                        {segments.map((seg, idx) => {
+                          switch (seg.type) {
+                            case 'greeting': return <EmailGreeting key={idx}>{seg.text}</EmailGreeting>;
+                            case 'highlight': return <EmailHighlight key={idx}>{seg.text}</EmailHighlight>;
+                            case 'cta': return <EmailCta key={idx}>{seg.text}</EmailCta>;
+                            case 'signature': return <EmailSignature key={idx}>{seg.text}</EmailSignature>;
+                            case 'list': return <EmailListItem key={idx}>{seg.text}</EmailListItem>;
+                            case 'ps': return <EmailPS key={idx}>{seg.text}</EmailPS>;
+                            default: return <EmailBodyLine key={idx}>{seg.text}</EmailBodyLine>;
+                          }
+                        })}
+                      </div>
+                    );
+                  })()}
+                </EmailCardBody>
+
+                {/* Status pill — bottom right, small and clean */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
+                  <EmailStatusPill $bg={statusColor.bg} $fg={statusColor.fg}>{d.status || 'pending'}</EmailStatusPill>
+                </div>
+              </EmailCard>
+            </EmailTimelineNode>
+          );
+        })}
+      </EmailTimeline>
     </>
   );
 };
@@ -2365,6 +2790,14 @@ const Leads: React.FC = () => {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [detailClosing, setDetailClosing] = useState(false);
   const detailTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Drag & resize state
+  const dpRef = useRef<HTMLDivElement>(null);
+  const [dpPos, setDpPos] = useState({ x: 0, y: 0 });
+  const [dpSize, setDpSize] = useState({ w: 0, h: 0 });
+  const dpDrag = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null);
+  const dpResize = useRef<{ startX: number; startY: number; originW: number; originH: number; originX: number; originY: number; dir: string } | null>(null);
+
   const [aboutOpen, setAboutOpen] = useState(false);
   const [journeyOpen, setJourneyOpen] = useState(false);
   const [form, setForm] = useState({
@@ -2664,6 +3097,55 @@ const Leads: React.FC = () => {
       },
     });
   };
+
+  // Reset panel position/size when a new lead is selected
+  useEffect(() => {
+    if (selectedLead) {
+      const w = Math.min(window.innerWidth * 0.88, 1400);
+      const h = window.innerHeight * 0.9;
+      setDpSize({ w, h });
+      setDpPos({ x: (window.innerWidth - w) / 2, y: (window.innerHeight - h) / 2 });
+    }
+  }, [selectedLead]);
+
+  const onDpDragStart = useCallback((e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, a, input')) return;
+    e.preventDefault();
+    dpDrag.current = { startX: e.clientX, startY: e.clientY, originX: dpPos.x, originY: dpPos.y };
+    const onMove = (ev: MouseEvent) => {
+      if (!dpDrag.current) return;
+      let nx = dpDrag.current.originX + ev.clientX - dpDrag.current.startX;
+      let ny = dpDrag.current.originY + ev.clientY - dpDrag.current.startY;
+      nx = Math.max(0, Math.min(nx, window.innerWidth - dpSize.w));
+      ny = Math.max(0, Math.min(ny, window.innerHeight - dpSize.h));
+      setDpPos({ x: nx, y: ny });
+    };
+    const onUp = () => { dpDrag.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, [dpPos, dpSize]);
+
+  const onDpResizeStart = useCallback((e: React.MouseEvent, dir: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dpResize.current = { startX: e.clientX, startY: e.clientY, originW: dpSize.w, originH: dpSize.h, originX: dpPos.x, originY: dpPos.y, dir };
+    const onMove = (ev: MouseEvent) => {
+      if (!dpResize.current) return;
+      const d = dpResize.current;
+      const dx = ev.clientX - d.startX;
+      const dy = ev.clientY - d.startY;
+      let nw = d.originW, nh = d.originH, nx = d.originX, ny = d.originY;
+      if (d.dir.includes('e')) nw = Math.max(400, Math.min(d.originW + dx, window.innerWidth - d.originX));
+      if (d.dir.includes('s')) nh = Math.max(300, Math.min(d.originH + dy, window.innerHeight - d.originY));
+      if (d.dir.includes('w')) { const dw = Math.min(dx, d.originW - 400); nw = d.originW - dw; nx = Math.max(0, d.originX + dw); }
+      if (d.dir.includes('n')) { const dh = Math.min(dy, d.originH - 300); nh = d.originH - dh; ny = Math.max(0, d.originY + dh); }
+      setDpSize({ w: nw, h: nh });
+      setDpPos({ x: nx, y: ny });
+    };
+    const onUp = () => { dpResize.current = null; window.removeEventListener('mousemove', onMove); window.removeEventListener('mouseup', onUp); };
+    window.addEventListener('mousemove', onMove);
+    window.addEventListener('mouseup', onUp);
+  }, [dpSize, dpPos]);
 
   const handleCloseDetail = useCallback(() => {
     setDetailClosing(true);
@@ -3009,23 +3491,18 @@ const Leads: React.FC = () => {
       {/* Lead Detail Panel — floating modal */}
       {selectedLead && createPortal(
         <DpOverlay $closing={detailClosing} onClick={handleCloseDetail}>
-        <DpPanel $closing={detailClosing} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
-          <DpHeader>
-            <Avatar $colorIndex={hashColorIndex(selectedLead.company_name || 'Unknown')} style={{ width: 40, height: 40, fontSize: '0.8rem', borderRadius: 10 }}>
-              <AvatarIcon name={selectedLead.company_name || 'Unknown'} />
-            </Avatar>
-            <DpHeaderInfo>
-              <DpCompanyName>
-                {selectedLead.company_name || 'Unknown'}
-                {(() => { const qt = getQuarterTag((selectedLead as any)._imported_at); return qt ? <QuarterTag>{qt}</QuarterTag> : null; })()}
-              </DpCompanyName>
-              <DpHeaderMeta>
-                <DpStatusPill $status={selectedLead.status ?? 'new'}>{selectedLead.status ?? 'new'}</DpStatusPill>
-                <span>·</span>
-                <span>{selectedLead.source || '—'}</span>
-                {selectedLead.phone && <><span>·</span><span>{selectedLead.phone}</span></>}
-              </DpHeaderMeta>
-            </DpHeaderInfo>
+        <DpPanel ref={dpRef} $closing={detailClosing} onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ left: dpPos.x, top: dpPos.y, width: dpSize.w, height: dpSize.h }}>
+          {/* Resize handles */}
+          <div onMouseDown={e => onDpResizeStart(e, 'n')} style={{ position:'absolute', top:0, left:8, right:8, height:4, cursor:'n-resize', zIndex:10 }} />
+          <div onMouseDown={e => onDpResizeStart(e, 's')} style={{ position:'absolute', bottom:0, left:8, right:8, height:4, cursor:'s-resize', zIndex:10 }} />
+          <div onMouseDown={e => onDpResizeStart(e, 'w')} style={{ position:'absolute', top:8, bottom:8, left:0, width:4, cursor:'w-resize', zIndex:10 }} />
+          <div onMouseDown={e => onDpResizeStart(e, 'e')} style={{ position:'absolute', top:8, bottom:8, right:0, width:4, cursor:'e-resize', zIndex:10 }} />
+          <div onMouseDown={e => onDpResizeStart(e, 'nw')} style={{ position:'absolute', top:0, left:0, width:8, height:8, cursor:'nw-resize', zIndex:11 }} />
+          <div onMouseDown={e => onDpResizeStart(e, 'ne')} style={{ position:'absolute', top:0, right:0, width:8, height:8, cursor:'ne-resize', zIndex:11 }} />
+          <div onMouseDown={e => onDpResizeStart(e, 'sw')} style={{ position:'absolute', bottom:0, left:0, width:8, height:8, cursor:'sw-resize', zIndex:11 }} />
+          <div onMouseDown={e => onDpResizeStart(e, 'se')} style={{ position:'absolute', bottom:0, right:0, width:8, height:8, cursor:'se-resize', zIndex:11 }} />
+          <DpHeader onMouseDown={onDpDragStart}>
+            <div style={{ flex: 1 }} />
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
               {(selectedLead.status ?? '') !== 'contacted' && NEXT_STATUS[selectedLead.status ?? ''] && (
                 <DpActionBtn
@@ -3044,9 +3521,23 @@ const Leads: React.FC = () => {
           </DpHeader>
 
           <DpBody>
-            {/* Left: About + Journey + Tags + Reply */}
+            {/* Left: Avatar + Name + About + Journey + Tags */}
             <DpColLeft>
-              <DpSectionTitle>{t('leads.about')}</DpSectionTitle>
+              <div style={{ position: 'sticky', top: 0, zIndex: 2, background: '#fff', paddingTop: 8, paddingBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Avatar $colorIndex={hashColorIndex(selectedLead.company_name || 'Unknown')} style={{ width: 36, height: 36, fontSize: '0.75rem', borderRadius: 8 }}>
+                    <AvatarIcon name={selectedLead.company_name || 'Unknown'} />
+                  </Avatar>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <DpCompanyName>
+                      {selectedLead.company_name || 'Unknown'}
+                      {(() => { const qt = getQuarterTag((selectedLead as any)._imported_at); return qt ? <QuarterTag>{qt}</QuarterTag> : null; })()}
+                    </DpCompanyName>
+                  </div>
+                </div>
+              </div>
+              <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1a5 5 0 015 5c0 2.5-2 4-5 4s-5-1.5-5-4a5 5 0 015-5zM3 13c0-1.66 2.24-3 5-3s5 1.34 5 3" stroke="#D689BF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.about')}</DpSectionTitle>
+              <DpSectionContent>
               <DpField>
                 <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.email')}</DpFieldLabel>
                 <DpFieldValue>{selectedLead.email || '—'}</DpFieldValue>
@@ -3067,15 +3558,25 @@ const Leads: React.FC = () => {
                 <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M8 1l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.rating')}</DpFieldLabel>
                 <DpFieldValue>{selectedLead.rating ? `${selectedLead.rating} / 5.0` : '—'}</DpFieldValue>
               </DpField>
+              <DpField>
+                <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2"/><path d="M8 5v3l2 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.status')}</DpFieldLabel>
+                <DpFieldValue><DpStatusPill $status={selectedLead.status ?? 'new'}>{selectedLead.status ?? 'new'}</DpStatusPill></DpFieldValue>
+              </DpField>
+              <DpField>
+                <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M2 13h12M4 9l4-6 4 6M6 9v4M10 9v4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.source')}</DpFieldLabel>
+                <DpFieldValue>{getSourceDisplay(selectedLead.source || '') || '—'}</DpFieldValue>
+              </DpField>
+              </DpSectionContent>
 
               <DpDivider />
 
-              <DpSectionTitle>{t('leads.leadJourney')}</DpSectionTitle>
+              <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 14V4l4 2 4-2 4 2v10l-4-2-4 2-4-2z" stroke="#D689BF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.leadJourney')}</DpSectionTitle>
+              <DpSectionContent>
               <DpTimeline>
                 <DpTimelineItem>
                   <DpTimelineDotWrap><DpTimelineDot $active /><DpTimelineLine /></DpTimelineDotWrap>
                   <DpTimelineContent>
-                    <DpTimelineText $active>{t('leads.discoveredVia', { source: selectedLead.source || 'unknown' })}</DpTimelineText>
+                    <DpTimelineText $active>{t('leads.discoveredVia', { source: getSourceDisplay(selectedLead.source || 'unknown') })}</DpTimelineText>
                     <DpTimelineTime>{(() => { const ts = selectedLead.createdAt || (selectedLead as any)._imported_at || (selectedLead as any).created_at; return ts ? new Date(ts).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'; })()}</DpTimelineTime>
                   </DpTimelineContent>
                 </DpTimelineItem>
@@ -3118,9 +3619,11 @@ const Leads: React.FC = () => {
                   </DpTimelineItem>
                 )}
               </DpTimeline>
+              </DpSectionContent>
 
               <DpDivider />
-              <DpSectionTitle>{t('leads.tags')}</DpSectionTitle>
+              <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 8.5V2.5a1 1 0 011-1h6l6.5 6.5-7 7L1 8.5z" stroke="#D689BF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><circle cx="5" cy="5" r="1" fill="#D689BF"/></svg>{t('leads.tags')}</DpSectionTitle>
+              <DpSectionContent>
               <DpTagList>
                 {selectedLead.industry_tags && selectedLead.industry_tags.length > 0
                   ? selectedLead.industry_tags.map(tag => (
@@ -3129,13 +3632,15 @@ const Leads: React.FC = () => {
                   : <span style={{ fontSize: '0.8125rem', color: '#888' }}>—</span>
                 }
               </DpTagList>
+              </DpSectionContent>
 
               {selectedLead._replied && (() => {
                 const cat = getReplyBadge(selectedLead, t, styledTheme) || { text: t('leads.replied'), bg: styledTheme.status.contacted.bg, fg: styledTheme.colors.accent };
                 return (
                   <>
                     <DpDivider />
-                    <DpSectionTitle>{t('leads.replyInfo')}</DpSectionTitle>
+                    <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 10c0 .55-.45 1-1 1H5l-3 3V3c0-.55.45-1 1-1h10c.55 0 1 .45 1 1v7z" stroke="#D689BF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.replyInfo')}</DpSectionTitle>
+                    <DpSectionContent>
                     <DpField>
                       <DpFieldLabel>{t('leads.replyCategory')}</DpFieldLabel>
                       <DpFieldValue><ReplyBadge $bg={cat.bg} $fg={cat.fg}>{cat.icon && REPLY_ICONS[cat.icon] && <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d={REPLY_ICONS[cat.icon]} /></svg>}{cat.text}</ReplyBadge></DpFieldValue>
@@ -3160,6 +3665,7 @@ const Leads: React.FC = () => {
                       <DpFieldLabel>{t('leads.replyTime')}</DpFieldLabel>
                       <DpFieldValue>{selectedLead._reply_at ? new Date(selectedLead._reply_at).toLocaleString() : '—'}</DpFieldValue>
                     </DpField>
+                    </DpSectionContent>
                   </>
                 );
               })()}
@@ -3172,31 +3678,7 @@ const Leads: React.FC = () => {
               )}
             </DpColCenter>
           </DpBody>
-          <DpFooter>
-            <DpActionBtn
-              $variant="danger"
-              onClick={() => {
-                handleDelete(selectedLead._id);
-                handleCloseDetail();
-              }}
-            >
-              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ marginRight: 3 }}><path d="M2.5 4h9M5 4V2.5a.5.5 0 01.5-.5h3a.5.5 0 01.5.5V4M11 4v7.5a1 1 0 01-1 1H4a1 1 0 01-1-1V4M6 6.5v3M8 6.5v3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              {t('leads.deleteBtn')}
-            </DpActionBtn>
-            <div style={{ flex: 1 }} />
-            {(['enrich', 'analyze', 'draft', 'send'] as const).map(stage => (
-              <DpActionBtn
-                key={stage}
-                onClick={() => {
-                  reprocessLead.mutate({ id: selectedLead._id, stage });
-                }}
-                style={{ textTransform: 'capitalize' }}
-              >
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ marginRight: 3 }}><path d="M13.5 8a5.5 5.5 0 0 1-9.72 3.5M2.5 8a5.5 5.5 0 0 1 9.72-3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><path d="M13.5 3v3.5H10M2.5 13v-3.5H6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                {stage.charAt(0).toUpperCase() + stage.slice(1)}
-              </DpActionBtn>
-            ))}
-          </DpFooter>
+          {/* footer removed — no delete action */}
         </DpPanel>
         </DpOverlay>,
         document.body
