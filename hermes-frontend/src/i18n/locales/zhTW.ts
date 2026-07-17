@@ -48,6 +48,8 @@ const zhTW = {
     of: '之',
     noResults: '未找到結果。',
     actions: '操作',
+    unknown: '未知',
+    new: '新',
     status: {
       new: '新進',
       pending: '待處理',
@@ -271,6 +273,14 @@ const zhTW = {
     replies: '回覆',
     demoHint: '顯示模擬數據供展示',
     approved: '已核准',
+    addEvent: '添加事項',
+    todayScheduleTitle: '今日日程',
+    noScheduleToday: '今日暫無日程',
+  },
+  calendar: {
+    jan: '1月', feb: '2月', mar: '3月', apr: '4月', may: '5月', jun: '6月',
+    jul: '7月', aug: '8月', sep: '9月', oct: '10月', nov: '11月', dec: '12月',
+    sun: '日', mon: '一', tue: '二', wed: '三', thu: '四', fri: '五', sat: '六',
   },
   leads: {
     title: '我的客戶',

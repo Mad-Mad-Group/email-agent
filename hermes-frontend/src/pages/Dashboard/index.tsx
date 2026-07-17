@@ -1120,7 +1120,7 @@ const Dashboard: React.FC = () => {
     const rem = 7 - (cells.length % 7); if (rem < 7) for (let i = 1; i <= rem; i++) cells.push({ day: i, muted: true, today: false, hasEvent: false });
     return cells;
   }, [calMonth]);
-  const calMonthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const calMonthNames = [t('calendar.jan'), t('calendar.feb'), t('calendar.mar'), t('calendar.apr'), t('calendar.may'), t('calendar.jun'), t('calendar.jul'), t('calendar.aug'), t('calendar.sep'), t('calendar.oct'), t('calendar.nov'), t('calendar.dec')];
 
   const greetingKey = useMemo(() => {
     const h = new Date().getHours();
@@ -1367,7 +1367,7 @@ const Dashboard: React.FC = () => {
               <CalMonthNav onClick={calNext}><IconChevronRight /></CalMonthNav>
             </CalMonth>
             <CalDaysGrid>
-              {['S','M','T','W','T','F','S'].map((d, i) => <CalDayHeader key={i}>{d}</CalDayHeader>)}
+              {[t('calendar.sun'), t('calendar.mon'), t('calendar.tue'), t('calendar.wed'), t('calendar.thu'), t('calendar.fri'), t('calendar.sat')].map((d, i) => <CalDayHeader key={i}>{d}</CalDayHeader>)}
               {calDays.map((c, i) => (
                 <CalDayCell
                   key={i}
@@ -1382,19 +1382,19 @@ const Dashboard: React.FC = () => {
               ))}
             </CalDaysGrid>
             <CalAddBtn onClick={() => navigate('/cms-email')}>
-              <IconPlus /> {t('dashboard.addEvent') || '添加事項'}
+              <IconPlus /> {t('dashboard.addEvent')}
             </CalAddBtn>
           </CalendarCard>
 
           {/* Today's timeline — fills remaining height */}
           <TimelineCard>
             <TimelineHeader>
-              <IconClock /> {t('dashboard.todayScheduleTitle') || '今日日程'}
+              <IconClock /> {t('dashboard.todayScheduleTitle')}
             </TimelineHeader>
             {todayTimeline.length === 0 ? (
               <EmptyTimeline>
                 <EmptyCalendarSvg color={theme.colors.textTertiary} />
-                {t('dashboard.noScheduleToday') || '今日暫無日程'}
+                {t('dashboard.noScheduleToday')}
               </EmptyTimeline>
             ) : (
               todayTimeline.map((item, i) => (

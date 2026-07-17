@@ -14,7 +14,7 @@ import { glassSurface } from '../../styles/glassSurface';
 import { useDialog } from '../../components';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER, SOURCE_AGENT } from '../../config/agents';
-import { getQuarterTag, matchesQuarterFilter, dateToYQ, type QuarterFilterValue } from '../../utils/quarter';
+import { getQuarterTag, matchesQuarterFilter, dateToYQ, buildQuarterOptions, type QuarterFilterValue } from '../../utils/quarter';
 
 /* ══════════════════════════════════════
    CMS Leads — Luno Contacts-style UI
@@ -999,6 +999,7 @@ const HANDSHAKE_FA_PATH = 'M323.4 85.2l-96.8 78.4c-16.1 13-19.2 36.4-7 53.1c12.9
 
 const StatusIcon = ({ $status, title }: { $status?: string; title?: string }) => {
   const theme = useTheme() as any;
+  const { t } = useTranslation();
   const meta = STATUS_ICON_META[$status ?? 'new'] ?? STATUS_ICON_META.new;
   const color = (theme.strong as any)[meta.colorKey];
   const size = 20;
@@ -1016,7 +1017,7 @@ const StatusIcon = ({ $status, title }: { $status?: string; title?: string }) =>
       {meta.hasNew && (
         <g>
           <rect x="18" y="0" width="18" height="9" rx="3" fill={color} />
-          <text x="27" y="7" textAnchor="middle" fill="#fff" fontSize="6.5" fontWeight="700" fontFamily="'Plus Jakarta Sans', sans-serif">New</text>
+          <text x="27" y="7" textAnchor="middle" fill="#fff" fontSize="6.5" fontWeight="700" fontFamily="'Plus Jakarta Sans', sans-serif">{t('common.new')}</text>
         </g>
       )}
     </svg>
@@ -2954,6 +2955,7 @@ const Leads: React.FC = () => {
   const { year: currentYear, quarter: currentQuarter } = dateToYQ(now);
   const defaultQuarter: QuarterFilterValue = `${currentYear}Q${currentQuarter}`;
   const quarterFilter: QuarterFilterValue = (searchParams.get('quarter') as QuarterFilterValue) || defaultQuarter;
+  const quarterOptions = useMemo(() => buildQuarterOptions(now), [now]);
 
   const apiLeads: Lead[] = data?.data ?? [];
   // Always include MOCK_LEADS for demo richness + any real API data
@@ -3208,6 +3210,15 @@ const Leads: React.FC = () => {
               onChange={e => { setSearch(e.target.value); setPage(1); }}
             />
           </SearchWrap>
+          <select
+            value={quarterFilter}
+            onChange={e => { const q = e.target.value as QuarterFilterValue; const next = new URLSearchParams(searchParams); if (q === defaultQuarter) next.delete('quarter'); else next.set('quarter', q); setSearchParams(next, { replace: true }); setPage(1); }}
+            style={{ padding: '6px 10px', borderRadius: 10, border: `1px solid ${styledTheme.colors.border}`, background: styledTheme.colors.surfaceMuted, color: styledTheme.colors.textPrimary, fontSize: 13, cursor: 'pointer', minWidth: 100 }}
+          >
+            {quarterOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{t(opt.labelKey, opt.labelParams)}</option>
+            ))}
+          </select>
           <CircleActionBtn title={t('leads.filterOldWebsiteOn')} onClick={() => { setOldWebsiteOnly(v => !v); setPage(1); }} style={oldWebsiteOnly ? { background: styledTheme.colors.accent, color: '#fff', borderColor: 'transparent' } : undefined}>
             <IconOldWebsite />
           </CircleActionBtn>
@@ -3282,7 +3293,7 @@ const Leads: React.FC = () => {
                 ) : (
                   (() => {
                     return leads.map((lead, i) => {
-                      const name = lead.company_name || 'Unknown';
+                      const name = lead.company_name || t('common.unknown');
                       const colorIdx = hashColorIndex(name);
                       return (
                         <React.Fragment key={lead._id}>
@@ -3491,6 +3502,7 @@ const Leads: React.FC = () => {
       {/* Lead Detail Panel — floating modal */}
       {selectedLead && createPortal(
         <DpOverlay $closing={detailClosing} onClick={handleCloseDetail}>
+<<<<<<< HEAD
         <DpPanel ref={dpRef} $closing={detailClosing} onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ left: dpPos.x, top: dpPos.y, width: dpSize.w, height: dpSize.h }}>
           {/* Resize handles */}
           <div onMouseDown={e => onDpResizeStart(e, 'n')} style={{ position:'absolute', top:0, left:8, right:8, height:4, cursor:'n-resize', zIndex:10 }} />
@@ -3503,6 +3515,25 @@ const Leads: React.FC = () => {
           <div onMouseDown={e => onDpResizeStart(e, 'se')} style={{ position:'absolute', bottom:0, right:0, width:8, height:8, cursor:'se-resize', zIndex:11 }} />
           <DpHeader onMouseDown={onDpDragStart}>
             <div style={{ flex: 1 }} />
+=======
+        <DpPanel $closing={detailClosing} onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+          <DpHeader>
+            <Avatar $colorIndex={hashColorIndex(selectedLead.company_name || t('common.unknown'))} style={{ width: 40, height: 40, fontSize: '0.8rem', borderRadius: 10 }}>
+              <AvatarIcon name={selectedLead.company_name || t('common.unknown')} />
+            </Avatar>
+            <DpHeaderInfo>
+              <DpCompanyName>
+                {selectedLead.company_name || t('common.unknown')}
+                {(() => { const qt = getQuarterTag((selectedLead as any)._imported_at); return qt ? <QuarterTag>{qt}</QuarterTag> : null; })()}
+              </DpCompanyName>
+              <DpHeaderMeta>
+                <DpStatusPill $status={selectedLead.status ?? 'new'}>{selectedLead.status ?? 'new'}</DpStatusPill>
+                <span>·</span>
+                <span>{selectedLead.source || '—'}</span>
+                {selectedLead.phone && <><span>·</span><span>{selectedLead.phone}</span></>}
+              </DpHeaderMeta>
+            </DpHeaderInfo>
+>>>>>>> 4c8c98703116ce0b7e2a98b0d8d125aa7591301a
             <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
               {(selectedLead.status ?? '') !== 'contacted' && NEXT_STATUS[selectedLead.status ?? ''] && (
                 <DpActionBtn

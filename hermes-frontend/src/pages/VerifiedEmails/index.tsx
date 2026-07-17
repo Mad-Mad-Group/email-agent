@@ -8,7 +8,7 @@ import { useVerifiedEmails, useVerifiedEmailStats, useCreateVerifiedEmail, useDe
 import { VerifiedEmailItem, verifiedEmailsApi } from '../../api/services';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS } from '../../config/agents';
-import { getQuarterTag, matchesQuarterFilter, dateToYQ, type QuarterFilterValue } from '../../utils/quarter';
+import { getQuarterTag, matchesQuarterFilter, dateToYQ, buildQuarterOptions, type QuarterFilterValue } from '../../utils/quarter';
 
 /* ══════════════════════════════════════
    Verified Emails Pool — 共用已驗證郵箱
@@ -279,11 +279,12 @@ const VerifiedEmailsPage: React.FC = () => {
   const [addForm, setAddForm] = useState({ email: '', company_name: '', notes: '' });
 
   // ── Quarter filter (driven by URL ?quarter= param, set from sidebar) ──
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const now = useMemo(() => new Date(), []);
   const { year: currentYear, quarter: currentQuarter } = dateToYQ(now);
   const defaultQuarter: QuarterFilterValue = `${currentYear}Q${currentQuarter}`;
   const quarterFilter: QuarterFilterValue = (searchParams.get('quarter') as QuarterFilterValue) || defaultQuarter;
+  const quarterOptions = useMemo(() => buildQuarterOptions(now), [now]);
 
   const methodLabels: Record<string, string> = {
     auto_reply_count: t('verifiedEmails.methodAutoReply'),
@@ -385,6 +386,15 @@ const VerifiedEmailsPage: React.FC = () => {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
           />
+          <select
+            value={quarterFilter}
+            onChange={e => { const q = e.target.value as QuarterFilterValue; const next = new URLSearchParams(searchParams); if (q === defaultQuarter) next.delete('quarter'); else next.set('quarter', q); setSearchParams(next, { replace: true }); setPage(1); }}
+            style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid #e0e0e0', background: '#fafafa', fontSize: 13, cursor: 'pointer', minWidth: 100 }}
+          >
+            {quarterOptions.map(opt => (
+              <option key={opt.value} value={opt.value}>{t(opt.labelKey, opt.labelParams)}</option>
+            ))}
+          </select>
           <Btn onClick={handleExport}><ExportIcon /> {t('verifiedEmails.export')}</Btn>
           <Btn $variant="primary" onClick={() => setShowAdd(true)}><PlusIcon /> {t('verifiedEmails.add')}</Btn>
         </div>
