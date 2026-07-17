@@ -48,6 +48,8 @@ const zhCN = {
     of: '共',
     noResults: '未找到结果。',
     actions: '操作',
+    unknown: '未知',
+    new: '新',
     status: {
       new: '新进',
       pending: '待处理',
@@ -270,6 +272,14 @@ const zhCN = {
     replies: '回复',
     demoHint: '显示模拟数据供展示',
     approved: '已审批',
+    addEvent: '添加事项',
+    todayScheduleTitle: '今日日程',
+    noScheduleToday: '今日暂无日程',
+  },
+  calendar: {
+    jan: '1月', feb: '2月', mar: '3月', apr: '4月', may: '5月', jun: '6月',
+    jul: '7月', aug: '8月', sep: '9月', oct: '10月', nov: '11月', dec: '12月',
+    sun: '日', mon: '一', tue: '二', wed: '三', thu: '四', fri: '五', sat: '六',
   },
   leads: {
     title: '我的客户',

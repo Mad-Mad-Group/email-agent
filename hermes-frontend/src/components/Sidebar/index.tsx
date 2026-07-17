@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import styled, { css, keyframes } from 'styled-components';
@@ -7,8 +7,6 @@ import { media } from '../../styles/media';
 import { glassSurface } from '../../styles/glassSurface';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBadge } from '../../contexts/BadgeContext';
-import { buildQuarterOptions, matchesQuarterFilter } from '../../utils/quarter';
-import { useLeads, useVerifiedEmails } from '../../api/hooks';
 
 /* ── LUNO SVG Icons ── */
 
@@ -179,12 +177,6 @@ const IconLogout = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="currentColor" viewBox="0 0 16 16">
     <path d="M6 12.5a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-8a.5.5 0 0 0-.5.5v2a.5.5 0 0 1-1 0v-2A1.5 1.5 0 0 1 6.5 2h8A1.5 1.5 0 0 1 16 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 5 12.5v-2a.5.5 0 0 1 1 0v2z" />
     <path opacity="0.5" d="M.146 8.354a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L1.707 7.5H10.5a.5.5 0 0 1 0 1H1.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3z" />
-  </svg>
-);
-
-const IconArrow = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="10" fill="currentColor" viewBox="0 0 16 16">
-    <path fillRule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" />
   </svg>
 );
 
@@ -400,101 +392,6 @@ const SearchLink = styled(MLink)`
   font-weight: 600;
   padding: 10px 12px;
   gap: 10px;
-`;
-
-const MLinkButton = styled.button<{ $active?: boolean; $childActive?: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 14px;
-  font-size: 0.9375rem;
-  color: ${({ theme, $active, $childActive }) => ($active || $childActive) ? theme.strong.mauve : theme.sidebar.text};
-  font-weight: ${({ $active, $childActive }) => ($active || $childActive) ? 600 : 400};
-  text-decoration: none;
-  transition: all 0.15s ease;
-  background: none;
-  border: none;
-  width: 100%;
-  cursor: pointer;
-  text-align: left;
-
-  svg { transition: transform 0.2s ease; flex-shrink: 0; }
-
-  &:hover {
-    background: ${({ theme }) => theme.sidebar.hoverBg};
-    svg { animation: ${iconFloat} 0.6s ease-in-out; }
-  }
-
-  span { white-space: nowrap; }
-
-  [data-collapsed="true"] & {
-    padding: 8px 12px;
-    overflow: hidden;
-    span { opacity: 0; pointer-events: none; width: 0; height: 0; overflow: hidden; }
-  }
-`;
-
-const ArrowIcon = styled.span<{ $open: boolean }>`
-  margin-left: auto;
-  display: inline-flex;
-  transition: transform 0.2s ease;
-  transform: rotate(${({ $open }) => $open ? '90deg' : '0deg'});
-  color: ${({ theme }) => theme.sidebar.textMuted};
-  ${collapsedHide}
-`;
-
-const SubMenu = styled.ul<{ $open: boolean }>`
-  list-style: none;
-  margin: 0;
-  padding: 2px 0 2px 0;
-  overflow: hidden;
-  max-height: ${({ $open }) => $open ? '600px' : '0'};
-  transition: max-height 0.3s ease;
-  margin-left: 26px;
-  border-left: 2px solid ${({ theme }) => theme.strong.mauve}40;
-  ${collapsedHide}
-`;
-
-const SubLink = styled(NavLink)<{ $isActive?: boolean }>`
-  display: flex;
-  align-items: center;
-  position: relative;
-  padding: 5px 12px 5px 16px;
-  font-size: 0.8125rem;
-  color: ${({ theme, $isActive }) => $isActive ? theme.strong.mauve : theme.sidebar.text};
-  font-weight: ${({ $isActive }) => $isActive ? 600 : 400};
-  text-decoration: none;
-  transition: color 0.15s;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: -2px;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: 8px;
-    height: 8px;
-    border-radius: 3px;
-    background: ${({ theme, $isActive }) => $isActive ? theme.strong.mauve : 'transparent'};
-    transition: background 0.15s;
-  }
-
-  &:hover {
-    color: ${({ theme, $isActive }) => $isActive ? theme.strong.mauve : theme.sidebar.text};
-  }
-`;
-
-const SubCount = styled.span`
-  margin-left: auto;
-  font-size: 0.625rem;
-  font-weight: 500;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.surfaceMuted};
-  padding: 1px 6px;
-  border-radius: 6px;
-  flex-shrink: 0;
-  line-height: 1.4;
 `;
 
 const Badge = styled.span`
@@ -736,31 +633,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
     account: location.pathname.startsWith('/account'),
     auth: false,
     cms: location.pathname.startsWith('/cms-'),
-    leads: location.pathname.startsWith('/cms-leads'),
-    verifiedEmails: location.pathname.startsWith('/cms-verified-emails'),
   });
-
-  const quarterOpts = useMemo(() => buildQuarterOptions(), []);
-
-  /* Per-quarter counts */
-  const { data: leadsData } = useLeads({ page: 1, limit: 100 });
-  const { data: verifiedData } = useVerifiedEmails({ page: 1, limit: 100 });
-  const leadsList: any[] = (leadsData as any)?.data ?? [];
-  const verifiedList: any[] = (verifiedData as any)?.data ?? [];
-  const leadQuarterCounts = useMemo(() => {
-    const m: Record<string, number> = {};
-    quarterOpts.forEach(opt => {
-      m[opt.value] = leadsList.filter((l: any) => matchesQuarterFilter(l._imported_at, opt.value)).length;
-    });
-    return m;
-  }, [leadsList, quarterOpts]);
-  const verifiedQuarterCounts = useMemo(() => {
-    const m: Record<string, number> = {};
-    quarterOpts.forEach(opt => {
-      m[opt.value] = verifiedList.filter((v: any) => matchesQuarterFilter(v.created_at, opt.value)).length;
-    });
-    return m;
-  }, [verifiedList, quarterOpts]);
 
   /* Auto-close mobile drawer on any route change */
   useEffect(() => {
@@ -787,46 +660,8 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
         <MenuSpacer />
         <li><MLink to="/dashboard"><IconHome /><span>{t('nav.myDashboard')}</span>{counts['/dashboard'] ? <Badge>{counts['/dashboard']}</Badge> : null}</MLink></li>
         <MenuSpacer />
-        <li>
-          <MLinkButton $active={location.pathname === '/cms-leads'} $childActive={location.pathname === '/cms-leads'} onClick={() => { toggle('leads'); if (location.pathname !== '/cms-leads') navigate('/cms-leads'); }}>
-            <IconLeads /><span>{t('nav.leadPool')}</span>
-            {counts['/cms-leads'] ? <Badge>{counts['/cms-leads']}</Badge> : null}
-            <ArrowIcon $open={!!openMenus.leads}><IconArrow /></ArrowIcon>
-          </MLinkButton>
-          <SubMenu $open={!!openMenus.leads}>
-            {quarterOpts.map(opt => {
-              const isActive = location.pathname === '/cms-leads' && (location.search === `?quarter=${opt.value}` || (!location.search && opt.value === quarterOpts[0].value));
-              return (
-                <SubLink key={opt.value} to={`/cms-leads?quarter=${opt.value}`}
-                  $isActive={isActive}
-                >
-                  {t(opt.labelKey, opt.labelParams)}
-                  {leadQuarterCounts[opt.value] > 0 && <SubCount>{leadQuarterCounts[opt.value]}</SubCount>}
-                </SubLink>
-              );
-            })}
-          </SubMenu>
-        </li>
-        <li>
-          <MLinkButton $active={location.pathname === '/cms-verified-emails'} $childActive={location.pathname === '/cms-verified-emails'} onClick={() => { toggle('verifiedEmails'); if (location.pathname !== '/cms-verified-emails') navigate('/cms-verified-emails'); }}>
-            <IconVerifiedEmail /><span>{t('nav.verifiedEmails')}</span>
-            {counts['/cms-verified-emails'] ? <Badge>{counts['/cms-verified-emails']}</Badge> : null}
-            <ArrowIcon $open={!!openMenus.verifiedEmails}><IconArrow /></ArrowIcon>
-          </MLinkButton>
-          <SubMenu $open={!!openMenus.verifiedEmails}>
-            {quarterOpts.map(opt => {
-              const isActive = location.pathname === '/cms-verified-emails' && (location.search === `?quarter=${opt.value}` || (!location.search && opt.value === quarterOpts[0].value));
-              return (
-                <SubLink key={opt.value} to={`/cms-verified-emails?quarter=${opt.value}`}
-                  $isActive={isActive}
-                >
-                  {t(opt.labelKey, opt.labelParams)}
-                  {verifiedQuarterCounts[opt.value] > 0 && <SubCount>{verifiedQuarterCounts[opt.value]}</SubCount>}
-                </SubLink>
-              );
-            })}
-          </SubMenu>
-        </li>
+        <li><MLink to="/cms-leads"><IconLeads /><span>{t('nav.leadPool')}</span>{counts['/cms-leads'] ? <Badge>{counts['/cms-leads']}</Badge> : null}</MLink></li>
+        <li><MLink to="/cms-verified-emails"><IconVerifiedEmail /><span>{t('nav.verifiedEmails')}</span>{counts['/cms-verified-emails'] ? <Badge>{counts['/cms-verified-emails']}</Badge> : null}</MLink></li>
         <li><MLink to="/app-calendar"><IconSchedule /><span>{t('nav.calendar')}</span></MLink></li>
       </MenuList>
       <BottomMenuList>

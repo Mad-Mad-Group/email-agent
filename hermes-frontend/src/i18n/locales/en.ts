@@ -48,6 +48,8 @@ const en = {
     of: 'of',
     noResults: 'No results found.',
     actions: 'Actions',
+    unknown: 'Unknown',
+    new: 'New',
     status: {
       new: 'New',
       pending: 'Pending',
@@ -271,6 +273,14 @@ const en = {
     replies: 'REPLIES',
     demoHint: 'Showing simulated data for demonstration',
     approved: 'approved',
+    addEvent: 'Add Event',
+    todayScheduleTitle: "Today's Schedule",
+    noScheduleToday: 'No schedule today',
+  },
+  calendar: {
+    jan: 'Jan', feb: 'Feb', mar: 'Mar', apr: 'Apr', may: 'May', jun: 'Jun',
+    jul: 'Jul', aug: 'Aug', sep: 'Sep', oct: 'Oct', nov: 'Nov', dec: 'Dec',
+    sun: 'S', mon: 'M', tue: 'T', wed: 'W', thu: 'T', fri: 'F', sat: 'S',
   },
   leads: {
     title: 'My Clients',
