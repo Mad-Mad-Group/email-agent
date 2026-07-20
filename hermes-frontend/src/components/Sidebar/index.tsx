@@ -198,7 +198,7 @@ const ScrollArea = styled.div`
   flex: 1;
   overflow-y: auto;
   min-height: 0;
-  padding: 0 0 8px 8px;
+  padding: 0 13px 8px 8px;
 
   [data-collapsed="true"] & {
     padding: 0 0 8px 0;
@@ -253,7 +253,7 @@ const TitleRow = styled.div`
   display: flex;
   align-items: center;
   height: 64px;
-  padding: 0 12px 0 8px;
+  padding: 0 10px 0 10px;
   flex-shrink: 0;
   overflow: hidden;
   width: 200px;
@@ -315,7 +315,7 @@ const PlusBtn = styled.button`
 
 const MenuList = styled.ul`
   list-style: none;
-  margin: 4px 6px 4px 8px;
+  margin: 4px 6px;
   padding: 0;
 
   [data-collapsed="true"] & {
@@ -365,9 +365,9 @@ const MLink = styled(NavLink)`
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 8px 10px;
   border-radius: 14px;
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   color: ${({ theme }) => theme.sidebar.text};
   text-decoration: none;
   transition: background 150ms var(--ease-out), color 150ms var(--ease-out);
@@ -403,9 +403,9 @@ const MLink = styled(NavLink)`
 `;
 
 const SearchLink = styled(MLink)`
-  font-size: 1.0625rem;
+  font-size: 0.9375rem;
   font-weight: 600;
-  padding: 10px 12px;
+  padding: 10px 10px;
   gap: 10px;
 
   [data-collapsed="true"] & {

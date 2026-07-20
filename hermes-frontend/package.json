@@ -1,7 +1,10 @@
 {
-  "name": "hermes-frontend",
+  "name": "clientradar-ai",
   "private": true,
   "version": "0.0.0",
+  "description": "ClientRadar AI — Intelligent client discovery platform",
+  "author": "MAD Mobile Application Development Ltd",
+  "license": "UNLICENSED",
   "type": "module",
   "scripts": {
     "dev": "vite",
