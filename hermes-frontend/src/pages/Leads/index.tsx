@@ -76,6 +76,7 @@ const PageCard = styled.div`
   border-radius: ${({ theme }) => theme.radii.card}px;
   padding: 24px;
   display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
+  ${media.mobile} { padding: 14px; }
 `;
 
 const PageTitle = styled.h1`
@@ -168,6 +169,7 @@ const CircleActionBtn = styled.button<{ $color?: string; $spinning?: boolean }>`
   &:active { transform: scale(0.95); }
   &:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
   svg { width: 14px; height: 14px; }
+  ${media.mobile} { width: 28px; height: 28px; svg { width: 12px; height: 12px; } }
 
   ${({ $spinning }) => $spinning && css`
     animation: ${circleSpinGlow} 0.8s ease-in-out;
@@ -215,6 +217,8 @@ const TabsRow = styled.div`
   -webkit-overflow-scrolling: touch;
   &::-webkit-scrollbar { display: none; }
   width: fit-content;
+  max-width: 100%;
+  ${media.mobile} { padding: 2px; gap: 2px; }
 `;
 
 const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
@@ -239,6 +243,9 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
     background: ${({ $active }) => $active ? 'transparent' : 'rgba(0,0,0,0.04)'};
   }
   ${media.tabletDown} { padding: 8px 16px; }
+  ${media.mobile} { padding: 6px 12px; font-size: 0.75rem; gap: 4px;
+    svg { width: 14px; height: 14px; }
+  }
 `;
 
 const TabSlider = styled.div<{ $left: number; $width: number }>`
@@ -252,12 +259,14 @@ const TabSlider = styled.div<{ $left: number; $width: number }>`
   box-shadow: 0 1px 4px rgba(0,0,0,0.1);
   transition: left 0.3s cubic-bezier(.4,0,.2,1), width 0.3s cubic-bezier(.4,0,.2,1);
   z-index: 0;
+  ${media.mobile} { top: 2px; bottom: 2px; }
 `;
 
 const TabNumber = styled.span`
   font-size: 1.25rem;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
+  ${media.mobile} { font-size: 0.95rem; }
 `;
 
 const ToolbarSep = styled.div`
@@ -273,6 +282,7 @@ const SubPillRow = styled.div`
   padding: 0;
   position: relative;
   ${media.tabletDown} { padding: 2px 12px; gap: 6px; flex-wrap: wrap; }
+  ${media.mobile} { padding: 0; gap: 6px; }
 `;
 
 const SubPillTrack = styled.div`
@@ -287,7 +297,9 @@ const SubPillTrack = styled.div`
   -webkit-overflow-scrolling: touch;
   &::-webkit-scrollbar { display: none; }
   width: fit-content;
+  max-width: 100%;
   flex-shrink: 0;
+  ${media.mobile} { padding: 2px; gap: 2px; flex-shrink: 1; }
 `;
 
 const RowCheckbox = styled.input.attrs({ type: 'checkbox' })`
@@ -329,6 +341,9 @@ const SubPill = styled.button<{ $active?: boolean; $color?: string }>`
   transition: color 0.2s;
   svg { flex-shrink: 0; width: 13px; height: 13px; color: ${({ theme }) => theme.strong.mauve}; }
   &:hover { background: ${({ $active }) => $active ? 'transparent' : 'rgba(0,0,0,0.04)'}; }
+  ${media.mobile} { padding: 5px 11px; font-size: 0.7rem; gap: 3px;
+    svg { width: 11px; height: 11px; }
+  }
 `;
 
 const SubSlider = styled.div<{ $left: number; $width: number }>`
@@ -342,6 +357,7 @@ const SubSlider = styled.div<{ $left: number; $width: number }>`
   box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   transition: left 0.3s cubic-bezier(.4,0,.2,1), width 0.3s cubic-bezier(.4,0,.2,1);
   z-index: 0;
+  ${media.mobile} { top: 2px; bottom: 2px; }
 `;
 
 /* ── Search Bar (inline in SubPillRow) ── */
@@ -384,6 +400,19 @@ const SearchInput = styled.input`
     border-color: ${({ theme }) => theme.colors.borderStrong};
     background: ${({ theme }) => theme.colors.surface};
   }
+  ${media.mobile} { padding: 6px 12px 6px 32px; font-size: 0.75rem; }
+`;
+
+const QuarterSelect = styled.select`
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 0.8125rem;
+  cursor: pointer;
+  min-width: 100px;
+  ${media.mobile} { font-size: 0.6875rem; min-width: 0; padding: 5px 8px; }
 `;
 
 /* ── Table ── */
@@ -1415,15 +1444,14 @@ const Leads: React.FC = () => {
               onChange={e => { setSearch(e.target.value); setPage(1); }}
             />
           </SearchWrap>
-          <select
+          <QuarterSelect
             value={quarterFilter}
             onChange={e => { const q = e.target.value as QuarterFilterValue; const next = new URLSearchParams(searchParams); if (q === defaultQuarter) next.delete('quarter'); else next.set('quarter', q); setSearchParams(next, { replace: true }); setPage(1); }}
-            style={{ padding: '6px 10px', borderRadius: 10, border: `1px solid ${styledTheme.colors.border}`, background: styledTheme.colors.surfaceMuted, color: styledTheme.colors.textPrimary, fontSize: 13, cursor: 'pointer', minWidth: 100 }}
           >
             {quarterOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{t(opt.labelKey, opt.labelParams)}</option>
             ))}
-          </select>
+          </QuarterSelect>
           <CircleActionBtn title={t('leads.filterOldWebsiteOn')} onClick={() => { setOldWebsiteOnly(v => !v); setPage(1); }} style={oldWebsiteOnly ? { background: styledTheme.colors.accent, color: '#fff', borderColor: 'transparent' } : undefined}>
             <IconOldWebsite />
           </CircleActionBtn>
