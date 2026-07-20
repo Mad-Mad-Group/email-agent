@@ -102,11 +102,7 @@ const zhCN = {
     marketCapital: '市值',
     bankAccounts: '银行账户',
     menu: '菜单',
-<<<<<<< HEAD
     leadPool: '客户池',
-=======
-    leadPool: '潜在客户池',
->>>>>>> 16f91ddea1303fee7d0c8bed1808313400c7995b
     leadSearch: '潜在客户搜索',
     outbox: '发件箱',
     workflows: '工作流',
@@ -114,11 +110,7 @@ const zhCN = {
     agents: '智能搜索',
     cms: 'CMS',
     cmsDesc: '客户管理系统',
-<<<<<<< HEAD
     verifiedEmails: '已验证池',
-=======
-    verifiedEmails: '已验证邮箱',
->>>>>>> 16f91ddea1303fee7d0c8bed1808313400c7995b
     userInfo: '个人资料',
     resources: '资源',
     resourcesDesc: '关于 LUNO 你需要知道的',
@@ -284,11 +276,6 @@ const zhCN = {
     todayScheduleTitle: '今日日程',
     noScheduleToday: '今日暂无日程',
   },
-  calendar: {
-    jan: '1月', feb: '2月', mar: '3月', apr: '4月', may: '5月', jun: '6月',
-    jul: '7月', aug: '8月', sep: '9月', oct: '10月', nov: '11月', dec: '12月',
-    sun: '日', mon: '一', tue: '二', wed: '三', thu: '四', fri: '五', sat: '六',
-  },
   leads: {
     title: '我的客户',
     subtitle: '管理和追踪你的潜在客户。',
@@ -362,6 +349,8 @@ const zhCN = {
     sortByTechOn: '按评分排',
     sortByTechOff: '按技术评分排序',
     techScore: '技术评分',
+    aiScore: 'AI 评分',
+    aiScoreReason: 'AI 评分原因',
     today: '今日',
     yesterday: '昨日',
     earlier: '更早前',
@@ -427,6 +416,8 @@ const zhCN = {
     filterSortTechOff: '✕ 按评分排',
     filterSortTechOn: '↓ 按技术评分排序',
     techScore: '技术评分',
+    aiScore: 'AI 评分',
+    aiScoreReason: 'AI 评分原因',
     retry: '重试',
     techOld: '旧',
     techNormal: '普通',
@@ -587,6 +578,12 @@ const zhCN = {
     replyNextStepLabel: '建议下一步',
     queueTab: '发件箱',
     templatesTab: '邮件模板',
+    edit: '编辑',
+    editEmail: '编辑邮件',
+    subject: '主题',
+    body: '内容',
+    editFailed: '编辑失败：',
+    editSuccess: '邮件已更新',
   },
   emailTemplate: {
     varRecipientName: '收件人姓名',
@@ -682,12 +679,6 @@ const zhCN = {
     greeting3: '搜索、筛选、成交。',
     greeting4: '你的下一个潜在客户从这里开始。',
     greeting5: '今天想找谁？',
-    // 农夫悬停提示
-    farmerTip1: '点击开始搜索吧！',
-    farmerTip2: '试试在上面输入关键词～',
-    farmerTip3: '我可以帮你找到客户！',
-    farmerTip4: '一起发现新线索吧！',
-    farmerTip5: '准备好了就出发！',
     // 区域名称
     dist_all: '全港',
     dist_centralWestern: '中西区',
@@ -935,6 +926,12 @@ const zhCN = {
     joinDate: '加入日期',
     memberSince: '成员自 {{date}} 加入',
     saving: '保存中...',
+    tokenUsage: 'Token 用量',
+    tokenUsageHint: '显示各用户的 AI Token 使用量与预估费用',
+    userName: '用户',
+    totalTokens: '总 Token 数',
+    estimatedCost: '预估费用 (USD)',
+    noUsageData: '暂无用量数据',
   },
   settings: {
     title: '设置',
@@ -962,6 +959,22 @@ const zhCN = {
     emailOnCompleteHint: '搜索完成后发送 email 到你的邮箱',
     browserNotification: '浏览器推送通知',
     browserNotificationHint: '搜索完成后在浏览器弹出通知',
+    followUpSettings: 'Follow-up 设置',
+    followUpEnabled: '启用自动 Follow-up',
+    followUpEnabledHint: '对未回复的潜在客户自动发送跟进邮件',
+    followUpDays: '跟进间隔（天）',
+    followUpDaysHint: '上次联系后几天自动发送跟进信',
+    followUpMaxAttempts: '最大跟进次数',
+    followUpMaxAttemptsHint: '每位潜在客户最多跟进几次',
+    autoSendRules: '自动发送规则',
+    autoSendEnabled: '启用自动发送',
+    autoSendEnabledHint: '符合条件的邮件草稿将自动发送，无需手动审核',
+    autoSendMinScore: '最低 AI 评分',
+    autoSendMinScoreHint: '只有 AI 评分达到此门槛的草稿才会自动发送（0-100）',
+    autoSendMaxPerDay: '每日最大发送量',
+    autoSendMaxPerDayHint: '每天自动发送的邮件上限',
+    autoSendRequireVerified: '仅限已验证信箱',
+    autoSendRequireVerifiedHint: '只对已在验证信箱池中的收件人自动发送',
   },
   calendar: {
     title: '行事历',
@@ -1058,8 +1071,8 @@ const zhCN = {
     underConstruction: '此页面正在建设中。',
   },
   footer: {
-    copyright: '© {{year}} MAD Mobile Application Development Ltd. 保留所有权利。',
-    copyrightHermes: '© {{year}} ClientRadar AI by MAD Mobile Application Development Ltd. 保留所有权利。',
+    copyright: '© {{year}} ThemeMakker，保留所有权利。',
+    copyrightHermes: '© {{year}} MADMAD CMS，保留所有权利。',
     portfolio: '作品集',
     licenses: '许可协议',
     support: '支持',
@@ -1238,15 +1251,9 @@ const zhCN = {
     notifTaskFailed: '任务失败：{{name}}',
   },
   verifiedEmails: {
-<<<<<<< HEAD
     breadcrumb: '已验证池',
     title: '已验证池',
     subtitle: '管理已验证的客户联系信箱。',
-=======
-    breadcrumb: '已验证邮箱',
-    title: '已验证信箱',
-    subtitle: '管理已验证的寄件信箱。',
->>>>>>> 16f91ddea1303fee7d0c8bed1808313400c7995b
     searchPlaceholder: '搜索邮箱 / 公司…',
     export: '导出',
     add: '新增',
@@ -1283,6 +1290,8 @@ const zhCN = {
     noDataHint: '点击「+ 新增」验证你的第一个信箱',
     statusActive: '启用',
     statusInactive: '停用',
+    demoFollowUp: 'Demo Follow-up',
+    demoFollowUpMsg: '已触发 Demo Follow-up！（演示模式，实际不会发送邮件）',
   },
   userInfo: {
     breadcrumbCms: 'CMS',
