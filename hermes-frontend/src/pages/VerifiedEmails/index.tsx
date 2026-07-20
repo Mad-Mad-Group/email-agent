@@ -155,23 +155,70 @@ const WmStar = () => (
   </svg>
 );
 
-/* ── Table ── */
+/* ── Table (rounded, matching Leads page) ── */
 
-const Card = styled.div`
-  ${glassSurface}
-  border-radius: ${({ theme }) => theme.radii.card}px;
-  overflow: hidden;
+const TableWrap = styled.div`
+  overflow-x: auto;
+  padding: 0;
 `;
 
-const TableWrap = styled.div`overflow-x: auto;`;
-
 const Table = styled.table`
-  width: 100%; border-collapse: collapse; font-size: 0.8125rem;
-  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
-  th { font-weight: 600; color: ${({ theme }) => theme.colors.textTertiary}; background: ${({ theme }) => theme.colors.canvas}; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.5px; }
-  td { color: ${({ theme }) => theme.colors.textPrimary}; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-family: ${({ theme }) => theme.fonts.primary};
+  font-size: 0.8rem;
+  min-width: 960px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 12px;
+  overflow: hidden;
+  th:nth-child(1) { width: 22%; }   /* email */
+  th:nth-child(2) { width: 14%; }   /* company */
+  th:nth-child(3) { width: 12%; }   /* domain */
+  th:nth-child(4) { width: 10%; }   /* method */
+  th:nth-child(5) { width: 8%; }    /* replies */
+  th:nth-child(6) { width: 8%; }    /* matches */
+  th:nth-child(7) { width: 9%; }    /* status */
+  th:nth-child(8) { width: 11%; }   /* created */
+  th:nth-child(9) { width: 6%; }    /* action */
+  th, td {
+    padding: 7px 12px;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  th {
+    font-weight: 600;
+    font-size: 0.78rem;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    background: ${({ theme }) => theme.colors.canvas};
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+    user-select: none;
+    cursor: default;
+  }
+  td {
+    background: ${({ theme }) => theme.colors.surface};
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+    font-size: 0.78rem;
+    line-height: 1.3;
+  }
+  ${media.mobile} {
+    min-width: 640px;
+    font-size: 0.75rem;
+    th, td { padding: 5px 8px; }
+    th { font-size: 0.625rem; }
+  }
+`;
+
+const TRow = styled.tr`
+  transition: background 0.15s;
+  cursor: pointer;
+  &:hover td {
+    background: ${({ theme }) => theme.colors.canvas};
+  }
+  &:last-child td { border-bottom: none; }
 `;
 
 const Badge = styled.span<{ $color?: string }>`
@@ -385,7 +432,7 @@ const VerifiedEmailsPage: React.FC = () => {
                 </thead>
                 <tbody>
                   {items.map(item => (
-                    <tr key={item._id}>
+                    <TRow key={item._id}>
                       <td>{item.email}</td>
                       <td>{item.company_name}</td>
                       <td style={{ color: 'inherit', opacity: 0.7 }}>{item.domain}</td>
@@ -409,7 +456,7 @@ const VerifiedEmailsPage: React.FC = () => {
                           <TrashIcon />
                         </Btn>
                       </td>
-                    </tr>
+                    </TRow>
                   ))}
                 </tbody>
               </Table>
