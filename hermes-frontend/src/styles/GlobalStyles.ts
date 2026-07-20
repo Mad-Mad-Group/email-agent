@@ -15,6 +15,11 @@ export const GlobalStyles = createGlobalStyle`
     --warning: ${({ theme }) => theme.strong.gold};
     --danger: ${({ theme }) => theme.strong.mauve};
     --info: ${({ theme }) => theme.colors.accent};
+
+    /* Strong custom easing curves (Emil Kowalski) */
+    --ease-out: ${({ theme }) => theme.easing.out};
+    --ease-in-out: ${({ theme }) => theme.easing.inOut};
+    --ease-drawer: ${({ theme }) => theme.easing.drawer};
   }
 
   html {
@@ -64,10 +69,27 @@ export const GlobalStyles = createGlobalStyle`
     border-spacing: 0;
   }
 
+  /* Global button press feedback */
+  button, [role="button"] {
+    transition: transform 160ms var(--ease-out, cubic-bezier(0.23,1,0.32,1));
+    &:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+  }
+
   /* Focus visible — accessible focus ring using accent color */
   :focus-visible {
     outline: 2px solid ${({ theme }) => theme.colors.accent};
     outline-offset: 2px;
+  }
+
+  /* Reduced motion — gentler animations for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.15s !important;
+    }
   }
 
   /* ── Scrollbar — dark mode aware ── */

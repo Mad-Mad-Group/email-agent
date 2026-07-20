@@ -1,19 +1,19 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
-import { createPortal } from 'react-dom';
+import toast from 'react-hot-toast';
 import { useSearchParams } from 'react-router-dom';
 import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useClearAllLeads, useReprocessLead, useMe } from '../../api/hooks';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from '../../api/services';
-import { Lead } from '../../api/leads';
+import { Lead, leadsApi } from '../../api/leads';
 import client from '../../api/client';
 import { media } from '../../styles/media';
 import { glassSurface } from '../../styles/glassSurface';
 import { useDialog } from '../../components';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER, SOURCE_AGENT } from '../../config/agents';
-import LeadDetailPanel, { hashColorIndex, AvatarIcon, Avatar, ReplyBadge, DpSectionTitle, DpActionBtn, DpField, DpFieldLabel, DpFieldValue, DpFieldIcon, getReplyBadge, NEXT_STATUS, REPLY_ICONS } from '../../components/LeadDetailPanel';
+import LeadDetailPanel, { hashColorIndex, Avatar, ReplyBadge, DpSectionTitle, DpActionBtn, DpField, DpFieldLabel, DpFieldValue, DpFieldIcon, getReplyBadge, NEXT_STATUS, REPLY_ICONS } from '../../components/LeadDetailPanel';
 import LeadEmails from '../../components/LeadEmails';
 
 /* ══════════════════════════════════════
@@ -84,32 +84,6 @@ const PageTitle = styled.h1`
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
-const FloatingToast = styled.div<{ $error?: boolean }>`
-  position: fixed;
-  top: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 20px;
-  border-radius: 999px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: ${({ $error, theme }) => $error ? theme.strong.mauve : theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.surface};
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  border: 1px solid ${({ $error, theme }) => $error ? `${theme.strong.mauve}40` : theme.colors.border};
-  animation: toastSlide 3.5s ease-out forwards;
-  pointer-events: none;
-  @keyframes toastSlide {
-    0% { opacity: 0; transform: translateX(-50%) translateY(-12px); }
-    8% { opacity: 1; transform: translateX(-50%) translateY(0); }
-    75% { opacity: 1; }
-    100% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
-  }
-`;
 
 /* ── Circular Action Buttons with Tooltip ── */
 
@@ -132,7 +106,7 @@ const CircleActionBtn = styled.button<{ $color?: string; $spinning?: boolean }>`
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.textSecondary};
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: border-color 0.2s var(--ease-out), color 0.2s var(--ease-out), background 0.2s var(--ease-out), transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
   flex-shrink: 0;
 
   &::after {
@@ -152,17 +126,18 @@ const CircleActionBtn = styled.button<{ $color?: string; $spinning?: boolean }>`
     opacity: 0;
     transition: opacity 0.15s, transform 0.15s;
   }
-  &:hover::after {
-    opacity: 1;
-    transform: translateX(-50%) scale(1);
-  }
-
-  &:hover {
-    border-color: ${({ theme }) => theme.colors.accent};
-    color: ${({ theme }) => theme.colors.accent};
-    background: ${({ theme }) => `${theme.colors.accent}14`};
-    transform: scale(1.1);
-    box-shadow: 0 2px 8px ${({ theme }) => `${theme.colors.accent}25`};
+  @media (hover: hover) and (pointer: fine) {
+    &:hover::after {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+    &:hover {
+      border-color: ${({ theme }) => theme.colors.accent};
+      color: ${({ theme }) => theme.colors.accent};
+      background: ${({ theme }) => `${theme.colors.accent}14`};
+      transform: scale(1.1);
+      box-shadow: 0 2px 8px ${({ theme }) => `${theme.colors.accent}25`};
+    }
   }
   &:active { transform: scale(0.95); }
   &:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
@@ -403,12 +378,8 @@ const Table = styled.table`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 12px;
   overflow: hidden;
-  th:nth-child(1) { width: 4%; }    /* # / checkbox */
-  th:nth-child(2) { width: 34%; }   /* name */
-  th:nth-child(3) { width: 16%; }   /* reply */
-  th:nth-child(4) { width: 14%; }   /* source user / tech */
-  th:nth-child(5) { width: 14%; }   /* imported */
-  th:nth-child(6) { width: 9%; }    /* action */
+  /* column widths — 動態由 table-layout: fixed 分配 */
+  table-layout: fixed;
   th, td {
     padding: 7px 12px;
     text-align: left;
@@ -726,7 +697,7 @@ const CloseBtn = styled.button`
   justify-content: center;
   color: ${({ theme }) => theme.colors.accent};
   flex-shrink: 0;
-  transition: all 0.15s;
+  transition: background 0.15s var(--ease-out);
   &:hover {
     background: ${({ theme }) => `${theme.colors.accent}1a`};
   }
@@ -989,6 +960,7 @@ const LIMIT = 10;
 const Leads: React.FC = () => {
   const { t } = useTranslation();
   const { showConfirm } = useDialog();
+  const queryClient = useQueryClient();
 
   const isNew = (l: Lead) => l.status === 'new' || l.status === null || l.status === undefined;
 
@@ -1118,8 +1090,6 @@ const Leads: React.FC = () => {
     website_description: '',
   });
   const [replyChecking, setReplyChecking] = useState(false);
-  const [replyCheckMsg, setReplyCheckMsg] = useState('');
-  const [followupCheckMsg, setFollowupCheckMsg] = useState('');
 
   const closeAddModal = useCallback(() => {
     setAddClosing(true);
@@ -1130,14 +1100,12 @@ const Leads: React.FC = () => {
   useEffect(() => () => { if (detailTimerRef.current) clearTimeout(detailTimerRef.current); }, []);
 
   const handleCheckReplies = async () => {
-    setReplyChecking(true); setReplyCheckMsg('');
+    setReplyChecking(true);
     try {
       await client.post('/jobs/check-replies/run');
-      setReplyCheckMsg(t('leads.checkReplyDispatched'));
-      setTimeout(() => setReplyCheckMsg(''), 4000);
+      toast.success(t('leads.checkReplyDispatched'));
     } catch (err: any) {
-      setReplyCheckMsg(t('leads.triggerFailed') + (err?.message || ''));
-      setTimeout(() => setReplyCheckMsg(''), 5000);
+      toast.error(t('leads.triggerFailed') + (err?.message || ''));
     } finally { setReplyChecking(false); }
   };
 
@@ -1151,15 +1119,12 @@ const Leads: React.FC = () => {
       { danger: true },
     );
     if (!ok) return;
-    setClearMsg('');
     clearAllLeads.mutate(undefined, {
       onSuccess: (data) => {
-        setClearMsg(t('leads.clearedLeads', { count: data?.deleted ?? 0 }));
-        setTimeout(() => setClearMsg(''), 4000);
+        toast.success(t('leads.clearedLeads', { count: data?.deleted ?? 0 }));
       },
       onError: (err: any) => {
-        setClearMsg(t('leads.clearFailed') + (err?.message || ''));
-        setTimeout(() => setClearMsg(''), 5000);
+        toast.error(t('leads.clearFailed') + (err?.message || ''));
       },
     });
   };
@@ -1174,6 +1139,36 @@ const Leads: React.FC = () => {
     await Promise.all([refetch(), minWait]);
     setRefreshing(false);
   }, [refetch]);
+
+  const [simulating, setSimulating] = useState(false);
+  const handleSimulateNoReply = async () => {
+    // Find real leads (skip mock-*) that have been sent but not yet replied
+    const candidates = allLeads.filter(l =>
+      !l._id.startsWith('mock-') &&
+      l.status === 'contacted' && !(l as any)._no_reply && !((l as any)._followup_count > 0),
+    );
+    if (candidates.length === 0) {
+      toast(t('leads.noLeadsToSimulate'));
+      return;
+    }
+    const names = candidates.slice(0, 10).map(l => (l as any).company_name || l.name || l._id).join('、');
+    const msg = t('leads.confirmSimulateNoReply', { count: candidates.length, names });
+    const ok = await showConfirm(msg);
+    if (!ok) return;
+
+    setSimulating(true);
+    let success = 0;
+    for (const lead of candidates) {
+      try {
+        await leadsApi.simulateNoReply(lead._id);
+        success++;
+      } catch { /* skip failed */ }
+    }
+    toast.success(t('leads.simulateDone', { count: success }));
+    setSimulating(false);
+    refetch();
+    queryClient.invalidateQueries({ queryKey: ['emailQueue'] });
+  };
 
   const deleteLead = useDeleteLead();
   const changeStatus = useChangeLeadStatus();
@@ -1196,7 +1191,6 @@ const Leads: React.FC = () => {
     return map;
   }, [usersData]);
 
-  const [clearMsg, setClearMsg] = useState('');
   const [oldWebsiteOnly, setOldWebsiteOnly] = useState(false);
   const [sortByTech, setSortByTech] = useState(false);
 
@@ -1389,6 +1383,9 @@ const Leads: React.FC = () => {
               onChange={e => { setSearch(e.target.value); setPage(1); }}
             />
           </SearchWrap>
+          <CircleActionBtn title={t('leads.simulateNoReply')} onClick={handleSimulateNoReply} disabled={simulating} $spinning={simulating}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l14 14M4 4a5 5 0 007 7M3 8a5 5 0 010-5M13 8a5 5 0 010 5"/></svg>
+          </CircleActionBtn>
           <CircleActionBtn title={t('leads.filterOldWebsiteOn')} onClick={() => { setOldWebsiteOnly(v => !v); setPage(1); }} style={oldWebsiteOnly ? { background: styledTheme.colors.accent, color: '#fff', borderColor: 'transparent' } : undefined}>
             <IconOldWebsite />
           </CircleActionBtn>
@@ -1405,29 +1402,21 @@ const Leads: React.FC = () => {
             <IconPlus />
           </CircleActionBtn>
         </SubPillRow>
-        {(replyCheckMsg || followupCheckMsg || clearMsg) && createPortal(
-          <>
-            {replyCheckMsg && <FloatingToast key={`r-${replyCheckMsg}`} $error={replyCheckMsg.startsWith(t('leads.triggerFailed'))}>{replyCheckMsg}</FloatingToast>}
-            {followupCheckMsg && <FloatingToast key={`f-${followupCheckMsg}`} $error={followupCheckMsg.startsWith(t('leads.triggerFailed'))}>{followupCheckMsg}</FloatingToast>}
-            {clearMsg && <FloatingToast key={`c-${clearMsg}`} $error={clearMsg.startsWith(t('leads.clearFailed'))}>{clearMsg}</FloatingToast>}
-          </>,
-          document.body
-        )}
           <div style={{ marginTop: 16 }}><ToolbarSep /></div>
           <TableWrap>
             <Table>
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'center' }}><RowCheckbox readOnly /></th>
-                  <th>{t('leads.name')} <IconSortArrow /></th>
-                  <th>{t('leads.reply')}</th>
-                  {isAdmin && <th>{t('leads.sourceUser')}</th>}
-                  <th style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => { setSortByTech(v => !v); setPage(1); }}>
+                  <th style={{ textAlign: 'center', width: '4%' }}><RowCheckbox readOnly /></th>
+                  <th style={{ width: isAdmin ? '24%' : '30%' }}>{t('leads.name')} <IconSortArrow /></th>
+                  <th style={{ width: '13%' }}>{t('leads.reply')}</th>
+                  {isAdmin && <th style={{ width: '10%' }}>{t('leads.sourceUser')}</th>}
+                  <th style={{ textAlign: 'center', cursor: 'pointer', width: '10%' }} onClick={() => { setSortByTech(v => !v); setPage(1); }}>
                     {t('leads.techScore')} <IconSortArrow />
                   </th>
-                  <th style={{ textAlign: 'center' }}>{t('leads.aiScore')}</th>
-                  <th>{t('leads.importedAt')} <IconSortArrow /></th>
-                  <th>{t('leads.action')}</th>
+                  <th style={{ textAlign: 'center', width: '10%' }}>{t('leads.aiScore')}</th>
+                  <th style={{ width: '14%' }}>{t('leads.importedAt')} <IconSortArrow /></th>
+                  <th style={{ width: '8%' }}>{t('leads.action')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -1473,7 +1462,6 @@ const Leads: React.FC = () => {
                         <td>
                           <NameCell>
                             <StatusIcon $status={lead.status ?? 'new'} title={t(STATUS_I18N_KEY[lead.status ?? 'new'] || 'leads.statusNew')} />
-                            <Avatar $colorIndex={colorIdx}><AvatarIcon name={name} /></Avatar>
                             <NameText>
                               <strong>{name}</strong>
                               {lead.website && <small>{lead.website}</small>}
@@ -1502,7 +1490,7 @@ const Leads: React.FC = () => {
                         <td style={{ textAlign: 'center' }}>
                           {(lead as any)._tech_score != null ? (() => {
                             const s = (lead as any)._tech_score as number;
-                            const bg = s >= 50 ? styledTheme.strong.mauve : s >= 25 ? styledTheme.colors.amber : styledTheme.strong.olive;
+                            const bg = s >= 50 ? styledTheme.strong.mauve : s >= 25 ? styledTheme.strong.gold : styledTheme.strong.olive;
                             const label = s >= 50 ? t('leads.techOld') : s >= 25 ? t('leads.techNormal') : t('leads.techNew');
                             return (
                               <span style={{
@@ -1522,7 +1510,7 @@ const Leads: React.FC = () => {
                         <td style={{ textAlign: 'center' }}>
                           {(lead as any)._email_draft_score != null ? (() => {
                             const s = (lead as any)._email_draft_score as number;
-                            const bg = s >= 80 ? styledTheme.colors.accent : s >= 60 ? styledTheme.strong.mauve : s >= 40 ? styledTheme.colors.amber : styledTheme.strong.olive;
+                            const bg = s >= 80 ? styledTheme.colors.accent : s >= 60 ? styledTheme.strong.mauve : s >= 40 ? styledTheme.strong.gold : styledTheme.strong.olive;
                             const reason = (lead as any)._email_draft_score_reason || '';
                             return (
                               <span
@@ -1559,12 +1547,6 @@ const Leads: React.FC = () => {
                               <IconArrowRight />
                             </ActionBtn>
                           )}
-                          <DeleteIconBtn
-                            title={t('leads.delete')}
-                            onClick={(e) => { e.stopPropagation(); handleDelete(lead._id); }}
-                          >
-                            <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M2.5 4.5h11M5.5 4.5V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1.5M12 4.5l-.5 8.5a1 1 0 0 1-1 1H5.5a1 1 0 0 1-1-1L4 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                          </DeleteIconBtn>
                         </td>
                       </TRow>
                         </React.Fragment>

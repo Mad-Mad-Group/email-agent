@@ -8,6 +8,14 @@ export interface NotificationItem {
   ref_id?: string;
   read: boolean;
   created_at: string;
+  action?: string;
+  action_params?: Record<string, any>;
+  /** i18n key for title (frontend uses t(title_key, title_params)) */
+  title_key?: string;
+  title_params?: Record<string, any>;
+  /** i18n key for message */
+  message_key?: string;
+  message_params?: Record<string, any>;
 }
 
 export interface NotificationListResponse {

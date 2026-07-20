@@ -2,9 +2,12 @@ import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react'
 import styled, { css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { media } from '../../styles/media';
 
 import { useThemeMode } from '../../contexts/ThemeModeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { useMe } from '../../api/hooks';
 import { leadsApi, Lead } from '../../api/leads';
 import { emailQueueApi, EmailItem } from '../../api/emailQueue';
 import { tasksApi, TaskItem } from '../../api/services';
@@ -191,8 +194,10 @@ const SearchResultItem = styled.button`
   text-align: left;
   transition: background 0.1s;
 
-  &:hover {
-    background: ${({ theme }) => theme.colors.surfaceMuted};
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: ${({ theme }) => theme.colors.surfaceMuted};
+    }
   }
 
   .item-icon {
@@ -250,11 +255,13 @@ const IconBtn = styled.button`
   background: none;
   cursor: pointer;
   color: ${({ theme }) => theme.colors.textSecondary};
-  transition: all 0.15s;
+  transition: background 150ms var(--ease-out), color 150ms var(--ease-out);
 
-  &:hover {
-    background: ${({ theme }) => theme.colors.surfaceMuted};
-    color: ${({ theme }) => theme.colors.textPrimary};
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: ${({ theme }) => theme.colors.surfaceMuted};
+      color: ${({ theme }) => theme.colors.textPrimary};
+    }
   }
 `;
 
@@ -329,7 +336,9 @@ const NotifCloseBtn = styled.button`
   color: ${({ theme }) => theme.colors.textTertiary};
   padding: 0 4px;
   line-height: 1;
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+  }
 `;
 
 const NotifPanelTitle = styled.h3`
@@ -347,7 +356,9 @@ const NotifMarkAllBtn = styled.button`
   cursor: pointer;
   padding: 2px 6px;
   border-radius: 4px;
-  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  }
 `;
 
 const NotifList = styled.div`
@@ -363,7 +374,9 @@ const NotifItemRow = styled.div<{ $read?: boolean }>`
   background: ${({ $read }) => $read ? 'transparent' : 'rgba(37, 99, 235, 0.04)'};
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   transition: background 0.12s;
-  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  }
   &:last-child { border-bottom: none; }
 `;
 
@@ -429,8 +442,10 @@ const NotifDismissBtn = styled.button`
   flex-shrink: 0;
   opacity: 0;
   transition: opacity 0.15s, color 0.15s;
-  ${NotifItemRow}:hover & { opacity: 1; }
-  &:hover { color: ${({ theme }) => theme.strong.mauve}; background: ${({ theme }) => theme.strong.mauve}14; }
+  @media (hover: hover) and (pointer: fine) {
+    ${NotifItemRow}:hover & { opacity: 1; }
+    &:hover { color: ${({ theme }) => theme.strong.mauve}; background: ${({ theme }) => theme.strong.mauve}14; }
+  }
 `;
 
 const LangWrapper = styled.div`
@@ -451,12 +466,14 @@ const LangToggle = styled.button`
   background: none;
   cursor: pointer;
   color: ${({ theme }) => theme.colors.textSecondary};
-  transition: all 0.15s;
+  transition: background 150ms var(--ease-out), color 150ms var(--ease-out);
   user-select: none;
 
-  &:hover {
-    background: ${({ theme }) => theme.colors.surfaceMuted};
-    color: ${({ theme }) => theme.colors.textPrimary};
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: ${({ theme }) => theme.colors.surfaceMuted};
+      color: ${({ theme }) => theme.colors.textPrimary};
+    }
   }
 `;
 
@@ -504,7 +521,9 @@ const LangOption = styled.button<{ $active?: boolean }>`
   cursor: pointer;
   width: 100%;
   text-align: left;
-  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  }
 `;
 
 /* Theme toggle (sun / moon) */
@@ -519,18 +538,20 @@ const ThemeToggle = styled.button`
   background: none;
   cursor: pointer;
   color: ${({ theme }) => theme.colors.textSecondary};
-  transition: all 0.3s ease;
+  transition: background 300ms var(--ease-out), color 300ms var(--ease-out);
 
-  &:hover {
-    background: ${({ theme }) => theme.colors.surfaceMuted};
-    color: ${({ theme }) => theme.colors.textPrimary};
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: ${({ theme }) => theme.colors.surfaceMuted};
+      color: ${({ theme }) => theme.colors.textPrimary};
+    }
+    &:hover svg {
+      transform: rotate(20deg);
+    }
   }
 
   svg {
     transition: transform 0.3s ease;
-  }
-  &:hover svg {
-    transform: rotate(20deg);
   }
 `;
 
@@ -546,9 +567,16 @@ const ActionButton = styled.button`
   cursor: pointer;
   transition: opacity 0.15s ease;
 
-  &:hover {
-    opacity: 0.9;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      opacity: 0.9;
+    }
   }
+`;
+
+const AvatarWrap = styled.div`
+  position: relative;
+  &:hover > div[data-avatar-dropdown] { opacity: 1; pointer-events: auto; transform: translateY(0); }
 `;
 
 const UserAvatar = styled.div`
@@ -563,6 +591,108 @@ const UserAvatar = styled.div`
   font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
+`;
+
+const AvatarDropdown = styled.div`
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 6px;
+  min-width: 180px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 12px;
+  box-shadow: ${({ theme }) => theme.shadows.card};
+  padding: 6px;
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition: opacity 0.15s var(--ease-out), transform 0.15s var(--ease-out);
+`;
+
+const DropdownItem = styled.button<{ $danger?: boolean }>`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 14px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: ${({ $danger, theme }) => $danger ? theme.strong.mauve : theme.colors.textSecondary};
+  transition: background 0.1s, color 0.1s;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: ${({ $danger, theme }) => $danger ? `${theme.strong.mauve}14` : theme.colors.surfaceMuted};
+      color: ${({ $danger, theme }) => $danger ? theme.strong.mauve : theme.colors.textPrimary};
+    }
+  }
+
+  svg { flex-shrink: 0; }
+`;
+
+const DropdownDivider = styled.hr`
+  border: none;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  margin: 4px 0;
+`;
+
+/* ── Logout dialog (moved from Sidebar) ── */
+const LogoutOverlay = styled.div`
+  position: fixed; inset: 0; z-index: 9999;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(4px);
+`;
+
+const LogoutDialog = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: 16px;
+  padding: 28px 32px;
+  width: 340px;
+  max-width: 90vw;
+  text-align: center;
+  box-shadow: ${({ theme }) => theme.shadows.card};
+`;
+
+const LogoutIconWrap = styled.div`
+  display: flex; align-items: center; justify-content: center;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: ${({ theme }) => `${theme.strong.mauve}18`};
+  color: ${({ theme }) => theme.strong.mauve};
+  margin: 0 auto 12px;
+`;
+
+const LogoutTitle = styled.h3`
+  margin: 0 0 6px; font-size: 1rem; font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const LogoutDesc = styled.p`
+  margin: 0 0 20px; font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
+const LogoutActions = styled.div`display: flex; gap: 10px; justify-content: center;`;
+
+const LogoutCancelBtn = styled.button`
+  padding: 9px 20px; border-radius: 8px; font-size: 0.8125rem; font-weight: 600;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: transparent; color: ${({ theme }) => theme.colors.textSecondary}; cursor: pointer;
+  transition: background 0.15s;
+  @media (hover: hover) and (pointer: fine) { &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; } }
+`;
+
+const LogoutConfirmBtn = styled.button`
+  padding: 9px 20px; border-radius: 8px; font-size: 0.8125rem; font-weight: 600;
+  border: none; background: ${({ theme }) => theme.strong.mauve};
+  color: #fff; cursor: pointer; transition: opacity 0.15s;
+  @media (hover: hover) and (pointer: fine) { &:hover { opacity: 0.85; } }
 `;
 
 /* ── SVG icon components ── */
@@ -593,19 +723,61 @@ const NotifBellIcon = () => (
 
 /* ── Component ── */
 
+/* ── Dropdown menu icons ── */
+
+const DropdownProfileIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+const DropdownSettingsIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+  </svg>
+);
+
+const DropdownLogoutIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
+  </svg>
+);
+
+const getInitials = (name?: string, email?: string) => {
+  if (name) {
+    const parts = name.trim().split(/\s+/);
+    return parts.length >= 2
+      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+      : name.slice(0, 2).toUpperCase();
+  }
+  return email ? email.slice(0, 2).toUpperCase() : '??';
+};
+
 export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, onToggleSidebar, sidebarCollapsed }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { mode, toggle: toggleTheme } = useThemeMode();
   const theme = useTheme();
+  const { logout } = useAuth();
+  const { data: me } = useMe();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
   const [dataResults, setDataResults] = useState<SearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const searchRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const user = (me as any)?.data ?? me;
+  const initials = getInitials(user?.name, user?.email);
+
+  const handleLogout = () => {
+    setShowLogoutDialog(false);
+    logout();
+    navigate('/login', { replace: true });
+  };
 
   /* ── Notifications ── */
   const [notifOpen, setNotifOpen] = useState(false);
@@ -819,10 +991,6 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
 
   return (
     <Wrapper>
-      <LeftGroup>
-        <BrandLink href="#"><PhoneIcon /> MAD MAD</BrandLink>
-      </LeftGroup>
-
       <SearchBar ref={searchRef}>
         <span className="search-icon">
           <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
@@ -905,8 +1073,10 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
                 >
                   <NotifDot $type={n.type} />
                   <NotifContent>
-                    <NotifTitle>{n.title}</NotifTitle>
-                    {n.message && <NotifMsg>{n.message}</NotifMsg>}
+                    <NotifTitle>{n.title_key ? t(n.title_key, n.title_params || {}) : n.title}</NotifTitle>
+                    {(n.message_key || n.message) && (
+                      <NotifMsg>{n.message_key ? t(n.message_key, n.message_params || {}) : n.message}</NotifMsg>
+                    )}
                     <NotifTime>{formatTimeAgo(n.created_at)}</NotifTime>
                   </NotifContent>
                   <NotifDismissBtn
@@ -918,11 +1088,45 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
             )}
           </NotifList>
         </NotifPanel>
-        <UserAvatar>MM</UserAvatar>
+        <AvatarWrap>
+          <UserAvatar>{initials}</UserAvatar>
+          <AvatarDropdown data-avatar-dropdown>
+            <DropdownItem onClick={() => navigate('/cms-user-info')}>
+              <DropdownProfileIcon /> {t('nav.userInfo')}
+            </DropdownItem>
+            <DropdownItem onClick={() => navigate('/cms-settings')}>
+              <DropdownSettingsIcon /> {t('nav.settings')}
+            </DropdownItem>
+            <DropdownDivider />
+            <DropdownItem $danger onClick={() => setShowLogoutDialog(true)}>
+              <DropdownLogoutIcon /> {t('nav.signOut')}
+            </DropdownItem>
+          </AvatarDropdown>
+        </AvatarWrap>
         {actionLabel && onAction && (
           <ActionButton onClick={onAction}>{actionLabel}</ActionButton>
         )}
       </RightGroup>
+
+      {/* Logout confirmation dialog */}
+      {showLogoutDialog && createPortal(
+        <LogoutOverlay onClick={() => setShowLogoutDialog(false)}>
+          <LogoutDialog onClick={(e) => e.stopPropagation()}>
+            <LogoutIconWrap><DropdownLogoutIcon /></LogoutIconWrap>
+            <LogoutTitle>{t('nav.signOut')}</LogoutTitle>
+            <LogoutDesc>{t('nav.logoutConfirm')}</LogoutDesc>
+            <LogoutActions>
+              <LogoutCancelBtn onClick={() => setShowLogoutDialog(false)}>
+                {t('common.cancel')}
+              </LogoutCancelBtn>
+              <LogoutConfirmBtn onClick={handleLogout}>
+                {t('nav.signOut')}
+              </LogoutConfirmBtn>
+            </LogoutActions>
+          </LogoutDialog>
+        </LogoutOverlay>,
+        document.body
+      )}
     </Wrapper>
   );
 };

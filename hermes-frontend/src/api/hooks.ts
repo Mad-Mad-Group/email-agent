@@ -17,7 +17,7 @@ export const useMe = () =>
 export const useUpdateProfile = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name?: string; email?: string }) =>
+    mutationFn: (data: { name?: string; email?: string; companyName?: string; companyDescription?: string; companyWebsite?: string }) =>
       authApi.updateProfile(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['auth', 'me'] });

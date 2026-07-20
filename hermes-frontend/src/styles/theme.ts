@@ -17,6 +17,15 @@ const shared = {
     normal: '200ms ease',
     slow: '300ms ease',
   },
+  /** Strong custom easing curves (Emil Kowalski design-eng philosophy) */
+  easing: {
+    /** Entering/exiting UI — starts fast, feels responsive */
+    out: 'cubic-bezier(0.23, 1, 0.32, 1)',
+    /** On-screen movement — natural accel/decel */
+    inOut: 'cubic-bezier(0.77, 0, 0.175, 1)',
+    /** Drawer/sheet feel */
+    drawer: 'cubic-bezier(0.32, 0.72, 0, 1)',
+  },
 };
 
 /* ═══════════════════════════════════════════

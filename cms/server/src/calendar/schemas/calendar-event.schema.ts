@@ -9,6 +9,9 @@ export type CalendarEventDocument = HydratedDocument<CalendarEvent>;
   versionKey: false,
 })
 export class CalendarEvent {
+  @Prop({ required: true, index: true })
+  userId: string;
+
   @Prop({ index: true })
   event_id: string;
 

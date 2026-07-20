@@ -20,8 +20,10 @@ export class CalendarService {
    * 列表：可按 month/year 篩選，否則回傳全部。
    * 回傳格式配合 ResponseInterceptor pagination。
    */
-  async findAll(month?: number, year?: number) {
+  async findAll(userId?: string, month?: number, year?: number) {
     const filter: Record<string, any> = {};
+
+    if (userId) filter.userId = userId;
 
     if (month && year) {
       const start = new Date(year, month - 1, 1);
@@ -38,15 +40,18 @@ export class CalendarService {
     return { items, total: items.length, page: 1, limit: 999 };
   }
 
-  async findOne(id: string): Promise<CalendarEventDocument> {
-    const event = await this.eventModel.findById(id).exec();
+  async findOne(id: string, userId?: string): Promise<CalendarEventDocument> {
+    const filter: Record<string, any> = { _id: id };
+    if (userId) filter.userId = userId;
+    const event = await this.eventModel.findOne(filter).exec();
     if (!event) throw new NotFoundException('Calendar event not found');
     return event;
   }
 
-  async create(dto: CreateEventDto): Promise<CalendarEventDocument> {
+  async create(dto: CreateEventDto, userId?: string): Promise<CalendarEventDocument> {
     return this.eventModel.create({
       ...dto,
+      userId,
       event_id: randomBytes(8).toString('hex'),
       start: new Date(dto.start),
       end: dto.end ? new Date(dto.end) : undefined,
@@ -59,8 +64,9 @@ export class CalendarService {
   async update(
     id: string,
     dto: UpdateEventDto,
+    userId?: string,
   ): Promise<CalendarEventDocument> {
-    const event = await this.findOne(id);
+    const event = await this.findOne(id, userId);
     const clean: Record<string, any> = Object.fromEntries(
       Object.entries(dto).filter(([, v]) => v !== undefined),
     );
@@ -74,8 +80,8 @@ export class CalendarService {
     return event;
   }
 
-  async remove(id: string): Promise<void> {
-    const event = await this.findOne(id);
+  async remove(id: string, userId?: string): Promise<void> {
+    const event = await this.findOne(id, userId);
     await event.deleteOne();
   }
 }

@@ -115,7 +115,7 @@ const PillBtn = styled.button<{ $active: boolean }>`
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 0.2s var(--ease-out), color 0.2s var(--ease-out);
   background: ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
   color: ${({ $active, theme }) => $active ? theme.colors.textInverted : theme.colors.textSecondary};
   &:hover { opacity: 0.85; }
@@ -549,7 +549,7 @@ const DayDetailClose = styled.button`
   width: 32px; height: 32px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   color: ${({ theme }) => theme.colors.accent};
-  flex-shrink: 0; transition: all 0.15s;
+  flex-shrink: 0; transition: background 0.15s var(--ease-out);
   &:hover { background: ${({ theme }) => `${theme.colors.accent}15`}; }
 `;
 const DayEventList = styled.div` display: flex; flex-direction: column; gap: 8px; `;
@@ -612,17 +612,7 @@ interface CalEvent {
   rawStart?: Date;
 }
 
-const FALLBACK_EVENTS: CalEvent[] = [
-  { day: 1, title: 'All Day Event', type: 'block', eventType: 'other' },
-  { day: 7, title: 'Long Event', type: 'block', eventType: 'meeting', span: 3 },
-  { day: 9, title: 'Repeating Event', time: '4p', type: 'dot', eventType: 'follow_up', startHour: 16, startMin: 0, endHour: 17, endMin: 0 },
-  { day: 16, title: 'Repeating Event', time: '4p', type: 'dot', eventType: 'follow_up', startHour: 16, startMin: 0, endHour: 17, endMin: 0 },
-  { day: 23, title: 'Conference', type: 'block', eventType: 'meeting', span: 2 },
-  { day: 24, title: 'Meeting', time: '10:30a', type: 'dot', eventType: 'meeting', startHour: 10, startMin: 30, endHour: 11, endMin: 30 },
-  { day: 24, title: 'Lunch', time: '12p', type: 'dot', eventType: 'other', startHour: 12, startMin: 0, endHour: 13, endMin: 0 },
-  { day: 25, title: 'Birthday Party', time: '7a', type: 'dot', eventType: 'other', startHour: 7, startMin: 0, endHour: 8, endMin: 0 },
-  { day: 28, title: 'Click for Google', type: 'block', eventType: 'deadline' },
-];
+/* Mock data removed — calendar only shows real API events */
 
 const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
 const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
@@ -646,7 +636,7 @@ function apiToCalEvents(apiEvents: any[]): CalEvent[] {
     const day = d.getDate();
     const h = d.getHours();
     const m = d.getMinutes();
-    const time = e.all_day ? undefined : `${h > 12 ? h - 12 : h || 12}${m ? ':' + String(m).padStart(2, '0') : ''}${h >= 12 ? 'p' : 'a'}`;
+    const time = e.all_day ? undefined : `${h > 12 ? h - 12 : h || 12}:${String(m).padStart(2, '0')} ${h >= 12 ? 'PM' : 'AM'}`;
     return {
       day,
       title: e.title || 'Event',
@@ -723,7 +713,7 @@ const Calendar: React.FC = () => {
       .catch(() => setApiEvents([]));
   }, [month, year]);
 
-  const EVENTS = apiEvents.length > 0 ? apiEvents : FALLBACK_EVENTS;
+  const EVENTS = apiEvents;
 
   // Filtered events
   const filteredEvents = useMemo(
@@ -903,7 +893,7 @@ const Calendar: React.FC = () => {
                   <PillBtn $active={viewMode === 'month'} onClick={() => setViewMode('month')}>{t('calendar.monthView')}</PillBtn>
                   <PillBtn $active={viewMode === 'week'} onClick={() => setViewMode('week')}>{t('calendar.weekView')}</PillBtn>
                 </PillWrap>
-                <CalBtn $disabled={isCurrentMonth && viewMode === 'month'} onClick={goToday}>{t('calendar.today')}</CalBtn>
+                <CalBtn $disabled={isCurrentMonth && viewMode === 'month' && selectedDay === null} onClick={goToday}>{t('calendar.today')}</CalBtn>
                 <CalBtn onClick={prev}>&lt;</CalBtn>
                 <CalBtn onClick={next}>&gt;</CalBtn>
               </CalNav>
@@ -1001,59 +991,51 @@ const Calendar: React.FC = () => {
             )}
           </SpiralCalCard>
 
-          {/* Day Detail — right-side overlay panel (month view) */}
-          {viewMode === 'month' && selectedDay !== null && (() => {
-            const dayEvents = filteredEvents.filter(e => e.day === selectedDay);
-            return (
-              <DayDetailWrap key={selectedDay}>
-                <DayDetailHeader>
-                  <DayDetailTitle>{t('calendar.dayScheduleTitle', { month: monthsShort[month], day: selectedDay })}</DayDetailTitle>
-                  <DayDetailClose onClick={() => setSelectedDay(null)}>
-                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+        </MainArea>
+
+        {/* 右側議程 panel — 選咗日期顯示該日 schedule，否則顯示今日議程 */}
+        {viewMode === 'month' && (() => {
+          const showingSelected = selectedDay !== null;
+          const isSelectedToday = showingSelected && selectedDay === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+          const panelEvents = showingSelected
+            ? filteredEvents.filter(e => e.day === selectedDay).sort((a, b) => (a.time || '').localeCompare(b.time || ''))
+            : todayAgenda;
+          const panelTitle = showingSelected
+            ? t('calendar.dayScheduleTitle', { month: monthsShort[month], day: selectedDay })
+            : t('calendar.todayAgenda');
+          const panelDate = showingSelected
+            ? `${month + 1}/${selectedDay}（${dayNames[new Date(year, month, selectedDay).getDay()]})`
+            : `${today.getMonth() + 1}/${today.getDate()}（${dayNames[today.getDay()]})`;
+          const emptyText = showingSelected ? t('calendar.noDayEvents') : t('calendar.noItemsToday');
+
+          return (
+            <AgendaPanel>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
+                <span style={{ fontSize: '1rem', fontWeight: 600 }}>{panelTitle}</span>
+                <AgendaDate>{panelDate}</AgendaDate>
+                {showingSelected && !isSelectedToday && (
+                  <DayDetailClose onClick={() => setSelectedDay(null)} style={{ marginLeft: 'auto' }}>
+                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
                       <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
                     </svg>
                   </DayDetailClose>
-                </DayDetailHeader>
-                {dayEvents.length > 0 ? (
-                  <DayEventList>
-                    {dayEvents.map((ev, i) => (
-                      <DayEventItem key={i} $eventType={ev.eventType} $past={ev.past}>
-                        <DayEventTime>{ev.time || t('calendar.allDay')}</DayEventTime>
-                        <DayEventTitle>{ev.title}</DayEventTitle>
-                      </DayEventItem>
-                    ))}
-                  </DayEventList>
-                ) : (
-                  <DayEmptyText>{t('calendar.noDayEvents')}</DayEmptyText>
                 )}
-              </DayDetailWrap>
-            );
-          })()}
-        </MainArea>
-
-        {/* 今日議程 — 月曆模式右側顯示 */}
-        {viewMode === 'month' && (
-          <AgendaPanel>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <span style={{ fontSize: '1rem', fontWeight: 600 }}>{t('calendar.todayAgenda')}</span>
-              <AgendaDate>
-                {today.getMonth() + 1}/{today.getDate()}（{dayNames[today.getDay()]})
-              </AgendaDate>
-            </div>
-            {todayAgenda.length > 0 ? (
-              <DayEventList>
-                {todayAgenda.map((ev, i) => (
-                  <DayEventItem key={i} $eventType={ev.eventType} $past={ev.past}>
-                    <DayEventTime>{ev.time || t('calendar.allDay')}</DayEventTime>
-                    <DayEventTitle>{ev.title}</DayEventTitle>
-                  </DayEventItem>
-                ))}
-              </DayEventList>
-            ) : (
-              <DayEmptyText>{t('calendar.noItemsToday')}</DayEmptyText>
-            )}
-          </AgendaPanel>
-        )}
+              </div>
+              {panelEvents.length > 0 ? (
+                <DayEventList>
+                  {panelEvents.map((ev, i) => (
+                    <DayEventItem key={i} $eventType={ev.eventType} $past={ev.past}>
+                      <DayEventTime>{ev.time || t('calendar.allDay')}</DayEventTime>
+                      <DayEventTitle>{ev.title}</DayEventTitle>
+                    </DayEventItem>
+                  ))}
+                </DayEventList>
+              ) : (
+                <DayEmptyText>{emptyText}</DayEmptyText>
+              )}
+            </AgendaPanel>
+          );
+        })()}
       </CalLayout>
 
       {/* Footer */}

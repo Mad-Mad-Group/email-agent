@@ -23,6 +23,30 @@ export class Notification {
   @Prop({ type: String, default: 'system', index: true })
   type: 'lead' | 'email' | 'campaign' | 'task' | 'system';
 
+  /** 結構化動作 key（前端用 i18n 翻譯） */
+  @Prop({ type: String })
+  action?: string;
+
+  /** 結構化參數（如 { name: 'XX', count: 3 }） */
+  @Prop({ type: Object })
+  action_params?: Record<string, any>;
+
+  /** i18n title key（前端用 t(title_key, title_params) 翻譯） */
+  @Prop({ type: String })
+  title_key?: string;
+
+  /** i18n title 參數（如 { company: 'XX', count: 3 }） */
+  @Prop({ type: Object })
+  title_params?: Record<string, any>;
+
+  /** i18n message key */
+  @Prop({ type: String })
+  message_key?: string;
+
+  /** i18n message 參數 */
+  @Prop({ type: Object })
+  message_params?: Record<string, any>;
+
   /** 關聯 ID（如 lead_id, task_id 等） */
   @Prop()
   ref_id?: string;

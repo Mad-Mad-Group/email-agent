@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import styled, { keyframes, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { media } from '../../styles/media';
 import { glassSurface } from '../../styles/glassSurface';
 import { useVerifiedEmails, useVerifiedEmailStats, useCreateVerifiedEmail, useDeleteVerifiedEmail } from '../../api/hooks';
@@ -87,7 +88,7 @@ const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'ghost' }>`
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 14px; border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.8125rem; font-weight: 500;
-  cursor: pointer; border: 1px solid transparent; transition: all 0.15s;
+  cursor: pointer; border: 1px solid transparent; transition: background 150ms var(--ease-out), color 150ms var(--ease-out), border-color 150ms var(--ease-out), opacity 150ms var(--ease-out);
   ${({ $variant, theme }) => {
     if ($variant === 'primary') return `background: ${theme.colors.accent}; color: ${theme.colors.textInverted}; &:hover { opacity: 0.9; }`;
     if ($variant === 'danger') return `background: transparent; color: ${theme.strong.mauve}; border-color: ${theme.strong.mauve}; &:hover { background: ${theme.strong.mauve}; color: ${theme.colors.textInverted}; }`;
@@ -351,7 +352,7 @@ const VerifiedEmailsPage: React.FC = () => {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
           />
-          <Btn onClick={() => window.alert(t('verifiedEmails.demoFollowUpMsg'))}>{t('verifiedEmails.demoFollowUp')}</Btn>
+          <Btn onClick={() => toast(t('verifiedEmails.demoFollowUpMsg'))}>{t('verifiedEmails.demoFollowUp')}</Btn>
           <Btn onClick={handleExport}><ExportIcon /> {t('verifiedEmails.export')}</Btn>
           <Btn $variant="primary" onClick={() => setShowAdd(true)}><PlusIcon /> {t('verifiedEmails.add')}</Btn>
         </div>

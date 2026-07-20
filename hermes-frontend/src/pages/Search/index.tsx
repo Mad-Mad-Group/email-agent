@@ -628,7 +628,7 @@ const Separator = styled.div`
 /* B区: 圆形按钮 + 星星 */
 const sparkle = keyframes`
   0% { transform: translate(0,0) scale(1); opacity: 1; }
-  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0.3); opacity: 0; }
 `;
 
 const BtnWrap = styled.div`
@@ -837,10 +837,12 @@ const ResultCard = styled.div`
   border-left: 3px solid ${({ theme }) => theme.colors.accent};
   background: ${({ theme }) => theme.colors.surface};
   cursor: pointer;
-  transition: all 0.15s;
-  &:hover {
-    box-shadow: 0 2px 8px rgba(15,23,42,0.07);
-    transform: translateY(-1px);
+  transition: box-shadow 0.15s var(--ease-out), transform 0.15s var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      box-shadow: 0 2px 8px rgba(15,23,42,0.07);
+      transform: translateY(-1px);
+    }
   }
   ${media.mobile} {
     flex-wrap: wrap;
@@ -997,7 +999,7 @@ const FilterToggle = styled.button<{ $active: boolean }>`
   font-size: 0.6875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: border-color 0.15s var(--ease-out), color 0.15s var(--ease-out);
   &:hover { border-color: ${({ theme }) => theme.colors.accent}; color: ${({ theme }) => theme.colors.accent}; }
 `;
 
@@ -1045,7 +1047,7 @@ const SourceChip = styled.button<{ $active: boolean; $color?: string }>`
   font-size: 0.6875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: border-color 0.15s var(--ease-out), color 0.15s var(--ease-out);
   &:hover { border-color: ${({ $color, theme }) => $color || theme.colors.accent}; color: ${({ $color, theme }) => $color || theme.colors.accent}; }
 `;
 
@@ -1165,7 +1167,7 @@ const DpCloseBtn = styled.button`
   justify-content: center;
   color: ${({ theme }) => theme.colors.accent};
   flex-shrink: 0;
-  transition: all 0.15s;
+  transition: background 0.15s var(--ease-out);
   &:hover {
     background: ${({ theme }) => theme.colors.accent + '15'};
   }
@@ -1320,7 +1322,7 @@ const StepCircle = styled.div<{ $state: 'done' | 'active' | 'pending' }>`
   font-size: 1rem;
   font-weight: 700;
   flex-shrink: 0;
-  transition: all 0.3s;
+  transition: background 0.3s var(--ease-out), color 0.3s var(--ease-out);
   background: ${({ $state, theme }) =>
     $state === 'done' ? theme.strong.olive :
     $state === 'active' ? theme.colors.accent :

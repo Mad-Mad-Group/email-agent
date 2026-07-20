@@ -18,12 +18,8 @@ import { AGENTS, FARMER, ACTIVITY_AGENT } from '../../config/agents';
 
 const Page = styled.div`
   display: flex; flex-direction: column; gap: 24px;
-<<<<<<< Updated upstream
-  padding: 32px 28px 40px; min-width: 0;
-  ${media.tablet} { padding: 20px 16px 28px; gap: 16px; }
-=======
   padding: 32px 28px 40px; min-width: 0; overflow-x: hidden;
->>>>>>> Stashed changes
+  ${media.tablet} { padding: 20px 16px 28px; gap: 16px; }
   ${media.mobile} { padding: 20px 16px 32px; }
 `;
 
@@ -42,27 +38,6 @@ const GreetingDate = styled.p`
 
 /* ── Dashboard Grid: cards area + calendar sidebar ── */
 const DashGrid = styled.div`
-<<<<<<< Updated upstream
-  display: grid;
-  grid-template-columns: 1fr minmax(300px, 340px);
-  gap: 20px; align-items: stretch;
-  ${media.tablet} { grid-template-columns: 1fr; gap: 14px; }
-  ${media.mobile} { grid-template-columns: 1fr; }
-`;
-const CardsArea = styled.div`
-  display: flex; flex-direction: column; gap: 20px;
-  ${media.tablet} { gap: 12px; }
-`;
-const CardRow = styled.div`
-  display: flex; gap: 20px; align-items: stretch;
-  ${media.tablet} { gap: 12px; }
-  ${media.mobile} { flex-direction: column; }
-`;
-const CalendarSidebar = styled.div`
-  display: flex; flex-direction: column; gap: 16px;
-  ${media.tablet} { flex-direction: row; gap: 12px; grid-column: 1 / -1; }
-  ${media.mobile} { grid-column: 1 / -1; }
-=======
   display: flex; flex-direction: column; gap: 20px;
 `;
 const CardsArea = styled.div`
@@ -71,7 +46,6 @@ const CardsArea = styled.div`
 const CardRow = styled.div`
   display: flex; gap: 20px; align-items: stretch;
   ${media.tabletDown} { flex-direction: column; }
->>>>>>> Stashed changes
 `;
 /* Embedded section inside a board — no bg, dark text */
 const EmbedTitle = styled.div`
@@ -352,7 +326,7 @@ const BarChart: React.FC<{ bars: BarData[] }> = ({ bars }) => {
 /* ── Donut Chart (redesigned) ── */
 const DonutWrap = styled.div`
   display: flex; align-items: center; gap: 20px; justify-content: center; padding: 8px;
-<<<<<<< Updated upstream
+  flex-wrap: wrap;
   ${media.tablet} {
     gap: 10px; padding: 2px;
     & > div:first-child svg { width: 165px; height: 165px; }
@@ -361,9 +335,6 @@ const DonutWrap = styled.div`
 const LegendList = styled.div`
   display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0; max-width: 180px;
   ${media.tablet} { gap: 10px; max-width: 160px; }
-=======
-  flex-wrap: wrap;
->>>>>>> Stashed changes
 `;
 const LegendRow = styled.div`display: flex; flex-direction: column; gap: 3px;`;
 const LegendRowTop = styled.div`display: flex; align-items: center; gap: 6px;`;
@@ -564,115 +535,6 @@ const EmbedWhite = styled.div`
   ${media.tablet} { margin-top: 14px; }
 `;
 
-<<<<<<< Updated upstream
-/* ── Mini Calendar ── */
-const CalendarCard = styled.div`
-  ${glassSurface};
-  border-radius: ${({ theme }) => theme.radii.card}px;
-  padding: 16px;
-  ${media.tablet} { flex: 1; padding: 12px; }
-`;
-const CalMonth = styled.div`
-  display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
-`;
-const CalMonthTitle = styled.div`
-  font-size: 0.875rem; font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-const CalMonthNav = styled.button`
-  background: none; border: none; cursor: pointer; padding: 4px 6px;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  font-size: 0.75rem; line-height: 1;
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
-`;
-const CalDaysGrid = styled.div`
-  display: grid; grid-template-columns: repeat(7, 1fr); text-align: center;
-`;
-const CalDayHeader = styled.div`
-  font-size: 0.5625rem; font-weight: 600;
-  color: ${({ theme }) => theme.colors.textTertiary}; padding: 4px 0;
-`;
-const CalDayCell = styled.div<{ $today?: boolean; $selected?: boolean; $muted?: boolean; $hasEvent?: boolean }>`
-  font-size: 0.6875rem;
-  font-weight: ${({ $today, $selected }) => ($today || $selected) ? 700 : 400};
-  color: ${({ $today, $selected, $muted, theme }) =>
-    $muted ? `${theme.colors.textTertiary}60`
-    : ($today || $selected) ? '#fff'
-    : theme.colors.textPrimary};
-  background: ${({ $today, $selected, theme }) =>
-    $today ? theme.strong.mauve
-    : $selected ? `${theme.strong.mauve}cc`
-    : 'transparent'};
-  border-radius: 50%; width: 28px; height: 28px;
-  display: flex; align-items: center; justify-content: center; margin: 1px auto;
-  position: relative; cursor: ${({ $muted }) => $muted ? 'default' : 'pointer'};
-  transition: background 0.15s, transform 0.1s;
-  &:hover { ${({ $muted, theme }) => !$muted ? `background: ${theme.pastel.mauve};` : ''} }
-  ${({ $hasEvent, $today, $selected, theme }) => $hasEvent && !$today && !$selected ? `
-    &::after {
-      content: ''; position: absolute; bottom: 1px;
-      width: 4px; height: 4px; border-radius: 50%;
-      background: ${theme.strong.mauve};
-    }
-  ` : ''}
-`;
-const CalAddBtn = styled.button`
-  background: ${({ theme }) => theme.colors.surfaceInverted};
-  color: ${({ theme }) => theme.colors.textInverted};
-  border: none; border-radius: 10px; padding: 9px 14px;
-  font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  width: 100%; margin-top: 12px;
-  transition: opacity 0.15s;
-  &:hover { opacity: 0.85; }
-`;
-
-/* ── Day Timeline ── */
-const TimelineCard = styled.div`
-  ${glassSurface};
-  border-radius: ${({ theme }) => theme.radii.card}px;
-  padding: 16px; flex: 1; min-height: 0;
-  overflow-y: auto;
-  &::-webkit-scrollbar { width: 3px; }
-  &::-webkit-scrollbar-thumb { background: ${({ theme }) => theme.colors.border}; border-radius: 3px; }
-  ${media.tablet} { padding: 12px; }
-`;
-const TimelineHeader = styled.div`
-  font-size: 0.8125rem; font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
-`;
-const TlItem = styled.div<{ $past?: boolean }>`
-  display: flex; gap: 10px; padding: 8px 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border}20;
-  opacity: ${({ $past }) => $past ? 0.3 : 1};
-  &:last-child { border-bottom: none; }
-`;
-const TlTime = styled.div`
-  font-size: 0.6875rem; font-weight: 600;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  min-width: 44px; flex-shrink: 0;
-`;
-const TlDot = styled.div<{ $color: string }>`
-  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-  background: ${({ $color }) => $color}; margin-top: 4px;
-`;
-const TlBody = styled.div`flex: 1; min-width: 0;`;
-const TlTitle = styled.div`
-  font-size: 0.8125rem; font-weight: 500;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-`;
-const TlSub = styled.div`
-  font-size: 0.6875rem; color: ${({ theme }) => theme.colors.textTertiary}; margin-top: 2px;
-`;
-const EmptyTimeline = styled.div`
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 24px 8px; gap: 10px; color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
-`;
-
-=======
->>>>>>> Stashed changes
 /* ── Meeting list inside blue card ── */
 const MtgList = styled.div`
   margin-top: 12px; display: flex; flex-direction: column; gap: 0;

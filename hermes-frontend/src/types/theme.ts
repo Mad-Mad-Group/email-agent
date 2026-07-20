@@ -63,6 +63,11 @@ export interface HermesTheme {
     normal: string;
     slow: string;
   };
+  easing: {
+    out: string;
+    inOut: string;
+    drawer: string;
+  };
   radii: {
     card: number;
     tile: number;

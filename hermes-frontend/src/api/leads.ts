@@ -91,4 +91,7 @@ export const leadsApi = {
 
   reprocess: (id: string, stage: string) =>
     client.post(`/leads/${id}/reprocess?stage=${stage}`),
+
+  simulateNoReply: (id: string) =>
+    client.post<{ task_id: string; lead_id: string; followup_count: number }>(`/leads/${id}/simulate-no-reply`),
 };

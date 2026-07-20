@@ -88,6 +88,42 @@ export class LeadsController {
     return this.leads.markInterested(id, isAdmin(user) ? undefined : user.userId);
   }
 
+  /** POST /leads/:id/simulate-no-reply — 模擬未回覆 → 重新 outreach */
+  @Post(':id/simulate-no-reply')
+  async simulateNoReply(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtUser,
+  ) {
+    const lead = await this.leads.findOne(id, isAdmin(user) ? undefined : user.userId);
+    if (!lead) throw new NotFoundException('Lead not found');
+
+    // Mark as no-reply, bump follow-up count, clear draft flag
+    const update: Record<string, any> = {
+      _no_reply: true,
+      _followup_count: ((lead as any)._followup_count || 0) + 1,
+      _has_email_draft: false,
+    };
+    await this.leads.update(id, update as any, isAdmin(user) ? undefined : user.userId);
+
+    // Enqueue a new draft task with followup flag
+    const task = await this.tasks.enqueue({
+      skill_id: STAGE_SKILL_MAP['draft'],
+      title: `[Follow-up #${update._followup_count}] Re-outreach — ${(lead as any).company_name || id}`,
+      params: {
+        lead_object_id: id,
+        user_id: user.userId,
+        followup: true,
+        followup_count: update._followup_count,
+      },
+    });
+
+    return {
+      task_id: task.task_id,
+      lead_id: id,
+      followup_count: update._followup_count,
+    };
+  }
+
   /** POST /leads/:id/reprocess?stage=enrich|analyze|draft|send */
   @Post(':id/reprocess')
   async reprocess(
