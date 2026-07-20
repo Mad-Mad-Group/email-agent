@@ -615,7 +615,10 @@ const Users: React.FC = () => {
   const [resetPwUser, setResetPwUser] = useState<UserItem | null>(null);
   const [newPassword, setNewPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
-  const [costPer1k, setCostPer1k] = useState(DEFAULT_COST_PER_1K);
+  const [costPer1k, setCostPer1k] = useState(() => {
+    const saved = localStorage.getItem('token_cost_per_1k');
+    return saved ? parseFloat(saved) : DEFAULT_COST_PER_1K;
+  });
   const resetPassword = useMutation({
     mutationFn: ({ id, password }: { id: string; password: string }) => usersApi.update(id, { password }),
     onSuccess: () => { setResetPwUser(null); setNewPassword(''); setShowPw(false); },
@@ -791,7 +794,7 @@ const Users: React.FC = () => {
                   value={costPer1k}
                   onChange={e => {
                     const v = parseFloat(e.target.value);
-                    if (!isNaN(v) && v >= 0) setCostPer1k(v);
+                    if (!isNaN(v) && v >= 0) { setCostPer1k(v); localStorage.setItem('token_cost_per_1k', String(v)); }
                   }}
                   style={{
                     width: 90,

@@ -99,18 +99,20 @@ export class UsersService {
 
   async getNotificationPrefs(id: string) {
     const user = await this.userModel.findById(id).select('notification_prefs').lean().exec();
-    return user?.notification_prefs ?? { email_on_complete: false, browser_on_complete: false };
+    return user?.notification_prefs ?? { email_on_complete: false, browser_on_complete: false, notification_email: '' };
   }
 
   async updateNotificationPrefs(
     id: string,
-    prefs: { email_on_complete?: boolean; browser_on_complete?: boolean },
+    prefs: { email_on_complete?: boolean; browser_on_complete?: boolean; notification_email?: string },
   ) {
-    const $set: Record<string, boolean> = {};
+    const $set: Record<string, boolean | string> = {};
     if (prefs.email_on_complete !== undefined)
       $set['notification_prefs.email_on_complete'] = prefs.email_on_complete;
     if (prefs.browser_on_complete !== undefined)
       $set['notification_prefs.browser_on_complete'] = prefs.browser_on_complete;
+    if (prefs.notification_email !== undefined)
+      $set['notification_prefs.notification_email'] = prefs.notification_email;
     if (Object.keys($set).length === 0) return this.getNotificationPrefs(id);
     await this.userModel.findByIdAndUpdate(id, { $set, updated_at: new Date() }).exec();
     return this.getNotificationPrefs(id);

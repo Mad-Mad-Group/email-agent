@@ -418,6 +418,14 @@ const Settings: React.FC = () => {
   // Notification preferences (per-user)
   const { data: notifPrefs, isLoading: notifLoading } = useNotificationPrefs();
   const updateNotif = useUpdateNotificationPrefs();
+  const [notifEmail, setNotifEmail] = useState('');
+  const [notifEmailInit, setNotifEmailInit] = useState(false);
+  useEffect(() => {
+    if (notifPrefs && !notifEmailInit) {
+      setNotifEmail(notifPrefs.notification_email || '');
+      setNotifEmailInit(true);
+    }
+  }, [notifPrefs, notifEmailInit]);
 
   const ipDirty = agentIpDraft !== agentIp;
 
@@ -540,6 +548,46 @@ const Settings: React.FC = () => {
                         onChange={(v) => updateNotif.mutate({ browser_on_complete: v })}
                         disabled={updateNotif.isPending}
                       />
+                    </SettingRow>
+                    <SettingRow style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+                      <div>
+                        <SettingKey>{t('settings.notificationEmail')}</SettingKey>
+                        <FormHint style={{ display: 'block', marginTop: 2 }}>{t('settings.notificationEmailHint')}</FormHint>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <input
+                          type="email"
+                          placeholder={t('settings.notificationEmailPlaceholder')}
+                          value={notifEmail}
+                          onChange={e => setNotifEmail(e.target.value)}
+                          style={{
+                            flex: 1,
+                            padding: '8px 12px',
+                            fontSize: '0.875rem',
+                            border: `1px solid ${theme.colors.border}`,
+                            borderRadius: theme.radii.badge,
+                            background: theme.colors.surface,
+                            color: theme.colors.textPrimary,
+                            outline: 'none',
+                          }}
+                        />
+                        <button
+                          onClick={() => updateNotif.mutate({ notification_email: notifEmail.trim() })}
+                          disabled={updateNotif.isPending || notifEmail === (notifPrefs?.notification_email || '')}
+                          style={{
+                            padding: '8px 16px',
+                            fontSize: '0.8125rem',
+                            fontWeight: 600,
+                            border: 'none',
+                            borderRadius: theme.radii.badge,
+                            background: notifEmail !== (notifPrefs?.notification_email || '') ? theme.colors.accent : theme.colors.surfaceMuted,
+                            color: notifEmail !== (notifPrefs?.notification_email || '') ? '#fff' : theme.colors.textTertiary,
+                            cursor: notifEmail !== (notifPrefs?.notification_email || '') ? 'pointer' : 'default',
+                          }}
+                        >
+                          {t('settings.save')}
+                        </button>
+                      </div>
                     </SettingRow>
                   </>
                 )}
