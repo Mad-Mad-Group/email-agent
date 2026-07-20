@@ -846,9 +846,10 @@ const PixelTypewriter: React.FC<{ text: string }> = ({ text }) => {
 /* ══════════ COMPONENT ══════════ */
 
 const Dashboard: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const dark = theme.mode === 'dark';
+  const dateLocale = ({ en: 'en-US', 'zh-TW': 'zh-HK', 'zh-CN': 'zh-CN' } as Record<string,string>)[i18n.language] || 'en-US';
   const navigate = useNavigate();
 
   const { data: leadsData, isLoading: leadsLoading } = useLeads({ page: 1, limit: 100 });
@@ -1009,7 +1010,7 @@ const Dashboard: React.FC = () => {
       {/* ── Intelly Greeting ── */}
       <GreetingBlock>
         <GreetingHeading>{t(greetingKey)}</GreetingHeading>
-        <GreetingDate>{new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</GreetingDate>
+        <GreetingDate>{new Date().toLocaleDateString(dateLocale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</GreetingDate>
       </GreetingBlock>
 
       {/* ── Dashboard cards ── */}
