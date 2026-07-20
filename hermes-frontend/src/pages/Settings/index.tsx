@@ -321,6 +321,19 @@ const BellIcon = () => (
   </svg>
 );
 
+const RepeatIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="17 1 21 5 17 9" /><path d="M3 11V9a4 4 0 0 1 4-4h14" />
+    <polyline points="7 23 3 19 7 15" /><path d="M21 13v2a4 4 0 0 1-4 4H3" />
+  </svg>
+);
+
+const ZapIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+  </svg>
+);
+
 const SlidersIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
@@ -362,7 +375,7 @@ function toDisplayEntries(data: unknown): [string, unknown][] {
 
 /* ── Tabs config ── */
 
-type SettingsTab = 'agent-ip' | 'notifications' | 'other';
+type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'other';
 
 /* ── Component ── */
 
@@ -378,6 +391,17 @@ const Settings: React.FC = () => {
   // Agent IP local state
   const [agentIp, setAgentIp] = useState('');
   const [agentIpDraft, setAgentIpDraft] = useState('');
+
+  // Follow-up settings local state
+  const [followUpDays, setFollowUpDays] = useState(7);
+  const [followUpMaxAttempts, setFollowUpMaxAttempts] = useState(3);
+  const [followUpEnabled, setFollowUpEnabled] = useState(true);
+
+  // Auto-send rules local state
+  const [autoSendEnabled, setAutoSendEnabled] = useState(false);
+  const [autoSendMinScore, setAutoSendMinScore] = useState(80);
+  const [autoSendMaxPerDay, setAutoSendMaxPerDay] = useState(20);
+  const [autoSendRequireVerified, setAutoSendRequireVerified] = useState(true);
 
   // Sync from server data
   useEffect(() => {
@@ -420,6 +444,8 @@ const Settings: React.FC = () => {
     { key: 'agent-ip', label: t('settings.agentIpAddress'), icon: <NetworkIcon /> },
     { key: 'notifications', label: t('settings.notifications'), icon: <BellIcon /> },
   ];
+  tabs.push({ key: 'follow-up', label: t('settings.followUpSettings'), icon: <RepeatIcon /> });
+  tabs.push({ key: 'auto-send', label: t('settings.autoSendRules'), icon: <ZapIcon /> });
   if (hasOther) {
     tabs.push({ key: 'other', label: t('settings.currentConfig'), icon: <SlidersIcon /> });
   }
@@ -517,6 +543,103 @@ const Settings: React.FC = () => {
                     </SettingRow>
                   </>
                 )}
+              </ContentBody>
+            </>
+          )}
+
+          {/* ── Follow-up ── */}
+          {tab === 'follow-up' && (
+            <>
+              <ContentHeader><h2>{t('settings.followUpSettings')}</h2></ContentHeader>
+              <ContentBody>
+                <SettingRow>
+                  <div>
+                    <SettingKey>{t('settings.followUpEnabled')}</SettingKey>
+                    <FormHint style={{ display: 'block', marginTop: 2 }}>{t('settings.followUpEnabledHint')}</FormHint>
+                  </div>
+                  <ToggleSwitch on={followUpEnabled} onChange={setFollowUpEnabled} />
+                </SettingRow>
+                <FormGroup>
+                  <Label>{t('settings.followUpDays')}</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={followUpDays}
+                    onChange={e => setFollowUpDays(Number(e.target.value))}
+                    disabled={!followUpEnabled}
+                  />
+                  <FormHint>{t('settings.followUpDaysHint')}</FormHint>
+                </FormGroup>
+                <FormGroup>
+                  <Label>{t('settings.followUpMaxAttempts')}</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={10}
+                    value={followUpMaxAttempts}
+                    onChange={e => setFollowUpMaxAttempts(Number(e.target.value))}
+                    disabled={!followUpEnabled}
+                  />
+                  <FormHint>{t('settings.followUpMaxAttemptsHint')}</FormHint>
+                </FormGroup>
+                <BtnRow>
+                  <SaveBtn disabled>{t('settings.save')}</SaveBtn>
+                </BtnRow>
+              </ContentBody>
+            </>
+          )}
+
+          {/* ── Auto-send ── */}
+          {tab === 'auto-send' && (
+            <>
+              <ContentHeader><h2>{t('settings.autoSendRules')}</h2></ContentHeader>
+              <ContentBody>
+                <SettingRow>
+                  <div>
+                    <SettingKey>{t('settings.autoSendEnabled')}</SettingKey>
+                    <FormHint style={{ display: 'block', marginTop: 2 }}>{t('settings.autoSendEnabledHint')}</FormHint>
+                  </div>
+                  <ToggleSwitch on={autoSendEnabled} onChange={setAutoSendEnabled} />
+                </SettingRow>
+                <FormGroup>
+                  <Label>{t('settings.autoSendMinScore')}</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={autoSendMinScore}
+                    onChange={e => setAutoSendMinScore(Number(e.target.value))}
+                    disabled={!autoSendEnabled}
+                  />
+                  <FormHint>{t('settings.autoSendMinScoreHint')}</FormHint>
+                </FormGroup>
+                <FormGroup>
+                  <Label>{t('settings.autoSendMaxPerDay')}</Label>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={autoSendMaxPerDay}
+                    onChange={e => setAutoSendMaxPerDay(Number(e.target.value))}
+                    disabled={!autoSendEnabled}
+                  />
+                  <FormHint>{t('settings.autoSendMaxPerDayHint')}</FormHint>
+                </FormGroup>
+                <SettingRow>
+                  <div>
+                    <SettingKey>{t('settings.autoSendRequireVerified')}</SettingKey>
+                    <FormHint style={{ display: 'block', marginTop: 2 }}>{t('settings.autoSendRequireVerifiedHint')}</FormHint>
+                  </div>
+                  <ToggleSwitch
+                    on={autoSendRequireVerified}
+                    onChange={setAutoSendRequireVerified}
+                    disabled={!autoSendEnabled}
+                  />
+                </SettingRow>
+                <BtnRow>
+                  <SaveBtn disabled>{t('settings.save')}</SaveBtn>
+                </BtnRow>
               </ContentBody>
             </>
           )}

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { leadsApi, LeadListParams } from './leads';
 import { emailQueueApi, EmailListParams } from './emailQueue';
 import { notificationsApi } from './notifications';
-import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi, AgentSkillStats, verifiedEmailsApi, notificationPrefsApi } from './services';
+import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi, AgentSkillStats, verifiedEmailsApi, notificationPrefsApi, tokenUsageApi } from './services';
 import { authApi } from './auth';
 
 /* ── Auth ── */
@@ -196,6 +196,14 @@ export const useUsers = (params?: { page?: number; limit?: number }) =>
   useQuery({
     queryKey: ['users', params],
     queryFn: () => usersApi.list(params).then(r => r.data),
+  });
+
+/* ── Token Usage ── */
+
+export const useTokenUsage = () =>
+  useQuery({
+    queryKey: ['token-usage'],
+    queryFn: () => tokenUsageApi.byUser().then(r => r.data),
   });
 
 /* ── Settings ── */

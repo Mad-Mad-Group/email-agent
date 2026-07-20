@@ -7,7 +7,7 @@ export declare class AiAnalysisService {
     private readonly leads;
     private readonly tasks;
     constructor(analysisModel: Model<AnalysisDocument>, leads: LeadsService, tasks: TasksService);
-    analyzeLead(id: string): Promise<{
+    analyzeLead(id: string, userId?: string): Promise<{
         task_id: string;
         status: string;
         lead_id: string | undefined;

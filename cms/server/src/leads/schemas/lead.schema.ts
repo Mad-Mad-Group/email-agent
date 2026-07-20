@@ -70,6 +70,9 @@ export class Lead {
 
   // ── Email 草稿（Email Draft Module 會用）──
   @Prop() email_draft?: string;
+  @Prop({ type: Number }) _email_draft_score?: number; // 0-100，LLM self-rated
+  @Prop({ type: String }) _email_draft_score_reason?: string;
+  @Prop({ type: String }) _email_draft_scored_at?: string;
 
   // ── 合作建議（AI Analysis 回寫，cache 喺 lead 上）──
   @Prop() _collab_primary?: string;

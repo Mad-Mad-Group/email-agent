@@ -13,9 +13,8 @@ import { glassSurface } from '../../styles/glassSurface';
 import { useDialog } from '../../components';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER, SOURCE_AGENT } from '../../config/agents';
-import LeadDetailPanel, { hashColorIndex, AvatarIcon, Avatar, QuarterTag, ReplyBadge, DpSectionTitle, DpActionBtn, DpField, DpFieldLabel, DpFieldValue, DpFieldIcon, getReplyBadge, NEXT_STATUS, REPLY_ICONS } from '../../components/LeadDetailPanel';
+import LeadDetailPanel, { hashColorIndex, AvatarIcon, Avatar, ReplyBadge, DpSectionTitle, DpActionBtn, DpField, DpFieldLabel, DpFieldValue, DpFieldIcon, getReplyBadge, NEXT_STATUS, REPLY_ICONS } from '../../components/LeadDetailPanel';
 import LeadEmails from '../../components/LeadEmails';
-import { getQuarterTag, matchesQuarterFilter, dateToYQ, buildQuarterOptions, type QuarterFilterValue } from '../../utils/quarter';
 
 /* ══════════════════════════════════════
    CMS Leads — Luno Contacts-style UI
@@ -1201,24 +1200,9 @@ const Leads: React.FC = () => {
   const [oldWebsiteOnly, setOldWebsiteOnly] = useState(false);
   const [sortByTech, setSortByTech] = useState(false);
 
-  // ── Quarter filter (driven by URL ?quarter= param, set from sidebar) ──
-  const now = useMemo(() => new Date(), []);
-  const { year: currentYear, quarter: currentQuarter } = dateToYQ(now);
-  const defaultQuarter: QuarterFilterValue = `${currentYear}Q${currentQuarter}`;
-  const quarterFilter: QuarterFilterValue = (searchParams.get('quarter') as QuarterFilterValue) || defaultQuarter;
-  const quarterOptions = useMemo(() => buildQuarterOptions(now), [now]);
-
   const apiLeads: Lead[] = data?.data ?? [];
   // Always include MOCK_LEADS for demo richness + any real API data
-  const allLeadsRaw: Lead[] = [...MOCK_LEADS, ...apiLeads];
-
-  // Quarter filtering (applied before all other filters so counts reflect the chosen quarter)
-  const allLeads = useMemo(() =>
-    quarterFilter === 'all'
-      ? allLeadsRaw
-      : allLeadsRaw.filter(l => matchesQuarterFilter((l as any)._imported_at, quarterFilter)),
-    [allLeadsRaw, quarterFilter]
-  );
+  const allLeads: Lead[] = [...MOCK_LEADS, ...apiLeads];
 
   /* ── Auto-open detail panel from URL ?detail=<leadId> ── */
   const detailHandled = useRef<string | null>(null);
@@ -1298,17 +1282,7 @@ const Leads: React.FC = () => {
   const stats = useMemo(() => ({ total: allLeads.length }), [allLeads]);
 
   // Dynamic page title based on quarter filter
-  const pageTitle = useMemo(() => {
-    if (quarterFilter === 'all') return t('quarter.titleAll');
-    if (quarterFilter === 'prev_years') return t('quarter.titleOlder');
-    if (quarterFilter.startsWith('year_')) {
-      const y = quarterFilter.slice(5);
-      return t('quarter.titleYear', { year: y });
-    }
-    // e.g. "2026Q3" → "Q3 接觸中的客戶"
-    const qPart = quarterFilter.slice(-2); // "Q3"
-    return t('quarter.titleCurrent', { q: qPart });
-  }, [quarterFilter, t]);
+  const pageTitle = t('leads.title');
 
   const handleDelete = async (id: string) => {
     const ok = await showConfirm(t('leads.confirmDelete'));
@@ -1415,15 +1389,6 @@ const Leads: React.FC = () => {
               onChange={e => { setSearch(e.target.value); setPage(1); }}
             />
           </SearchWrap>
-          <select
-            value={quarterFilter}
-            onChange={e => { const q = e.target.value as QuarterFilterValue; const next = new URLSearchParams(searchParams); if (q === defaultQuarter) next.delete('quarter'); else next.set('quarter', q); setSearchParams(next, { replace: true }); setPage(1); }}
-            style={{ padding: '6px 10px', borderRadius: 10, border: `1px solid ${styledTheme.colors.border}`, background: styledTheme.colors.surfaceMuted, color: styledTheme.colors.textPrimary, fontSize: 13, cursor: 'pointer', minWidth: 100 }}
-          >
-            {quarterOptions.map(opt => (
-              <option key={opt.value} value={opt.value}>{t(opt.labelKey, opt.labelParams)}</option>
-            ))}
-          </select>
           <CircleActionBtn title={t('leads.filterOldWebsiteOn')} onClick={() => { setOldWebsiteOnly(v => !v); setPage(1); }} style={oldWebsiteOnly ? { background: styledTheme.colors.accent, color: '#fff', borderColor: 'transparent' } : undefined}>
             <IconOldWebsite />
           </CircleActionBtn>
@@ -1460,6 +1425,7 @@ const Leads: React.FC = () => {
                   <th style={{ textAlign: 'center', cursor: 'pointer' }} onClick={() => { setSortByTech(v => !v); setPage(1); }}>
                     {t('leads.techScore')} <IconSortArrow />
                   </th>
+                  <th style={{ textAlign: 'center' }}>{t('leads.aiScore')}</th>
                   <th>{t('leads.importedAt')} <IconSortArrow /></th>
                   <th>{t('leads.action')}</th>
                 </tr>
@@ -1467,7 +1433,7 @@ const Leads: React.FC = () => {
               <tbody>
                 {(error && allLeads.length === 0) ? (
                   <tr>
-                    <EmptyCell colSpan={isAdmin ? 7 : 6}>
+                    <EmptyCell colSpan={isAdmin ? 8 : 7}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '12px 0' }}>
                         <strong style={{ color: styledTheme.strong.mauve }}>{t('common.error')}</strong>
                         <span style={{ color: styledTheme.colors.textTertiary, fontSize: 13 }}>
@@ -1492,9 +1458,9 @@ const Leads: React.FC = () => {
                     </EmptyCell>
                   </tr>
                 ) : (isLoading && allLeads.length === 0) ? (
-                  <tr><EmptyCell colSpan={isAdmin ? 7 : 6}>{t('leads.loading')}</EmptyCell></tr>
+                  <tr><EmptyCell colSpan={isAdmin ? 8 : 7}>{t('leads.loading')}</EmptyCell></tr>
                 ) : leads.length === 0 ? (
-                  <tr><EmptyCell colSpan={isAdmin ? 7 : 6}><div><EmptyLeadsIllustration />{t('leads.noLeads')}</div></EmptyCell></tr>
+                  <tr><EmptyCell colSpan={isAdmin ? 8 : 7}><div><EmptyLeadsIllustration />{t('leads.noLeads')}</div></EmptyCell></tr>
                 ) : (
                   (() => {
                     return leads.map((lead, i) => {
@@ -1512,10 +1478,6 @@ const Leads: React.FC = () => {
                               <strong>{name}</strong>
                               {lead.website && <small>{lead.website}</small>}
                             </NameText>
-                            {(() => {
-                              const qt = getQuarterTag((lead as any)._imported_at);
-                              return qt ? <QuarterTag>{qt}</QuarterTag> : null;
-                            })()}
                             {(() => {
                               const src = lead.source || '';
                               const agentKey = SOURCE_AGENT[src];
@@ -1553,6 +1515,30 @@ const Leads: React.FC = () => {
                                 background: bg,
                               }}>
                                 {s} {label}
+                              </span>
+                            );
+                          })() : <span style={{ color: styledTheme.colors.border, fontSize: '0.75rem' }}>—</span>}
+                        </td>
+                        <td style={{ textAlign: 'center' }}>
+                          {(lead as any)._email_draft_score != null ? (() => {
+                            const s = (lead as any)._email_draft_score as number;
+                            const bg = s >= 80 ? styledTheme.colors.accent : s >= 60 ? styledTheme.strong.mauve : s >= 40 ? styledTheme.colors.amber : styledTheme.strong.olive;
+                            const reason = (lead as any)._email_draft_score_reason || '';
+                            return (
+                              <span
+                                title={reason ? t('leads.aiScoreReason') + '：' + reason : ''}
+                                style={{
+                                  display: 'inline-block',
+                                  padding: '2px 8px',
+                                  borderRadius: 12,
+                                  fontSize: '0.7rem',
+                                  fontWeight: 600,
+                                  color: styledTheme.colors.textInverted,
+                                  background: bg,
+                                  cursor: reason ? 'help' : 'default',
+                                }}
+                              >
+                                {s}
                               </span>
                             );
                           })() : <span style={{ color: styledTheme.colors.border, fontSize: '0.75rem' }}>—</span>}

@@ -6,7 +6,7 @@ import i18n from '../../i18n';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { media } from '../../styles/media';
 import { glassSurface } from '../../styles/glassSurface';
-import { useUsers } from '../../api/hooks';
+import { useUsers, useMe, useTokenUsage } from '../../api/hooks';
 import { UserItem, usersApi } from '../../api/services';
 
 /* ══════════════════════════════════════
@@ -292,6 +292,32 @@ const EmptyHint = styled.p`
   margin: 0; font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; opacity: 0.8;
 `;
 
+/* ── Usage Section ── */
+
+const UsageSection = styled.div`
+  margin-top: ${({ theme }) => theme.spacing.md}px;
+`;
+
+const SectionTitleRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.md}px 0;
+`;
+
+const SectionTitle = styled.h2`
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const SectionHint = styled.p`
+  margin: 0;
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
 /* ── Footer ── */
 
 const Footer = styled.footer`
@@ -511,6 +537,13 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+function formatNumber(n: number): string {
+  return n.toLocaleString('en-US');
+}
+
+/* ── Token cost estimate: MiniMax-M3 ≈ $0.005 / 1K tokens ── */
+const COST_PER_1K = 0.005;
+
 /* ── Tab Icons ── */
 
 const TabIconAll = () => (
@@ -555,7 +588,12 @@ const Users: React.FC = () => {
   const theme = useTheme();
   const queryClient = useQueryClient();
   const { data, isLoading } = useUsers();
-  const users: UserItem[] = (data as any)?.users ?? (Array.isArray(data) ? data : []);
+  const users: UserItem[] = (data as any)?.data ?? (Array.isArray(data) ? data : []);
+  const { data: me } = useMe();
+  const isAdmin = (me as any)?.role === 'admin' || (me as any)?.role === 'super_admin';
+  const { data: tokenUsageRaw } = useTokenUsage();
+  const tokenUsage: { user_id: string; total_tokens: number; call_count: number }[] =
+    (Array.isArray(tokenUsageRaw) ? tokenUsageRaw : (tokenUsageRaw as any)?.data ?? []) as any;
 
   const ROLE_COLORS: Record<string, { bg: string; fg: string; avatar: string }> = {
     admin:   { bg: `${theme.colors.accent}18`, fg: theme.colors.accent, avatar: theme.colors.surfaceMuted },
@@ -723,6 +761,56 @@ const Users: React.FC = () => {
           </TableWrap>
         </CardBody>
       </PageCard>
+
+      {/* Token Usage / Billing Section (Admin only) */}
+      {isAdmin && (
+        <UsageSection>
+          <Card>
+            <SectionTitleRow>
+              <SectionTitle>{t('users.tokenUsage')}</SectionTitle>
+              <SectionHint>{t('users.tokenUsageHint')}</SectionHint>
+            </SectionTitleRow>
+            <CardBody>
+              <TableWrap>
+                <Table>
+                  <thead>
+                    <tr>
+                      <th>{t('users.userName')}</th>
+                      <th>{t('users.totalTokens')}</th>
+                      <th>{t('users.estimatedCost')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tokenUsage.length === 0 ? (
+                      <tr><EmptyCell colSpan={3}>{t('users.noUsageData')}</EmptyCell></tr>
+                    ) : (
+                      tokenUsage.map((u, i) => {
+                        const user = users.find(usr => usr._id === u.user_id);
+                        const name = user?.name || u.user_id || 'Unknown';
+                        const cost = (u.total_tokens / 1000) * COST_PER_1K;
+                        return (
+                          <TRow key={u.user_id || i} $even={i % 2 === 1}>
+                            <td>
+                              <NameCell>
+                                <AvatarCircle $bg={theme.colors.surfaceMuted}>
+                                  {getInitials(name)}
+                                </AvatarCircle>
+                                <UserName>{name}</UserName>
+                              </NameCell>
+                            </td>
+                            <td>{formatNumber(u.total_tokens)}</td>
+                            <td>${cost.toFixed(2)}</td>
+                          </TRow>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </Table>
+              </TableWrap>
+            </CardBody>
+          </Card>
+        </UsageSection>
+      )}
 
       {/* Footer */}
       <Footer>

@@ -42,6 +42,9 @@ let Lead = class Lead {
     _has_email_draft;
     _has_wa_message;
     email_draft;
+    _email_draft_score;
+    _email_draft_score_reason;
+    _email_draft_scored_at;
     _collab_primary;
     _collab_pitch;
     _collab_reason;
@@ -175,6 +178,18 @@ __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
 ], Lead.prototype, "email_draft", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: Number }),
+    __metadata("design:type", Number)
+], Lead.prototype, "_email_draft_score", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: String }),
+    __metadata("design:type", String)
+], Lead.prototype, "_email_draft_score_reason", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: String }),
+    __metadata("design:type", String)
+], Lead.prototype, "_email_draft_scored_at", void 0);
 __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)

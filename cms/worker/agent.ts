@@ -28,6 +28,35 @@ import {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/* ── Token usage 追蹤 ── */
+let _taskCtx: { user_id?: string; task_id?: string; skill_id?: string; db?: any } = {};
+
+function estimateTokens(text: string): number {
+  // 中英混合粗略估算：~3.5 字元/token
+  return Math.ceil(text.length / 3.5);
+}
+
+async function logTokenUsage(promptText: string, responseText: string): Promise<void> {
+  if (!_taskCtx.db) return;
+  try {
+    const prompt_tokens = estimateTokens(promptText);
+    const completion_tokens = estimateTokens(responseText);
+    await _taskCtx.db.collection('token_usages').insertOne({
+      user_id: _taskCtx.user_id || null,
+      task_id: _taskCtx.task_id || null,
+      skill_id: _taskCtx.skill_id || null,
+      model: 'MiniMax-M3',
+      prompt_tokens,
+      completion_tokens,
+      total_tokens: prompt_tokens + completion_tokens,
+      estimated: true,
+      created_at: new Date(),
+    });
+  } catch (e: any) {
+    console.log(`[token-usage] 寫入失敗: ${e?.message ?? e}`);
+  }
+}
+
 /**
  * 叫 Hermes agent 做嘢（佢有 MiniMax + stealth browser + skills）。
  * --yolo = 非互動自動批准工具（開 browser 唔卡）。
@@ -46,6 +75,7 @@ function callHermes(prompt: string, timeoutMs = 300_000): Promise<string> {
         reject(err);
       } else {
         console.log(`[hermes] ✓ ${elapsed}s — ${stdout.length} chars — preview: ${stdout.slice(0, 300).replace(/\n/g, '⏎')}`);
+        logTokenUsage(prompt, stdout).catch(() => {}); // fire-and-forget
         resolve(stdout);
       }
     });
@@ -1322,15 +1352,26 @@ ${BRAND_TONE_GUIDE}
 
 重要：只可以引用上面提供嘅公司資料。如果資料唔夠，寧願寫得籠統啲，都唔好虛構對方嘅業務細節。
 
-Output ONLY JSON with subject, body, and summary. Body MUST end with this signature block:
+Output ONLY JSON with subject, body, summary, confidence, and reason. Body MUST end with this signature block:
 
 ${BRAND_SIGNATURE}
 
-{"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）"}`;
+{"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）","confidence":0,"reason":""}
+
+- "confidence": 你對呢封 draft 有幾滿意，0-100 整數。考慮因素：公司資料充足度、合作點位明確度、語氣同場合匹配度、有冇需要虛構細節。如果資料不足以寫出具體 pitch，要誠實打低分（例：40-60）。
+- "reason": 一句繁中解釋（30字內），例如「公司資料齊全，合作點位明確」或「缺少服務描述，pitch 偏籠統」。`;
   const c = await hermesJson(prompt);
+  const score = Math.max(0, Math.min(100, Math.round(Number(c.confidence) || 0)));
+  const reason = String(c.reason || '').slice(0, 200);
   await db.collection('leads').updateOne(
     { _id },
-    { $set: { email_draft: c.body, _has_email_draft: true } },
+    { $set: {
+        email_draft: c.body,
+        _has_email_draft: true,
+        _email_draft_score: score,
+        _email_draft_score_reason: reason,
+        _email_draft_scored_at: nowIso(),
+      } },
   );
   // 測試模式：強制寄去自己嘅 email；正式上線改返 lead.email
   const testRecipient = process.env.TEST_RECIPIENT_EMAIL || '';
@@ -1343,6 +1384,8 @@ ${BRAND_SIGNATURE}
     subject: c.subject,
     body: c.body,
     _summary: c.summary || '',
+    _confidence: score,
+    _confidence_reason: reason,
     status: 'pending',
     _via: 'hermes',
     created_at: nowIso(),
@@ -1623,6 +1666,8 @@ async function loginWithRetry(): Promise<void> {
 
 async function handleTask(task: any, db: any): Promise<void> {
   const p = task.params || {};
+  // 設定 token usage 追蹤 context
+  _taskCtx = { user_id: p.user_id, task_id: task.task_id, skill_id: task.skill_id, db };
   log(`══ 收到任務 ══`);
   log(`  task_id:  ${task.task_id}`);
   log(`  skill:    ${task.skill_id}`);

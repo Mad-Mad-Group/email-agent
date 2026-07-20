@@ -5,7 +5,6 @@ import { useTranslation } from 'react-i18next';
 import { Lead } from '../api/leads';
 import { media } from '../styles/media';
 import { glassSurface } from '../styles/glassSurface';
-import { getQuarterTag } from '../utils/quarter';
 
 /* ── Avatar color from name hash ── */
 
@@ -201,10 +200,12 @@ const DpPanel = styled.div<{ $closing?: boolean }>`
     z-index: 3;
     pointer-events: none;
   }
+  ${media.tabletDown} {
+    &::after { display: none; }
+  }
   ${media.mobile} {
     width: 95vw;
     height: 92vh;
-    &::after { display: none; }
   }
 `;
 
@@ -229,9 +230,9 @@ const DpCompanyName = styled.h2`
   font-size: 1.125rem;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const DpHeaderMeta = styled.div`
@@ -525,13 +526,37 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
   const dpDrag = useRef<{ startX: number; startY: number; originX: number; originY: number } | null>(null);
   const dpResize = useRef<{ startX: number; startY: number; originW: number; originH: number; originX: number; originY: number; dir: string } | null>(null);
 
-  // Reset panel position/size when lead changes
-  useEffect(() => {
-    const w = Math.min(window.innerWidth * 0.88, 1400);
-    const h = window.innerHeight * 0.9;
+  // Reset panel position/size when lead changes or window resizes
+  const calcPanelLayout = useCallback(() => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    let w: number, h: number;
+    if (vw <= 639) {
+      // mobile: full-screen-ish
+      w = vw * 0.95;
+      h = vh * 0.92;
+    } else if (vw <= 1023) {
+      // tablet
+      w = vw * 0.92;
+      h = vh * 0.9;
+    } else {
+      // desktop
+      w = Math.min(vw * 0.88, 1400);
+      h = vh * 0.9;
+    }
     setDpSize({ w, h });
-    setDpPos({ x: (window.innerWidth - w) / 2, y: (window.innerHeight - h) / 2 });
-  }, [lead]);
+    setDpPos({ x: (vw - w) / 2, y: (vh - h) / 2 });
+  }, []);
+
+  useEffect(() => {
+    calcPanelLayout();
+  }, [lead, calcPanelLayout]);
+
+  useEffect(() => {
+    const onResize = () => calcPanelLayout();
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [calcPanelLayout]);
 
   const onDpDragStart = useCallback((e: React.MouseEvent) => {
     if ((e.target as HTMLElement).closest('button, a, input')) return;
@@ -593,48 +618,17 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
           <DpHeaderInfo>
             <DpCompanyName>
               {name}
-              {(() => { const qt = getQuarterTag((lead as any)._imported_at); return qt ? <QuarterTag>{qt}</QuarterTag> : null; })()}
-            </DpCompanyName>
+                          </DpCompanyName>
             <DpHeaderMeta>
               <DpStatusPill $status={lead.status ?? 'new'}>{lead.status ?? 'new'}</DpStatusPill>
-              <span>&middot;</span>
-              <span>{lead.source || '—'}</span>
-              {lead.phone && <><span>&middot;</span><span>{lead.phone}</span></>}
             </DpHeaderMeta>
           </DpHeaderInfo>
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            {(lead.status ?? '') !== 'contacted' && NEXT_STATUS[lead.status ?? ''] && onStatusChange && (
-              <DpActionBtn
-                $variant="primary"
-                onClick={() => {
-                  onStatusChange(lead._id, NEXT_STATUS[lead.status ?? '']);
-                  onClose();
-                }}
-              >
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" style={{ marginRight: 3 }}><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                {t('leads.advanceStatus')}
-              </DpActionBtn>
-            )}
-          </div>
           <DpCloseBtn onClick={onClose}><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></DpCloseBtn>
         </DpHeader>
 
         <DpBody>
           {/* Left: Avatar + Name + About + Journey + Tags */}
           <DpColLeft>
-            <div style={{ position: 'sticky', top: 0, zIndex: 2, background: '#fff', paddingTop: 8, paddingBottom: 6 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <Avatar $colorIndex={hashColorIndex(name)} style={{ width: 36, height: 36, fontSize: '0.75rem', borderRadius: 8 }}>
-                  <AvatarIcon name={name} />
-                </Avatar>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <DpCompanyName>
-                    {name}
-                    {(() => { const qt = getQuarterTag((lead as any)._imported_at); return qt ? <QuarterTag>{qt}</QuarterTag> : null; })()}
-                  </DpCompanyName>
-                </div>
-              </div>
-            </div>
             <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1a5 5 0 015 5c0 2.5-2 4-5 4s-5-1.5-5-4a5 5 0 015-5zM3 13c0-1.66 2.24-3 5-3s5 1.34 5 3" stroke="#D689BF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.about')}</DpSectionTitle>
             <DpSectionContent>
             <DpField>

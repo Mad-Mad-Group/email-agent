@@ -1065,6 +1065,33 @@ const EmailQueue: React.FC = () => {
   const [followupCheckMsg, setFollowupCheckMsg] = useState('');
   const [replyCheckError, setReplyCheckError] = useState(false);
   const [followupCheckError, setFollowupCheckError] = useState(false);
+  const [editingEmail, setEditingEmail] = useState<EmailItem | null>(null);
+  const [editSubject, setEditSubject] = useState('');
+  const [editBody, setEditBody] = useState('');
+
+  const handleStartEdit = (item: EmailItem) => {
+    setEditingEmail(item);
+    setEditSubject(item.subject || '');
+    setEditBody(item.body || '');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingEmail) return;
+    try {
+      await client.patch(`/email-queue/${editingEmail._id}`, {
+        subject: editSubject,
+        body: editBody,
+      });
+      refetch();
+      setEditingEmail(null);
+    } catch (err: any) {
+      window.alert(t('emailQueue.editFailed') + (err?.message || ''));
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEmail(null);
+  };
 
   const handleCheckReplies = async () => {
     setReplyChecking(true);
@@ -1489,6 +1516,18 @@ const EmailQueue: React.FC = () => {
                       <I d={icons.play} />
                     </HoverBtn>
                   )}
+                  {(status === 'pending' || status === 'approved') && (
+                    <HoverBtn
+                      $color={theme.strong.gold}
+                      title={t('emailQueue.edit')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartEdit(item);
+                      }}
+                    >
+                      <I d="M11.5 2.5l2 2-7 7H4.5v-2l7-7zM10 4l2 2" />
+                    </HoverBtn>
+                  )}
                   <HoverBtn
                     $color={theme.strong.gold}
                     title={t('emailQueue.preview')}
@@ -1568,6 +1607,18 @@ const EmailQueue: React.FC = () => {
                   <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   {t('emailQueue.send')}
                 </SendBtn>
+              )}
+              {(status === 'pending' || status === 'approved') && (
+                <DetailToolbarBtn
+                  $color={theme.strong.gold}
+                  onClick={() => {
+                    handleStartEdit(item);
+                    closeDetail();
+                  }}
+                >
+                  <I d="M11.5 2.5l2 2-7 7H4.5v-2l7-7zM10 4l2 2" />
+                  {t('emailQueue.edit')}
+                </DetailToolbarBtn>
               )}
               <DetailModalClose onClick={closeDetail}>
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
@@ -1717,6 +1768,78 @@ const EmailQueue: React.FC = () => {
     );
   };
 
+  /* ── Edit Modal ── */
+
+  const renderEditModal = () => {
+    if (!editingEmail) return null;
+    return (
+      <Overlay onClick={handleCancelEdit}>
+        <Modal onClick={(e) => e.stopPropagation()} style={{ width: 700 }}>
+          <ModalHeader>
+            <h2>{t('emailQueue.editEmail')}</h2>
+            <CloseBtn onClick={handleCancelEdit}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            </CloseBtn>
+          </ModalHeader>
+          <ModalBody>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: theme.colors.textSecondary, marginBottom: 4 }}>
+                  {t('emailQueue.subject')}
+                </label>
+                <input
+                  value={editSubject}
+                  onChange={e => setEditSubject(e.target.value)}
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '10px 14px',
+                    border: `1px solid ${theme.colors.border}`,
+                    borderRadius: 8,
+                    fontSize: '0.875rem',
+                    color: theme.colors.textPrimary,
+                    background: theme.colors.canvas,
+                    outline: 'none',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: theme.colors.textSecondary, marginBottom: 4 }}>
+                  {t('emailQueue.body')}
+                </label>
+                <textarea
+                  value={editBody}
+                  onChange={e => setEditBody(e.target.value)}
+                  rows={12}
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '10px 14px',
+                    border: `1px solid ${theme.colors.border}`,
+                    borderRadius: 8,
+                    fontSize: '0.875rem',
+                    color: theme.colors.textPrimary,
+                    background: theme.colors.canvas,
+                    outline: 'none',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                    lineHeight: 1.6,
+                  }}
+                />
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <OutlineBtn onClick={handleCancelEdit}>{t('common.cancel')}</OutlineBtn>
+            <ActionButton $color={theme.colors.accent} onClick={handleSaveEdit}>
+              {t('common.save')}
+            </ActionButton>
+          </ModalFooter>
+        </Modal>
+      </Overlay>
+    );
+  };
+
   return (
     <Page>
       <div><PageTitle>{t('emailQueue.title')}</PageTitle><PageSub>{t('emailQueue.subtitle')}</PageSub></div>
@@ -1737,6 +1860,7 @@ const EmailQueue: React.FC = () => {
           </Card>
           {renderDetail()}
           {renderModal()}
+          {renderEditModal()}
         </>
       ) : (
         <EmailTemplateEditor />

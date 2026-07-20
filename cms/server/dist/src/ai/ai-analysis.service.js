@@ -29,12 +29,12 @@ let AiAnalysisService = class AiAnalysisService {
         this.leads = leads;
         this.tasks = tasks;
     }
-    async analyzeLead(id) {
+    async analyzeLead(id, userId) {
         const lead = await this.leads.findOne(id);
         const task = await this.tasks.enqueue({
             skill_id: task_status_enum_1.SKILL.ANALYZE,
             title: `分析：${lead.company_name}`,
-            params: { lead_id: lead.lead_id, lead_object_id: id },
+            params: { lead_id: lead.lead_id, lead_object_id: id, user_id: userId },
         });
         return { task_id: task.task_id, status: task.status, lead_id: lead.lead_id };
     }

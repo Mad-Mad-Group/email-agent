@@ -31,6 +31,9 @@ export declare class Lead {
     _has_email_draft?: boolean;
     _has_wa_message?: boolean;
     email_draft?: string;
+    _email_draft_score?: number;
+    _email_draft_score_reason?: string;
+    _email_draft_scored_at?: string;
     _collab_primary?: string;
     _collab_pitch?: string;
     _collab_reason?: string;

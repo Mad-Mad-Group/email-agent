@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail } from '../api/hooks';
 import { EmailItem } from '../api/emailQueue';
 import { useDialog } from '../components';
 import { ReplyBadge, DpSectionTitle } from './LeadDetailPanel';
+import client from '../api/client';
 
 /* ── Mock email data ── */
 
@@ -405,6 +407,65 @@ const EmailPS = styled.div`
   border-radius: 0 6px 6px 0;
 `;
 
+const EditBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 14px;
+  border: 1px solid #ffe08266;
+  border-radius: 99px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #e65100;
+  background: #fff3e0;
+  cursor: pointer;
+  transition: all 0.15s;
+  &:hover { background: #ffe0b2; }
+`;
+const EditOverlay = styled.div`
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.45);
+  display: flex; align-items: center; justify-content: center;
+`;
+const EditModal = styled.div`
+  background: #fff; border-radius: 14px; width: 620px; max-width: 92vw;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.25);
+  overflow: hidden;
+`;
+const EditModalHeader = styled.div`
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 18px 24px; border-bottom: 1px solid #eee;
+  h3 { margin: 0; font-size: 1rem; }
+`;
+const EditModalBody = styled.div`
+  padding: 20px 24px; display: flex; flex-direction: column; gap: 14px;
+`;
+const EditModalFooter = styled.div`
+  display: flex; justify-content: flex-end; gap: 10px;
+  padding: 14px 24px; border-top: 1px solid #eee;
+`;
+const EditInput = styled.input`
+  width: 100%; box-sizing: border-box; padding: 10px 14px;
+  border: 1px solid #ddd; border-radius: 8px; font-size: 0.875rem;
+  outline: none; &:focus { border-color: #d689bf; }
+`;
+const EditTextarea = styled.textarea`
+  width: 100%; box-sizing: border-box; padding: 10px 14px;
+  border: 1px solid #ddd; border-radius: 8px; font-size: 0.875rem;
+  outline: none; resize: vertical; font-family: inherit; line-height: 1.6;
+  &:focus { border-color: #d689bf; }
+`;
+const EditSaveBtn = styled.button`
+  padding: 8px 22px; border: none; border-radius: 8px;
+  background: #d689bf; color: #fff; font-weight: 600; font-size: 0.875rem;
+  cursor: pointer; &:hover { background: #c47aae; }
+`;
+const EditCancelBtn = styled.button`
+  padding: 8px 22px; border: 1px solid #ddd; border-radius: 8px;
+  background: #fff; color: #555; font-size: 0.875rem;
+  cursor: pointer; &:hover { background: #f5f5f5; }
+`;
+
 /* ── renderEmailBody helper ── */
 
 const renderEmailBody = (text: string) => {
@@ -513,6 +574,26 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
     .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
 
   const [replyOpenId, setReplyOpenId] = useState<string | null>(null);
+  const [editingEmail, setEditingEmail] = useState<EmailItem | null>(null);
+  const [editSubject, setEditSubject] = useState('');
+  const [editBody, setEditBody] = useState('');
+
+  const handleStartEdit = (item: EmailItem) => {
+    setEditingEmail(item);
+    setEditSubject(item.subject || '');
+    setEditBody((item.body || '').replace(/<[^>]*>/g, ''));
+  };
+  const handleSaveEdit = async () => {
+    if (!editingEmail) return;
+    try {
+      await client.patch(`/email-queue/${editingEmail._id}`, { subject: editSubject, body: editBody });
+      setEditingEmail(null);
+      // refetch email data
+      window.location.reload();
+    } catch (err: any) {
+      window.alert(t('emailQueue.editFailed') + (err?.message || ''));
+    }
+  };
 
   if (!emails.length) return null;
 
@@ -567,7 +648,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
               </EmailTimelineTime>
               <EmailCard $status={d.status}>
                 {/* Top row: recipient left, actions right */}
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
                   <EmailRecipient style={{ marginBottom: 0 }}>
                     <AgentAvatar>{(d.to_email || '?').charAt(0).toUpperCase()}</AgentAvatar>
                     To: {d.to_email || '—'}
@@ -585,6 +666,10 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
                   <div style={{ flex: 1 }} />
                   {d.status === 'pending' && (
                     <>
+                      <EditBtn onClick={() => handleStartEdit(d)}>
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10.5 1.5l2 2-7 7H3.5v-2l7-7zM9 3l2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        {t('emailQueue.edit')}
+                      </EditBtn>
                       <EmailActionBtn $bg="#fce4ec" $fg="#c62828" disabled={busy} onClick={() => handleReject(d._id)}>
                         <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                         {t('leads.reject')}
@@ -596,10 +681,16 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
                     </>
                   )}
                   {d.status === 'approved' && (
-                    <LeadSendBtn disabled={busy} onClick={() => send.mutate(d._id)}>
-                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      {busy ? t('leads.processing') : t('leads.send')}
-                    </LeadSendBtn>
+                    <>
+                      <EditBtn onClick={() => handleStartEdit(d)}>
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10.5 1.5l2 2-7 7H3.5v-2l7-7zM9 3l2 2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        {t('emailQueue.edit')}
+                      </EditBtn>
+                      <LeadSendBtn disabled={busy} onClick={() => send.mutate(d._id)}>
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        {busy ? t('leads.processing') : t('leads.send')}
+                      </LeadSendBtn>
+                    </>
                   )}
                   {d.status === 'rejected' && (
                     <span style={{ fontSize: '0.75rem', color: leTheme.strong.mauve }}>{'✗'} {t('leads.rejected')}</span>
@@ -643,6 +734,35 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
           );
         })}
       </EmailTimeline>
+      {editingEmail && createPortal(
+        <EditOverlay onClick={() => setEditingEmail(null)}>
+          <EditModal onClick={(e) => e.stopPropagation()}>
+            <EditModalHeader>
+              <h3>{t('emailQueue.editEmail')}</h3>
+              <EditCancelBtn onClick={() => setEditingEmail(null)}>✕</EditCancelBtn>
+            </EditModalHeader>
+            <EditModalBody>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: 4 }}>
+                  {t('emailQueue.subject')}
+                </label>
+                <EditInput value={editSubject} onChange={e => setEditSubject(e.target.value)} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, marginBottom: 4 }}>
+                  {t('emailQueue.body')}
+                </label>
+                <EditTextarea value={editBody} onChange={e => setEditBody(e.target.value)} rows={12} />
+              </div>
+            </EditModalBody>
+            <EditModalFooter>
+              <EditCancelBtn onClick={() => setEditingEmail(null)}>{t('common.cancel')}</EditCancelBtn>
+              <EditSaveBtn onClick={handleSaveEdit}>{t('common.save')}</EditSaveBtn>
+            </EditModalFooter>
+          </EditModal>
+        </EditOverlay>,
+        document.body,
+      )}
     </>
   );
 };
