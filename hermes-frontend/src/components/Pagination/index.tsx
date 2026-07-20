@@ -40,10 +40,12 @@ const PageBtn = styled.button<{ $active?: boolean }>`
   color: ${({ theme, $active }) => ($active ? '#fff' : theme.colors.textPrimary)};
   font-size: 0.813rem;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 150ms var(--ease-out), color 150ms var(--ease-out), border-color 150ms var(--ease-out);
 
-  &:hover:not(:disabled) {
-    border-color: ${({ theme }) => theme.colors.borderStrong};
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) {
+      border-color: ${({ theme }) => theme.colors.borderStrong};
+    }
   }
 
   &:disabled {

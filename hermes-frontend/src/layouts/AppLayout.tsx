@@ -91,7 +91,7 @@ const JunctionLines = styled.span<{ $collapsed?: boolean }>`
     height: 2px;
     background: ${({ theme }) => theme.colors.surfaceInverted};
     border-radius: 2px;
-    transition: all 0.3s ease;
+    transition: transform 0.3s ease, width 0.3s ease;
     position: absolute;
     left: 0;
 

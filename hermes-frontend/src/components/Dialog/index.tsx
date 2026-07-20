@@ -114,13 +114,15 @@ const Btn = styled.button<{ $primary?: boolean; $danger?: boolean }>`
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: opacity 150ms var(--ease-out), transform 150ms var(--ease-out);
   border: 1px solid ${({ $primary, $danger, theme }) => $danger ? '#e53e3e' : $primary ? theme.colors.accent : theme.colors.border};
   background: ${({ $primary, $danger, theme }) => $danger ? '#e53e3e' : $primary ? theme.colors.accent : theme.colors.surface};
   color: ${({ $primary, $danger, theme }) => ($primary || $danger) ? '#fff' : theme.colors.textPrimary};
-  &:hover {
-    opacity: 0.88;
-    transform: translateY(-1px);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      opacity: 0.88;
+      transform: translateY(-1px);
+    }
   }
 `;
 

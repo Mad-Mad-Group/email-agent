@@ -46,10 +46,11 @@ export class TasksService {
     return task;
   }
 
-  async findAll(q: ListTasksQueryDto) {
+  async findAll(q: ListTasksQueryDto, userId?: string) {
     const filter: FilterQuery<TaskDocument> = {};
     if (q.status) filter.status = q.status;
     if (q.skill_id) filter.skill_id = q.skill_id;
+    if (userId) filter['params.user_id'] = userId;
     const page = q.page ?? 1;
     const limit = q.limit ?? 20;
     const [items, total] = await Promise.all([
@@ -221,8 +222,12 @@ export class TasksService {
   /**
    * 按 skill_id 聚合統計：completed / failed / running 數量、成功率、最後完成時間。
    */
-  async stats(): Promise<Record<string, unknown>[]> {
-    return this.model.aggregate([
+  async stats(userId?: string): Promise<Record<string, unknown>[]> {
+    const pipeline: any[] = [];
+    if (userId) {
+      pipeline.push({ $match: { 'params.user_id': userId } });
+    }
+    pipeline.push(
       {
         $group: {
           _id: '$skill_id',
@@ -234,7 +239,8 @@ export class TasksService {
         },
       },
       { $sort: { _id: 1 } },
-    ]).exec();
+    );
+    return this.model.aggregate(pipeline).exec();
   }
 
   private nowIso(): string {

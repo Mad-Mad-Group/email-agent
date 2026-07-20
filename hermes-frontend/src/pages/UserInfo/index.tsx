@@ -295,7 +295,32 @@ const LockIcon = () => (
 
 /* ── Page ── */
 
-type SettingsTab = 'profile' | 'password';
+/* ── Company tab icon ── */
+
+const CompanyIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 3h-8a2 2 0 0 0-2 2v2h12V5a2 2 0 0 0-2-2z" />
+  </svg>
+);
+
+/* ── Textarea styled ── */
+
+const Textarea = styled.textarea`
+  padding: 10px 14px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  background: ${({ theme }) => theme.colors.canvas};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 0.875rem;
+  font-family: inherit;
+  outline: none;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.15s;
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
+`;
+
+type SettingsTab = 'profile' | 'password' | 'company';
 
 const UserInfoPage: React.FC = () => {
   const { t } = useTranslation();
@@ -307,6 +332,9 @@ const UserInfoPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [companyDesc, setCompanyDesc] = useState('');
+  const [companyWeb, setCompanyWeb] = useState('');
   const [oldPw, setOldPw] = useState('');
   const [newPw, setNewPw] = useState('');
   const [confirmPw, setConfirmPw] = useState('');
@@ -317,6 +345,9 @@ const UserInfoPage: React.FC = () => {
       const u = (me as any)?.data ?? me;
       setName(u.name ?? '');
       setEmail(u.email ?? '');
+      setCompanyName(u.companyName ?? '');
+      setCompanyDesc(u.companyDescription ?? '');
+      setCompanyWeb(u.companyWebsite ?? '');
     }
   }, [me]);
 
@@ -358,6 +389,24 @@ const UserInfoPage: React.FC = () => {
     });
   };
 
+  const handleSaveCompany = () => {
+    const changes: { companyName?: string; companyDescription?: string; companyWebsite?: string } = {};
+    if (companyName !== (user?.companyName ?? '')) changes.companyName = companyName;
+    if (companyDesc !== (user?.companyDescription ?? '')) changes.companyDescription = companyDesc;
+    if (companyWeb !== (user?.companyWebsite ?? '')) changes.companyWebsite = companyWeb;
+    if (Object.keys(changes).length === 0) { toast(t('userInfo.noChanges')); return; }
+    updateProfile.mutate(changes, {
+      onSuccess: () => toast.success(t('userInfo.companyUpdated')),
+      onError: (err: any) => toast.error(err?.response?.data?.message ?? t('userInfo.updateFailed')),
+    });
+  };
+
+  const handleDiscardCompany = () => {
+    setCompanyName(user?.companyName ?? '');
+    setCompanyDesc(user?.companyDescription ?? '');
+    setCompanyWeb(user?.companyWebsite ?? '');
+  };
+
   const handleDiscardPassword = () => {
     setOldPw(''); setNewPw(''); setConfirmPw(''); setPwError('');
   };
@@ -389,6 +438,10 @@ const UserInfoPage: React.FC = () => {
             <TabIcon><ProfileIcon /></TabIcon>
             {t('userInfo.editTitle')}
           </TabItem>
+          <TabItem $active={activeTab === 'company'} onClick={() => setActiveTab('company')}>
+            <TabIcon><CompanyIcon /></TabIcon>
+            {t('userInfo.companyTab')}
+          </TabItem>
           <TabItem $active={activeTab === 'password'} onClick={() => setActiveTab('password')}>
             <TabIcon><LockIcon /></TabIcon>
             {t('userInfo.changePassword')}
@@ -413,6 +466,33 @@ const UserInfoPage: React.FC = () => {
                 <BtnRow>
                   <DiscardBtn onClick={handleDiscardProfile}>{t('userInfo.discard') || 'Discard'}</DiscardBtn>
                   <SaveBtn disabled={updateProfile.isPending} onClick={handleSaveProfile}>
+                    {updateProfile.isPending ? t('userInfo.saving') : t('userInfo.save')}
+                  </SaveBtn>
+                </BtnRow>
+              </ContentBody>
+            </>
+          )}
+
+          {activeTab === 'company' && (
+            <>
+              <ContentHeader><h2>{t('userInfo.companyTab')}</h2></ContentHeader>
+              <ContentBody>
+                <PwHint>{t('userInfo.companyHint')}</PwHint>
+                <FormGroup>
+                  <Label>{t('userInfo.labelCompanyName')}</Label>
+                  <Input value={companyName} onChange={e => setCompanyName(e.target.value)} placeholder={t('userInfo.placeholderCompanyName')} />
+                </FormGroup>
+                <FormGroup>
+                  <Label>{t('userInfo.labelCompanyDesc')}</Label>
+                  <Textarea value={companyDesc} onChange={e => setCompanyDesc(e.target.value)} placeholder={t('userInfo.placeholderCompanyDesc')} />
+                </FormGroup>
+                <FormGroup>
+                  <Label>{t('userInfo.labelCompanyWeb')}</Label>
+                  <Input value={companyWeb} onChange={e => setCompanyWeb(e.target.value)} placeholder={t('userInfo.placeholderCompanyWeb')} />
+                </FormGroup>
+                <BtnRow>
+                  <DiscardBtn onClick={handleDiscardCompany}>{t('userInfo.discard') || 'Discard'}</DiscardBtn>
+                  <SaveBtn disabled={updateProfile.isPending} onClick={handleSaveCompany}>
                     {updateProfile.isPending ? t('userInfo.saving') : t('userInfo.save')}
                   </SaveBtn>
                 </BtnRow>

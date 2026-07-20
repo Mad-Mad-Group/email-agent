@@ -172,7 +172,7 @@ const TemplateItem = styled.div<{ $active: boolean }>`
   padding: 10px 12px;
   cursor: pointer;
   border-left: 3px solid transparent;
-  transition: all 0.15s;
+  transition: background 150ms var(--ease-out), border-left-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
   ${({ $active, theme }) =>
     $active
       ? css`
@@ -452,10 +452,12 @@ const VarItem = styled.button`
   cursor: pointer;
   margin-bottom: 6px;
   text-align: left;
-  transition: all 0.15s;
-  &:hover {
-    border-color: ${({ theme }) => theme.colors.accent};
-    background: rgba(37, 99, 235, 0.04);
+  transition: background 150ms var(--ease-out), border-color 150ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      border-color: ${({ theme }) => theme.colors.accent};
+      background: rgba(37, 99, 235, 0.04);
+    }
   }
 `;
 

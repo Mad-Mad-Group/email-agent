@@ -43,10 +43,12 @@ const Tag = styled.button<{ active?: boolean }>`
   color: ${({ active, theme }) => active ? theme.colors.textInverted : theme.colors.textSecondary};
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 200ms var(--ease-out), color 200ms var(--ease-out), border-color 200ms var(--ease-out);
 
-  &:hover {
-    border-color: ${({ theme }) => theme.colors.accent};
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      border-color: ${({ theme }) => theme.colors.accent};
+    }
   }
 `;
 

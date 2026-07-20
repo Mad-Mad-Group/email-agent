@@ -23,6 +23,7 @@ import SettingsPage from './pages/Settings';
 import AgentPanel from './pages/AgentPanel';
 import VerifiedEmailsPage from './pages/VerifiedEmails';
 import UserInfoPage from './pages/UserInfo';
+import { Toaster } from 'react-hot-toast';
 import { DialogProvider } from './components';
 import './i18n';
 
@@ -55,6 +56,21 @@ const ThemedApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <ThemeProvider theme={mode === 'dark' ? darkTheme : lightTheme}>
       <GlobalStyles />
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3500,
+          style: {
+            borderRadius: '10px',
+            background: mode === 'dark' ? '#1e1e2e' : '#fff',
+            color: mode === 'dark' ? '#e0e0e0' : '#333',
+            fontSize: '13px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+          },
+          success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
+          error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+        }}
+      />
       <DialogProvider>
         {children}
       </DialogProvider>
@@ -100,7 +116,7 @@ function App() {
                   <Route path="/bank-accounts" element={<Placeholder />} />
                   {/* CMS */}
                   <Route path="/cms-leads" element={<Leads />} />
-                  <Route path="/cms-search" element={<SearchPage />} />
+                  <Route path="/cms-search" element={<Navigate to="/cms-agents" replace />} />
                   <Route path="/cms-email-queue" element={<EmailQueue />} />
                   <Route path="/cms-tasks" element={<TasksPage />} />
                   <Route path="/cms-users" element={<UsersPage />} />

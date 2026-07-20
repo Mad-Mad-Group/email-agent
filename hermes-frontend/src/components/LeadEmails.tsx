@@ -2,62 +2,14 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import toast from 'react-hot-toast';
 import { useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail } from '../api/hooks';
 import { EmailItem } from '../api/emailQueue';
 import { useDialog } from '../components';
 import { ReplyBadge, DpSectionTitle } from './LeadDetailPanel';
 import client from '../api/client';
 
-/* ── Mock email data ── */
-
-const MOCK_EMAILS: EmailItem[] = [
-  // Dragon Logistics — sent
-  { _id: 'em-1', lead_id: 'mock-4', company_name: 'Dragon Logistics', to_email: 'ops@dragonlog.com',
-    subject: 'Partnership Opportunity — MADMAD x Dragon Logistics',
-    body: '<p>Hi there,</p><p>We\'d love to explore a potential partnership. Our AI-driven email automation could significantly reduce your outreach costs.</p><p>Would you be available for a 15-min call next week?</p><p>Best,<br/>MADMAD Team</p>',
-    status: 'sent', _type: undefined, created_at: new Date(Date.now() - 86400000 * 8).toISOString(),
-    sent_at: new Date(Date.now() - 86400000 * 8).toISOString() } as any,
-  // Dragon Logistics — followup, pending
-  { _id: 'em-2', lead_id: 'mock-4', company_name: 'Dragon Logistics', to_email: 'ops@dragonlog.com',
-    subject: 'Re: Partnership Opportunity — Follow-up',
-    body: '<p>Hi again,</p><p>Just following up on our previous email. We have a few time slots available for a demo this week. Let me know what works!</p>',
-    status: 'pending', _type: 'followup', created_at: new Date(Date.now() - 3600000 * 2).toISOString(),
-    _summary: 'Follow-up on demo scheduling. Two time slots proposed for this week.' } as any,
-  // ByteDance HK — draft pending review
-  { _id: 'em-3', lead_id: 'mock-2', company_name: 'ByteDance HK', to_email: 'contact@bytedance.hk',
-    subject: 'AI Email Automation for ByteDance HK',
-    body: '<p>Dear ByteDance team,</p><p>We noticed your impressive growth in the HK market. Our platform could help streamline your B2B outreach with AI-powered email drafting and scheduling.</p><p>Would love to chat!</p>',
-    status: 'pending', _type: undefined, created_at: new Date(Date.now() - 86400000).toISOString(),
-    _reply_category: undefined },
-  // Neon Digital — rejected
-  { _id: 'em-4', lead_id: 'mock-5', company_name: 'Neon Digital', to_email: 'team@neondigital.co',
-    subject: 'Digital Marketing Collaboration',
-    body: '<p>Hi Neon Digital,</p><p>Love your portfolio! We think there\'s a great synergy between our platforms.</p>',
-    status: 'rejected', _type: undefined, created_at: new Date(Date.now() - 86400000 * 9).toISOString(),
-    error: { rejected_reason: 'Lead expressed no interest' } },
-  // Zenith Labs — approved, ready to send
-  { _id: 'em-5', lead_id: 'mock-6', company_name: 'Zenith Labs', to_email: 'hello@zenithlabs.ai',
-    subject: 'Meeting Confirmation — AI Healthcare Integration',
-    body: '<p>Hi Zenith Labs,</p><p>Thanks for your interest! I\'ve attached our product brief. Let\'s confirm a time for the call — how about Thursday 3pm HKT?</p>',
-    status: 'approved', _type: 'reply', created_at: new Date(Date.now() - 3600000 * 5).toISOString() },
-  // Quantum Finance — reply, pending
-  { _id: 'em-6', lead_id: 'mock-8', company_name: 'Quantum Finance', to_email: 'cfo@quantumfin.hk',
-    subject: 'Re: Pricing & Compliance — MADMAD Platform',
-    body: '<p>Hi,</p><p>Thanks for your questions. Here\'s our pricing breakdown:</p><ul><li>Starter: $299/mo</li><li>Pro: $799/mo</li><li>Enterprise: Custom</li></ul><p>All plans include SOC2 compliance. Happy to discuss further.</p>',
-    status: 'pending', _type: 'reply', created_at: new Date(Date.now() - 7200000).toISOString(),
-    _summary: 'Detailed pricing info sent. Covers Starter/Pro/Enterprise tiers + SOC2 compliance.' } as any,
-  // Acme Corp — sent first outreach
-  { _id: 'em-7', lead_id: 'mock-1', company_name: 'Acme Corp', to_email: 'hello@acme.com',
-    subject: 'Intro — MADMAD AI Email Agent',
-    body: '<p>Hello Acme Corp,</p><p>We\'re reaching out because we believe our AI email agent could help your sales team. Would you be open to a quick intro call?</p>',
-    status: 'sent', created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-    sent_at: new Date(Date.now() - 86400000 * 2).toISOString() },
-  // Peak Ventures — reoutreach, pending
-  { _id: 'em-8', lead_id: 'mock-10', company_name: 'Peak Ventures', to_email: 'invest@peakvc.com',
-    subject: 'Re-introduction — MADMAD Series A Update',
-    body: '<p>Hi Peak Ventures,</p><p>Since we last connected, we\'ve hit some exciting milestones. Would love to share our latest traction numbers.</p>',
-    status: 'pending', _type: 'reoutreach', created_at: new Date(Date.now() - 3600000).toISOString() },
-];
+/* ── (mock data removed — real API only) ── */
 
 /* ── Helper functions ── */
 
@@ -221,8 +173,10 @@ const EmailActionBtn = styled.button<{ $bg: string; $fg: string }>`
   color: #c62828;
   background: #fce4ec;
   cursor: pointer;
-  transition: all 0.15s;
-  &:hover:not(:disabled) { background: #f8bbd0; }
+  transition: background 0.15s var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) { background: #f8bbd0; }
+  }
   &:disabled { opacity: 0.45; cursor: not-allowed; }
 `;
 
@@ -238,8 +192,10 @@ const LeadSendBtn = styled.button`
   font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
-  &:hover:not(:disabled) { background: #388e3c; }
+  transition: background 0.15s var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) { background: #388e3c; }
+  }
   &:disabled { opacity: 0.45; cursor: not-allowed; }
 `;
 
@@ -257,9 +213,11 @@ const EmailTypeBadge = styled.span<{ $bg: string; $fg: string }>`
   color: ${({ $fg }) => $fg};
   white-space: nowrap;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: filter 0.15s var(--ease-out), transform 0.15s var(--ease-out);
   user-select: none;
-  &:hover { filter: brightness(0.95); transform: scale(1.03); }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { filter: brightness(0.95); transform: scale(1.03); }
+  }
 `;
 
 const ReplyPopup = styled.div<{ $open: boolean }>`
@@ -349,63 +307,7 @@ const AgentAvatar = styled.div`
   flex-shrink: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 `;
-const EmailGreeting = styled.div`
-  font-size: 1rem;
-  color: #333;
-  margin-bottom: 12px;
-`;
-const EmailHighlight = styled.div`
-  font-size: 1rem;
-  color: #1a1a1a;
-  background: linear-gradient(90deg, #e8f5e920, #e8f5e960, #e8f5e920);
-  padding: 6px 10px;
-  border-left: 3px solid #4caf50;
-  border-radius: 0 6px 6px 0;
-  margin: 8px 0;
-  font-weight: 500;
-`;
-const EmailCta = styled.div`
-  font-size: 1rem;
-  color: #1565c0;
-  font-weight: 500;
-  margin: 8px 0;
-`;
-const EmailSignature = styled.div`
-  font-size: 0.875rem;
-  color: #888;
-  margin-top: 12px;
-  white-space: pre-wrap;
-`;
-const EmailBodyLine = styled.div`
-  font-size: 1rem;
-  line-height: 1.7;
-  color: #555;
-  margin: 4px 0;
-`;
-const EmailListItem = styled.div`
-  font-size: 1rem;
-  line-height: 1.6;
-  color: #444;
-  padding: 3px 0 3px 16px;
-  position: relative;
-  &::before {
-    content: '•';
-    position: absolute;
-    left: 0;
-    color: #4caf50;
-    font-weight: 700;
-  }
-`;
-const EmailPS = styled.div`
-  font-size: 0.9375rem;
-  color: #1a1a1a;
-  font-style: italic;
-  margin-top: 12px;
-  padding: 6px 10px;
-  background: #fff8e1;
-  border-left: 3px solid #ffc107;
-  border-radius: 0 6px 6px 0;
-`;
+/* segment styled components removed — plain text only */
 
 const EditBtn = styled.button`
   display: inline-flex;
@@ -419,8 +321,10 @@ const EditBtn = styled.button`
   color: #e65100;
   background: #fff3e0;
   cursor: pointer;
-  transition: all 0.15s;
-  &:hover { background: #ffe0b2; }
+  transition: background 0.15s var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: #ffe0b2; }
+  }
 `;
 const EditOverlay = styled.div`
   position: fixed; inset: 0; z-index: 9999;
@@ -466,95 +370,7 @@ const EditCancelBtn = styled.button`
   cursor: pointer; &:hover { background: #f5f5f5; }
 `;
 
-/* ── renderEmailBody helper ── */
-
-const renderEmailBody = (text: string) => {
-  const rawLines = text.split('\n');
-  const lines: string[] = [];
-  for (const raw of rawLines) {
-    if (raw.length > 60 && /[.。!！]/.test(raw)) {
-      const sentences = raw.match(/[^.。!！]+[.。!！]?\s*/g) || [raw];
-      lines.push(...sentences);
-    } else {
-      lines.push(raw);
-    }
-  }
-
-  type SegType = 'greeting' | 'body' | 'highlight' | 'cta' | 'signature' | 'list' | 'ps';
-  const segments: { type: SegType; text: string }[] = [];
-  let i = 0;
-
-  const greetingRe = /^(Hi|Hello|Dear|Hey|Good\s*(morning|afternoon|evening)|Greetings|您好|嗨|親愛的|尊敬的|亲爱的|尊敬的)\b/i;
-  while (i < lines.length && (greetingRe.test(lines[i].trim()) || lines[i].trim() === '')) {
-    if (lines[i].trim()) segments.push({ type: 'greeting', text: lines[i].trim() });
-    i++;
-  }
-
-  const signatureRe = /^(Thanks|Thank\s*you|Best|Regards|Cheers|Sincerely|Best\s*regards|Kind\s*regards|Warm\s*regards|All\s*the\s*best|Yours|謝謝|此致|順祝|敬上|祝好),?\s*$/i;
-
-  const highlightRe = new RegExp([
-    '\\d+%',
-    '\\d+x\\b',
-    '[$¥€£]\\s*[\\d,.]+',
-    '[\\d,.]+\\s*[万億萬亿]',
-    '\\d+\\s*(months?|weeks?|days?|years?|個月|周|天|年|小時|hours?)',
-    '\\d+\\s*(leads?|clients?|users?|customers?|companies|位|家|個|人|筆)',
-    '\\d{3,}',
-    '(increase|boost|grow|reduce|save|improve|achieve|generate|deliver|result)',
-    '(提升|增長|增长|降低|提高|節省|节省|帶來|带来|達到|达到|實現|实现|產生|产生)',
-    '(ROI|KPI|conversion|revenue|profit|cost|efficiency)',
-    '(case\\s*study|成功案例|客戶案例|客户案例)',
-    '(compared\\s*to|vs\\.?|versus|相比|對比|对比|優於|优于)',
-  ].join('|'), 'i');
-
-  const ctaRe = new RegExp([
-    '\\b(free|demo|call|meet|schedule|book|sign\\s*up|get\\s*started|reach\\s*out)',
-    '\\b(let\\s*me\\s*know|interested|learn\\s*more|try|contact|discuss|chat|talk)',
-    '\\b(available|open\\s*to|would\\s*love|happy\\s*to|look\\s*forward)',
-    '\\b(click|visit|check\\s*out|explore|discover|see\\s*how|find\\s*out)',
-    '(歡迎|欢迎|免費|免费|預約|预约|了解更多|聯繫|联系|立即|馬上|马上)',
-    '(期待|希望|方便|有空|抽空|商討|商讨|安排|洽談|洽谈|體驗|体验)',
-  ].join('|'), 'i');
-
-  const listRe = /^[-•·★✓✔→▸]\s+|^\d+[.)]\s+|^[a-zA-Z][.)]\s+/;
-
-  const psRe = /^(P\.?S\.?|附[：:]|备注[：:]|備註[：:]|Note[：:]|注[：:])/i;
-
-  for (; i < lines.length; i++) {
-    const line = lines[i];
-    const trimmed = line.trim();
-    if (!trimmed) continue;
-
-    if (psRe.test(trimmed)) {
-      segments.push({ type: 'ps', text: trimmed });
-      continue;
-    }
-
-    if (signatureRe.test(trimmed)) {
-      segments.push({ type: 'signature', text: lines.slice(i).filter(l => l.trim()).join('\n') });
-      break;
-    }
-
-    if (listRe.test(trimmed)) {
-      segments.push({ type: 'list', text: trimmed.replace(/^[-•·★✓✔→▸]\s+|^\d+[.)]\s+|^[a-zA-Z][.)]\s+/, '') });
-      continue;
-    }
-
-    if (highlightRe.test(trimmed)) {
-      segments.push({ type: 'highlight', text: trimmed });
-      continue;
-    }
-
-    if (trimmed.endsWith('?') || trimmed.endsWith('？') || ctaRe.test(trimmed)) {
-      segments.push({ type: 'cta', text: trimmed });
-      continue;
-    }
-
-    segments.push({ type: 'body', text: trimmed });
-  }
-
-  return segments;
-};
+/* ── renderEmailBody removed — plain text only ── */
 
 /* ── LeadEmails component ── */
 
@@ -568,7 +384,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
   const send = useSendEmail();
 
   const apiEmails = (data?.data as EmailItem[]) || [];
-  const pool = [...MOCK_EMAILS, ...apiEmails];
+  const pool = apiEmails;
   const emails = pool
     .filter((e) => (e.lead_id === leadId) || (e.company_name || '') === companyName)
     .sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
@@ -588,10 +404,11 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
     try {
       await client.patch(`/email-queue/${editingEmail._id}`, { subject: editSubject, body: editBody });
       setEditingEmail(null);
+      toast.success(t('emailQueue.editSuccess'));
       // refetch email data
       window.location.reload();
     } catch (err: any) {
-      window.alert(t('emailQueue.editFailed') + (err?.message || ''));
+      toast.error(t('emailQueue.editFailed') + (err?.message || ''));
     }
   };
 
@@ -704,25 +521,9 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
                 )}
 
                 <EmailCardBody>
-                  {(() => {
-                    const bodyText = (d.body || '—').replace(/<[^>]*>/g, '');
-                    const segments = renderEmailBody(bodyText);
-                    return (
-                      <div>
-                        {segments.map((seg, idx) => {
-                          switch (seg.type) {
-                            case 'greeting': return <EmailGreeting key={idx}>{seg.text}</EmailGreeting>;
-                            case 'highlight': return <EmailHighlight key={idx}>{seg.text}</EmailHighlight>;
-                            case 'cta': return <EmailCta key={idx}>{seg.text}</EmailCta>;
-                            case 'signature': return <EmailSignature key={idx}>{seg.text}</EmailSignature>;
-                            case 'list': return <EmailListItem key={idx}>{seg.text}</EmailListItem>;
-                            case 'ps': return <EmailPS key={idx}>{seg.text}</EmailPS>;
-                            default: return <EmailBodyLine key={idx}>{seg.text}</EmailBodyLine>;
-                          }
-                        })}
-                      </div>
-                    );
-                  })()}
+                  <div style={{ whiteSpace: 'pre-wrap', fontSize: '0.9375rem', lineHeight: 1.7, color: '#555' }}>
+                    {(d.body || '—').replace(/<[^>]*>/g, '')}
+                  </div>
                 </EmailCardBody>
 
                 {/* Status pill */}

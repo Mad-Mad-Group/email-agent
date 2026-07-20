@@ -1,12 +1,15 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import styled, { keyframes, css, useTheme } from 'styled-components';
 // Components used in floating panel only
-import { useAgentStats, useNotifications, useSettings, useTasks } from '../../api/hooks';
-import type { AgentSkillStats } from '../../api/services';
+import { useAgentStats, useNotifications, useSettings, useTasks, useSearch } from '../../api/hooks';
+import type { AgentSkillStats, SearchPayload } from '../../api/services';
+import { hermesApi } from '../../api/services';
 import type { NotificationItem } from '../../api/notifications';
+import { sseClient, SSEEvent } from '../../api/sse';
 import { media } from '../../styles/media';
+import toast from 'react-hot-toast';
 import IsometricWorld from './IsometricWorld';
 
 /* ── Skill → i18n key mapping ── */
@@ -81,6 +84,21 @@ const SOURCE_LABEL_KEYS: Record<string, string> = {
   campaign: 'agentPanel.sourceCampaign',
   system: 'agentPanel.sourceSystem',
 };
+
+/** 用 action + action_params 做 i18n 翻譯，fallback 到 title */
+const NOTIF_ACTION_KEYS: Record<string, string> = {
+  search_complete: 'agentPanel.notifSearchComplete',
+  email_draft: 'agentPanel.notifEmailDraft',
+  email_sent: 'agentPanel.notifEmailSent',
+  task_failed: 'agentPanel.notifTaskFailed',
+};
+
+function translateNotif(n: { action?: string; action_params?: Record<string, any>; title: string; message?: string }, t: (key: string, opts?: any) => string): string {
+  if (n.action && NOTIF_ACTION_KEYS[n.action]) {
+    return t(NOTIF_ACTION_KEYS[n.action], { ...n.action_params, defaultValue: n.title });
+  }
+  return n.title || n.message || '';
+}
 
 /* ── Agent label positions (ground starts ~58%) ── */
 const AGENT_POSITIONS: Record<string, { top: string; left: string }> = {
@@ -159,6 +177,11 @@ const TitleBar = styled.div`
   border: 1px dashed rgba(255, 255, 255, 0.2);
   border-radius: 6px;
   user-select: none;
+
+  ${media.mobile} {
+    padding: 6px 10px;
+    gap: 6px;
+  }
 `;
 
 const TitleText = styled.span`
@@ -169,6 +192,11 @@ const TitleText = styled.span`
   color: #fff;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
   text-transform: uppercase;
+
+  ${media.mobile} {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+  }
 `;
 
 const livePulse = keyframes`
@@ -214,7 +242,9 @@ const DemoButton = styled.button`
   cursor: pointer;
   letter-spacing: 1px;
   transition: background 0.2s;
-  &:hover:not(:disabled) { background: rgba(234, 179, 8, 0.5); }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) { background: rgba(234, 179, 8, 0.5); }
+  }
   &:disabled { opacity: 0.7; cursor: default; }
 `;
 
@@ -239,7 +269,7 @@ const DemoProgressBar = styled.div`
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(6px);
   border-radius: 6px;
-  animation: ${demoAppear} 0.3s ease backwards;
+  animation: ${demoAppear} 0.3s var(--ease-out) backwards;
 `;
 
 const DemoProgressStep = styled.span<{ $active: boolean; $done: boolean }>`
@@ -251,7 +281,7 @@ const DemoProgressStep = styled.span<{ $active: boolean; $done: boolean }>`
   background: ${({ $active }) => $active ? '#fde047' : 'transparent'};
   ${({ $active }) => $active && css`animation: ${demoGlow} 1s ease-in-out infinite;`}
   ${({ $done }) => $done && 'text-decoration: line-through;'}
-  transition: all 0.3s;
+  transition: color 0.3s var(--ease-out), background 0.3s var(--ease-out);
 `;
 
 /* ── Agent floating labels — game-style name tags with sprite ── */
@@ -364,7 +394,7 @@ const VILLAGE_QUOTE_KEYS: string[] = [
   'agentPanel.quote5',
 ];
 
-const AgentLabelWrap = styled.div<{ $top: string; $left: string }>`
+const AgentLabelWrap = styled.div<{ $top: string; $left: string; $stagger?: number }>`
   position: absolute;
   top: ${({ $top }) => $top};
   left: ${({ $left }) => $left};
@@ -374,7 +404,9 @@ const AgentLabelWrap = styled.div<{ $top: string; $left: string }>`
   align-items: center;
   gap: 2px;
   cursor: pointer;
-  animation: ${labelAppear} 0.4s ease backwards;
+  opacity: 0;
+  animation: ${labelAppear} 0.35s var(--ease-out) forwards;
+  animation-delay: ${({ $stagger }) => ($stagger ?? 0) * 60}ms;
   user-select: none;
 `;
 
@@ -409,7 +441,9 @@ const DecoAnimalWrap = styled.div<{ $top: string; $left: string; $flip?: boolean
   z-index: 6;
   cursor: pointer;
   ${({ $flip }) => $flip && 'transform: scaleX(-1);'}
-  &:hover { filter: brightness(1.15); }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { filter: brightness(1.15); }
+  }
 `;
 
 /* ── Speech bubble for deco click dialogue ── */
@@ -424,7 +458,10 @@ const SpeechBubble = styled.div`
   border-radius: 8px;
   font-size: 11px;
   font-weight: 600;
-  white-space: nowrap;
+  white-space: normal;
+  max-width: 180px;
+  text-align: center;
+  word-break: break-word;
   box-shadow: 0 2px 8px rgba(0,0,0,0.2);
   animation: ${labelAppear} 0.3s ease backwards;
   margin-bottom: 4px;
@@ -472,6 +509,11 @@ const LabelName = styled.span`
   line-height: 1;
   text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000;
   letter-spacing: 1px;
+
+  ${media.mobile} {
+    font-size: 8px;
+    letter-spacing: 0.5px;
+  }
 `;
 
 const LabelType = styled.span<{ $color: string }>`
@@ -544,19 +586,30 @@ const StatusPanel = styled.div`
   backdrop-filter: blur(8px);
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.08);
+
+  ${media.mobile} {
+    top: 48px;
+    padding: 6px 8px;
+    gap: 2px;
+  }
 `;
 
-const StatusRow = styled.div`
+const StatusRow = styled.div<{ $delay?: number }>`
   display: flex;
   align-items: center;
   gap: 8px;
   padding: 4px 5px;
   border-radius: 4px;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 150ms var(--ease-out);
+  opacity: 0;
+  animation: ${labelAppear} 0.3s var(--ease-out) forwards;
+  animation-delay: ${({ $delay }) => ($delay ?? 0) * 50}ms;
 
-  &:hover {
-    background: rgba(255, 255, 255, 0.08);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
   }
 `;
 
@@ -604,12 +657,41 @@ const ActivityPanel = styled.div<{ $open: boolean }>`
   border-radius: 8px 0 0 8px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-right: none;
-  transform: translateX(${({ $open }) => $open ? '0' : 'calc(100% - 36px)'});
-  transition: transform 0.3s ease;
   overflow: hidden;
+  transform: translateX(${({ $open }) => $open ? '0' : '100%'});
+  opacity: ${({ $open }) => $open ? 1 : 0};
+  pointer-events: ${({ $open }) => $open ? 'auto' : 'none'};
+  transition: transform 280ms var(--ease-out), opacity 200ms var(--ease-out);
 
   ${media.mobile} {
     width: 240px;
+  }
+`;
+
+const ActivityFab = styled.button`
+  position: absolute;
+  top: 16%;
+  right: 10px;
+  z-index: 10;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(15, 15, 25, 0.75);
+  backdrop-filter: blur(8px);
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+  transition: color 150ms var(--ease-out), background 150ms var(--ease-out);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: #fff;
+      background: rgba(15, 15, 25, 0.9);
+    }
   }
 `;
 
@@ -641,13 +723,14 @@ const ActivityToggle = styled.button<{ $open: boolean }>`
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  transition: color 0.15s, background 0.15s;
   transform: rotate(${({ $open }) => $open ? '180deg' : '0'});
-  transition: transform 0.3s, color 0.15s;
+  transition: transform 250ms var(--ease-out), color 150ms var(--ease-out), background 150ms var(--ease-out);
 
-  &:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.1);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.1);
+    }
   }
 `;
 
@@ -663,10 +746,18 @@ const ActivityScroll = styled.div`
   }
 `;
 
-const ActivityEntry = styled.div`
+const entrySlideIn = keyframes`
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+`;
+
+const ActivityEntry = styled.div<{ $delay?: number }>`
   padding: 8px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   line-height: 1.5;
+  opacity: 0;
+  animation: ${entrySlideIn} 0.25s var(--ease-out) forwards;
+  animation-delay: ${({ $delay }) => ($delay ?? 0) * 40}ms;
 
   &:last-child {
     border-bottom: none;
@@ -705,19 +796,26 @@ const ActivityEmpty = styled.div`
 /* ── Stats bar overlay — bottom-center ── */
 const StatsBar = styled.div`
   position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
+  bottom: 12px;
+  left: 12px;
   z-index: 10;
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 8px 20px;
+  gap: 16px;
+  padding: 6px 14px;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
   border-radius: 6px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   user-select: none;
+
+  ${media.mobile} {
+    gap: 8px;
+    padding: 5px 10px;
+    font-size: 11px;
+    left: 8px;
+    bottom: 8px;
+  }
 `;
 
 const StatChip = styled.div`
@@ -762,12 +860,14 @@ const GearOverlayBtn = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.18s;
+  transition: color 180ms var(--ease-out), background 180ms var(--ease-out), border-color 180ms var(--ease-out);
 
-  &:hover {
-    color: #fff;
-    background: rgba(0, 0, 0, 0.8);
-    border-color: rgba(255, 255, 255, 0.25);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: #fff;
+      background: rgba(0, 0, 0, 0.8);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
   }
 `;
 
@@ -798,11 +898,13 @@ const SceneArrow = styled.button`
   align-items: center;
   justify-content: center;
   border-radius: 3px;
-  transition: color 0.15s, background 0.15s;
+  transition: color 150ms var(--ease-out), background 150ms var(--ease-out);
 
-  &:hover {
-    color: #fff;
-    background: rgba(255, 255, 255, 0.12);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+    }
   }
 `;
 
@@ -844,6 +946,12 @@ const ConfigOverlay = styled.div`
   border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   min-width: 200px;
+
+  ${media.mobile} {
+    min-width: 170px;
+    padding: 8px 10px;
+    right: 10px;
+  }
 `;
 
 const ConfigOverlayItem = styled.div`
@@ -886,7 +994,7 @@ const bubblePop = keyframes`
   100% { opacity: 0; transform: translate(-50%, -6px) scale(0.95); }
 `;
 
-const FarmerWrap = styled.div`
+const FarmerWrap = styled.div<{ $freeze?: boolean }>`
   position: absolute;
   bottom: 1%;
   left: 36%;
@@ -896,10 +1004,13 @@ const FarmerWrap = styled.div`
   align-items: center;
   cursor: pointer;
   user-select: none;
-  animation: ${farmerWalk} 14s ease-in-out infinite;
+  animation: ${({ $freeze }) => $freeze ? 'none' : css`${farmerWalk} 14s ease-in-out infinite`};
+  ${({ $freeze }) => $freeze && 'transform: scaleX(1);'}
 
-  &:hover {
-    filter: brightness(1.15);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      filter: brightness(1.15);
+    }
   }
 `;
 
@@ -944,6 +1055,317 @@ const FarmerLabel = styled.div`
   color: #fbbf24;
 `;
 
+/* ── Search Dialog (triggered by farmer click) ── */
+
+const searchSlideUp = keyframes`
+  from { opacity: 0; transform: translate(-50%, 8px) scale(0.95); }
+  to   { opacity: 1; transform: translate(-50%, 0) scale(1); }
+`;
+
+const SearchDialogWrap = styled.div`
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 20;
+  animation: ${searchSlideUp} 0.2s var(--ease-out);
+`;
+
+const SearchDialogCard = styled.div`
+  background: rgba(10, 10, 20, 0.92);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+  padding: 14px 16px;
+  min-width: 320px;
+  max-width: 380px;
+  max-height: 60vh;
+  overflow-y: auto;
+  font-family: 'JetBrains Mono', monospace;
+  image-rendering: pixelated;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 7px solid transparent;
+    border-top-color: rgba(10, 10, 20, 0.92);
+  }
+
+  ${media.mobile} {
+    min-width: 260px;
+    max-width: 300px;
+    padding: 12px 14px;
+    max-height: 50vh;
+  }
+`;
+
+const SearchDialogTitle = styled.div`
+  font-size: 11px;
+  font-weight: 700;
+  color: #fbbf24;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+`;
+
+const SearchField = styled.div`
+  margin-bottom: 8px;
+`;
+
+const SearchLabel = styled.label`
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 3px;
+`;
+
+const SearchInput = styled.input`
+  width: 100%;
+  padding: 7px 10px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 5px;
+  color: #fff;
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+  &::placeholder { color: rgba(255,255,255,0.3); }
+  &:focus { border-color: #fbbf24; }
+`;
+
+const SearchRow = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+`;
+
+const SearchCountWrap = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+
+const SearchCountBtn = styled.button`
+  width: 22px; height: 22px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 4px;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: rgba(255,255,255,0.15); }
+  }
+`;
+
+const SearchCountVal = styled.input`
+  font-size: 13px;
+  font-weight: 700;
+  color: #fff;
+  width: 40px;
+  text-align: center;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 4px;
+  padding: 2px 0;
+  outline: none;
+  font-family: 'JetBrains Mono', monospace;
+  -moz-appearance: textfield;
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  &:focus { border-color: rgba(255,255,255,0.3); }
+`;
+
+const SearchGoBtn = styled.button`
+  width: 100%;
+  padding: 8px;
+  margin-top: 6px;
+  background: #fbbf24;
+  border: none;
+  border-radius: 6px;
+  color: #000;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 150ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { opacity: 0.85; }
+  }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+`;
+
+const SearchCloseBtn = styled.button`
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0;
+  line-height: 1;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { color: #fff; }
+  }
+`;
+
+/* ── Pipeline log dialog (chat-style) ── */
+
+const logDialogEnter = keyframes`
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+`;
+
+const LogDialogWrap = styled.div`
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  width: 340px;
+  max-height: 320px;
+  background: rgba(11, 8, 11, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 50;
+  animation: ${logDialogEnter} 240ms var(--ease-out) both;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+
+  @media (max-width: 640px) {
+    width: 280px;
+    max-height: 240px;
+    bottom: 12px;
+    right: 12px;
+  }
+`;
+
+const LogDialogHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+  flex-shrink: 0;
+`;
+
+const LogDialogTitle = styled.span`
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fbbf24;
+  letter-spacing: 0.5px;
+`;
+
+const LogDialogClose = styled.button`
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.4);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 4px;
+  line-height: 1;
+  transition: color 160ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { color: #fff; }
+  }
+`;
+
+const LogDialogBody = styled.div`
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  &::-webkit-scrollbar { width: 4px; }
+  &::-webkit-scrollbar-track { background: transparent; }
+  &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+`;
+
+const LogEntry = styled.div<{ $delay: number }>`
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  animation: ${logDialogEnter} 200ms var(--ease-out) both;
+  animation-delay: ${({ $delay }) => $delay * 30}ms;
+`;
+
+const LogStageTag = styled.span<{ $color: string }>`
+  flex-shrink: 0;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: ${({ $color }) => $color};
+  background: ${({ $color }) => $color}22;
+  padding: 2px 6px;
+  border-radius: 4px;
+  margin-top: 1px;
+  text-transform: uppercase;
+`;
+
+const LogMessage = styled.span`
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 12px;
+  color: rgba(255,255,255,0.85);
+  line-height: 1.4;
+  word-break: break-word;
+`;
+
+/* ── Result bubble (farmer head) ── */
+
+const resultBubblePop = keyframes`
+  0% { opacity: 0; transform: translate(-50%, 4px) scale(0.8); }
+  15% { opacity: 1; transform: translate(-50%, 0) scale(1.05); }
+  25% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+  100% { opacity: 1; transform: translate(-50%, 0) scale(1); }
+`;
+
+const ResultBubble = styled.div`
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  margin-bottom: 4px;
+  padding: 8px 12px;
+  background: rgba(10, 10, 20, 0.92);
+  border: 1px solid rgba(251, 191, 36, 0.4);
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  font-weight: 600;
+  color: #4ade80;
+  text-shadow: 0 0 6px rgba(74,222,128,0.3);
+  animation: ${resultBubblePop} 0.3s ease forwards;
+  white-space: nowrap;
+  cursor: pointer;
+  z-index: 10;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: rgba(10, 10, 20, 0.92);
+  }
+`;
+
 /* ── Floating Timeline Panel (kept intact) ── */
 
 const fadeIn = keyframes`
@@ -955,8 +1377,14 @@ const Overlay = styled.div`
   position: fixed;
   inset: 0;
   background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(2px);
   z-index: 1200;
-  animation: ${fadeIn} 0.15s ease;
+  animation: ${fadeIn} 0.2s var(--ease-out);
+`;
+
+const modalEnter = keyframes`
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 `;
 
 const FloatingPanel = styled.div`
@@ -972,7 +1400,7 @@ const FloatingPanel = styled.div`
   box-shadow: 0 20px 60px rgba(0,0,0,0.25), 0 0 0 1px ${({ theme }) => theme.colors.border};
   display: flex;
   flex-direction: column;
-  animation: ${fadeIn} 0.2s ease;
+  animation: ${modalEnter} 0.25s var(--ease-out);
 
   ${media.mobile} {
     width: calc(100vw - 32px);
@@ -1019,9 +1447,11 @@ const CloseBtn = styled.button`
   justify-content: center;
   color: ${({ theme }) => theme.colors.blue};
   flex-shrink: 0;
-  transition: all 0.15s;
-  &:hover {
-    background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(14,165,233,0.15)' : 'rgba(14,165,233,0.08)'};
+  transition: background 150ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: ${({ theme }) => theme.mode === 'dark' ? 'rgba(14,165,233,0.15)' : 'rgba(14,165,233,0.08)'};
+    }
   }
 `;
 
@@ -1204,11 +1634,166 @@ const AgentPanel: React.FC = () => {
   const { data: tasksRaw } = useTasks();
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [showConfig, setShowConfig] = useState(false);
-  const [feedOpen, setFeedOpen] = useState(true);
+  const [feedOpen, setFeedOpen] = useState(false);
   const [farmerTalk, setFarmerTalk] = useState(0); // increment to trigger bubble
   const scene = VILLAGE_SCENE;
 
-  /* ── Demo mode removed ── */
+  /* ── Search state (integrated from Search page) ── */
+  const [showSearch, setShowSearch] = useState(false);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchLocation, setSearchLocation] = useState('Hong Kong');
+  const [searchCount, setSearchCount] = useState(20);
+  const [searchCountStr, setSearchCountStr] = useState('20');
+  const [campaignId, setCampaignId] = useState<string | null>(null);
+  const [pipelineLogs, setPipelineLogs] = useState<Array<{stage: string; message: string}>>([]);
+  const [pipelineComplete, setPipelineComplete] = useState(false);
+  const [showLogDialog, setShowLogDialog] = useState(false);
+  const logBodyRef = useRef<HTMLDivElement>(null);
+  const [pipelineProgress, setPipelineProgress] = useState<{stage: string; current: number; total: number; percent: number} | null>(null);
+  const [resultCount, setResultCount] = useState<number | null>(null);
+  const search = useSearch();
+  const isPipelineRunning = !!campaignId && !pipelineComplete;
+
+  /* ── SSE connect on mount ── */
+  useEffect(() => {
+    const apiBase = import.meta.env.VITE_API_URL || '/api';
+    const sseUrl = apiBase.replace(/\/api\/?$/, '') + '/api/events';
+    sseClient.connect(sseUrl);
+    return () => { sseClient.disconnect(); };
+  }, []);
+
+  /* ── Helper: fetch campaign leads count ── */
+  const fetchLeadsAndFinish = useCallback((cId: string) => {
+    hermesApi.getCampaign(cId).then(res => {
+      const campaign = (res.data as any)?.data ?? res.data;
+      const leadIds: string[] = campaign?.lead_ids ?? [];
+      setResultCount(leadIds.length);
+      setPipelineComplete(true);
+      toast.success(`Pipeline complete — found ${leadIds.length} leads!`, { duration: 5000 });
+    }).catch(() => {
+      setResultCount(0);
+      setPipelineComplete(true);
+      toast.error('Pipeline finished with errors', { duration: 5000 });
+    });
+  }, []);
+
+  /* ── Listen for SSE events filtered by campaignId ── */
+  useEffect(() => {
+    if (!campaignId) return;
+    let done = false;
+
+    const unsubLog = sseClient.onEvent('hermes_log', (event: SSEEvent) => {
+      const data = event.data as { runId?: string; stage?: string; message?: string };
+      if (data.runId !== campaignId) return;
+      setPipelineLogs(prev => [...prev, { stage: data.stage || '', message: data.message || '' }]);
+      if (data.message) {
+        toast(data.message, { icon: '🔧', duration: 3000, id: `log-${data.stage}-${Date.now()}` });
+      }
+      if (data.stage === 'complete' && !done) {
+        done = true;
+        fetchLeadsAndFinish(campaignId);
+      }
+    });
+
+    const unsubProgress = sseClient.onEvent('pipeline_progress', (event: SSEEvent) => {
+      const data = event.data as { runId?: string; stage?: string; current?: number; total?: number; percent?: number };
+      if (data.runId !== campaignId) return;
+      setPipelineProgress({ stage: data.stage || '', current: data.current || 0, total: data.total || 0, percent: data.percent || 0 });
+    });
+
+    const pollId = window.setInterval(() => {
+      if (done) return;
+      hermesApi.getCampaign(campaignId).then(res => {
+        const campaign = (res.data as any)?.data ?? res.data;
+        if (campaign?.status === 'completed' && !done) { done = true; fetchLeadsAndFinish(campaignId); }
+      }).catch(() => {});
+    }, 3000);
+
+    const timeoutId = window.setTimeout(() => {
+      if (!done) { done = true; fetchLeadsAndFinish(campaignId); }
+    }, 30 * 60 * 1000);
+
+    return () => { unsubLog(); unsubProgress(); window.clearInterval(pollId); window.clearTimeout(timeoutId); };
+  }, [campaignId, fetchLeadsAndFinish]);
+
+  /* ── Auto-show log dialog when pipeline starts; auto-scroll ── */
+  useEffect(() => {
+    if (isPipelineRunning) setShowLogDialog(true);
+    if (pipelineComplete) setShowLogDialog(false);
+  }, [isPipelineRunning, pipelineComplete]);
+
+  useEffect(() => {
+    if (logBodyRef.current) {
+      logBodyRef.current.scrollTop = logBodyRef.current.scrollHeight;
+    }
+  }, [pipelineLogs]);
+
+  /* ── Stage color map for log tags ── */
+  const stageColor = useCallback((stage: string) => {
+    if (['search', 'scrape', 'crawl'].includes(stage)) return '#6C97D1';
+    if (['analyze', 'enrich', 'qualify'].includes(stage)) return '#E5B920';
+    if (['draft', 'email_draft'].includes(stage)) return '#D689BF';
+    if (['send', 'email_send', 'reply'].includes(stage)) return '#97A33B';
+    if (stage === 'complete') return '#97A33B';
+    return '#9CA3AF';
+  }, []);
+
+  /* ── Farmer click handler ── */
+  const handleFarmerClick = useCallback(() => {
+    if (isPipelineRunning) return; // don't open search while running
+    if (pipelineComplete && resultCount !== null) {
+      // Fully reset pipeline state so farmer can be clicked again
+      setResultCount(null);
+      setPipelineComplete(false);
+      setCampaignId(null);
+      setPipelineLogs([]);
+      setPipelineProgress(null);
+      return;
+    }
+    setShowSearch(v => !v);
+  }, [isPipelineRunning, pipelineComplete, resultCount]);
+
+  /* ── Submit search ── */
+  const handleSearchSubmit = useCallback(() => {
+    if (search.isPending || !searchKeyword.trim()) return;
+    const payload: SearchPayload = {
+      keyword: searchKeyword.trim(),
+      location: searchLocation.trim(),
+      targetCount: searchCount,
+    };
+    setCampaignId(null);
+    setPipelineLogs([]);
+    setPipelineProgress(null);
+    setPipelineComplete(false);
+    setResultCount(null);
+    setShowSearch(false);
+
+    search.mutate(payload, {
+      onSuccess: (response) => {
+        const data = response?.data as { campaign_id?: string } | undefined;
+        if (data?.campaign_id) setCampaignId(data.campaign_id);
+      },
+    });
+  }, [search, searchKeyword, searchLocation, searchCount]);
+
+  /* ── Map pipeline stage to agent skill ── */
+  const stageToSkill: Record<string, string> = useMemo(() => ({
+    search: 'S1', scrape: 'S1', crawl: 'S1',
+    analyze: 'S2', enrich: 'S2', qualify: 'S2',
+    draft: 'S3', email_draft: 'S3',
+    send: 'S4', email_send: 'S4', reply: 'S4',
+  }), []);
+
+  const activeAgentSkill = useMemo(() => {
+    if (!isPipelineRunning || pipelineLogs.length === 0) return null;
+    const lastStage = pipelineLogs[pipelineLogs.length - 1].stage;
+    return stageToSkill[lastStage] || 'S1';
+  }, [isPipelineRunning, pipelineLogs, stageToSkill]);
+
+  const latestMessage = useMemo(() => {
+    if (pipelineLogs.length === 0) return '';
+    return pipelineLogs[pipelineLogs.length - 1].message;
+  }, [pipelineLogs]);
 
   /* ── Deco click dialogue state ── */
   const [activeQuote, setActiveQuote] = useState<{ idx: number; text: string } | null>(null);
@@ -1242,10 +1827,12 @@ const AgentPanel: React.FC = () => {
     };
   });
 
-  /* ── Aggregate stats for bottom bar ── */
-  const totalCompleted = agentCards.reduce((sum, ag) => sum + ag.completed, 0);
-  const totalFailed = agentCards.reduce((sum, ag) => sum + ag.failed, 0);
-  const totalTasks = totalCompleted + totalFailed;
+  /* ── Aggregate stats for bottom bar (all statuses from real API) ── */
+  const totalCompleted = statsArr.reduce((sum, s) => sum + (s.completed ?? 0), 0);
+  const totalFailed = statsArr.reduce((sum, s) => sum + (s.failed ?? 0), 0);
+  const totalRunning = statsArr.reduce((sum, s) => sum + (s.running ?? 0), 0);
+  const totalPending = statsArr.reduce((sum, s) => sum + (s.pending ?? 0), 0);
+  const totalTasks = totalCompleted + totalFailed + totalRunning + totalPending;
   const completionRate = totalTasks > 0 ? Math.round((totalCompleted / totalTasks) * 100) : 0;
 
   /* ── Activity feed from notifications ── */
@@ -1299,7 +1886,7 @@ const AgentPanel: React.FC = () => {
           const sprite = AGENT_SPRITES[ag.skill];
           const isRunning = ag.status === 'running' ;
           return (
-            <StatusRow key={ag.skill} onClick={() => setSelectedSkill(ag.skill)}>
+            <StatusRow key={ag.skill} $delay={['S1','S2','S3','S4'].indexOf(ag.skill)} onClick={() => setSelectedSkill(ag.skill)}>
               <StatusAvatar $src={sprite?.idle ?? ''} />
               <StatusName>{ag.name}</StatusName>
               <StatusBadge $running={isRunning}>
@@ -1325,7 +1912,8 @@ const AgentPanel: React.FC = () => {
         const c = AGENT_COLORS[ag.skill] ?? AGENT_COLORS.S1;
         const pos = scene.agentPos[ag.skill] ?? AGENT_POSITIONS[ag.skill];
         const sprite = AGENT_SPRITES[ag.skill];
-        const isRunning = ag.status === 'running' ;
+        const isPipelineActive = isPipelineRunning && activeAgentSkill === ag.skill;
+        const isRunning = ag.status === 'running' || isPipelineActive;
         const motionAnim = isRunning ? (AGENT_ANIMATIONS[ag.skill] ?? foxDart) : gentleIdle;
         const motionDur = isRunning ? (AGENT_ANIM_DURATION[ag.skill] ?? 10) : 3;
         return (
@@ -1333,7 +1921,7 @@ const AgentPanel: React.FC = () => {
             key={ag.skill}
             $top={pos.top}
             $left={pos.left}
-            style={{ animationDelay: `${['S1','S2','S3','S4'].indexOf(ag.skill) * 0.08}s` }}
+            $stagger={['S1','S2','S3','S4'].indexOf(ag.skill)}
             onClick={() => setSelectedSkill(ag.skill)}
           >
             <SpriteMotion $anim={motionAnim} $dur={motionDur}>
@@ -1355,6 +1943,10 @@ const AgentPanel: React.FC = () => {
                   />
                   {!isRunning && <ZzzBubble><IconZzz big /></ZzzBubble>}
                   {isRunning && <WorkGlow><IconBolt /></WorkGlow>}
+                  {/* Speech bubble for active pipeline agent */}
+                  {isPipelineActive && latestMessage && (
+                    <SpeechBubble style={{ fontSize: '10px', maxWidth: '140px' }}>{latestMessage}</SpeechBubble>
+                  )}
                 </div>
               )}
             </SpriteMotion>
@@ -1363,8 +1955,75 @@ const AgentPanel: React.FC = () => {
       })}
 
       {/* ── Farmer NPC — bottom-left corner ── */}
-      <FarmerWrap style={{ bottom: scene.farmerPos.bottom, left: scene.farmerPos.left }} onClick={() => setFarmerTalk((v) => v + 1)}>
-        {farmerTalk > 0 && (
+      <FarmerWrap $freeze={showSearch || isPipelineRunning || pipelineComplete} style={{ bottom: scene.farmerPos.bottom, left: scene.farmerPos.left }} onClick={handleFarmerClick}>
+        {/* Search dialog */}
+        {showSearch && !isPipelineRunning && (
+          <SearchDialogWrap onClick={(e) => e.stopPropagation()}>
+            <SearchDialogCard>
+              <SearchDialogTitle>
+                <span>🔍 {t('agentPanel.searchTitle', 'Client Search')}</span>
+                <SearchCloseBtn onClick={() => setShowSearch(false)}>✕</SearchCloseBtn>
+              </SearchDialogTitle>
+              <SearchField>
+                <SearchLabel>{t('agentPanel.searchKeyword', 'Keyword')}</SearchLabel>
+                <SearchInput
+                  value={searchKeyword}
+                  onChange={e => setSearchKeyword(e.target.value)}
+                  placeholder={t('agentPanel.searchPlaceholder', 'e.g. plumber, dentist...')}
+                  onKeyDown={e => e.key === 'Enter' && handleSearchSubmit()}
+                  autoFocus
+                />
+              </SearchField>
+              <SearchRow>
+                <SearchField style={{ flex: 1 }}>
+                  <SearchLabel>{t('agentPanel.searchLocation', 'Location')}</SearchLabel>
+                  <SearchInput value={searchLocation} onChange={e => setSearchLocation(e.target.value)} />
+                </SearchField>
+                <SearchField>
+                  <SearchLabel>{t('agentPanel.searchCount', 'Count')}</SearchLabel>
+                  <SearchCountWrap>
+                    <SearchCountBtn onClick={() => { setSearchCount(c => { const n = Math.max(1, c - 5); setSearchCountStr(String(n)); return n; }); }}>-</SearchCountBtn>
+                    <SearchCountVal
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={searchCountStr}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                        setSearchCountStr(e.target.value);
+                        const v = parseInt(e.target.value, 10);
+                        if (!isNaN(v) && v >= 1 && v <= 100) setSearchCount(v);
+                      }}
+                      onBlur={() => {
+                        const v = parseInt(searchCountStr, 10);
+                        const clamped = isNaN(v) ? 1 : Math.max(1, Math.min(100, v));
+                        setSearchCount(clamped);
+                        setSearchCountStr(String(clamped));
+                      }}
+                    />
+                    <SearchCountBtn onClick={() => { setSearchCount(c => { const n = Math.min(100, c + 5); setSearchCountStr(String(n)); return n; }); }}>+</SearchCountBtn>
+                  </SearchCountWrap>
+                </SearchField>
+              </SearchRow>
+              <SearchGoBtn onClick={handleSearchSubmit} disabled={search.isPending || !searchKeyword.trim()}>
+                {search.isPending ? t('agentPanel.searchSearching', 'Searching...') : t('agentPanel.searchGo', '🚀 Start Search')}
+              </SearchGoBtn>
+            </SearchDialogCard>
+          </SearchDialogWrap>
+        )}
+        {/* Pipeline running bubble */}
+        {isPipelineRunning && (
+          <FarmerBubble key="running">
+            {latestMessage || t('agentPanel.searchWorking', 'Working...')}
+          </FarmerBubble>
+        )}
+        {/* Result bubble */}
+        {pipelineComplete && resultCount !== null && (
+          <ResultBubble onClick={(e) => { e.stopPropagation(); }}>
+            ✅ {t('agentPanel.searchDone', { count: resultCount, defaultValue: `Found ${resultCount} leads!` })}
+          </ResultBubble>
+        )}
+        {/* Idle bubble (only when nothing else is showing) */}
+        {!showSearch && !isPipelineRunning && !(pipelineComplete && resultCount !== null) && farmerTalk > 0 && (
           <FarmerBubble key={farmerTalk}>
             {t('agentPanel.farmerBubble')}
           </FarmerBubble>
@@ -1374,39 +2033,60 @@ const AgentPanel: React.FC = () => {
           frameCount={4}
           frameSize={80}
           scale={4.5}
-          fps={3}
+          fps={isPipelineRunning ? 6 : 3}
         />
-        <FarmerLabel>{t('agentPanel.farmerLabel')}</FarmerLabel>
+        <FarmerLabel>{isPipelineRunning ? t('agentPanel.farmerWorking', '⚡ Working') : t('agentPanel.farmerLabel')}</FarmerLabel>
       </FarmerWrap>
 
+      {/* ── Pipeline log dialog (chat-style) ── */}
+      {showLogDialog && pipelineLogs.length > 0 && (
+        <LogDialogWrap>
+          <LogDialogHeader>
+            <LogDialogTitle>📋 Pipeline Log</LogDialogTitle>
+            <LogDialogClose onClick={() => setShowLogDialog(false)}>✕</LogDialogClose>
+          </LogDialogHeader>
+          <LogDialogBody ref={logBodyRef}>
+            {pipelineLogs.map((log, i) => (
+              <LogEntry key={i} $delay={i}>
+                <LogStageTag $color={stageColor(log.stage)}>{log.stage || '…'}</LogStageTag>
+                <LogMessage>{log.message}</LogMessage>
+              </LogEntry>
+            ))}
+          </LogDialogBody>
+        </LogDialogWrap>
+      )}
+
       {/* ── Activity feed overlay — right edge ── */}
+      {!feedOpen && (
+        <ActivityFab onClick={() => setFeedOpen(true)} title={t('agentPanel.expand')}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 4l-4 4 4 4"/></svg>
+        </ActivityFab>
+      )}
       <ActivityPanel $open={feedOpen}>
         <ActivityHeader>
-          <ActivityToggle $open={feedOpen} onClick={() => setFeedOpen((v) => !v)} title={feedOpen ? t('agentPanel.collapse') : t('agentPanel.expand')}>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M10 4l-4 4 4 4"/></svg>
+          <ActivityToggle $open={feedOpen} onClick={() => setFeedOpen(false)} title={t('agentPanel.collapse')}>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 4l4 4-4 4"/></svg>
           </ActivityToggle>
-          <ActivityTitle>{feedOpen ? t('agentPanel.activityLog') : ''}</ActivityTitle>
+          <ActivityTitle>{t('agentPanel.activityLog')}</ActivityTitle>
         </ActivityHeader>
-        {feedOpen && (
-          <ActivityScroll>
-            {notifications.length === 0 && (
-              <ActivityEmpty>{t('agents.noActivity')}</ActivityEmpty>
-            )}
-            {notifications.slice(0, 30).map((n) => {
-              const srcLabel = t(SOURCE_LABEL_KEYS[n.type] || 'agentPanel.sourceSystem');
-              const ev = NOTIF_EVENT_MAP[n.type] || 'qualify';
-              const color = FEED_COLORS[ev]?.accent || '#d97706';
-              const icon = FEED_COLORS[ev]?.icon || '⚡';
-              return (
-                <ActivityEntry key={n._id}>
-                  <EntryTime>{formatTime(n.created_at)}</EntryTime>
-                  <EntryAgent $color={color}>{icon} {srcLabel}</EntryAgent>
-                  <EntryMessage>{n.title || n.message}</EntryMessage>
-                </ActivityEntry>
-              );
-            })}
-          </ActivityScroll>
-        )}
+        <ActivityScroll>
+          {notifications.length === 0 && (
+            <ActivityEmpty>{t('agents.noActivity')}</ActivityEmpty>
+          )}
+          {notifications.slice(0, 30).map((n, idx) => {
+            const srcLabel = t(SOURCE_LABEL_KEYS[n.type] || 'agentPanel.sourceSystem');
+            const ev = NOTIF_EVENT_MAP[n.type] || 'qualify';
+            const color = FEED_COLORS[ev]?.accent || '#d97706';
+            const icon = FEED_COLORS[ev]?.icon || '⚡';
+            return (
+              <ActivityEntry key={n._id} $delay={idx}>
+                <EntryTime>{formatTime(n.created_at)}</EntryTime>
+                <EntryAgent $color={color}>{icon} {srcLabel}</EntryAgent>
+                <EntryMessage>{translateNotif(n, t)}</EntryMessage>
+              </ActivityEntry>
+            );
+          })}
+        </ActivityScroll>
       </ActivityPanel>
 
       {/* ── Stats bar overlay — bottom-center ── */}

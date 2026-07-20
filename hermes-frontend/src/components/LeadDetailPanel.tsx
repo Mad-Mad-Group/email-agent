@@ -288,11 +288,13 @@ const DpCloseBtn = styled.button`
   color: ${({ theme }) => theme.colors.textTertiary};
   cursor: pointer;
   flex-shrink: 0;
-  transition: all 0.15s;
+  transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out);
   font-size: 18px;
-  &:hover {
-    background: ${({ theme }) => theme.colors.surfaceMuted};
-    color: ${({ theme }) => theme.colors.textPrimary};
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: ${({ theme }) => theme.colors.surfaceMuted};
+      color: ${({ theme }) => theme.colors.textPrimary};
+    }
   }
 `;
 
@@ -480,7 +482,7 @@ export const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.15s;
+  transition: background 0.15s var(--ease-out);
   border: 0.5px solid ${({ $variant }) =>
     $variant === 'primary' ? '#D689BF' :
     $variant === 'danger' ? '#e57373' :
@@ -490,7 +492,9 @@ export const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
     $variant === 'primary' ? '#D689BF' :
     $variant === 'danger' ? '#e57373' :
     theme.colors.textPrimary};
-  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  }
 `;
 
 /* ── Props ── */
@@ -612,9 +616,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
         <div onMouseDown={e => onDpResizeStart(e, 'sw')} style={{ position:'absolute', bottom:0, left:0, width:8, height:8, cursor:'sw-resize', zIndex:11 }} />
         <div onMouseDown={e => onDpResizeStart(e, 'se')} style={{ position:'absolute', bottom:0, right:0, width:8, height:8, cursor:'se-resize', zIndex:11 }} />
         <DpHeader onMouseDown={onDpDragStart}>
-          <Avatar $colorIndex={hashColorIndex(name)} style={{ width: 40, height: 40, fontSize: '0.8rem', borderRadius: 10 }}>
-            <AvatarIcon name={name} />
-          </Avatar>
+          <Avatar $colorIndex={hashColorIndex(name)} style={{ width: 40, height: 40, fontSize: '0.8rem', borderRadius: 10 }} />
           <DpHeaderInfo>
             <DpCompanyName>
               {name}

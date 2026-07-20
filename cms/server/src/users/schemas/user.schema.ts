@@ -43,6 +43,17 @@ export class User {
 
   @Prop({ default: null })
   resetTokenExpiry: Date;
+
+  /* ── Company info (per-user, used by AI agent) ── */
+
+  @Prop({ default: '' })
+  companyName: string;
+
+  @Prop({ default: '' })
+  companyDescription: string;
+
+  @Prop({ default: '' })
+  companyWebsite: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

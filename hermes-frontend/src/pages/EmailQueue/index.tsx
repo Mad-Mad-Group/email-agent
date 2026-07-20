@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import styled, { useTheme } from 'styled-components';
+import toast from 'react-hot-toast';
 import { useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail, useBulkApproveEmails, useBulkRejectEmails, useBulkSendEmails } from '../../api/hooks';
 import { EmailItem } from '../../api/emailQueue';
 import { Lead } from '../../api/leads';
@@ -127,9 +128,11 @@ const PageTab = styled.button<{ $active: boolean }>`
   color: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.textSecondary};
   border-bottom: 2px solid ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
   margin-bottom: -1px;
-  transition: all 0.15s;
-  &:hover {
-    color: ${({ theme }) => theme.colors.textPrimary};
+  transition: color 150ms var(--ease-out), border-color 150ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: ${({ theme }) => theme.colors.textPrimary};
+    }
   }
 `;
 
@@ -564,7 +567,7 @@ const BulkCheckbox = styled.input`
   flex-shrink: 0;
   background: ${({ theme }) => theme.colors.surface};
   position: relative;
-  transition: all 0.15s;
+  transition: background 150ms var(--ease-out), border-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
 
   &:checked {
     background: ${({ theme }) => (theme.colors as any).accent || theme.colors.accent};
@@ -686,9 +689,11 @@ const DetailModalClose = styled.button`
   color: ${({ theme }) => theme.colors.accent};
   cursor: pointer;
   flex-shrink: 0;
-  transition: all 0.15s;
-  &:hover {
-    background: ${({ theme }) => `${theme.colors.accent}15`};
+  transition: background 150ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: ${({ theme }) => `${theme.colors.accent}15`};
+    }
   }
 `;
 
@@ -909,9 +914,11 @@ const CloseBtn = styled.button`
   justify-content: center;
   color: ${({ theme }) => theme.colors.accent};
   flex-shrink: 0;
-  transition: all 0.15s;
-  &:hover {
-    background: ${({ theme }) => `${theme.colors.accent}15`};
+  transition: background 150ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: ${({ theme }) => `${theme.colors.accent}15`};
+    }
   }
 `;
 
@@ -1084,8 +1091,9 @@ const EmailQueue: React.FC = () => {
       });
       refetch();
       setEditingEmail(null);
+      toast.success(t('emailQueue.editSuccess'));
     } catch (err: any) {
-      window.alert(t('emailQueue.editFailed') + (err?.message || ''));
+      toast.error(t('emailQueue.editFailed') + (err?.message || ''));
     }
   };
 

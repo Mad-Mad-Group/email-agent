@@ -20,6 +20,8 @@ export class NotificationsService {
     type?: 'lead' | 'email' | 'campaign' | 'task' | 'system';
     ref_id?: string;
     user_id?: string;
+    action?: string;
+    action_params?: Record<string, any>;
   }): Promise<NotificationDocument> {
     return this.model.create({
       ...data,

@@ -393,9 +393,11 @@ const DpCloseBtn = styled.button`
   justify-content: center;
   color: ${({ theme }) => theme.colors.accent};
   flex-shrink: 0;
-  transition: all 0.15s;
-  &:hover {
-    background: ${({ theme }) => `${theme.colors.accent}15`};
+  transition: background 150ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: ${({ theme }) => `${theme.colors.accent}15`};
+    }
   }
 `;
 

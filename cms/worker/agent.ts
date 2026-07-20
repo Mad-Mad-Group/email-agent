@@ -219,7 +219,18 @@ async function sseNotify(type: string, data: Record<string, unknown>): Promise<v
 async function notify(
   db: Db,
   title: string,
-  opts: { message?: string; type?: 'lead' | 'email' | 'campaign' | 'task' | 'system'; ref_id?: string; user_id?: string } = {},
+  opts: {
+    message?: string;
+    type?: 'lead' | 'email' | 'campaign' | 'task' | 'system';
+    ref_id?: string;
+    user_id?: string;
+    action?: string;
+    action_params?: Record<string, any>;
+    title_key?: string;
+    title_params?: Record<string, any>;
+    message_key?: string;
+    message_params?: Record<string, any>;
+  } = {},
 ) {
   try {
     await db.collection('notifications').insertOne({
@@ -228,6 +239,12 @@ async function notify(
       type: opts.type ?? 'system',
       ref_id: opts.ref_id,
       user_id: opts.user_id,
+      action: opts.action,
+      action_params: opts.action_params,
+      title_key: opts.title_key,
+      title_params: opts.title_params,
+      message_key: opts.message_key,
+      message_params: opts.message_params,
       read: false,
       created_at: new Date().toISOString().replace('T', ' ').slice(0, 19),
     });
@@ -256,6 +273,50 @@ function buildLeadContext(lead: any): string {
   return parts.length
     ? `\n【對方公司資料 — 只可引用以下事實，唔好自行虛構】\n${parts.join('\n')}\n`
     : '';
+}
+
+/**
+ * 根據 user_id 從 DB 讀取用戶公司資料，組成 context block 畀 LLM。
+ * 如果用戶冇填公司資料，就 fallback 用 brand.ts 嘅 default。
+ * 呢個做法確保唔同用戶之間唔會混淆公司資料。
+ */
+interface UserCompanyCtx {
+  context: string;   // 注入 prompt 嘅公司資料 block
+  signature: string; // email 簽名檔
+  name: string;      // 公司名（用於 prompt 描述）
+}
+
+async function buildUserCompanyContext(userId: string | undefined, db: Db): Promise<UserCompanyCtx | null> {
+  if (!userId) return null;
+  try {
+    const user = await db.collection('users').findOne(
+      { _id: new ObjectId(userId) },
+      { projection: { companyName: 1, companyDescription: 1, companyWebsite: 1, name: 1, email: 1 } },
+    );
+    if (!user) return null;
+    const name = user.companyName?.trim();
+    const desc = user.companyDescription?.trim();
+    const web = user.companyWebsite?.trim();
+    if (!name && !desc && !web) return null;
+    const parts: string[] = [];
+    if (name) parts.push(`公司名稱：${name}`);
+    if (desc) parts.push(`公司簡介：${desc}`);
+    if (web) parts.push(`公司官網：${web}`);
+
+    // 生成簽名檔
+    const sigParts: string[] = ['--'];
+    if (name) sigParts.push(name);
+    if (web) sigParts.push(`🌐 ${web}`);
+    if (user.email) sigParts.push(`📧 ${user.email}`);
+
+    return {
+      context: `\n【寄件人公司資料 — 用呢啲資料代替預設品牌資訊】\n${parts.join('\n')}\n`,
+      signature: '\n' + sigParts.join('\n') + '\n',
+      name: name || '寄件人公司',
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function login(): Promise<void> {
@@ -444,10 +505,14 @@ ${(replyText || '').slice(0, 2000)}`;
   }
 
   const leadCtx = buildLeadContext(lead);
-  const prompt = `你係 ${BRAND_NAME} 嘅業務。潛在客戶「${lead.company_name || lead.email}」啱啱回覆咗我哋嘅 outreach email。
+  const uCtx = await buildUserCompanyContext(lead.user_id, db);
+  const brandBlock = uCtx ? uCtx.context : BRAND_CONTEXT_BLOCK;
+  const sigBlock = uCtx ? uCtx.signature : BRAND_SIGNATURE;
+  const senderDesc = uCtx ? uCtx.name : BRAND_NAME;
+  const prompt = `你係 ${senderDesc} 嘅業務。潛在客戶「${lead.company_name || lead.email}」啱啱回覆咗我哋嘅 outreach email。
 請寫一封得體、簡短的跟進回覆。語言用正式英文或繁體中文書面語皆可，按對方情況揀（英文中學／國際機構用英文亦可）；但若用中文則必須書面語，不可粵語口語（用不/沒有/的/在/這，不用唔/冇/嘅/喺/呢）；正文避免 emoji。只根據下面資料，不要作事實、不要過度承諾。
 
-${BRAND_CONTEXT_BLOCK}
+${brandBlock}
 ${leadCtx}
 對方回覆分類：${analysis.category}
 對方回覆摘要：${analysis.summary}
@@ -458,7 +523,7 @@ ${leadCtx}
 ${categoryGuide}
 
 結尾用返簽名：
-${BRAND_SIGNATURE}
+${sigBlock}
 
 只回一個 JSON object（ENTIRE reply 只可以係佢）：{"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）"}`;
   try {
@@ -769,16 +834,21 @@ async function doReplyCheck(_p: any, db: Db) {
 /** S1 搜尋 → 叫 Hermes 開 stealth browser 搵 Google Maps，回真公司 */
 async function doSearch(p: any, db: Db) {
   const target = Math.min(Number(p.target_count) || 3, 10);
-  const MAX_ROUNDS = 1;
+  const MAX_STALE = 3; // 連續 N 輪搵唔到新 lead 先放棄
   const ids: string[] = [];
   let totalSkipped = 0;
+  let staleRounds = 0; // 連續無新結果嘅輪數
   const excludeNames: string[] = []; // 避免 hermes 重複返回同樣結果
 
-  for (let round = 1; round <= MAX_ROUNDS; round++) {
+  for (let round = 1; ; round++) {
     const still_need = target - ids.length;
     if (still_need <= 0) break;
+    if (staleRounds >= MAX_STALE) {
+      log(`  [search] 連續 ${MAX_STALE} 輪搵唔到新 lead，停止搜尋`);
+      break;
+    }
 
-    log(`  [search] 第 ${round}/${MAX_ROUNDS} 輪，仲需要 ${still_need} 個新 lead`);
+    log(`  [search] 第 ${round} 輪，仲需要 ${still_need} 個新 lead`);
 
     // ⚠️ curl 式 web search 會俾 captcha 擋（Google/Bing/DDG）→ 一定要用 Hermes 個 stealth
     // browser（Browserbase/Camofox，繞 captcha）。搵唔到就回 []，唔好作、唔好回文字。
@@ -829,7 +899,8 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
     } catch (e: any) {
       const searchElapsed = ((Date.now() - searchT0) / 1000).toFixed(1);
       log(`  [search] 第 ${round} 輪 hermes 失敗 (${searchElapsed}s): ${e?.message ?? e}`);
-      break;
+      staleRounds++;
+      continue;
     }
     const searchElapsed = ((Date.now() - searchT0) / 1000).toFixed(1);
     log(`  [search] hermes 回應 (${searchElapsed}s)：${arr.length} 筆結果 → ${JSON.stringify(arr).slice(0, 300)}`);
@@ -898,13 +969,14 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
       newThisRound++;
     }
 
-    const foundThisRound = newThisRound + totalSkipped; // hermes 返回咗幾多個（唔理重複）
     log(`  [search] 第 ${round} 輪完成：新增 ${newThisRound}，跳過重複 ${totalSkipped}，累計 ${ids.length}/${target}`);
 
-    // hermes 完全搵唔到任何結果 → 冇得再搵了
-    if (arr.length === 0) {
-      log(`  [search] hermes 搵唔到任何結果，停止搜尋`);
-      break;
+    // 呢一輪有冇搵到新 lead？
+    if (newThisRound === 0) {
+      staleRounds++;
+      log(`  [search] 本輪無新結果（連續 ${staleRounds}/${MAX_STALE}）`);
+    } else {
+      staleRounds = 0; // 有新結果就重置
     }
   }
 
@@ -913,8 +985,14 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
       message: `關鍵字「${p.keyword}」在「${p.location}」搵到 ${ids.length} 個新結果，跳過 ${totalSkipped} 個重複`,
       type: 'lead',
       user_id: p.user_id,
+      action: 'search_complete',
+      action_params: { count: ids.length, keyword: p.keyword, location: p.location, skipped: totalSkipped },
+      title_key: 'notification.searchComplete',
+      title_params: { count: ids.length },
+      message_key: 'notification.searchCompleteMsg',
+      message_params: { keyword: p.keyword, location: p.location, count: ids.length, skipped: totalSkipped },
     });
-    await sseNotify('notification', { title: `搜尋完成：搵到 ${ids.length} 個新 lead`, type: 'lead' });
+    await sseNotify('notification', { title: `搜尋完成：搵到 ${ids.length} 個新 lead`, title_key: 'notification.searchComplete', title_params: { count: ids.length }, type: 'lead' });
   }
 
   return { created_leads: ids.length, lead_object_ids: ids, skipped: totalSkipped };
@@ -1257,15 +1335,21 @@ async function doAnalyze(p: any, db: Db) {
   let out: string;
   let via: string;
 
+  const uCtx = await buildUserCompanyContext(lead.user_id, db);
+  const brandBlock = uCtx ? uCtx.context : BRAND_CONTEXT_BLOCK;
+  const senderDesc = uCtx ? `${uCtx.name}（見下方公司資料）` : `${BRAND_NAME} (${BRAND_TAGLINE}), a Hong Kong digital agency`;
+  const servicesHint = uCtx
+    ? '根據寄件人公司嘅業務範疇'
+    : `WHICH of ${BRAND_NAME}'s services (STRATEGIZE / DESIGN / CODE / MARKET, or any of: ${BRAND_SOLUTIONS.join(' / ')})`;
+
   if (lead._scraped_text) {
     // 已有爬蟲資料 → 直接用 LLM 分析，唔使開瀏覽器
     via = 'hermes-llm';
     const desc = lead.website_description || '';
     const svcs = (lead._scraped_services || []).join(', ');
     // 爬蟲內容量做參數：太多資料令 LLM 逾時嘅話，縮短再試
-    const buildPrompt = (chars: number) => `You are a B2B research assistant representing ${BRAND_NAME} (${BRAND_TAGLINE}),
-a Hong Kong digital agency.
-${BRAND_CONTEXT_BLOCK}
+    const buildPrompt = (chars: number) => `You are a B2B research assistant representing ${senderDesc}.
+${brandBlock}
 
 Company to research: ${lead.company_name}
 Website: ${lead.website || 'N/A'}
@@ -1275,8 +1359,7 @@ Website content (scraped):
 ${(lead._scraped_text || '').slice(0, chars)}
 
 Based on the above information, propose a SPECIFIC collaboration angle —
-i.e. WHICH of ${BRAND_NAME}'s services (STRATEGIZE / DESIGN / CODE / MARKET, or any
-of: ${BRAND_SOLUTIONS.join(' / ')}) maps best to this lead's pain points, and why.
+${servicesHint} maps best to this lead's pain points, and why.
 ${BRAND_TONE_GUIDE}
 Output ONLY one JSON object, no other text:
 {"primary":"主要合作方向","pitch":"一句 pitch (港式繁中 + EN mix OK)","reason":"理由","services":["服務1","服務2"]}`;
@@ -1293,15 +1376,13 @@ Output ONLY one JSON object, no other text:
     const site = lead.website
       ? `Use your browser to visit the company website: ${lead.website}`
       : `Use your browser to search the web for this company and find its website`;
-    const prompt = `You are a B2B research assistant representing ${BRAND_NAME} (${BRAND_TAGLINE}),
-a Hong Kong digital agency.
-${BRAND_CONTEXT_BLOCK}
+    const prompt = `You are a B2B research assistant representing ${senderDesc}.
+${brandBlock}
 
 Company to research: ${lead.company_name}
 ${site}
 Use your stealth browser normally to avoid bot detection. Read what the company does,
-then propose a SPECIFIC collaboration angle — i.e. WHICH of ${BRAND_NAME}'s services
-(STRATEGIZE / DESIGN / CODE / MARKET, or any of: ${BRAND_SOLUTIONS.join(' / ')})
+then propose a SPECIFIC collaboration angle — ${servicesHint}
 maps best to this lead's pain points, and why.
 ${BRAND_TONE_GUIDE}
 Output ONLY one JSON object, no other text:
@@ -1342,10 +1423,14 @@ async function doDraft(p: any, db: Db) {
   const lead = await db.collection('leads').findOne({ _id });
   if (!lead) throw new Error('lead 唔存在');
   const leadCtx = buildLeadContext(lead);
-  const prompt = `Write a short, warm B2B outreach email in professional English OR formal written 繁體中文 書面語 (pick whichever best fits the lead — English-medium / international leads → English is fine; but if you write in Chinese it MUST be 書面語, NOT Cantonese colloquial: 用不/沒有/的/在/這，不用唔/冇/嘅/喺/呢; avoid emoji in the body) from ${BRAND_NAME} (${BRAND_TAGLINE})
-— a Hong Kong digital agency — to the company「${lead.company_name}」.
+  const uCtx = await buildUserCompanyContext(lead.user_id || p.user_id, db);
+  const senderName = uCtx ? uCtx.name : `${BRAND_NAME} (${BRAND_TAGLINE})`;
+  const brandBlock = uCtx ? uCtx.context : BRAND_CONTEXT_BLOCK;
+  const sigBlock = uCtx ? uCtx.signature : BRAND_SIGNATURE;
+  const senderDesc = uCtx ? `${uCtx.name}（見下方寄件人公司資料）` : `${BRAND_NAME} (${BRAND_TAGLINE}) — a Hong Kong digital agency`;
+  const prompt = `Write a short, warm B2B outreach email in professional English OR formal written 繁體中文 書面語 (pick whichever best fits the lead — English-medium / international leads → English is fine; but if you write in Chinese it MUST be 書面語, NOT Cantonese colloquial: 用不/沒有/的/在/這，不用唔/冇/嘅/喺/呢; avoid emoji in the body) from ${senderDesc} to the company「${lead.company_name}」.
 
-${BRAND_CONTEXT_BLOCK}
+${brandBlock}
 ${leadCtx}
 Collaboration angle: ${lead._collab_primary || ''} — ${lead._collab_pitch || ''}.
 ${BRAND_TONE_GUIDE}
@@ -1354,7 +1439,7 @@ ${BRAND_TONE_GUIDE}
 
 Output ONLY JSON with subject, body, summary, confidence, and reason. Body MUST end with this signature block:
 
-${BRAND_SIGNATURE}
+${sigBlock}
 
 {"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）","confidence":0,"reason":""}
 
@@ -1395,9 +1480,15 @@ ${BRAND_SIGNATURE}
     type: 'email',
     ref_id: lead.lead_id,
     user_id: lead.user_id,
+    action: 'email_draft',
+    action_params: { name: lead.company_name, subject: c.subject },
+    title_key: 'notification.newDraft',
+    title_params: { company: lead.company_name },
+    message_key: 'notification.newDraftMsg',
+    message_params: { subject: c.subject },
   });
   await sseNotify('email_update', { id: lead.lead_id, action: 'created', status: 'pending' });
-  await sseNotify('notification', { title: `新草稿：${lead.company_name}`, type: 'email' });
+  await sseNotify('notification', { title: `新草稿：${lead.company_name}`, title_key: 'notification.newDraft', title_params: { company: lead.company_name }, type: 'email' });
   return { drafted: true, via: 'hermes', subject: c.subject };
 }
 
@@ -1461,10 +1552,14 @@ async function doFollowupDraft(p: any, db: Db) {
   if (!lead) throw new Error('lead 唔存在');
   const count = (lead._followup_count || 0) + 1;
   const leadCtx = buildLeadContext(lead);
-  const prompt = `Write a SHORT follow-up email (#${count}) in professional English OR formal written 繁體中文 書面語 (pick whichever best fits the lead — English-medium / international leads → English is fine; but if you write in Chinese it MUST be 書面語, NOT Cantonese colloquial: 用不/沒有/的/在/這，不用唔/冇/嘅/喺/呢; avoid emoji in the body) from ${BRAND_NAME} (${BRAND_TAGLINE})
+  const uCtx = await buildUserCompanyContext(lead.user_id || p.user_id, db);
+  const brandBlock = uCtx ? uCtx.context : BRAND_CONTEXT_BLOCK;
+  const sigBlock = uCtx ? uCtx.signature : BRAND_SIGNATURE;
+  const senderDesc = uCtx ? uCtx.name : `${BRAND_NAME} (${BRAND_TAGLINE})`;
+  const prompt = `Write a SHORT follow-up email (#${count}) in professional English OR formal written 繁體中文 書面語 (pick whichever best fits the lead — English-medium / international leads → English is fine; but if you write in Chinese it MUST be 書面語, NOT Cantonese colloquial: 用不/沒有/的/在/這，不用唔/冇/嘅/喺/呢; avoid emoji in the body) from ${senderDesc}
 to「${lead.company_name}」. We previously reached out but got no reply.
 
-${BRAND_CONTEXT_BLOCK}
+${brandBlock}
 ${leadCtx}
 Previous pitch angle: ${lead._collab_primary || ''} — ${lead._collab_pitch || ''}.
 ${BRAND_TONE_GUIDE}
@@ -1476,7 +1571,7 @@ ${count === 1 ? 'Gently check if they saw the previous email. Offer a quick 15-m
 
 Output ONLY JSON with subject, body, and summary. Body MUST end with this signature block:
 
-${BRAND_SIGNATURE}
+${sigBlock}
 
 {"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）"}`;
   const c = await hermesJson(prompt);
@@ -1500,8 +1595,18 @@ ${BRAND_SIGNATURE}
     { _id },
     { $set: { _followup_count: count, _last_followup_at: nowIso() } },
   );
+  await notify(db, `Follow-up #${count}：${lead.company_name}`, {
+    message: `主題：${c.subject}`,
+    type: 'email',
+    ref_id: lead.lead_id,
+    user_id: lead.user_id,
+    title_key: 'notification.followupDraft',
+    title_params: { count, company: lead.company_name },
+    message_key: 'notification.newDraftMsg',
+    message_params: { subject: c.subject },
+  });
   await sseNotify('email_update', { id: lead.lead_id, action: 'created', status: 'pending' });
-  await sseNotify('notification', { title: `Follow-up #${count}：${lead.company_name}`, type: 'email' });
+  await sseNotify('notification', { title: `Follow-up #${count}：${lead.company_name}`, title_key: 'notification.followupDraft', title_params: { count, company: lead.company_name }, type: 'email' });
   log(`  → followup #${count} drafted for ${lead.company_name}`);
   return { drafted: true, type: 'followup', count, subject: c.subject };
 }
@@ -1512,10 +1617,14 @@ async function doReoutreachDraft(p: any, db: Db) {
   const lead = await db.collection('leads').findOne({ _id });
   if (!lead) throw new Error('lead 唔存在');
   const leadCtx = buildLeadContext(lead);
-  const prompt = `Write a B2B outreach email in professional English OR formal written 繁體中文 書面語 (pick whichever best fits the lead — English-medium / international leads → English is fine; but if you write in Chinese it MUST be 書面語, NOT Cantonese colloquial: 用不/沒有/的/在/這，不用唔/冇/嘅/喺/呢; avoid emoji in the body) from ${BRAND_NAME} (${BRAND_TAGLINE})
+  const uCtx = await buildUserCompanyContext(lead.user_id || p.user_id, db);
+  const brandBlock = uCtx ? uCtx.context : BRAND_CONTEXT_BLOCK;
+  const sigBlock = uCtx ? uCtx.signature : BRAND_SIGNATURE;
+  const senderDesc = uCtx ? uCtx.name : `${BRAND_NAME} (${BRAND_TAGLINE})`;
+  const prompt = `Write a B2B outreach email in professional English OR formal written 繁體中文 書面語 (pick whichever best fits the lead — English-medium / international leads → English is fine; but if you write in Chinese it MUST be 書面語, NOT Cantonese colloquial: 用不/沒有/的/在/這，不用唔/冇/嘅/喺/呢; avoid emoji in the body) from ${senderDesc}
 to「${lead.company_name}」. They previously replied saying they're NOT interested.
 
-${BRAND_CONTEXT_BLOCK}
+${brandBlock}
 ${leadCtx}
 Previous angle was: ${lead._collab_primary || ''} — ${lead._collab_pitch || ''}
 Their reply summary: ${lead._reply_summary || 'declined / not interested'}
@@ -1529,7 +1638,7 @@ ${BRAND_TONE_GUIDE}
 
 Output ONLY JSON with subject, body, and summary. Body MUST end with this signature block:
 
-${BRAND_SIGNATURE}
+${sigBlock}
 
 {"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）"}`;
   const c = await hermesJson(prompt);
@@ -1552,8 +1661,18 @@ ${BRAND_SIGNATURE}
     { _id },
     { $set: { _reoutreach_done: true, _reoutreach_at: nowIso() } },
   );
+  await notify(db, `Re-outreach：${lead.company_name}`, {
+    message: `主題：${c.subject}`,
+    type: 'email',
+    ref_id: lead.lead_id,
+    user_id: lead.user_id,
+    title_key: 'notification.reoutreachDraft',
+    title_params: { company: lead.company_name },
+    message_key: 'notification.newDraftMsg',
+    message_params: { subject: c.subject },
+  });
   await sseNotify('email_update', { id: lead.lead_id, action: 'created', status: 'pending' });
-  await sseNotify('notification', { title: `Re-outreach：${lead.company_name}`, type: 'email' });
+  await sseNotify('notification', { title: `Re-outreach：${lead.company_name}`, title_key: 'notification.reoutreachDraft', title_params: { company: lead.company_name }, type: 'email' });
   log(`  → reoutreach drafted for ${lead.company_name}`);
   return { drafted: true, type: 'reoutreach', subject: c.subject };
 }
@@ -1642,10 +1761,16 @@ async function doSend(p: any, db: Db) {
     type: 'email',
     ref_id: lead.lead_id,
     user_id: lead.user_id,
+    action: 'email_sent',
+    action_params: { name: lead.company_name, to },
+    title_key: 'notification.emailSent',
+    title_params: { company: lead.company_name },
+    message_key: 'notification.emailSentMsg',
+    message_params: { to },
   });
   await sseNotify('email_update', { id: eq._id.toString(), action: 'status_changed', status: 'sent' });
   await sseNotify('lead_update', { id: _id.toString(), action: 'status_changed', status: 'contacted' });
-  await sseNotify('notification', { title: `郵件已發送：${lead.company_name}`, type: 'email' });
+  await sseNotify('notification', { title: `郵件已發送：${lead.company_name}`, title_key: 'notification.emailSent', title_params: { company: lead.company_name }, type: 'email' });
   return { sent: true, to };
 }
 
@@ -1690,9 +1815,13 @@ async function handleTask(task: any, db: any): Promise<void> {
         type: 'task',
         ref_id: task.task_id,
         user_id: task.params?.user_id,
+        action: 'task_failed',
+        action_params: { name: task.title || task.task_id, error: e?.message ?? String(e) },
+        title_key: 'notification.taskFailed',
+        title_params: { title: task.title || task.task_id },
       });
       await sseNotify('task_update', { id: task.task_id, action: 'failed' });
-      await sseNotify('notification', { title: `任務失敗：${task.title || task.task_id}`, type: 'task' });
+      await sseNotify('notification', { title: `任務失敗：${task.title || task.task_id}`, title_key: 'notification.taskFailed', title_params: { title: task.title || task.task_id }, type: 'task' });
     } catch (e2: any) {
       log(`⚠ failTask 都失敗咗 (${task.task_id}) — task 留喺 running，等 reap-stalled-tasks cron requeue:`, e2?.message ?? e2);
     }

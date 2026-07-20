@@ -137,57 +137,6 @@ const OrbitDot = styled.div<{ $color: string; $s: number }>`
   box-shadow: 0 0 ${({ $s }) => $s * 2}px ${({ $color }) => $color}55;
 `;
 
-/* ── Farmer hover tooltip ── */
-const FarmerWrap = styled.div`
-  position: relative;
-  cursor: pointer;
-  pointer-events: auto;
-
-  &:hover > div:last-child {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-    pointer-events: auto;
-  }
-`;
-
-const FarmerTooltip = styled.div`
-  position: absolute;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%) translateY(4px);
-  background: ${({ theme }) => theme.colors.surface};
-  color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 0.75rem;
-  font-weight: 500;
-  padding: 6px 12px;
-  border-radius: 8px;
-  white-space: nowrap;
-  box-shadow: ${({ theme }) => theme.shadows.card};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  z-index: 10;
-
-  &::after {
-    content: '';
-    position: absolute;
-    top: 100%;
-    left: 50%;
-    transform: translateX(-50%);
-    border: 5px solid transparent;
-    border-top-color: ${({ theme }) => theme.colors.surface};
-  }
-`;
-
-const FARMER_TIP_KEYS = [
-  'search.farmerTip1',
-  'search.farmerTip2',
-  'search.farmerTip3',
-  'search.farmerTip4',
-  'search.farmerTip5',
-];
-
 const GradientGreeting = styled.h1`
   font-size: clamp(1.5rem, 4vw, 2.5rem);
   font-weight: 800;
@@ -679,7 +628,7 @@ const Separator = styled.div`
 /* B区: 圆形按钮 + 星星 */
 const sparkle = keyframes`
   0% { transform: translate(0,0) scale(1); opacity: 1; }
-  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0.3); opacity: 0; }
 `;
 
 const BtnWrap = styled.div`
@@ -888,10 +837,12 @@ const ResultCard = styled.div`
   border-left: 3px solid ${({ theme }) => theme.colors.accent};
   background: ${({ theme }) => theme.colors.surface};
   cursor: pointer;
-  transition: all 0.15s;
-  &:hover {
-    box-shadow: 0 2px 8px rgba(15,23,42,0.07);
-    transform: translateY(-1px);
+  transition: box-shadow 0.15s var(--ease-out), transform 0.15s var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      box-shadow: 0 2px 8px rgba(15,23,42,0.07);
+      transform: translateY(-1px);
+    }
   }
   ${media.mobile} {
     flex-wrap: wrap;
@@ -1048,7 +999,7 @@ const FilterToggle = styled.button<{ $active: boolean }>`
   font-size: 0.6875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: border-color 0.15s var(--ease-out), color 0.15s var(--ease-out);
   &:hover { border-color: ${({ theme }) => theme.colors.accent}; color: ${({ theme }) => theme.colors.accent}; }
 `;
 
@@ -1096,7 +1047,7 @@ const SourceChip = styled.button<{ $active: boolean; $color?: string }>`
   font-size: 0.6875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: border-color 0.15s var(--ease-out), color 0.15s var(--ease-out);
   &:hover { border-color: ${({ $color, theme }) => $color || theme.colors.accent}; color: ${({ $color, theme }) => $color || theme.colors.accent}; }
 `;
 
@@ -1216,7 +1167,7 @@ const DpCloseBtn = styled.button`
   justify-content: center;
   color: ${({ theme }) => theme.colors.accent};
   flex-shrink: 0;
-  transition: all 0.15s;
+  transition: background 0.15s var(--ease-out);
   &:hover {
     background: ${({ theme }) => theme.colors.accent + '15'};
   }
@@ -1371,7 +1322,7 @@ const StepCircle = styled.div<{ $state: 'done' | 'active' | 'pending' }>`
   font-size: 1rem;
   font-weight: 700;
   flex-shrink: 0;
-  transition: all 0.3s;
+  transition: background 0.3s var(--ease-out), color 0.3s var(--ease-out);
   background: ${({ $state, theme }) =>
     $state === 'done' ? theme.strong.olive :
     $state === 'active' ? theme.colors.accent :
@@ -1685,11 +1636,6 @@ const SearchPage: React.FC = () => {
   const { t } = useTranslation();
   const { setBadge } = useBadge();
   const theme = useTheme();
-
-  const [farmerTipIdx, setFarmerTipIdx] = useState(0);
-  const handleFarmerHover = useCallback(() => {
-    setFarmerTipIdx(Math.floor(Math.random() * FARMER_TIP_KEYS.length));
-  }, []);
 
   /* Populate runtime color maps from theme */
   TYPE_COLORS = {
@@ -2062,12 +2008,9 @@ const SearchPage: React.FC = () => {
               </OrbitAvatar>
             </OrbitNodeWrap>
             <OrbitNodeWrap style={orbitNodePos(270)} $dur={ORBIT_RINGS[1].dur} $reverse>
-              <FarmerWrap onMouseEnter={handleFarmerHover}>
-                <OrbitAvatar>
-                  <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} size={36} />
-                </OrbitAvatar>
-                <FarmerTooltip>{t(FARMER_TIP_KEYS[farmerTipIdx])}</FarmerTooltip>
-              </FarmerWrap>
+              <OrbitAvatar>
+                <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} size={36} />
+              </OrbitAvatar>
             </OrbitNodeWrap>
           </OrbitPath>
           {/* Ring 2 — planet dots */}

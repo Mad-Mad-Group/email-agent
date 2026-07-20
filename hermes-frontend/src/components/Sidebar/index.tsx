@@ -198,7 +198,7 @@ const ScrollArea = styled.div`
   flex: 1;
   overflow-y: auto;
   min-height: 0;
-  padding: 0 13px 8px 8px;
+  padding: 0 0 8px 8px;
 
   [data-collapsed="true"] & {
     padding: 0 0 8px 0;
@@ -253,7 +253,7 @@ const TitleRow = styled.div`
   display: flex;
   align-items: center;
   height: 64px;
-  padding: 0 10px 0 10px;
+  padding: 0 12px 0 8px;
   flex-shrink: 0;
   overflow: hidden;
   width: 200px;
@@ -308,12 +308,14 @@ const PlusBtn = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  &:hover { opacity: 0.9; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { opacity: 0.9; }
+  }
 `;
 
 const MenuList = styled.ul`
   list-style: none;
-  margin: 4px 6px;
+  margin: 4px 6px 4px 8px;
   padding: 0;
 
   [data-collapsed="true"] & {
@@ -363,19 +365,21 @@ const MLink = styled(NavLink)`
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 10px;
+  padding: 8px 12px;
   border-radius: 14px;
-  font-size: 0.8125rem;
+  font-size: 0.9375rem;
   color: ${({ theme }) => theme.sidebar.text};
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition: background 150ms var(--ease-out), color 150ms var(--ease-out);
 
   svg { transition: transform 0.2s ease; }
 
-  &:hover {
-    color: ${({ theme }) => theme.sidebar.text};
-    background: ${({ theme }) => theme.sidebar.hoverBg};
-    svg { animation: ${iconFloat} 0.6s ease-in-out; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: ${({ theme }) => theme.sidebar.text};
+      background: ${({ theme }) => theme.sidebar.hoverBg};
+      svg { animation: ${iconFloat} 0.6s ease-in-out; }
+    }
   }
 
   &.active {
@@ -399,9 +403,9 @@ const MLink = styled(NavLink)`
 `;
 
 const SearchLink = styled(MLink)`
-  font-size: 0.9375rem;
+  font-size: 1.0625rem;
   font-weight: 600;
-  padding: 10px 10px;
+  padding: 10px 12px;
   gap: 10px;
 
   [data-collapsed="true"] & {
@@ -471,15 +475,17 @@ const FooterBtn = styled.a`
   color: ${({ theme }) => theme.sidebar.textMuted};
   text-decoration: none;
   border-radius: 14px;
-  transition: all 0.15s;
+  transition: background 150ms var(--ease-out), color 150ms var(--ease-out);
   cursor: pointer;
 
   svg { transition: transform 0.2s ease; }
 
-  &:hover {
-    color: ${({ theme }) => theme.sidebar.text};
-    background: ${({ theme }) => theme.sidebar.hoverBg};
-    svg { animation: ${iconFloat} 0.6s ease-in-out; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: ${({ theme }) => theme.sidebar.text};
+      background: ${({ theme }) => theme.sidebar.hoverBg};
+      svg { animation: ${iconFloat} 0.6s ease-in-out; }
+    }
   }
 
   &.active {
@@ -568,7 +574,9 @@ const LogoutCancelBtn = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
-  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  }
 `;
 
 const LogoutConfirmBtn = styled.button`
@@ -582,7 +590,9 @@ const LogoutConfirmBtn = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s;
-  &:hover { opacity: 0.9; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { opacity: 0.9; }
+  }
 `;
 
 /* ── Tooltip for footer buttons ── */
@@ -608,8 +618,10 @@ const FooterBtnWrap = styled.div`
   flex: 1;
   text-align: center;
 
-  &:hover ${FooterTooltip} {
-    opacity: 1;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover ${FooterTooltip} {
+      opacity: 1;
+    }
   }
 
   [data-collapsed="true"] & {
@@ -673,61 +685,19 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
       </TitleRow>
 
       <MenuList>
-        <li><SearchLink to="/cms-search"><IconSearch /><span>{t('nav.leadSearch')}</span></SearchLink></li>
-        <MenuSpacer />
         <li><MLink to="/dashboard"><IconHome /><span>{t('nav.myDashboard')}</span>{counts['/dashboard'] ? <Badge>{counts['/dashboard']}</Badge> : null}</MLink></li>
+        <li><MLink to="/cms-agents"><IconAgent /><span>{t('nav.agents')}</span>{counts['/cms-agents'] ? <Badge>{counts['/cms-agents']}</Badge> : null}</MLink></li>
         <MenuSpacer />
         <li><MLink to="/cms-leads"><IconLeads /><span>{t('nav.leadPool')}</span>{counts['/cms-leads'] ? <Badge>{counts['/cms-leads']}</Badge> : null}</MLink></li>
         <li><MLink to="/cms-verified-emails"><IconVerifiedEmail /><span>{t('nav.verifiedEmails')}</span>{counts['/cms-verified-emails'] ? <Badge>{counts['/cms-verified-emails']}</Badge> : null}</MLink></li>
         <li><MLink to="/app-calendar"><IconSchedule /><span>{t('nav.calendar')}</span></MLink></li>
       </MenuList>
       <BottomMenuList>
-        <li><MLink to="/cms-agents"><IconAgent /><span>{t('nav.agents')}</span>{counts['/cms-agents'] ? <Badge>{counts['/cms-agents']}</Badge> : null}</MLink></li>
         <li><MLink to="/cms-users"><IconUsers /><span>{t('nav.team')}</span></MLink></li>
       </BottomMenuList>
       </ScrollArea>
 
-      {/* Footer icons */}
-      <FooterLinks>
-        <FooterBtnWrap>
-          <FooterBtn as={NavLink} to="/cms-user-info" title={t('nav.userInfo')}>
-            <IconUserInfo />
-          </FooterBtn>
-          <FooterTooltip>{t('nav.userInfo')}</FooterTooltip>
-        </FooterBtnWrap>
-        <FooterBtnWrap>
-          <FooterBtn as={NavLink} to="/cms-settings" title={t('nav.settings')}>
-            <IconSettings />
-          </FooterBtn>
-          <FooterTooltip>{t('nav.settings')}</FooterTooltip>
-        </FooterBtnWrap>
-        <FooterBtnWrap>
-          <FooterBtn title={t('nav.signOut')} onClick={() => setShowLogoutDialog(true)}>
-            <IconLogout />
-          </FooterBtn>
-          <FooterTooltip>{t('nav.signOut')}</FooterTooltip>
-        </FooterBtnWrap>
-      </FooterLinks>
-
-      {/* Logout confirmation dialog */}
-      {showLogoutDialog && createPortal(
-        <LogoutOverlay onClick={() => setShowLogoutDialog(false)}>
-          <LogoutDialog onClick={(e) => e.stopPropagation()}>
-            <LogoutIconWrap><IconLogout /></LogoutIconWrap>
-            <LogoutTitle>{t('nav.signOut')}</LogoutTitle>
-            <LogoutDesc>{t('nav.logoutConfirm')}</LogoutDesc>
-            <LogoutActions>
-              <LogoutCancelBtn onClick={() => setShowLogoutDialog(false)}>
-                {t('common.cancel')}
-              </LogoutCancelBtn>
-              <LogoutConfirmBtn onClick={handleLogout}>
-                {t('nav.signOut')}
-              </LogoutConfirmBtn>
-            </LogoutActions>
-          </LogoutDialog>
-        </LogoutOverlay>,
-        document.body
-      )}
+      {/* Footer icons moved to Topbar avatar dropdown */}
     </Wrapper>
   );
 };

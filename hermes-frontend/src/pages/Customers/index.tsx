@@ -200,8 +200,10 @@ const CloseBtn = styled.button`
   width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   color: ${({ theme }) => theme.colors.accent};
-  flex-shrink: 0; transition: all 0.15s;
-  &:hover { background: ${({ theme }) => `${theme.colors.accent}15`}; }
+  flex-shrink: 0; transition: background 150ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: ${({ theme }) => `${theme.colors.accent}15`}; }
+  }
 `;
 
 const ModalBody = styled.div`
