@@ -18,8 +18,12 @@ import { AGENTS, FARMER, ACTIVITY_AGENT } from '../../config/agents';
 
 const Page = styled.div`
   display: flex; flex-direction: column; gap: 24px;
+<<<<<<< Updated upstream
   padding: 32px 28px 40px; min-width: 0;
   ${media.tablet} { padding: 20px 16px 28px; gap: 16px; }
+=======
+  padding: 32px 28px 40px; min-width: 0; overflow-x: hidden;
+>>>>>>> Stashed changes
   ${media.mobile} { padding: 20px 16px 32px; }
 `;
 
@@ -38,6 +42,7 @@ const GreetingDate = styled.p`
 
 /* ── Dashboard Grid: cards area + calendar sidebar ── */
 const DashGrid = styled.div`
+<<<<<<< Updated upstream
   display: grid;
   grid-template-columns: 1fr minmax(300px, 340px);
   gap: 20px; align-items: stretch;
@@ -57,6 +62,16 @@ const CalendarSidebar = styled.div`
   display: flex; flex-direction: column; gap: 16px;
   ${media.tablet} { flex-direction: row; gap: 12px; grid-column: 1 / -1; }
   ${media.mobile} { grid-column: 1 / -1; }
+=======
+  display: flex; flex-direction: column; gap: 20px;
+`;
+const CardsArea = styled.div`
+  display: flex; flex-direction: column; gap: 20px; min-width: 0;
+`;
+const CardRow = styled.div`
+  display: flex; gap: 20px; align-items: stretch;
+  ${media.tabletDown} { flex-direction: column; }
+>>>>>>> Stashed changes
 `;
 /* Embedded section inside a board — no bg, dark text */
 const EmbedTitle = styled.div`
@@ -106,6 +121,7 @@ const ActionCard = styled.div<{ $accent: string; $pastel: string }>`
   background: ${({ $pastel }) => $pastel};
   cursor: pointer; overflow: hidden;
   display: flex; flex-direction: column;
+  min-width: 0;
   transition: transform ${({ theme }) => theme.motion.fast}, box-shadow ${({ theme }) => theme.motion.fast};
   &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
   ${media.tablet} { padding: 16px 14px 14px; }
@@ -168,6 +184,7 @@ const MiniBar = styled.div<{ $color: string; $pct: number }>`
 interface VFunnelBar { label: string; value: number; pct: string }
 const StatsRow = styled.div`
   display: flex; align-items: flex-start; gap: 16px; padding-right: 28px;
+  flex-wrap: wrap;
 `;
 const StatsLeft = styled.div`
   flex: 1; min-width: 0;
@@ -335,6 +352,7 @@ const BarChart: React.FC<{ bars: BarData[] }> = ({ bars }) => {
 /* ── Donut Chart (redesigned) ── */
 const DonutWrap = styled.div`
   display: flex; align-items: center; gap: 20px; justify-content: center; padding: 8px;
+<<<<<<< Updated upstream
   ${media.tablet} {
     gap: 10px; padding: 2px;
     & > div:first-child svg { width: 165px; height: 165px; }
@@ -343,6 +361,9 @@ const DonutWrap = styled.div`
 const LegendList = styled.div`
   display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0; max-width: 180px;
   ${media.tablet} { gap: 10px; max-width: 160px; }
+=======
+  flex-wrap: wrap;
+>>>>>>> Stashed changes
 `;
 const LegendRow = styled.div`display: flex; flex-direction: column; gap: 3px;`;
 const LegendRowTop = styled.div`display: flex; align-items: center; gap: 6px;`;
@@ -405,7 +426,7 @@ const DonutChart: React.FC<{ slices: { value: number; color: string; label?: str
           {arcs[hover.idx].label}: {arcs[hover.idx].value} ({Math.round(arcs[hover.idx].pct * 100)}%)
         </DonutTooltip>
       )}
-      <svg ref={svgRef} width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block' }}>
+      <svg ref={svgRef} width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ display: 'block', maxWidth: '100%', height: 'auto', flexShrink: 0 }}>
         <defs>
           {arcs.map((a, i) => (
             <linearGradient key={i} id={`donut${i}`} x1="0" y1="0" x2="1" y2="1">
@@ -543,6 +564,7 @@ const EmbedWhite = styled.div`
   ${media.tablet} { margin-top: 14px; }
 `;
 
+<<<<<<< Updated upstream
 /* ── Mini Calendar ── */
 const CalendarCard = styled.div`
   ${glassSurface};
@@ -649,6 +671,8 @@ const EmptyTimeline = styled.div`
   padding: 24px 8px; gap: 10px; color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
 `;
 
+=======
+>>>>>>> Stashed changes
 /* ── Meeting list inside blue card ── */
 const MtgList = styled.div`
   margin-top: 12px; display: flex; flex-direction: column; gap: 0;
@@ -736,30 +760,6 @@ const IconPlus = () => (
     <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
   </svg>
 );
-const IconChevronLeft = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="15 18 9 12 15 6"/>
-  </svg>
-);
-const IconChevronRight = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="9 18 15 12 9 6"/>
-  </svg>
-);
-const EmptyCalendarSvg: React.FC<{ color: string }> = ({ color }) => (
-  <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="16" y="20" width="48" height="44" rx="6" stroke={color} strokeWidth="1.5" opacity="0.3"/>
-    <line x1="16" y1="32" x2="64" y2="32" stroke={color} strokeWidth="1" opacity="0.2"/>
-    <rect x="24" y="24" width="2" height="6" rx="1" fill={color} opacity="0.25"/>
-    <rect x="54" y="24" width="2" height="6" rx="1" fill={color} opacity="0.25"/>
-    <circle cx="32" cy="44" r="2" fill={color} opacity="0.15"/>
-    <circle cx="40" cy="44" r="2" fill={color} opacity="0.15"/>
-    <circle cx="48" cy="44" r="2" fill={color} opacity="0.15"/>
-    <circle cx="32" cy="52" r="2" fill={color} opacity="0.1"/>
-    <circle cx="40" cy="52" r="2" fill={color} opacity="0.1"/>
-  </svg>
-);
-
 /* ══════════ Helpers ══════════ */
 
 const timeAgo = (dateStr: string | undefined, t: (key: string, opts?: Record<string, unknown>) => string) => {
@@ -1130,35 +1130,6 @@ const Dashboard: React.FC = () => {
     }));
   }, [allLeads]);
 
-  // ── Calendar state ──
-  const [selectedDate, setSelectedDate] = useState<{ year: number; month: number; day: number } | null>(null);
-  const [calMonth, setCalMonth] = useState(() => {
-    const d = new Date(); return { year: d.getFullYear(), month: d.getMonth() };
-  });
-  const calPrev = useCallback(() => setCalMonth(p => {
-    const m = p.month - 1;
-    return m < 0 ? { year: p.year - 1, month: 11 } : { year: p.year, month: m };
-  }), []);
-  const calNext = useCallback(() => setCalMonth(p => {
-    const m = p.month + 1;
-    return m > 11 ? { year: p.year + 1, month: 0 } : { year: p.year, month: m };
-  }), []);
-  const calDays = useMemo(() => {
-    const { year, month } = calMonth;
-    const first = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const prevDays = new Date(year, month, 0).getDate();
-    const today = new Date();
-    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
-    const todayDate = today.getDate();
-    const cells: { day: number; muted: boolean; today: boolean; hasEvent: boolean }[] = [];
-    for (let i = first - 1; i >= 0; i--) cells.push({ day: prevDays - i, muted: true, today: false, hasEvent: false });
-    for (let d = 1; d <= daysInMonth; d++) cells.push({ day: d, muted: false, today: isCurrentMonth && d === todayDate, hasEvent: d % 3 === 0 || d % 7 === 0 });
-    const rem = 7 - (cells.length % 7); if (rem < 7) for (let i = 1; i <= rem; i++) cells.push({ day: i, muted: true, today: false, hasEvent: false });
-    return cells;
-  }, [calMonth]);
-  const calMonthNames = [t('calendar.jan'), t('calendar.feb'), t('calendar.mar'), t('calendar.apr'), t('calendar.may'), t('calendar.jun'), t('calendar.jul'), t('calendar.aug'), t('calendar.sep'), t('calendar.oct'), t('calendar.nov'), t('calendar.dec')];
-
   const greetingKey = useMemo(() => {
     const h = new Date().getHours();
     const pool = h < 12 ? GREETINGS_MORNING : h < 18 ? GREETINGS_AFTERNOON : GREETINGS_EVENING;
@@ -1179,10 +1150,9 @@ const Dashboard: React.FC = () => {
         <GreetingDate>{new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</GreetingDate>
       </GreetingBlock>
 
-      {/* ── Dashboard: 2-row card grid + calendar sidebar ── */}
+      {/* ── Dashboard cards ── */}
       <DashGrid>
-        <CardsArea>
-          {/* ═══ Top row: 審核 (flex:1) + 回覆 (flex:1) — equal width, equal height ═══ */}
+          {/* ═══ Top row: 審核 (flex:1) + 回覆 (flex:1) ═══ */}
           <CardRow>
             {/* 審核 — gold card with funnel + embedded Schedule (truncated) */}
             <ActionCard
@@ -1277,7 +1247,7 @@ const Dashboard: React.FC = () => {
                   <Empty><EmptyDonutSvg borderColor={theme.colors.border} borderStrongColor={theme.colors.borderStrong} />{t('dashboard.noReplyData')}</Empty>
                 ) : (
                   <DonutWrap>
-                    <DonutChart size={210} slices={[
+                    <DonutChart size={170} slices={[
                       { value: replyCats.interested, color: theme.colors.textPrimary, label: t('dashboard.interested') },
                       { value: replyCats.meeting, color: `${theme.colors.textPrimary}99`, label: t('dashboard.meetingCat') },
                       { value: replyCats.question, color: `${theme.colors.textPrimary}66`, label: t('dashboard.question') },
@@ -1316,7 +1286,7 @@ const Dashboard: React.FC = () => {
             <ActionCard
               $pastel={theme.pastel.mauve}
               $accent={theme.strong.mauve}
-              style={{ flex: 3 }}
+              style={{ flex: 1 }}
               onClick={() => navigate('/cms-leads?tab=awaiting&sub=no_followup')}
             >
               <ActionWatermark $fg={theme.strong.mauve} $rot={-12}><IconAlert /></ActionWatermark>
@@ -1365,24 +1335,33 @@ const Dashboard: React.FC = () => {
               </EmbedWhite>
             </ActionCard>
 
-            {/* 會議 — blue (narrower) with meeting list */}
+            {/* 今日議程 — blue card (schedule + meetings combined) */}
             <ActionCard
               $pastel={theme.pastel.blue}
               $accent={theme.strong.blue}
-              style={{ flex: 2 }}
+              style={{ flex: 1 }}
               onClick={() => navigate('/cms-leads?tab=replied&sub=meeting')}
             >
               <ActionWatermark $fg={theme.strong.blue} $rot={28}><IconClock /></ActionWatermark>
               <ActionArrow $fg={theme.strong.blue}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
               </ActionArrow>
-              <ActionTitle>{t('dashboard.cardTitleMeeting')}</ActionTitle>
-              <ActionCount>{actions.pendingMeetings}</ActionCount>
+              <ActionTitle>{t('dashboard.todayScheduleTitle')}</ActionTitle>
+              <ActionCount>{todayTimeline.length + meetingList.length}</ActionCount>
 
-              {meetingList.length > 0 && (
+              {todayTimeline.length === 0 && meetingList.length === 0 ? (
+                <ActionLabel>{t('dashboard.noScheduleToday')}</ActionLabel>
+              ) : (
                 <MtgList style={{ flex: 1 }}>
+                  {todayTimeline.map((item, i) => (
+                    <MtgItem key={`sched-${i}`} onClick={e => e.stopPropagation()}>
+                      <MtgDot $color={item.status === 'approved' ? theme.strong.olive : theme.strong.gold} />
+                      <MtgName>{item.to}</MtgName>
+                      <MtgTime>{item.displayTime}</MtgTime>
+                    </MtgItem>
+                  ))}
                   {meetingList.map((m, i) => (
-                    <MtgItem key={i}>
+                    <MtgItem key={`mtg-${i}`}>
                       <MtgDot $color={theme.strong.blue} />
                       <MtgName>{m.company}</MtgName>
                       <MtgTime>{m.time}</MtgTime>
@@ -1392,61 +1371,6 @@ const Dashboard: React.FC = () => {
               )}
             </ActionCard>
           </CardRow>
-        </CardsArea>
-
-        {/* ═══ Calendar sidebar — stretches to match cards height ═══ */}
-        <CalendarSidebar>
-          {/* Calendar + Add button — shared card */}
-          <CalendarCard>
-            <CalMonth>
-              <CalMonthNav onClick={calPrev}><IconChevronLeft /></CalMonthNav>
-              <CalMonthTitle>{calMonthNames[calMonth.month]} {calMonth.year}</CalMonthTitle>
-              <CalMonthNav onClick={calNext}><IconChevronRight /></CalMonthNav>
-            </CalMonth>
-            <CalDaysGrid>
-              {[t('calendar.sun'), t('calendar.mon'), t('calendar.tue'), t('calendar.wed'), t('calendar.thu'), t('calendar.fri'), t('calendar.sat')].map((d, i) => <CalDayHeader key={i}>{d}</CalDayHeader>)}
-              {calDays.map((c, i) => (
-                <CalDayCell
-                  key={i}
-                  $today={c.today}
-                  $selected={!c.muted && selectedDate?.year === calMonth.year && selectedDate?.month === calMonth.month && selectedDate?.day === c.day}
-                  $muted={c.muted}
-                  $hasEvent={c.hasEvent}
-                  onClick={() => { if (!c.muted) setSelectedDate({ year: calMonth.year, month: calMonth.month, day: c.day }); }}
-                >
-                  {c.day}
-                </CalDayCell>
-              ))}
-            </CalDaysGrid>
-            <CalAddBtn onClick={() => navigate('/cms-email')}>
-              <IconPlus /> {t('dashboard.addEvent')}
-            </CalAddBtn>
-          </CalendarCard>
-
-          {/* Today's timeline — fills remaining height */}
-          <TimelineCard>
-            <TimelineHeader>
-              <IconClock /> {t('dashboard.todayScheduleTitle')}
-            </TimelineHeader>
-            {todayTimeline.length === 0 ? (
-              <EmptyTimeline>
-                <EmptyCalendarSvg color={theme.colors.textTertiary} />
-                {t('dashboard.noScheduleToday')}
-              </EmptyTimeline>
-            ) : (
-              todayTimeline.map((item, i) => (
-                <TlItem key={i} $past={item.isPast}>
-                  <TlTime>{item.displayTime}</TlTime>
-                  <TlDot $color={item.status === 'approved' ? theme.strong.olive : theme.strong.gold} />
-                  <TlBody>
-                    <TlTitle>{item.to}</TlTitle>
-                    <TlSub>{item.subject}</TlSub>
-                  </TlBody>
-                </TlItem>
-              ))
-            )}
-          </TimelineCard>
-        </CalendarSidebar>
       </DashGrid>
     </Page>
   );

@@ -20,6 +20,20 @@ export const usersApi = {
   remove: (id: string) => client.delete(`/users/${id}`),
 };
 
+/* ── Token Usage ── */
+
+export interface TokenUsageByUser {
+  user_id: string;
+  total_tokens: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  call_count: number;
+}
+
+export const tokenUsageApi = {
+  byUser: () => client.get<TokenUsageByUser[]>('/token-usage'),
+};
+
 /* ── Roles ── */
 
 export interface RoleItem {

@@ -29,6 +29,7 @@ const jobs_module_1 = require("./jobs/jobs.module");
 const calendar_module_1 = require("./calendar/calendar.module");
 const notifications_module_1 = require("./notifications/notifications.module");
 const verified_emails_module_1 = require("./verified-emails/verified-emails.module");
+const token_usage_module_1 = require("./token-usage/token-usage.module");
 const app_controller_1 = require("./app.controller");
 let AppModule = class AppModule {
 };
@@ -57,6 +58,7 @@ exports.AppModule = AppModule = __decorate([
             calendar_module_1.CalendarModule,
             notifications_module_1.NotificationsModule,
             verified_emails_module_1.VerifiedEmailsModule,
+            token_usage_module_1.TokenUsageModule,
         ],
         controllers: [app_controller_1.AppController],
     })

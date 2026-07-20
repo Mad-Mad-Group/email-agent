@@ -1,8 +1,12 @@
 import { AiAnalysisService } from './ai-analysis.service';
+interface JwtUser {
+    userId: string;
+    role: string;
+}
 export declare class AiAnalysisController {
     private readonly svc;
     constructor(svc: AiAnalysisService);
-    analyze(id: string): Promise<{
+    analyze(id: string, user: JwtUser): Promise<{
         task_id: string;
         status: string;
         lead_id: string | undefined;
@@ -15,3 +19,4 @@ export declare class AiAnalysisController {
         _id: import("mongoose").Types.ObjectId;
     }>)[]>;
 }
+export {};

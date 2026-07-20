@@ -20,6 +20,7 @@ import { JobsModule } from './jobs/jobs.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { VerifiedEmailsModule } from './verified-emails/verified-emails.module';
+import { TokenUsageModule } from './token-usage/token-usage.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -54,6 +55,7 @@ import { AppController } from './app.controller';
     CalendarModule,
     NotificationsModule,
     VerifiedEmailsModule,
+    TokenUsageModule,
   ],
   controllers: [AppController],
 })

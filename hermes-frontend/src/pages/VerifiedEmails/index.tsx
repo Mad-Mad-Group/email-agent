@@ -1,5 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useState, useCallback } from 'react';
 import styled, { keyframes, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { media } from '../../styles/media';
@@ -8,7 +7,6 @@ import { useVerifiedEmails, useVerifiedEmailStats, useCreateVerifiedEmail, useDe
 import { VerifiedEmailItem, verifiedEmailsApi } from '../../api/services';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS } from '../../config/agents';
-import { getQuarterTag, matchesQuarterFilter, dateToYQ, buildQuarterOptions, type QuarterFilterValue } from '../../utils/quarter';
 
 /* ══════════════════════════════════════
    Verified Emails Pool — 共用已驗證郵箱
@@ -71,15 +69,6 @@ const Breadcrumb = styled.ol`
 
 const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
 const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
-
-const QuarterTag = styled.span`
-  display: inline-flex; align-items: center; padding: 1px 6px; border-radius: 4px;
-  font-size: 0.625rem; font-weight: 600; letter-spacing: 0.02em;
-  color: ${({ theme }) => theme.strong.mauve};
-  background: ${({ theme }) => theme.strong.mauve}1a;
-  border: 1px solid ${({ theme }) => theme.strong.mauve}40;
-  margin-left: 4px; flex-shrink: 0; line-height: 1.4;
-`;
 
 const ToolbarRow = styled.div`
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
@@ -278,14 +267,6 @@ const VerifiedEmailsPage: React.FC = () => {
   const [showAdd, setShowAdd] = useState(false);
   const [addForm, setAddForm] = useState({ email: '', company_name: '', notes: '' });
 
-  // ── Quarter filter (driven by URL ?quarter= param, set from sidebar) ──
-  const [searchParams, setSearchParams] = useSearchParams();
-  const now = useMemo(() => new Date(), []);
-  const { year: currentYear, quarter: currentQuarter } = dateToYQ(now);
-  const defaultQuarter: QuarterFilterValue = `${currentYear}Q${currentQuarter}`;
-  const quarterFilter: QuarterFilterValue = (searchParams.get('quarter') as QuarterFilterValue) || defaultQuarter;
-  const quarterOptions = useMemo(() => buildQuarterOptions(now), [now]);
-
   const methodLabels: Record<string, string> = {
     auto_reply_count: t('verifiedEmails.methodAutoReply'),
     ai_check: t('verifiedEmails.methodAiCheck'),
@@ -298,25 +279,9 @@ const VerifiedEmailsPage: React.FC = () => {
   const createMut = useCreateVerifiedEmail();
   const deleteMut = useDeleteVerifiedEmail();
 
-  const rawItems: VerifiedEmailItem[] = (data as any)?.data ?? [];
-  // Apply quarter filter client-side
-  const items = useMemo(() =>
-    quarterFilter === 'all'
-      ? rawItems
-      : rawItems.filter(item => matchesQuarterFilter(item.created_at, quarterFilter)),
-    [rawItems, quarterFilter]
-  );
-  const total: number = quarterFilter === 'all' ? ((data as any)?.total ?? 0) : items.length;
+  const items: VerifiedEmailItem[] = (data as any)?.data ?? [];
+  const total: number = (data as any)?.total ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / limit));
-
-  // Dynamic page title
-  const pageTitle = useMemo(() => {
-    if (quarterFilter === 'all') return t('quarter.titleVerifiedAll');
-    if (quarterFilter === 'prev_years') return t('quarter.titleVerifiedOlder');
-    if (quarterFilter.startsWith('year_')) return t('quarter.titleVerifiedYear', { year: quarterFilter.slice(5) });
-    const qPart = quarterFilter.slice(-2);
-    return t('quarter.titleVerifiedCurrent', { q: qPart });
-  }, [quarterFilter, t]);
 
   const handleAdd = useCallback(() => {
     if (!addForm.email || !addForm.company_name) return;
@@ -346,7 +311,7 @@ const VerifiedEmailsPage: React.FC = () => {
       <PageCard>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <SpriteAvatar src={AGENTS.S4.sprite} frames={AGENTS.S4.frames} frameW={AGENTS.S4.frameW} frameH={AGENTS.S4.frameH} size={48} />
-        <div><PageTitle>{pageTitle}</PageTitle><PageSub>{t('verifiedEmails.subtitle')}</PageSub></div>
+        <div><PageTitle>{t('verifiedEmails.title')}</PageTitle><PageSub>{t('verifiedEmails.subtitle')}</PageSub></div>
       </div>
 
       {/* Stats — same layout as Leads */}
@@ -386,15 +351,7 @@ const VerifiedEmailsPage: React.FC = () => {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
           />
-          <select
-            value={quarterFilter}
-            onChange={e => { const q = e.target.value as QuarterFilterValue; const next = new URLSearchParams(searchParams); if (q === defaultQuarter) next.delete('quarter'); else next.set('quarter', q); setSearchParams(next, { replace: true }); setPage(1); }}
-            style={{ padding: '6px 10px', borderRadius: 10, border: '1px solid #e0e0e0', background: '#fafafa', fontSize: 13, cursor: 'pointer', minWidth: 100 }}
-          >
-            {quarterOptions.map(opt => (
-              <option key={opt.value} value={opt.value}>{t(opt.labelKey, opt.labelParams)}</option>
-            ))}
-          </select>
+          <Btn onClick={() => window.alert(t('verifiedEmails.demoFollowUpMsg'))}>{t('verifiedEmails.demoFollowUp')}</Btn>
           <Btn onClick={handleExport}><ExportIcon /> {t('verifiedEmails.export')}</Btn>
           <Btn $variant="primary" onClick={() => setShowAdd(true)}><PlusIcon /> {t('verifiedEmails.add')}</Btn>
         </div>
@@ -430,7 +387,7 @@ const VerifiedEmailsPage: React.FC = () => {
                   {items.map(item => (
                     <tr key={item._id}>
                       <td>{item.email}</td>
-                      <td>{item.company_name}{(() => { const qt = getQuarterTag(item.created_at); return qt ? <QuarterTag>{qt}</QuarterTag> : null; })()}</td>
+                      <td>{item.company_name}</td>
                       <td style={{ color: 'inherit', opacity: 0.7 }}>{item.domain}</td>
                       <td>
                         <Badge $color={methodColors[item.verification_method]}>

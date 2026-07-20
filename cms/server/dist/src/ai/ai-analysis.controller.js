@@ -21,13 +21,14 @@ const jwt_auth_guard_1 = require("../common/guards/jwt-auth.guard");
 const roles_guard_1 = require("../common/guards/roles.guard");
 const permissions_guard_1 = require("../common/guards/permissions.guard");
 const permission_decorator_1 = require("../common/decorators/permission.decorator");
+const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
 let AiAnalysisController = class AiAnalysisController {
     svc;
     constructor(svc) {
         this.svc = svc;
     }
-    async analyze(id) {
-        return this.svc.analyzeLead(id);
+    async analyze(id, user) {
+        return this.svc.analyzeLead(id, user.userId);
     }
     async list(id) {
         return this.svc.listForLead(id);
@@ -40,8 +41,9 @@ __decorate([
     (0, permission_decorator_1.Permission)('ai.analyze'),
     openapi.ApiResponse({ status: 200 }),
     __param(0, (0, common_1.Param)('id')),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", Promise)
 ], AiAnalysisController.prototype, "analyze", null);
 __decorate([

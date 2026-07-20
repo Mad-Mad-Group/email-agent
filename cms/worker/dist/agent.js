@@ -54,6 +54,34 @@ const imapflow_1 = require("imapflow");
 const mailparser_1 = require("mailparser");
 const brand_1 = require("./brand");
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+/* ── Token usage 追蹤 ── */
+let _taskCtx = {};
+function estimateTokens(text) {
+    // 中英混合粗略估算：~3.5 字元/token
+    return Math.ceil(text.length / 3.5);
+}
+async function logTokenUsage(promptText, responseText) {
+    if (!_taskCtx.db)
+        return;
+    try {
+        const prompt_tokens = estimateTokens(promptText);
+        const completion_tokens = estimateTokens(responseText);
+        await _taskCtx.db.collection('token_usages').insertOne({
+            user_id: _taskCtx.user_id || null,
+            task_id: _taskCtx.task_id || null,
+            skill_id: _taskCtx.skill_id || null,
+            model: 'MiniMax-M3',
+            prompt_tokens,
+            completion_tokens,
+            total_tokens: prompt_tokens + completion_tokens,
+            estimated: true,
+            created_at: new Date(),
+        });
+    }
+    catch (e) {
+        console.log(`[token-usage] 寫入失敗: ${e?.message ?? e}`);
+    }
+}
 /**
  * 叫 Hermes agent 做嘢（佢有 MiniMax + stealth browser + skills）。
  * --yolo = 非互動自動批准工具（開 browser 唔卡）。
@@ -73,6 +101,7 @@ function callHermes(prompt, timeoutMs = 300000) {
             }
             else {
                 console.log(`[hermes] ✓ ${elapsed}s — ${stdout.length} chars — preview: ${stdout.slice(0, 300).replace(/\n/g, '⏎')}`);
+                logTokenUsage(prompt, stdout).catch(() => { }); // fire-and-forget
                 resolve(stdout);
             }
         });
@@ -1618,6 +1647,8 @@ async function loginWithRetry() {
 }
 async function handleTask(task, db) {
     const p = task.params || {};
+    // 設定 token usage 追蹤 context
+    _taskCtx = { user_id: p.user_id, task_id: task.task_id, skill_id: task.skill_id, db };
     log(`══ 收到任務 ══`);
     log(`  task_id:  ${task.task_id}`);
     log(`  skill:    ${task.skill_id}`);
