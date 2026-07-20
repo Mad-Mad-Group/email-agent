@@ -18,12 +18,8 @@ import { AGENTS, FARMER, ACTIVITY_AGENT } from '../../config/agents';
 
 const Page = styled.div`
   display: flex; flex-direction: column; gap: 24px;
-<<<<<<< Updated upstream
   padding: 32px 28px 40px; min-width: 0;
   ${media.tablet} { padding: 20px 16px 28px; gap: 16px; }
-=======
-  padding: 32px 28px 40px; min-width: 0; overflow-x: hidden;
->>>>>>> Stashed changes
   ${media.mobile} { padding: 20px 16px 32px; }
 `;
 
@@ -42,7 +38,6 @@ const GreetingDate = styled.p`
 
 /* ── Dashboard Grid: cards area + calendar sidebar ── */
 const DashGrid = styled.div`
-<<<<<<< Updated upstream
   display: grid;
   grid-template-columns: 1fr minmax(300px, 340px);
   gap: 20px; align-items: stretch;
@@ -62,16 +57,6 @@ const CalendarSidebar = styled.div`
   display: flex; flex-direction: column; gap: 16px;
   ${media.tablet} { flex-direction: row; gap: 12px; grid-column: 1 / -1; }
   ${media.mobile} { grid-column: 1 / -1; }
-=======
-  display: flex; flex-direction: column; gap: 20px;
-`;
-const CardsArea = styled.div`
-  display: flex; flex-direction: column; gap: 20px; min-width: 0;
-`;
-const CardRow = styled.div`
-  display: flex; gap: 20px; align-items: stretch;
-  ${media.tabletDown} { flex-direction: column; }
->>>>>>> Stashed changes
 `;
 /* Embedded section inside a board — no bg, dark text */
 const EmbedTitle = styled.div`
@@ -352,7 +337,6 @@ const BarChart: React.FC<{ bars: BarData[] }> = ({ bars }) => {
 /* ── Donut Chart (redesigned) ── */
 const DonutWrap = styled.div`
   display: flex; align-items: center; gap: 20px; justify-content: center; padding: 8px;
-<<<<<<< Updated upstream
   ${media.tablet} {
     gap: 10px; padding: 2px;
     & > div:first-child svg { width: 165px; height: 165px; }
@@ -361,9 +345,6 @@ const DonutWrap = styled.div`
 const LegendList = styled.div`
   display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0; max-width: 180px;
   ${media.tablet} { gap: 10px; max-width: 160px; }
-=======
-  flex-wrap: wrap;
->>>>>>> Stashed changes
 `;
 const LegendRow = styled.div`display: flex; flex-direction: column; gap: 3px;`;
 const LegendRowTop = styled.div`display: flex; align-items: center; gap: 6px;`;
@@ -564,7 +545,6 @@ const EmbedWhite = styled.div`
   ${media.tablet} { margin-top: 14px; }
 `;
 
-<<<<<<< Updated upstream
 /* ── Mini Calendar ── */
 const CalendarCard = styled.div`
   ${glassSurface};
@@ -671,8 +651,6 @@ const EmptyTimeline = styled.div`
   padding: 24px 8px; gap: 10px; color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
 `;
 
-=======
->>>>>>> Stashed changes
 /* ── Meeting list inside blue card ── */
 const MtgList = styled.div`
   margin-top: 12px; display: flex; flex-direction: column; gap: 0;
@@ -1136,6 +1114,47 @@ const Dashboard: React.FC = () => {
     return pool[Math.floor(Math.random() * pool.length)];
   }, []);
 
+  // ── Calendar sidebar state ──
+  const now = new Date();
+  const [calYear, setCalYear] = useState(now.getFullYear());
+  const [calMonth, setCalMonth] = useState(now.getMonth()); // 0-based
+  const [selectedDay, setSelectedDay] = useState<number | null>(now.getDate());
+
+  const MONTH_KEYS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  const DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
+
+  const calDays = useMemo(() => {
+    const dim = new Date(calYear, calMonth + 1, 0).getDate(); // days in month
+    const firstDow = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
+    const prevDim = new Date(calYear, calMonth, 0).getDate(); // prev month last day
+    const cells: { day: number; muted: boolean; today: boolean }[] = [];
+    // prev month tail
+    for (let i = firstDow - 1; i >= 0; i--) {
+      cells.push({ day: prevDim - i, muted: true, today: false });
+    }
+    // current month
+    const todayDate = new Date();
+    for (let d = 1; d <= dim; d++) {
+      const isToday = d === todayDate.getDate() && calMonth === todayDate.getMonth() && calYear === todayDate.getFullYear();
+      cells.push({ day: d, muted: false, today: isToday });
+    }
+    // next month head — fill to 42 cells (6 rows)
+    const remainder = 42 - cells.length;
+    for (let d = 1; d <= remainder; d++) {
+      cells.push({ day: d, muted: true, today: false });
+    }
+    return cells;
+  }, [calYear, calMonth]);
+
+  const handlePrevMonth = useCallback(() => {
+    setCalMonth(m => { if (m === 0) { setCalYear(y => y - 1); return 11; } return m - 1; });
+    setSelectedDay(null);
+  }, []);
+  const handleNextMonth = useCallback(() => {
+    setCalMonth(m => { if (m === 11) { setCalYear(y => y + 1); return 0; } return m + 1; });
+    setSelectedDay(null);
+  }, []);
+
   const loading = leadsLoading || emailsLoading;
   if (loading) return <Page><SpinnerWrap><Spinner /><SpinnerText>{t('dashboard.loading')}</SpinnerText></SpinnerWrap></Page>;
 
@@ -1152,6 +1171,7 @@ const Dashboard: React.FC = () => {
 
       {/* ── Dashboard cards ── */}
       <DashGrid>
+        <CardsArea>
           {/* ═══ Top row: 審核 (flex:1) + 回覆 (flex:1) ═══ */}
           <CardRow>
             {/* 審核 — gold card with funnel + embedded Schedule (truncated) */}
@@ -1371,6 +1391,73 @@ const Dashboard: React.FC = () => {
               )}
             </ActionCard>
           </CardRow>
+        </CardsArea>
+
+        {/* ═══ Calendar Sidebar ═══ */}
+        <CalendarSidebar>
+          {/* Mini Calendar */}
+          <CalendarCard>
+            <CalMonth>
+              <CalMonthNav onClick={handlePrevMonth}>◀</CalMonthNav>
+              <CalMonthTitle>
+                {t(`calendar.${MONTH_KEYS[calMonth]}`)} {calYear}
+              </CalMonthTitle>
+              <CalMonthNav onClick={handleNextMonth}>▶</CalMonthNav>
+            </CalMonth>
+            <CalDaysGrid>
+              {DAY_KEYS.map(dk => (
+                <CalDayHeader key={dk}>{t(`calendar.${dk}`)}</CalDayHeader>
+              ))}
+              {calDays.map((cell, i) => (
+                <CalDayCell
+                  key={i}
+                  $muted={cell.muted}
+                  $today={cell.today}
+                  $selected={!cell.muted && cell.day === selectedDay}
+                  onClick={() => { if (!cell.muted) setSelectedDay(cell.day); }}
+                >
+                  {cell.day}
+                </CalDayCell>
+              ))}
+            </CalDaysGrid>
+            <CalAddBtn onClick={() => navigate('/cms-email')}>
+              + {t('dashboard.addEvent')}
+            </CalAddBtn>
+          </CalendarCard>
+
+          {/* Day Timeline */}
+          <TimelineCard>
+            <TimelineHeader>
+              📅 {t('dashboard.todayScheduleTitle')}
+            </TimelineHeader>
+            {todayTimeline.length === 0 && meetingList.length === 0 ? (
+              <EmptyTimeline>{t('dashboard.noScheduleToday')}</EmptyTimeline>
+            ) : (
+              <>
+                {todayTimeline.map((item, i) => (
+                  <TlItem key={`tl-${i}`}>
+                    <TlTime>{item.displayTime}</TlTime>
+                    <TlDot $color={item.status === 'approved' ? theme.strong.olive : theme.strong.gold} />
+                    <TlBody>
+                      <TlTitle>{item.to}</TlTitle>
+                      <TlSub>{item.subject}</TlSub>
+                    </TlBody>
+                  </TlItem>
+                ))}
+                {meetingList.map((m, i) => (
+                  <TlItem key={`mtg-tl-${i}`}>
+                    <TlTime>{m.time}</TlTime>
+                    <TlDot $color={theme.strong.blue} />
+                    <TlBody>
+                      <TlTitle>{m.company}</TlTitle>
+                      <TlSub>{t('dashboard.meetingLabel')}</TlSub>
+                    </TlBody>
+                  </TlItem>
+                ))}
+              </>
+            )}
+          </TimelineCard>
+        </CalendarSidebar>
       </DashGrid>
     </Page>
   );
