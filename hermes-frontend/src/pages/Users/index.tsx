@@ -543,8 +543,8 @@ function formatNumber(n: number): string {
   return n.toLocaleString('en-US');
 }
 
-/* ── Token cost estimate: MiniMax-M3 ≈ $0.005 / 1K tokens ── */
-const COST_PER_1K = 0.005;
+/* ── Token cost estimate: default $0.005 / 1K tokens ── */
+const DEFAULT_COST_PER_1K = 0.005;
 
 /* ── Tab Icons ── */
 
@@ -612,6 +612,14 @@ const Users: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', email: '', role: '' });
+  const [resetPwUser, setResetPwUser] = useState<UserItem | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [costPer1k, setCostPer1k] = useState(DEFAULT_COST_PER_1K);
+  const resetPassword = useMutation({
+    mutationFn: ({ id, password }: { id: string; password: string }) => usersApi.update(id, { password }),
+    onSuccess: () => { setResetPwUser(null); setNewPassword(''); setShowPw(false); },
+  });
 
   const updateUser = useMutation({
     mutationFn: ({ id, data: d }: { id: string; data: Record<string, unknown> }) => usersApi.update(id, d),
@@ -753,7 +761,7 @@ const Users: React.FC = () => {
                             </PermList>
                           )}
                         </td>
-                        <td>{formatDate(u.createdAt)}</td>
+                        <td>{formatDate(u.created_at ?? u.createdAt)}</td>
                       </TRow>
                     );
                   })
@@ -773,6 +781,31 @@ const Users: React.FC = () => {
               <SectionHint>{t('users.tokenUsageHint')}</SectionHint>
             </SectionTitleRow>
             <CardBody>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: '0.8125rem' }}>
+                <span style={{ color: theme.colors.textSecondary }}>{t('users.pricePerToken')}</span>
+                <span style={{ color: theme.colors.textTertiary }}>$</span>
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  value={costPer1k}
+                  onChange={e => {
+                    const v = parseFloat(e.target.value);
+                    if (!isNaN(v) && v >= 0) setCostPer1k(v);
+                  }}
+                  style={{
+                    width: 90,
+                    padding: '4px 8px',
+                    fontSize: '0.8125rem',
+                    border: `1px solid ${theme.colors.border}`,
+                    borderRadius: theme.radii.badge,
+                    background: theme.colors.surface,
+                    color: theme.colors.textPrimary,
+                    outline: 'none',
+                  }}
+                />
+                <span style={{ color: theme.colors.textTertiary, fontSize: '0.75rem' }}>/ 1K tokens</span>
+              </div>
               <TableWrap>
                 <Table>
                   <thead>
@@ -789,7 +822,7 @@ const Users: React.FC = () => {
                       tokenUsage.map((u, i) => {
                         const user = users.find(usr => usr._id === u.user_id);
                         const name = user?.name || u.user_id || 'Unknown';
-                        const cost = (u.total_tokens / 1000) * COST_PER_1K;
+                        const cost = (u.total_tokens / 1000) * costPer1k;
                         return (
                           <TRow key={u.user_id || i} $even={i % 2 === 1}>
                             <td>
@@ -877,7 +910,7 @@ const Users: React.FC = () => {
                     </DpField>
                     <DpField>
                       <DpFieldLabel>{t('users.joinDate')}</DpFieldLabel>
-                      <DpFieldValue>{formatDate(selectedUser.createdAt)}</DpFieldValue>
+                      <DpFieldValue>{formatDate(selectedUser.created_at ?? selectedUser.createdAt)}</DpFieldValue>
                     </DpField>
                   </DpGrid>
 
@@ -898,7 +931,7 @@ const Users: React.FC = () => {
 
             <DpFooter>
               <DpFooterStatus>
-                {t('users.memberSince', { date: formatDate(selectedUser.createdAt) })}
+                {t('users.memberSince', { date: formatDate(selectedUser.created_at ?? selectedUser.createdAt) })}
               </DpFooterStatus>
               {editing ? (
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -908,8 +941,68 @@ const Users: React.FC = () => {
                   </DpActionBtn>
                 </div>
               ) : (
-                <DpActionBtn $variant="primary" onClick={handleStartEdit}>{t('common.edit')}</DpActionBtn>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <DpActionBtn onClick={() => { setResetPwUser(selectedUser); setNewPassword(''); }}>{t('users.resetPassword')}</DpActionBtn>
+                  <DpActionBtn $variant="primary" onClick={handleStartEdit}>{t('common.edit')}</DpActionBtn>
+                </div>
               )}
+            </DpFooter>
+          </DpPanel>
+        </>,
+        document.body
+      )}
+      {/* Reset Password Modal */}
+      {resetPwUser && createPortal(
+        <>
+          <DpOverlay onClick={() => { setResetPwUser(null); setNewPassword(''); setShowPw(false); }} />
+          <DpPanel style={{ width: 380 }}>
+            <DpHeader>
+              <DpHeaderInfo>
+                <DpUserName>{t('users.resetPasswordFor', { name: resetPwUser.name })}</DpUserName>
+              </DpHeaderInfo>
+              <DpCloseBtn onClick={() => { setResetPwUser(null); setNewPassword(''); setShowPw(false); }}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </DpCloseBtn>
+            </DpHeader>
+            <DpBody>
+              <DpField>
+                <DpFieldLabel>{t('users.newPassword')}</DpFieldLabel>
+                <div style={{ position: 'relative' }}>
+                  <DpInput
+                    type={showPw ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    placeholder={t('users.newPasswordPlaceholder')}
+                    autoFocus
+                    style={{ width: '100%', paddingRight: 36 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPw(v => !v)}
+                    style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'inherit', opacity: 0.5 }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+                      {showPw
+                        ? <><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" /><circle cx="8" cy="8" r="2" /></>
+                        : <><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" /><circle cx="8" cy="8" r="2" /><line x1="2" y1="14" x2="14" y2="2" /></>
+                      }
+                    </svg>
+                  </button>
+                </div>
+              </DpField>
+            </DpBody>
+            <DpFooter>
+              <span />
+              <div style={{ display: 'flex', gap: 8 }}>
+                <DpActionBtn onClick={() => { setResetPwUser(null); setNewPassword(''); setShowPw(false); }}>{t('common.cancel')}</DpActionBtn>
+                <DpActionBtn
+                  $variant="primary"
+                  disabled={newPassword.length < 6 || resetPassword.isPending}
+                  onClick={() => resetPassword.mutate({ id: resetPwUser._id, password: newPassword })}
+                >
+                  {resetPassword.isPending ? t('users.saving') : t('users.confirmReset')}
+                </DpActionBtn>
+              </div>
             </DpFooter>
           </DpPanel>
         </>,

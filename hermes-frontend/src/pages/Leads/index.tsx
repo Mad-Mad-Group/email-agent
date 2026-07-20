@@ -1246,6 +1246,26 @@ const Leads: React.FC = () => {
     ? [...techFiltered].sort((a, b) => ((b as any)._tech_score ?? 0) - ((a as any)._tech_score ?? 0))
     : techFiltered;
 
+  const handleExportExcel = useCallback(async () => {
+    const XLSX = await import('xlsx');
+    const rows = techSorted.map(l => ({
+      [t('leads.name')]: l.company_name || '',
+      [t('leads.website')]: l.website || '',
+      Email: l.email || '',
+      [t('leads.phone')]: l.phone || '',
+      [t('leads.status')]: l.status || 'new',
+      [t('leads.sourceUser')]: l.user_id ? (userMap[l.user_id] || l.user_id) : '',
+      [t('leads.techScore')]: l._tech_score ?? '',
+      [t('leads.aiScore')]: l._email_draft_score ?? '',
+      [t('leads.importedAt')]: l._imported_at || l.createdAt || '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Leads');
+    XLSX.writeFile(wb, `leads_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success(t('leads.exportDone'));
+  }, [techSorted, userMap, t]);
+
   // Client-side pagination
   const total = techSorted.length;
   const totalPages = Math.ceil(total / LIMIT);
@@ -1395,6 +1415,9 @@ const Leads: React.FC = () => {
           <CircleActionBtn title={t('leads.refresh')} onClick={handleRefresh} disabled={refreshing} $spinning={refreshing}>
             <IconRefresh spinning={refreshing} />
           </CircleActionBtn>
+          <CircleActionBtn title={t('leads.exportExcel')} onClick={handleExportExcel}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </CircleActionBtn>
           <CircleActionBtn title={t('leads.clearAll')} onClick={handleClearAll} disabled={clearAllLeads.isPending} $spinning={clearAllLeads.isPending}>
             <IconTrash />
           </CircleActionBtn>
@@ -1488,8 +1511,8 @@ const Leads: React.FC = () => {
                           </td>
                         )}
                         <td style={{ textAlign: 'center' }}>
-                          {(lead as any)._tech_score != null ? (() => {
-                            const s = (lead as any)._tech_score as number;
+                          {lead._tech_score != null ? (() => {
+                            const s = lead._tech_score as number;
                             const bg = s >= 50 ? styledTheme.strong.mauve : s >= 25 ? styledTheme.strong.gold : styledTheme.strong.olive;
                             const label = s >= 50 ? t('leads.techOld') : s >= 25 ? t('leads.techNormal') : t('leads.techNew');
                             return (
@@ -1508,10 +1531,10 @@ const Leads: React.FC = () => {
                           })() : <span style={{ color: styledTheme.colors.border, fontSize: '0.75rem' }}>—</span>}
                         </td>
                         <td style={{ textAlign: 'center' }}>
-                          {(lead as any)._email_draft_score != null ? (() => {
-                            const s = (lead as any)._email_draft_score as number;
+                          {lead._email_draft_score != null ? (() => {
+                            const s = lead._email_draft_score as number;
                             const bg = s >= 80 ? styledTheme.colors.accent : s >= 60 ? styledTheme.strong.mauve : s >= 40 ? styledTheme.strong.gold : styledTheme.strong.olive;
-                            const reason = (lead as any)._email_draft_score_reason || '';
+                            const reason = lead._email_draft_score_reason || '';
                             return (
                               <span
                                 title={reason ? t('leads.aiScoreReason') + '：' + reason : ''}

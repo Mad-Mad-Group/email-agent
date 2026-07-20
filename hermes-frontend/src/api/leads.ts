@@ -37,6 +37,15 @@ export interface Lead {
   _pending_meeting?: boolean;
   _followup_count?: number;
   _has_email_draft?: boolean;
+
+  /* ── AI analysis fields (written by worker doAnalyze / doEnrich) ── */
+  _tech_score?: number;
+  _email_draft_score?: number;
+  _email_draft_score_reason?: string;
+  _collab_primary?: string;
+  _collab_pitch?: string;
+  _collab_reason?: string;
+  _collab_services?: string[];
 }
 
 export interface LeadListParams {

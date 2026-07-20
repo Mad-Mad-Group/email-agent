@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as bcrypt from 'bcryptjs';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -51,12 +52,12 @@ export class UsersService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User | null> {
+    const data: Record<string, any> = { ...updateUserDto, updated_at: new Date() };
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10);
+    }
     return this.userModel
-      .findByIdAndUpdate(
-        id,
-        { ...updateUserDto, updated_at: new Date() },
-        { new: true },
-      )
+      .findByIdAndUpdate(id, data, { new: true })
       .select('-password')
       .exec();
   }

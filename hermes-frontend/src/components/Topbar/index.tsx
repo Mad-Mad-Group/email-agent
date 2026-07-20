@@ -597,7 +597,6 @@ const AvatarDropdown = styled.div`
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: 6px;
   min-width: 180px;
   background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};

@@ -9,6 +9,7 @@ export interface UserItem {
   role: string;
   permissions?: string[];
   createdAt?: string;
+  created_at?: string;
 }
 
 export const usersApi = {
