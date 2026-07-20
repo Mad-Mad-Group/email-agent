@@ -9,6 +9,7 @@ export interface UserItem {
   role: string;
   permissions?: string[];
   createdAt?: string;
+  created_at?: string;
 }
 
 export const usersApi = {
@@ -66,6 +67,7 @@ export const settingsApi = {
 export interface NotificationPrefs {
   email_on_complete: boolean;
   browser_on_complete: boolean;
+  notification_email?: string;
 }
 
 export const notificationPrefsApi = {

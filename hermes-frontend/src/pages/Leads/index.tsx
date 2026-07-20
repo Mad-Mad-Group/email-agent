@@ -590,6 +590,36 @@ const getDateGroup = (dateStr?: string): string => {
   return 'earlier';
 };
 
+/* ── Selection Bar ── */
+
+const SelectionBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 16px;
+  background: ${({ theme }) => theme.colors.textPrimary};
+  color: #fff;
+  border-radius: ${({ theme }) => theme.radii.badge}px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  position: sticky;
+  bottom: 12px;
+  margin: 12px 16px 0;
+  z-index: 10;
+`;
+
+const SelectionBtn = styled.button`
+  padding: 5px 14px;
+  border: 1px solid rgba(255,255,255,0.3);
+  border-radius: ${({ theme }) => theme.radii.badge}px;
+  background: transparent;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover { background: rgba(255,255,255,0.15); }
+`;
+
 /* ── Pagination ── */
 
 const PaginationRow = styled.div`
@@ -1073,6 +1103,7 @@ const Leads: React.FC = () => {
   const [addClosing, setAddClosing] = useState(false);
   const addTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [detailClosing, setDetailClosing] = useState(false);
   const detailTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -1246,6 +1277,26 @@ const Leads: React.FC = () => {
     ? [...techFiltered].sort((a, b) => ((b as any)._tech_score ?? 0) - ((a as any)._tech_score ?? 0))
     : techFiltered;
 
+  const handleExportExcel = useCallback(async () => {
+    const XLSX = await import('xlsx');
+    const rows = techSorted.map(l => ({
+      [t('leads.name')]: l.company_name || '',
+      [t('leads.website')]: l.website || '',
+      Email: l.email || '',
+      [t('leads.phone')]: l.phone || '',
+      [t('leads.status')]: l.status || 'new',
+      [t('leads.sourceUser')]: l.user_id ? (userMap[l.user_id] || l.user_id) : '',
+      [t('leads.techScore')]: l._tech_score ?? '',
+      [t('leads.aiScore')]: l._email_draft_score ?? '',
+      [t('leads.importedAt')]: l._imported_at || l.createdAt || '',
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Leads');
+    XLSX.writeFile(wb, `leads_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    toast.success(t('leads.exportDone'));
+  }, [techSorted, userMap, t]);
+
   // Client-side pagination
   const total = techSorted.length;
   const totalPages = Math.ceil(total / LIMIT);
@@ -1395,6 +1446,9 @@ const Leads: React.FC = () => {
           <CircleActionBtn title={t('leads.refresh')} onClick={handleRefresh} disabled={refreshing} $spinning={refreshing}>
             <IconRefresh spinning={refreshing} />
           </CircleActionBtn>
+          <CircleActionBtn title={t('leads.exportExcel')} onClick={handleExportExcel}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          </CircleActionBtn>
           <CircleActionBtn title={t('leads.clearAll')} onClick={handleClearAll} disabled={clearAllLeads.isPending} $spinning={clearAllLeads.isPending}>
             <IconTrash />
           </CircleActionBtn>
@@ -1407,7 +1461,17 @@ const Leads: React.FC = () => {
             <Table>
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'center', width: '4%' }}><RowCheckbox readOnly /></th>
+                  <th style={{ textAlign: 'center', width: '4%' }}>
+                    <RowCheckbox
+                      checked={leads.length > 0 && leads.every(l => selectedIds.has(l._id))}
+                      onChange={e => {
+                        const next = new Set(selectedIds);
+                        if (e.target.checked) { leads.forEach(l => next.add(l._id)); }
+                        else { leads.forEach(l => next.delete(l._id)); }
+                        setSelectedIds(next);
+                      }}
+                    />
+                  </th>
                   <th style={{ width: isAdmin ? '24%' : '30%' }}>{t('leads.name')} <IconSortArrow /></th>
                   <th style={{ width: '13%' }}>{t('leads.reply')}</th>
                   {isAdmin && <th style={{ width: '10%' }}>{t('leads.sourceUser')}</th>}
@@ -1458,7 +1522,16 @@ const Leads: React.FC = () => {
                       return (
                         <React.Fragment key={lead._id}>
                           <TRow $even={i % 2 === 1} style={{ cursor: 'pointer' }} onClick={() => setSelectedLead(lead)}>
-                        <td style={{ color: styledTheme.colors.textTertiary, fontSize: '0.75rem', textAlign: 'center' }}>{(page - 1) * LIMIT + i + 1}</td>
+                        <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                          <RowCheckbox
+                            checked={selectedIds.has(lead._id)}
+                            onChange={e => {
+                              const next = new Set(selectedIds);
+                              if (e.target.checked) next.add(lead._id); else next.delete(lead._id);
+                              setSelectedIds(next);
+                            }}
+                          />
+                        </td>
                         <td>
                           <NameCell>
                             <StatusIcon $status={lead.status ?? 'new'} title={t(STATUS_I18N_KEY[lead.status ?? 'new'] || 'leads.statusNew')} />
@@ -1488,8 +1561,8 @@ const Leads: React.FC = () => {
                           </td>
                         )}
                         <td style={{ textAlign: 'center' }}>
-                          {(lead as any)._tech_score != null ? (() => {
-                            const s = (lead as any)._tech_score as number;
+                          {lead._tech_score != null ? (() => {
+                            const s = lead._tech_score as number;
                             const bg = s >= 50 ? styledTheme.strong.mauve : s >= 25 ? styledTheme.strong.gold : styledTheme.strong.olive;
                             const label = s >= 50 ? t('leads.techOld') : s >= 25 ? t('leads.techNormal') : t('leads.techNew');
                             return (
@@ -1508,10 +1581,10 @@ const Leads: React.FC = () => {
                           })() : <span style={{ color: styledTheme.colors.border, fontSize: '0.75rem' }}>—</span>}
                         </td>
                         <td style={{ textAlign: 'center' }}>
-                          {(lead as any)._email_draft_score != null ? (() => {
-                            const s = (lead as any)._email_draft_score as number;
+                          {lead._email_draft_score != null ? (() => {
+                            const s = lead._email_draft_score as number;
                             const bg = s >= 80 ? styledTheme.colors.accent : s >= 60 ? styledTheme.strong.mauve : s >= 40 ? styledTheme.strong.gold : styledTheme.strong.olive;
-                            const reason = (lead as any)._email_draft_score_reason || '';
+                            const reason = lead._email_draft_score_reason || '';
                             return (
                               <span
                                 title={reason ? t('leads.aiScoreReason') + '：' + reason : ''}
@@ -1566,6 +1639,43 @@ const Leads: React.FC = () => {
                 <PageBtn disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>{t('common.next')}</PageBtn>
               </PageBtns>
             </PaginationRow>
+          )}
+          {selectedIds.size > 0 && (
+            <SelectionBar>
+              <span>{t('leads.selectedCount', { count: selectedIds.size })}</span>
+              <SelectionBtn onClick={async () => {
+                const XLSX = await import('xlsx');
+                const selected = techSorted.filter(l => selectedIds.has(l._id));
+                const rows = selected.map(l => ({
+                  [t('leads.name')]: l.company_name || '',
+                  [t('leads.website')]: l.website || '',
+                  Email: l.email || '',
+                  [t('leads.phone')]: l.phone || '',
+                  [t('leads.status')]: l.status || 'new',
+                  [t('leads.sourceUser')]: l.user_id ? (userMap[l.user_id] || l.user_id) : '',
+                  [t('leads.techScore')]: l._tech_score ?? '',
+                  [t('leads.aiScore')]: l._email_draft_score ?? '',
+                  [t('leads.importedAt')]: l._imported_at || l.createdAt || '',
+                }));
+                const ws = XLSX.utils.json_to_sheet(rows);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Leads');
+                XLSX.writeFile(wb, `leads_${new Date().toISOString().slice(0, 10)}.xlsx`);
+                toast.success(t('leads.exportDone'));
+              }}>{t('leads.exportSelected')}</SelectionBtn>
+              <SelectionBtn onClick={async () => {
+                const ok = await showConfirm(t('leads.confirmDeleteSelected', { count: selectedIds.size }));
+                if (!ok) return;
+                for (const id of selectedIds) {
+                  if (!id.startsWith('mock-')) {
+                    try { await deleteLead.mutateAsync(id); } catch { /* skip */ }
+                  }
+                }
+                setSelectedIds(new Set());
+                refetch();
+              }}>{t('leads.deleteSelected')}</SelectionBtn>
+              <SelectionBtn onClick={() => setSelectedIds(new Set())}>{t('leads.clearSelection')}</SelectionBtn>
+            </SelectionBar>
           )}
         </PageCard>
 

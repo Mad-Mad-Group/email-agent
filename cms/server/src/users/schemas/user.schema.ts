@@ -31,11 +31,12 @@ export class User {
 
   @Prop({
     type: Object,
-    default: { email_on_complete: false, browser_on_complete: false },
+    default: { email_on_complete: false, browser_on_complete: false, notification_email: '' },
   })
   notification_prefs: {
     email_on_complete: boolean;
     browser_on_complete: boolean;
+    notification_email: string;
   };
 
   @Prop({ default: null })
