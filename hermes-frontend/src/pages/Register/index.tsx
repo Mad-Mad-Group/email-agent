@@ -86,7 +86,7 @@ const Register: React.FC = () => {
     }
     try {
       await registerUser({ name, email, password });
-      navigate('/dashboard');
+      navigate('/cms-agents');
     } catch (err: any) {
       setError(err.response?.data?.message || t('register.registrationFailed'));
     }

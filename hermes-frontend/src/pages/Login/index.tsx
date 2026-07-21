@@ -93,7 +93,7 @@ const Login: React.FC = () => {
     setError('');
     try {
       await login({ email, password });
-      navigate('/dashboard');
+      navigate('/cms-agents');
     } catch (err: any) {
       setError(err.response?.data?.message || t('login.loginFailed'));
     }
