@@ -1263,6 +1263,19 @@ const zhTW = {
     notifEmailDraft: '新草稿：{{name}}',
     notifEmailSent: '郵件已發送：{{name}}',
     notifTaskFailed: '任務失敗：{{name}}',
+    // Notice Board (clickable pixel notice board on the village background)
+    noticeBoardHint: '點擊查看日曆',
+    noticeSchedulesToday: '個行程',
+    noticeNoUpcoming: '今日暫無行程',
+    calendarPopupTitle: '日曆',
+    calendarPopupClose: '關閉',
+    calendarPopupSubtitle: '行程與即將到來的事件',
+    // Fountain (pixel-art stone basin in the village background)
+    fountainHint: '點擊查看客戶池',
+    poolPopupTitle: '客戶池',
+    poolPopupSubtitle: '客戶清單與已驗證的信箱',
+    poolTabLeads: '客戶池',
+    poolTabVerified: '已驗證信箱',
   },
   verifiedEmails: {
     breadcrumb: '已驗證池',

@@ -69,6 +69,18 @@ export const GlobalStyles = createGlobalStyle`
     border-spacing: 0;
   }
 
+  /* ── Page entry animation ── */
+  @keyframes fadeSlideUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Staggered list item entrance ── */
+  @keyframes fadeInRow {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
   /* Global button press feedback */
   button, [role="button"] {
     transition: transform 160ms var(--ease-out, cubic-bezier(0.23,1,0.32,1));

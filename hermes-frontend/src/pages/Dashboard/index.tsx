@@ -17,19 +17,25 @@ import { AGENTS, FARMER, ACTIVITY_AGENT } from '../../config/agents';
 /* ── Layout ── */
 
 const Page = styled.div`
-  display: flex; flex-direction: column; gap: 24px;
-  padding: 32px 28px 40px; min-width: 0; overflow-x: hidden;
-  ${media.tablet} { padding: 20px 16px 28px; gap: 16px; }
+  display: flex; flex-direction: column; gap: 28px;
+  padding: 36px 32px 44px; min-width: 0; overflow-x: hidden;
+  animation: fadeSlideUp 0.5s var(--ease-out) both;
+  ${media.tablet} { padding: 24px 18px 32px; gap: 20px; }
   ${media.mobile} { padding: 20px 16px 32px; }
 `;
 
 /* ── Intelly Greeting ── */
 const GreetingBlock = styled.div`display: flex; flex-direction: column; gap: 4px;`;
 const GreetingHeading = styled.h1`
-  font-size: 1.75rem; font-weight: 700; margin: 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: clamp(1.35rem, 2.5vw, 1.85rem); font-weight: 700; margin: 0;
+  background: ${({ theme }) => theme.gradients.brand};
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
   font-family: ${({ theme }) => theme.fonts.primary};
-  ${media.tablet} { font-size: 1.35rem; }
+  ${({ theme }) => theme.mode === 'dark' && `
+    background: linear-gradient(135deg, #E0ACD2, #ACC0DE);
+    -webkit-background-clip: text; background-clip: text;
+  `}
 `;
 const GreetingDate = styled.p`
   font-size: 0.875rem; margin: 0;
@@ -88,21 +94,29 @@ const CardIcon = styled.span<{ $color: string }>`
   color: ${({ $color }) => $color};
 `;
 
-/* ── Intelly Pastel Stat Cards (now inside masonry) ── */
+/* ── Intelly Stat Cards — tinted bg + left accent bar ── */
 const ActionCard = styled.div<{ $accent: string; $pastel: string }>`
   position: relative; border-radius: ${({ theme }) => theme.radii.card}px;
-  padding: 24px 20px 20px;
+  padding: 24px 20px 20px 24px;
   background: ${({ $pastel }) => $pastel};
+  border: 1px solid ${({ $accent }) => `${$accent}20`};
+  border-left: 4px solid ${({ $accent }) => $accent};
   cursor: pointer; overflow: hidden;
   display: flex; flex-direction: column;
   min-width: 0;
-  transition: transform ${({ theme }) => theme.motion.fast}, box-shadow ${({ theme }) => theme.motion.fast};
-  &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
-  ${media.tablet} { padding: 16px 14px 14px; }
+  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
+  transition: transform 0.2s var(--ease-out), box-shadow 0.3s ease, border-color 0.3s ease;
+  animation: fadeInRow 0.4s var(--ease-out) both;
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px ${({ $accent }) => `${$accent}18`}, 0 2px 8px rgba(0,0,0,0.06);
+    border-color: ${({ $accent }) => `${$accent}40`};
+  }
+  ${media.tablet} { padding: 16px 14px 14px 18px; }
 `;
 const ActionWatermark = styled.div<{ $fg: string; $rot?: number }>`
   position: absolute; right: -8px; top: -10px;
-  width: 105px; height: 105px; opacity: 0.38;
+  width: 105px; height: 105px; opacity: 0.07;
   color: ${({ $fg }) => $fg}; z-index: 1; pointer-events: none;
   transform: rotate(${({ $rot }) => $rot ?? 14}deg);
   svg { width: 100%; height: 100%; }
@@ -115,17 +129,18 @@ const ActionArrow = styled.div<{ $fg: string }>`
   color: ${({ $fg }) => $fg}; font-size: 0.65rem;
 `;
 const ActionTitle = styled.div`
-  font-size: 1.75rem; font-weight: 800; text-transform: uppercase;
-  letter-spacing: 0.06em; color: ${({ theme }) => theme.colors.textPrimary};
-  opacity: 0.7; margin-bottom: 8px;
-  ${media.tablet} { font-size: 1.1rem; margin-bottom: 4px; }
+  font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: ${({ theme }) => theme.colors.textTertiary};
+  margin-bottom: 6px;
+  ${media.tablet} { font-size: 0.6875rem; margin-bottom: 4px; }
 `;
 const ActionCountRow = styled.div`
   display: flex; align-items: baseline; gap: 10px;
 `;
 const ActionCount = styled.div`
-  font-size: 2.5rem; font-weight: 800; color: ${({ theme }) => theme.colors.textPrimary}; line-height: 1;
-  ${media.tablet} { font-size: 1.75rem; }
+  font-size: 2rem; font-weight: 700; color: ${({ theme }) => theme.colors.textPrimary}; line-height: 1;
+  font-variant-numeric: tabular-nums;
+  ${media.tablet} { font-size: 1.5rem; }
 `;
 const ActionLabel = styled.div`
   font-size: 0.8125rem; font-weight: 500; color: ${({ theme }) => theme.colors.textSecondary};
@@ -150,8 +165,10 @@ const MiniBar = styled.div<{ $color: string; $pct: number }>`
       return `${theme.colors.textPrimary}${Math.round(a * 255).toString(16).padStart(2, '0')}`;
     }};
     border-radius: 4px;
-    transition: width 0.4s ease;
+    transition: width 0.6s var(--ease-out);
+    animation: barGrow 0.8s var(--ease-out) both;
   }
+  @keyframes barGrow { from { width: 0; } }
 `;
 
 /* ── Vertical Funnel (inside pastel card) ── */
@@ -528,9 +545,9 @@ const CalendarLink = styled.div`
     text-decoration: none; &:hover { text-decoration: underline; } }
 `;
 
-/* ── Embed white section inside pastel card ── */
+/* ── Embed section inside card ── */
 const EmbedWhite = styled.div`
-  margin-top: 32px; background: ${({ theme }) => theme.colors.surface};
+  margin-top: 20px; background: ${({ theme }) => theme.mode === 'dark' ? theme.colors.surfaceMuted : '#fff'};
   border-radius: 12px; overflow: hidden;
   ${media.tablet} { margin-top: 14px; }
 `;
@@ -542,7 +559,7 @@ const MtgList = styled.div`
 const MtgItem = styled.div`
   display: flex; align-items: center; gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px dashed ${({ theme }) => theme.colors.textPrimary}18;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   &:last-child { border-bottom: none; }
 `;
 const MtgDot = styled.div<{ $color: string }>`
@@ -843,6 +860,30 @@ const PixelTypewriter: React.FC<{ text: string }> = ({ text }) => {
   return <>{text.slice(0, shown)}<span style={{ opacity: shown < text.length ? 1 : 0 }}>_</span></>;
 };
 
+/* ── Count-up animation ── */
+const CountUp: React.FC<{ value: number }> = ({ value }) => {
+  const [display, setDisplay] = React.useState(0);
+  const ref = useRef(value);
+  ref.current = value;
+  useEffect(() => {
+    let start = 0;
+    const end = ref.current;
+    if (end === 0) { setDisplay(0); return; }
+    const duration = 600;
+    const t0 = performance.now();
+    let raf: number;
+    const tick = (now: number) => {
+      const p = Math.min((now - t0) / duration, 1);
+      const ease = 1 - Math.pow(1 - p, 3);
+      setDisplay(Math.round(ease * end));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value]);
+  return <>{display}</>;
+};
+
 /* ══════════ COMPONENT ══════════ */
 
 const Dashboard: React.FC = () => {
@@ -1022,7 +1063,7 @@ const Dashboard: React.FC = () => {
               $pastel={theme.pastel.gold}
               $accent={theme.strong.gold}
               style={{ flex: 1 }}
-              onClick={() => navigate('/cms-email?status=pending')}
+              onClick={() => navigate('/cms-leads')}
             >
               <ActionWatermark $fg={theme.strong.gold} $rot={-18}><IconDraft /></ActionWatermark>
               <ActionArrow $fg={theme.strong.gold}>
@@ -1032,7 +1073,7 @@ const Dashboard: React.FC = () => {
                 <StatsLeft>
                   <ActionTitle>{t('dashboard.cardTitleDraft')}</ActionTitle>
                   <ActionCountRow>
-                    <ActionCount>{actions.pendingDrafts}</ActionCount>
+                    <ActionCount><CountUp value={actions.pendingDrafts} /></ActionCount>
                     <ActionTrend>
                       {actions.pendingDrafts > 0 ? '↑' : '—'} {stats.sentEmails} {t('dashboard.totalEmailsSent')}
                     </ActionTrend>
@@ -1076,7 +1117,7 @@ const Dashboard: React.FC = () => {
                     </SchedList>
                   )}
                   <CalendarLink>
-                    <a href="/cms-email" onClick={e => { e.preventDefault(); navigate('/cms-email'); }}>
+                    <a href="/cms-email-queue" onClick={e => { e.preventDefault(); navigate('/cms-email-queue'); }}>
                       {t('dashboard.viewFullCalendar')}
                     </a>
                   </CalendarLink>
@@ -1097,7 +1138,7 @@ const Dashboard: React.FC = () => {
               </ActionArrow>
               <ActionTitle>{t('dashboard.cardTitleReply')}</ActionTitle>
               <ActionCountRow>
-                <ActionCount>{actions.newReplies}</ActionCount>
+                <ActionCount><CountUp value={actions.newReplies} /></ActionCount>
                 <ActionTrend>
                   {stats.replyRate}% {t('dashboard.replied')}
                   <MiniBar $color={theme.colors.textPrimary} $pct={stats.replyRate} />
@@ -1157,7 +1198,7 @@ const Dashboard: React.FC = () => {
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
               </ActionArrow>
               <ActionTitle>{t('dashboard.cardTitleFollowup')}</ActionTitle>
-              <ActionCount>{actions.noReplyNoFollowup}</ActionCount>
+              <ActionCount><CountUp value={actions.noReplyNoFollowup} /></ActionCount>
 
               {/* What Just Happened — embedded, white bg, height limited */}
               <EmbedWhite onClick={e => e.stopPropagation()} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -1203,14 +1244,14 @@ const Dashboard: React.FC = () => {
               $pastel={theme.pastel.blue}
               $accent={theme.strong.blue}
               style={{ flex: 1 }}
-              onClick={() => navigate('/cms-leads?tab=replied&sub=meeting')}
+              onClick={() => navigate('/app-calendar')}
             >
               <ActionWatermark $fg={theme.strong.blue} $rot={28}><IconClock /></ActionWatermark>
               <ActionArrow $fg={theme.strong.blue}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
               </ActionArrow>
               <ActionTitle>{t('dashboard.todayScheduleTitle')}</ActionTitle>
-              <ActionCount>{todayTimeline.length + meetingList.length}</ActionCount>
+              <ActionCount><CountUp value={todayTimeline.length + meetingList.length} /></ActionCount>
 
               {todayTimeline.length === 0 && meetingList.length === 0 ? (
                 <ActionLabel>{t('dashboard.noScheduleToday')}</ActionLabel>

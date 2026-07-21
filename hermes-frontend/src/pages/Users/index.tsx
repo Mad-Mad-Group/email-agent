@@ -47,15 +47,21 @@ const TeamIcon = () => (
 
 /* ── Layout primitives ── */
 
-const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
+const Page = styled.div`
+  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.lg}px;
+  padding: 36px 32px 44px;
+  animation: fadeSlideUp 0.5s var(--ease-out) both;
+  ${media.tablet} { padding: 24px 18px 32px; }
+  ${media.mobile} { padding: 20px 16px 32px; }
+`;
 
 const PageCard = styled.div`
   background: transparent;
   border: none;
   box-shadow: none;
   border-radius: ${({ theme }) => theme.radii.card}px;
-  padding: 24px;
-  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
+  padding: 28px;
+  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.lg}px;
 `;
 
 const Breadcrumb = styled.ol`
@@ -69,7 +75,16 @@ const ToolbarRow = styled.div`
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
 `;
 
-const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
+const PageTitle = styled.h1`
+  font-size: clamp(1.25rem, 2.2vw, 1.5rem); font-weight: 700; margin: 0;
+  background: ${({ theme }) => theme.gradients.brand};
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  ${({ theme }) => theme.mode === 'dark' && `
+    background: linear-gradient(135deg, #E0ACD2, #ACC0DE);
+    -webkit-background-clip: text; background-clip: text;
+  `}
+`;
 const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const StatsRow = styled.div`
@@ -131,9 +146,10 @@ const StatCardInfo = styled.div`
 `;
 
 const StatCardValue = styled.div<{ $color: string }>`
-  font-size: 2rem; font-weight: 800;
+  font-size: 2rem; font-weight: 700;
   color: ${({ $color }) => $color};
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 `;
 
 const StatCardLabel = styled.div`
@@ -147,22 +163,25 @@ const StatCardLabel = styled.div`
 /* ── Tabs ── */
 
 const TabBar = styled.div`
-  display: flex; gap: 0; overflow-x: auto;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  ${media.mobile} { gap: 0; }
+  display: inline-flex; gap: 2px; overflow-x: auto;
+  padding: 4px; border-radius: 999px;
+  background: ${({ theme }) => theme.colors.surfaceMuted}40;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  ${media.mobile} { flex-wrap: wrap; }
 `;
 
 const Tab = styled.button<{ $active?: boolean; $color?: string }>`
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 10px 24px;
+  padding: 7px 18px;
   border: none;
-  background: transparent;
+  border-radius: 999px;
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s var(--ease-out), color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
+  background: ${({ $active, theme }) => $active ? theme.colors.surface : 'transparent'};
   color: ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) : theme.colors.textTertiary};
-  border-bottom: 2px solid ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) : 'transparent'};
-  margin-bottom: -1px; white-space: nowrap;
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; background: rgba(0,0,0,0.02); }
+  box-shadow: ${({ $active }) => $active ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'};
+  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
   svg { flex-shrink: 0; opacity: ${({ $active }) => $active ? 0.7 : 0.35}; }
 `;
 
@@ -185,36 +204,34 @@ const Table = styled.table`
   width: 100%; border-collapse: collapse; font-size: 0.8125rem;
   min-width: 700px;
   th, td {
-    padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
+    padding: 10px 14px;
     text-align: left; white-space: nowrap;
   }
   th {
     font-weight: 600; text-transform: uppercase; font-size: 0.6875rem;
+    letter-spacing: 0.05em;
     color: ${({ theme }) => theme.colors.textTertiary};
-    background: ${({ theme }) => theme.colors.canvas};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   }
   ${media.tablet} {
     min-width: 0;
     font-size: 0.75rem;
-    th, td { padding: 6px 8px; white-space: normal; }
-    th { font-size: 0.625rem; }
+    th, td { padding: 8px 10px; white-space: normal; }
+    th { font-size: 0.5625rem; }
   }
   ${media.mobile} {
     min-width: 480px;
     font-size: 0.75rem;
-    th, td { padding: ${({ theme }) => theme.spacing.xs}px ${({ theme }) => theme.spacing.sm}px; }
-    th { font-size: 0.625rem; }
+    th, td { padding: 6px 8px; }
+    th { font-size: 0.5625rem; }
   }
 `;
 
 const TRow = styled.tr<{ $even?: boolean }>`
-  background: ${({ $even, theme }) => $even
-    ? theme.colors.surfaceMuted
-    : theme.colors.surface};
+  background: ${({ $even, theme }) => $even ? `${theme.colors.surfaceMuted}40` : 'transparent'};
   transition: background 0.15s;
-  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
-  td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
+  animation: fadeInRow 0.35s var(--ease-out) both;
+  &:hover { background: ${({ theme }) => `${theme.colors.accent}08`}; }
   cursor: pointer;
 `;
 

@@ -327,11 +327,13 @@ const EditBtn = styled.button`
   }
 `;
 const EditOverlay = styled.div`
-  position: fixed; inset: 0; z-index: 9999;
+  position: fixed; inset: 0; z-index: 11200;
   background: rgba(0,0,0,0.45);
   display: flex; align-items: center; justify-content: center;
 `;
 const EditModal = styled.div`
+  position: relative;
+  z-index: 11300;
   background: #fff; border-radius: 14px; width: 620px; max-width: 92vw;
   box-shadow: 0 12px 40px rgba(0,0,0,0.25);
   overflow: hidden;

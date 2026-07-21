@@ -65,7 +65,8 @@ const IconSortArrow = () => (
 const Page = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.md}px;
+  gap: ${({ theme }) => theme.spacing.lg}px;
+  animation: fadeSlideUp 0.5s var(--ease-out) both;
 `;
 
 const PageCard = styled.div`
@@ -73,15 +74,21 @@ const PageCard = styled.div`
   border: none;
   box-shadow: none;
   border-radius: ${({ theme }) => theme.radii.card}px;
-  padding: 24px;
-  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
+  padding: 28px;
+  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.lg}px;
 `;
 
 const PageTitle = styled.h1`
-  font-size: 1.25rem;
+  font-size: clamp(1.25rem, 2.2vw, 1.5rem);
   font-weight: 700;
   margin: 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ theme }) => theme.gradients.brand};
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  ${({ theme }) => theme.mode === 'dark' && `
+    background: linear-gradient(135deg, #E0ACD2, #ACC0DE);
+    -webkit-background-clip: text; background-clip: text;
+  `}
 `;
 
 
@@ -373,15 +380,10 @@ const Table = styled.table`
   border-collapse: separate;
   border-spacing: 0;
   font-family: ${({ theme }) => theme.fonts.primary};
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   min-width: 960px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 12px;
-  overflow: hidden;
-  /* column widths — 動態由 table-layout: fixed 分配 */
-  table-layout: fixed;
   th, td {
-    padding: 7px 12px;
+    padding: 10px 14px;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
@@ -389,32 +391,34 @@ const Table = styled.table`
   }
   th {
     font-weight: 600;
-    font-size: 0.78rem;
-    color: ${({ theme }) => theme.colors.textSecondary};
-    background: ${({ theme }) => theme.colors.canvas};
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: ${({ theme }) => theme.colors.textTertiary};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
     user-select: none;
     cursor: default;
   }
   td {
-    background: ${({ theme }) => theme.colors.surface};
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-    font-size: 0.78rem;
-    line-height: 1.3;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    border-bottom: none;
   }
   ${media.mobile} {
     min-width: 640px;
     font-size: 0.75rem;
-    th, td { padding: 5px 8px; }
-    th { font-size: 0.625rem; }
+    th, td { padding: 6px 10px; }
+    th { font-size: 0.5625rem; }
   }
 `;
 
 const TRow = styled.tr<{ $even?: boolean; $collapsed?: boolean }>`
   transition: background 0.15s;
   cursor: pointer;
+  animation: fadeInRow 0.35s var(--ease-out) both;
+  &:nth-child(even) td { background: ${({ theme }) => theme.colors.surfaceMuted}40; }
   &:hover td {
-    background: ${({ theme, $collapsed }) => $collapsed ? 'transparent' : theme.colors.canvas};
+    background: ${({ theme, $collapsed }) => $collapsed ? 'transparent' : `${theme.colors.accent}08`};
   }
   td {
     overflow: hidden;
@@ -438,6 +442,72 @@ const NameCell = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
+`;
+
+/* ── Card Grid View ── */
+const CardGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  padding: 4px 0;
+`;
+
+const LeadCard = styled.div`
+  ${glassSurface};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  padding: 20px;
+  cursor: pointer;
+  display: flex; flex-direction: column; gap: 12px;
+  transition: transform 0.2s var(--ease-out), box-shadow 0.3s ease, border-color 0.3s ease;
+  animation: fadeInRow 0.35s var(--ease-out) both;
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+    border-color: ${({ theme }) => theme.colors.accent}50;
+  }
+`;
+
+const LeadCardHeader = styled.div`
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 8px;
+`;
+
+const LeadCardName = styled.div`
+  font-size: 0.9375rem; font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+`;
+
+const LeadCardUrl = styled.div`
+  font-size: 0.75rem; color: ${({ theme }) => theme.colors.textTertiary};
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+`;
+
+const LeadCardTags = styled.div`
+  display: flex; flex-wrap: wrap; gap: 4px;
+`;
+
+const LeadCardTag = styled.span`
+  font-size: 0.6875rem; padding: 2px 8px;
+  border-radius: 999px;
+  background: ${({ theme }) => theme.colors.surfaceMuted}50;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+const LeadCardMeta = styled.div`
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 0.75rem; color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
+const ViewToggleBtn = styled.button<{ $active?: boolean }>`
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ $active, theme }) => $active ? `${theme.colors.accent}18` : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.textSecondary};
+  transition: background 0.15s, color 0.15s;
+  &:hover { background: ${({ theme }) => `${theme.colors.accent}12`}; color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const NameText = styled.div`
@@ -467,47 +537,33 @@ const STATUS_I18N_KEY: Record<string, string> = {
   not_interested: 'leads.statusNotInterested',
 };
 
-/* Status dot — small colored circle next to name */
-const STATUS_ICON_META: Record<string, { colorKey: 'blue' | 'gold' | 'mauve' | 'olive'; path: string; hasNew?: boolean }> = {
-  new:       { colorKey: 'olive', path: 'M10 3L7 9h3l-2 5', hasNew: true },                                        // lightning bolt
-  pending:   { colorKey: 'gold',  path: 'M10 5v3.5l2 1.5M10 2.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11z' },           // clock
-  contacted: { colorKey: 'mauve', path: '__handshake__' }, // handshake (special render)
-  confirmed: { colorKey: 'olive', path: 'M5 10l3 3 5-6' },
-  qualified: { colorKey: 'olive', path: 'M10 3L7 9h3l-2 5', hasNew: true },
-  rejected:  { colorKey: 'mauve', path: 'M6 6l8 8M14 6l-8 8' },
-  draft:     { colorKey: 'gold',  path: 'M10 5v3.5l2 1.5M10 2.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11z' },
-  interested:{ colorKey: 'olive', path: 'M5 10l3 3 5-6' },
-  meeting:   { colorKey: 'olive', path: 'M5 10l3 3 5-6' },
-  not_interested: { colorKey: 'mauve', path: 'M6 6l8 8M14 6l-8 8' },
+/* Status text pill — colored text-only badge next to name */
+const STATUS_COLOR_KEY: Record<string, 'blue' | 'gold' | 'mauve' | 'olive'> = {
+  new: 'olive', pending: 'gold', contacted: 'mauve', confirmed: 'olive',
+  qualified: 'olive', rejected: 'mauve', draft: 'gold',
+  interested: 'olive', meeting: 'olive', not_interested: 'mauve',
 };
 
-const HANDSHAKE_FA_PATH = 'M323.4 85.2l-96.8 78.4c-16.1 13-19.2 36.4-7 53.1c12.9 17.8 38 21.3 55.3 7.8l99.3-77.2c7-5.4 17-4.2 22.5 2.8s4.2 17-2.8 22.5l-20.9 16.2L550.2 352H592c26.5 0 48-21.5 48-48V176c0-26.5-21.5-48-48-48H516h-4-.7l-3.9-2.5L434.8 79c-15.3-9.8-33.2-15-51.4-15c-21.8 0-43 7.5-60 21.2zm22.8 124.4l-51.7 40.2C263 274.4 217.3 268 193.7 235.6c-22.2-30.5-16.6-73.1 12.7-96.8l83.2-67.3c-11.6-4.9-24.1-7.4-36.8-7.4C234 64 215.7 69.6 200 80l-72 48H48c-26.5 0-48 21.5-48 48V304c0 26.5 21.5 48 48 48H156.2l91.4 83.4c19.6 17.9 49.9 16.5 67.8-3.1c5.5-6.1 9.2-13.2 11.1-20.6l17 15.6c19.5 17.9 49.9 16.6 67.8-2.9c4.5-4.9 7.8-10.6 9.9-16.5c19.4 13 45.8 10.3 62.1-7.5c17.9-19.5 16.6-49.9-2.9-67.8l-134.2-123z';
+const StatusPillSpan = styled.span<{ $color: string }>`
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  background: ${({ $color }) => `${$color}18`};
+  color: ${({ $color }) => $color};
+`;
 
 const StatusIcon = ({ $status, title }: { $status?: string; title?: string }) => {
   const theme = useTheme() as any;
   const { t } = useTranslation();
-  const meta = STATUS_ICON_META[$status ?? 'new'] ?? STATUS_ICON_META.new;
-  const color = (theme.strong as any)[meta.colorKey];
-  const size = 20;
-  const isHandshake = meta.path === '__handshake__';
-  return (
-    <svg width={meta.hasNew ? 36 : size} height={size} viewBox={meta.hasNew ? '0 0 36 20' : '0 0 20 20'} style={{ flexShrink: 0, overflow: 'visible' }} aria-label={title}>
-      <circle cx="10" cy="10" r="9.5" fill={`${color}22`} stroke={color} strokeWidth="1" />
-      {isHandshake ? (
-        <g transform="translate(3.2, 4) scale(0.0215)">
-          <path d={HANDSHAKE_FA_PATH} fill={color} />
-        </g>
-      ) : (
-        <path d={meta.path} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-      )}
-      {meta.hasNew && (
-        <g>
-          <rect x="18" y="0" width="18" height="9" rx="3" fill={color} />
-          <text x="27" y="7" textAnchor="middle" fill="#fff" fontSize="6.5" fontWeight="700" fontFamily="'Plus Jakarta Sans', sans-serif">{t('common.new')}</text>
-        </g>
-      )}
-    </svg>
-  );
+  const colorKey = STATUS_COLOR_KEY[$status ?? 'new'] ?? 'olive';
+  const color = (theme.strong as any)[colorKey];
+  const label = t(STATUS_I18N_KEY[$status ?? 'new'] || 'leads.statusNew');
+  return <StatusPillSpan $color={color} title={title}>{label}</StatusPillSpan>;
 };
 
 const ActionBtn = styled.button<{ $color: string }>`
@@ -1104,6 +1160,14 @@ const Leads: React.FC = () => {
   const addTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>(() => (localStorage.getItem('leads_view_mode') as 'table' | 'grid') || 'table');
+  const toggleViewMode = useCallback(() => {
+    setViewMode(prev => {
+      const next = prev === 'table' ? 'grid' : 'table';
+      localStorage.setItem('leads_view_mode', next);
+      return next;
+    });
+  }, []);
   const [detailClosing, setDetailClosing] = useState(false);
   const detailTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -1455,8 +1519,45 @@ const Leads: React.FC = () => {
           <CircleActionBtn title={t('leads.addLead')} onClick={() => setShowAdd(true)} style={{ background: styledTheme.colors.textPrimary, color: '#fff', borderColor: 'transparent' }}>
             <IconPlus />
           </CircleActionBtn>
+          <div style={{ display: 'flex', gap: 2, marginLeft: 4 }}>
+            <ViewToggleBtn $active={viewMode === 'table'} onClick={() => { setViewMode('table'); localStorage.setItem('leads_view_mode', 'table'); }} title="Table view">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3"><path d="M2 4h12M2 8h12M2 12h12"/></svg>
+            </ViewToggleBtn>
+            <ViewToggleBtn $active={viewMode === 'grid'} onClick={() => { setViewMode('grid'); localStorage.setItem('leads_view_mode', 'grid'); }} title="Grid view">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+            </ViewToggleBtn>
+          </div>
         </SubPillRow>
           <div style={{ marginTop: 16 }}><ToolbarSep /></div>
+          {viewMode === 'grid' ? (
+            <CardGrid>
+              {leads.map((lead, i) => (
+                <LeadCard
+                  key={lead._id}
+                  style={{ animationDelay: `${Math.min(i * 40, 400)}ms` }}
+                  onClick={() => setSelectedLead(lead)}
+                >
+                  <LeadCardHeader>
+                    <LeadCardName>{lead.company_name || '—'}</LeadCardName>
+                    <StatusIcon $status={lead.status} />
+                  </LeadCardHeader>
+                  {lead.website && <LeadCardUrl>{lead.website.replace(/^https?:\/\//, '')}</LeadCardUrl>}
+                  {lead.industry_tags && lead.industry_tags.length > 0 && (
+                    <LeadCardTags>
+                      {lead.industry_tags.slice(0, 3).map((tag: string, j: number) => (
+                        <LeadCardTag key={j}>{tag}</LeadCardTag>
+                      ))}
+                      {lead.industry_tags.length > 3 && <LeadCardTag>+{lead.industry_tags.length - 3}</LeadCardTag>}
+                    </LeadCardTags>
+                  )}
+                  <LeadCardMeta>
+                    <span>{lead.rating ? `★ ${lead.rating}` : ''}</span>
+                    <span>{lead._imported_at ? new Date(lead._imported_at).toLocaleDateString('en-CA') : ''}</span>
+                  </LeadCardMeta>
+                </LeadCard>
+              ))}
+            </CardGrid>
+          ) : (
           <TableWrap>
             <Table>
               <thead>
@@ -1521,7 +1622,7 @@ const Leads: React.FC = () => {
                       const colorIdx = hashColorIndex(name);
                       return (
                         <React.Fragment key={lead._id}>
-                          <TRow $even={i % 2 === 1} style={{ cursor: 'pointer' }} onClick={() => setSelectedLead(lead)}>
+                          <TRow $even={i % 2 === 1} style={{ cursor: 'pointer', animationDelay: `${Math.min(i * 30, 300)}ms` }} onClick={() => setSelectedLead(lead)}>
                         <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
                           <RowCheckbox
                             checked={selectedIds.has(lead._id)}
@@ -1630,6 +1731,7 @@ const Leads: React.FC = () => {
               </tbody>
             </Table>
           </TableWrap>
+          )}
           {totalPages > 0 && (
             <PaginationRow>
               <span>{t('leads.showingOf', { count: leads.length, total })}</span>

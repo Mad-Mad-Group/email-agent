@@ -1263,6 +1263,19 @@ const en = {
     notifEmailDraft: 'New draft: {{name}}',
     notifEmailSent: 'Email sent: {{name}}',
     notifTaskFailed: 'Task failed: {{name}}',
+    // Notice Board (clickable pixel notice board on the village background)
+    noticeBoardHint: 'Click to view calendar',
+    noticeSchedulesToday: 'schedules today',
+    noticeNoUpcoming: 'No upcoming schedule',
+    calendarPopupTitle: 'Calendar',
+    calendarPopupClose: 'Close',
+    calendarPopupSubtitle: 'Schedule and upcoming events',
+    // Fountain (pixel-art stone basin in the village background)
+    fountainHint: 'Click to view client pool',
+    poolPopupTitle: 'Pools',
+    poolPopupSubtitle: 'Client pool & verified email contacts',
+    poolTabLeads: 'Client Pool',
+    poolTabVerified: 'Verified Pool',
   },
   verifiedEmails: {
     breadcrumb: 'Verified Pool',

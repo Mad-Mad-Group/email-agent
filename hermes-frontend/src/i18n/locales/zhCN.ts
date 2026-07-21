@@ -1271,6 +1271,19 @@ const zhCN = {
     notifEmailDraft: '新草稿：{{name}}',
     notifEmailSent: '邮件已发送：{{name}}',
     notifTaskFailed: '任务失败：{{name}}',
+    // Notice Board (clickable pixel notice board on the village background)
+    noticeBoardHint: '点击查看日历',
+    noticeSchedulesToday: '个日程',
+    noticeNoUpcoming: '今日暂无日程',
+    calendarPopupTitle: '日历',
+    calendarPopupClose: '关闭',
+    calendarPopupSubtitle: '日程与即将到来的事件',
+    // Fountain (pixel-art stone basin in the village background)
+    fountainHint: '点击查看客户库',
+    poolPopupTitle: '客户库',
+    poolPopupSubtitle: '客户清单与已验证的邮箱',
+    poolTabLeads: '客户库',
+    poolTabVerified: '已验证邮箱',
   },
   verifiedEmails: {
     breadcrumb: '已验证池',

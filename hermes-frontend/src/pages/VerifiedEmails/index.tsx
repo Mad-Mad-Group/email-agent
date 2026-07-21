@@ -50,7 +50,13 @@ const PlusIcon = () => (
 
 /* ── Layout ── */
 
-const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
+const Page = styled.div`
+  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.lg}px;
+  padding: 36px 32px 44px;
+  animation: fadeSlideUp 0.5s var(--ease-out) both;
+  ${media.tablet} { padding: 24px 18px 32px; }
+  ${media.mobile} { padding: 20px 16px 32px; }
+`;
 
 const PageCard = styled.div`
   background: transparent;
@@ -68,7 +74,15 @@ const Breadcrumb = styled.ol`
   a { color: ${({ theme }) => theme.colors.textSecondary}; text-decoration: none; &:hover { text-decoration: underline; } }
 `;
 
-const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
+const PageTitle = styled.h1`
+  font-size: clamp(1.35rem, 2.5vw, 1.85rem); font-weight: 700; margin: 0;
+  background: ${({ theme }) => theme.gradients.brand};
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  ${({ theme }) => theme.mode === 'dark' && `
+    background: linear-gradient(135deg, #E0ACD2, #ACC0DE);
+    -webkit-background-clip: text; background-clip: text;
+  `}
+`;
 const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const ToolbarRow = styled.div`
@@ -131,7 +145,7 @@ const StatLabel = styled.span`
 `;
 
 const StatValueRow = styled.div`display: flex; align-items: baseline; gap: 6px;`;
-const StatNumber = styled.span<{ $color: string }>`font-size: 2rem; font-weight: 800; color: ${({ $color }) => $color}; line-height: 1;`;
+const StatNumber = styled.span<{ $color: string }>`font-size: 2rem; font-weight: 700; color: ${({ $color }) => $color}; line-height: 1; font-variant-numeric: tabular-nums;`;
 const StatUnit = styled.span`font-size: 0.875rem; color: ${({ theme }) => theme.colors.textTertiary};`;
 
 /* watermark icons (stroke style, matching Leads) */
@@ -171,20 +185,17 @@ const Table = styled.table`
   font-family: ${({ theme }) => theme.fonts.primary};
   font-size: 0.8rem;
   min-width: 960px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 12px;
-  overflow: hidden;
-  th:nth-child(1) { width: 22%; }   /* email */
-  th:nth-child(2) { width: 14%; }   /* company */
-  th:nth-child(3) { width: 12%; }   /* domain */
-  th:nth-child(4) { width: 10%; }   /* method */
-  th:nth-child(5) { width: 8%; }    /* replies */
-  th:nth-child(6) { width: 8%; }    /* matches */
-  th:nth-child(7) { width: 9%; }    /* status */
-  th:nth-child(8) { width: 11%; }   /* created */
-  th:nth-child(9) { width: 6%; }    /* action */
+  th:nth-child(1) { width: 22%; }
+  th:nth-child(2) { width: 14%; }
+  th:nth-child(3) { width: 12%; }
+  th:nth-child(4) { width: 10%; }
+  th:nth-child(5) { width: 8%; }
+  th:nth-child(6) { width: 8%; }
+  th:nth-child(7) { width: 9%; }
+  th:nth-child(8) { width: 11%; }
+  th:nth-child(9) { width: 6%; }
   th, td {
-    padding: 7px 12px;
+    padding: 10px 14px;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
@@ -192,34 +203,33 @@ const Table = styled.table`
   }
   th {
     font-weight: 600;
-    font-size: 0.78rem;
-    color: ${({ theme }) => theme.colors.textSecondary};
-    background: ${({ theme }) => theme.colors.canvas};
+    font-size: 0.6875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: ${({ theme }) => theme.colors.textTertiary};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
     user-select: none;
     cursor: default;
   }
   td {
-    background: ${({ theme }) => theme.colors.surface};
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-    font-size: 0.78rem;
-    line-height: 1.3;
+    font-size: 0.8125rem;
+    line-height: 1.4;
+    border-bottom: none;
   }
   ${media.mobile} {
     min-width: 640px;
     font-size: 0.75rem;
-    th, td { padding: 5px 8px; }
-    th { font-size: 0.625rem; }
+    th, td { padding: 6px 10px; }
+    th { font-size: 0.5625rem; }
   }
 `;
 
 const TRow = styled.tr`
   transition: background 0.15s;
   cursor: pointer;
-  &:hover td {
-    background: ${({ theme }) => theme.colors.canvas};
-  }
-  &:last-child td { border-bottom: none; }
+  animation: fadeInRow 0.35s var(--ease-out) both;
+  &:nth-child(even) td { background: ${({ theme }) => theme.colors.surfaceMuted}40; }
+  &:hover td { background: ${({ theme }) => `${theme.colors.accent}08`}; }
 `;
 
 const Badge = styled.span<{ $color?: string }>`
@@ -256,11 +266,12 @@ const PaginationRow = styled.div`
 `;
 
 const PageBtn = styled.button<{ $active?: boolean }>`
-  padding: 4px 10px; border-radius: ${({ theme }) => theme.radii.control}px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  padding: 4px 12px; border-radius: 999px;
+  border: 1px solid ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.border};
   background: ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
   color: ${({ $active, theme }) => $active ? theme.colors.textInverted : 'inherit'};
   cursor: pointer; font-size: 0.75rem; margin: 0 2px;
+  transition: background 0.15s, border-color 0.15s;
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 `;
 
