@@ -197,7 +197,7 @@ const GlowWrap = styled.div`
     content: '';
     position: absolute;
     inset: -40px -60px;
-    border-radius: 999px;
+    border-radius: 28px;
     background: radial-gradient(ellipse at center, rgba(96,165,250,0.32) 0%, rgba(96,165,250,0.14) 40%, rgba(96,165,250,0.04) 65%, transparent 80%);
     filter: blur(28px);
     animation: ${haloPulse} 4s ease-in-out infinite;
@@ -272,8 +272,8 @@ const CardBody = styled.div`padding: 20px;`;
 
 const UnifiedBar = styled.div<{ $morphing?: boolean; $glow?: boolean }>`
   display: flex;
-  align-items: center;
-  border-radius: 999px;
+  flex-direction: column;
+  border-radius: 20px;
   border: 1.5px solid ${({ theme, $morphing }) => $morphing ? 'transparent' : theme.colors.border};
   background: ${({ theme, $morphing }) => $morphing ? 'transparent' : theme.colors.surface};
   box-shadow: ${({ $morphing }) => $morphing ? 'none' : '0 2px 12px rgba(15,23,42,0.06)'};
@@ -284,9 +284,11 @@ const UnifiedBar = styled.div<{ $morphing?: boolean; $glow?: boolean }>`
   width: ${({ $morphing }) => $morphing ? '144px' : '100%'};
   height: ${({ $morphing }) => $morphing ? '144px' : 'auto'};
   margin: ${({ $morphing }) => $morphing ? '0 auto' : '0'};
+  border-radius: ${({ $morphing }) => $morphing ? '50%' : '20px'};
   transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1),
               height 0.5s cubic-bezier(0.4, 0, 0.2, 1),
               margin 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+              border-radius 0.5s cubic-bezier(0.4, 0, 0.2, 1),
               border-color 0.3s,
               background 0.3s,
               box-shadow 0.3s;
@@ -305,11 +307,8 @@ const UnifiedBar = styled.div<{ $morphing?: boolean; $glow?: boolean }>`
   }
 
   ${media.mobile} {
-    flex-wrap: wrap;
-    border-radius: 20px;
-    padding: 6px;
-    gap: 4px;
-    justify-content: flex-end;
+    border-radius: ${({ $morphing }) => $morphing ? '50%' : '16px'};
+    padding: ${({ $morphing }) => $morphing ? '0' : '0'};
   }
 
   ${({ $glow, $morphing }) => $glow && !$morphing && css`
@@ -319,7 +318,7 @@ const UnifiedBar = styled.div<{ $morphing?: boolean; $glow?: boolean }>`
       content: '';
       position: absolute;
       inset: -2px;
-      border-radius: 999px;
+      border-radius: 20px;
       padding: 2px;
       background: conic-gradient(${({ theme }) => theme.strong.mauve}, ${({ theme }) => theme.strong.gold}, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.strong.mauve});
       -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
@@ -335,26 +334,36 @@ const UnifiedBar = styled.div<{ $morphing?: boolean; $glow?: boolean }>`
 `;
 
 const BarInput = styled.input`
-  flex: 1; min-width: 0;
+  width: 100%; min-width: 0;
   border: none; outline: none;
-  padding: 18px 0 18px 12px;
+  padding: 14px 16px;
   font-size: 1.05rem;
+  border-radius: 0;
   ${media.mobile} {
-    padding: 10px 10px;
+    padding: 10px 12px;
     font-size: 0.9375rem;
-    width: 100%;
-    flex: 1 1 100%;
-    order: -1;
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   }
   background: transparent;
   color: ${({ theme }) => theme.colors.textPrimary};
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
 `;
 
+const BarToolRow = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 4px 6px;
+  gap: 2px;
+  ${media.mobile} {
+    padding: 4px;
+    gap: 2px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+`;
+
 const LocBadge = styled.button`
   display: flex; align-items: center; gap: 5px;
-  padding: 6px 10px; margin: 0 4px;
+  padding: 6px 10px; margin-left: auto;
   border: none; border-radius: 999px;
   background: transparent;
   color: ${({ theme }) => theme.colors.textSecondary};
@@ -386,19 +395,19 @@ const MapPinIcon = () => (
 
 const BarSearchBtn = styled.button`
   display: flex; align-items: center; justify-content: center;
-  width: 46px; height: 46px; margin: 5px 6px 5px 0;
+  width: 38px; height: 38px;
   border: none; border-radius: 50%;
   background: ${({ theme }) => theme.colors.accent}; color: ${({ theme }) => theme.colors.textInverted};
   cursor: pointer; flex-shrink: 0;
   transition: background 0.15s, transform 0.15s;
   &:hover:not(:disabled) { background: ${({ theme }) => theme.colors.accent}; transform: scale(1.06); }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
-  ${media.mobile} { width: 34px; height: 34px; margin: 2px; }
+  ${media.mobile} { width: 34px; height: 34px; }
 `;
 
 /* Location picker dropdown */
 const LocDropdown = styled.div`
-  position: absolute; top: calc(100% + 6px); right: 50px;
+  position: absolute; top: calc(100% + 6px); left: 0;
   background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 14px;
@@ -424,127 +433,110 @@ const haloHue = keyframes`
   to { filter: hue-rotate(360deg); }
 `;
 
-const ModePill = styled.div`
-  display: flex; align-items: center;
-  border-radius: 18px; padding: 2px;
-  background: ${({ theme }) => theme.colors.surfaceMuted};
-  margin: 5px 0 5px 5px; flex-shrink: 0;
+/* ── Claude-style mode/source picker ── */
+
+const ModePickerWrap = styled.div`
   position: relative;
-  align-self: center;
-  ${media.mobile} { margin: 2px; margin-right: auto; }
+  flex-shrink: 0;
 `;
 
-const ModeThumb = styled.div<{ $right: boolean }>`
-  position: absolute;
-  top: 2px; bottom: 2px; left: 2px;
-  width: calc(50% - 2px);
-  border-radius: 16px;
-  background: ${({ $right, theme }) => $right ? theme.colors.textPrimary : theme.colors.accent};
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.3s;
-  transform: translateX(${({ $right }) => $right ? '100%' : '0'});
-  z-index: 0;
-
-  ${({ $right }) => $right && css`
-    box-shadow: 0 0 8px rgba(255,107,107,0.3), 0 0 14px rgba(72,219,251,0.15);
-    &::before {
-      content: '';
-      position: absolute;
-      inset: -2px;
-      border-radius: 999px;
-      padding: 2px;
-      background: conic-gradient(${({ theme }) => theme.strong.mauve}, ${({ theme }) => theme.strong.gold}, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.strong.mauve});
-      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-      -webkit-mask-composite: xor;
-      mask-composite: exclude;
-      animation: ${haloHue} 3s linear infinite;
-      pointer-events: none;
-    }
-  `}
-`;
-
-const ModeOption = styled.button<{ $active: boolean }>`
-  position: relative; z-index: 1;
-  padding: 6px 12px; border: none; border-radius: 16px;
+const ModePickerTrigger = styled.button`
+  display: flex; align-items: center; gap: 6px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 10px;
   background: transparent;
-  font-size: 0.6875rem; font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-size: 0.875rem; font-weight: 400;
   cursor: pointer; white-space: nowrap;
-  color: ${({ $active, theme }) => $active ? theme.colors.textInverted : 'inherit'};
-  transition: color 0.25s;
-  ${media.mobile} { padding: 5px 8px; font-size: 0.625rem; }
+  transition: background 0.15s;
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  &::after {
+    content: '';
+    display: inline-block;
+    width: 5px; height: 5px;
+    border-right: 1.5px solid ${({ theme }) => theme.colors.textTertiary};
+    border-bottom: 1.5px solid ${({ theme }) => theme.colors.textTertiary};
+    transform: translateY(-1px) rotate(45deg);
+    margin-left: 2px;
+  }
+  ${media.mobile} { padding: 5px 8px; font-size: 0.8125rem; }
 `;
 
-/* ── Source Dropdown (multi-select) ── */
-
-const SourceDropWrap = styled.div`
-  position: relative;
-  margin: 0 4px; flex-shrink: 0;
-  ${media.mobile} { margin: 2px 0; }
-`;
-
-const SourceDropBtn = styled.button`
-  display: flex; align-items: center; gap: 4px;
-  padding: 4px 10px; border-radius: 8px; border: none;
-  font-size: 0.625rem; font-weight: 600;
-  cursor: pointer; white-space: nowrap;
-  background: ${({ theme }) => theme.colors.surfaceMuted};
-  color: ${({ theme }) => theme.colors.textSecondary};
-  transition: background 0.2s, color 0.2s;
-  &:hover { background: ${({ theme }) => theme.colors.accent}20; color: ${({ theme }) => theme.colors.accent}; }
-  ${media.mobile} { padding: 3px 7px; font-size: 0.5625rem; }
-`;
-
-const SourceDropBadge = styled.span`
-  display: inline-flex; align-items: center; justify-content: center;
-  min-width: 14px; height: 14px; border-radius: 7px;
-  font-size: 0.5rem; font-weight: 700;
-  background: ${({ theme }) => theme.colors.accent};
-  color: ${({ theme }) => theme.colors.textInverted};
-`;
-
-const SourceDropMenu = styled.div`
+const ModePickerDropdown = styled.div`
   position: absolute;
-  top: calc(100% + 4px);
+  top: calc(100% + 6px);
   left: 0;
-  min-width: 170px;
+  min-width: 260px;
   background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  z-index: 50;
-  padding: 4px 0;
-  animation: fadeSlideUp 0.15s ease-out;
-`;
-
-const SourceDropItem = styled.label<{ $checked: boolean }>`
-  display: flex; align-items: center; gap: 8px;
-  padding: 7px 12px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  cursor: pointer;
-  color: ${({ $checked, theme }) => $checked ? theme.colors.accent : theme.colors.textPrimary};
-  transition: background 0.15s;
-  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}80; }
-`;
-
-const SourceCheck = styled.span<{ $on: boolean }>`
-  display: flex; align-items: center; justify-content: center;
-  width: 14px; height: 14px; border-radius: 3px;
-  border: 1.5px solid ${({ $on, theme }) => $on ? theme.colors.accent : theme.colors.border};
-  background: ${({ $on, theme }) => $on ? theme.colors.accent : 'transparent'};
-  transition: all 0.15s;
-  flex-shrink: 0;
-  &::after {
-    content: '${({ $on }) => $on ? '✓' : ''}';
-    font-size: 9px; font-weight: 700;
-    color: ${({ theme }) => theme.colors.textInverted};
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(15,23,42,0.14);
+  padding: 6px;
+  z-index: 200;
+  animation: modeDropIn 0.15s ease-out;
+  @keyframes modeDropIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 `;
 
-const SEARCH_SOURCE_OPTIONS = [
-  { key: 'google_maps', i18nKey: 'search.sourceGoogleMaps' },
-  { key: 'google_search', i18nKey: 'search.sourceGoogleSearch' },
-  { key: 'linkedin', i18nKey: 'search.sourceLinkedIn' },
-] as const;
+const ModePickerItem = styled.button<{ $active: boolean }>`
+  display: flex; align-items: flex-start; gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: ${({ $active, theme }) => $active ? theme.colors.accent + '12' : 'transparent'};
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.12s;
+  &:hover { background: ${({ $active, theme }) => $active ? theme.colors.accent + '1a' : theme.colors.surfaceMuted}; }
+`;
+
+const ModeItemCheck = styled.span<{ $active: boolean }>`
+  display: flex; align-items: center; justify-content: center;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.border};
+  background: ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
+  flex-shrink: 0;
+  margin-top: 1px;
+  transition: all 0.15s;
+  color: ${({ theme }) => theme.colors.textInverted};
+  font-size: 10px;
+`;
+
+const ModeItemText = styled.div`
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+`;
+
+const ModeItemLabel = styled.span`
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-size: 0.8125rem; font-weight: 400;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const ModeItemDesc = styled.span`
+  font-size: 0.6875rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  line-height: 1.35;
+`;
+
+interface ModeConfig {
+  key: string;
+  label: string;
+  desc: string;
+  apiMode: 'normal' | 'old_website';
+}
+
+const MODE_CONFIGS: ModeConfig[] = [
+  { key: 'normal',        label: 'Google Maps',  desc: '在 Google Maps 搜索商家資訊',         apiMode: 'normal' },
+  { key: 'old_website',   label: '舊網站',        desc: '搜索全網技術棧比較老舊的網站',          apiMode: 'old_website' },
+  { key: 'google_search', label: 'Google Search', desc: '用 Google 搜索引擎找結果',            apiMode: 'normal' },
+  { key: 'linkedin',      label: 'LinkedIn',      desc: '在領英找聯繫人',                      apiMode: 'normal' },
+];
 
 const HK_DISTRICT_KEYS = [
   'all', 'centralWestern', 'wanChai', 'eastern', 'southern',
@@ -638,7 +630,7 @@ const NumberWrap = styled.div`
   border-radius: 50%;
   background: transparent;
   flex-shrink: 0;
-  margin: 0 6px;
+  margin: 0 4px;
   gap: 0;
   position: relative;
   ${media.mobile} { width: 32px; height: 32px; margin: 0 2px; }
@@ -701,7 +693,7 @@ const Separator = styled.div`
 /* B区: 圆形按钮 + 星星 */
 const sparkle = keyframes`
   0% { transform: translate(0,0) scale(1); opacity: 1; }
-  100% { transform: translate(var(--tx), var(--ty)) scale(0.3); opacity: 0; }
+  100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
 `;
 
 const BtnWrap = styled.div`
@@ -910,12 +902,10 @@ const ResultCard = styled.div`
   border-left: 3px solid ${({ theme }) => theme.colors.accent};
   background: ${({ theme }) => theme.colors.surface};
   cursor: pointer;
-  transition: box-shadow 0.15s var(--ease-out), transform 0.15s var(--ease-out);
-  @media (hover: hover) and (pointer: fine) {
-    &:hover {
-      box-shadow: 0 2px 8px rgba(15,23,42,0.07);
-      transform: translateY(-1px);
-    }
+  transition: all 0.15s;
+  &:hover {
+    box-shadow: 0 2px 8px rgba(15,23,42,0.07);
+    transform: translateY(-1px);
   }
   ${media.mobile} {
     flex-wrap: wrap;
@@ -1072,7 +1062,7 @@ const FilterToggle = styled.button<{ $active: boolean }>`
   font-size: 0.6875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.15s var(--ease-out), color 0.15s var(--ease-out);
+  transition: all 0.15s;
   &:hover { border-color: ${({ theme }) => theme.colors.accent}; color: ${({ theme }) => theme.colors.accent}; }
 `;
 
@@ -1120,7 +1110,7 @@ const SourceChip = styled.button<{ $active: boolean; $color?: string }>`
   font-size: 0.6875rem;
   font-weight: 500;
   cursor: pointer;
-  transition: border-color 0.15s var(--ease-out), color 0.15s var(--ease-out);
+  transition: all 0.15s;
   &:hover { border-color: ${({ $color, theme }) => $color || theme.colors.accent}; color: ${({ $color, theme }) => $color || theme.colors.accent}; }
 `;
 
@@ -1240,7 +1230,7 @@ const DpCloseBtn = styled.button`
   justify-content: center;
   color: ${({ theme }) => theme.colors.accent};
   flex-shrink: 0;
-  transition: background 0.15s var(--ease-out);
+  transition: all 0.15s;
   &:hover {
     background: ${({ theme }) => theme.colors.accent + '15'};
   }
@@ -1395,7 +1385,7 @@ const StepCircle = styled.div<{ $state: 'done' | 'active' | 'pending' }>`
   font-size: 1rem;
   font-weight: 700;
   flex-shrink: 0;
-  transition: background 0.3s var(--ease-out), color 0.3s var(--ease-out);
+  transition: all 0.3s;
   background: ${({ $state, theme }) =>
     $state === 'done' ? theme.strong.olive :
     $state === 'active' ? theme.colors.accent :
@@ -1749,27 +1739,9 @@ const SearchPage: React.FC = () => {
   const [district, setDistrict] = useState(saved.dist);
   const [showLocPicker, setShowLocPicker] = useState(false);
   const [targetCount, setTargetCount] = useState<number | string>(saved.tc);
-  const [searchMode, setSearchMode] = useState<'normal' | 'old_website'>('normal');
-  const [searchSources, setSearchSources] = useState<string[]>(['google_maps']);
-  const [sourceDropOpen, setSourceDropOpen] = useState(false);
-  const sourceDropRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!sourceDropOpen) return;
-    const handler = (e: MouseEvent) => {
-      if (sourceDropRef.current && !sourceDropRef.current.contains(e.target as Node)) setSourceDropOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [sourceDropOpen]);
-  const toggleSearchSource = (src: string) => {
-    setSearchSources(prev => {
-      if (prev.includes(src)) {
-        const next = prev.filter(s => s !== src);
-        return next.length > 0 ? next : prev; // at least one source
-      }
-      return [...prev, src];
-    });
-  };
+  const [searchMode, setSearchMode] = useState('normal');
+  const [showModePicker, setShowModePicker] = useState(false);
+  const activeMode = MODE_CONFIGS.find(m => m.key === searchMode) || MODE_CONFIGS[0];
   const locRef = useRef<HTMLFormElement>(null);
 
   /* ── Detail panel state ── */
@@ -1789,10 +1761,13 @@ const SearchPage: React.FC = () => {
     detailTimerRef.current = setTimeout(() => { setSelectedLead(null); setDetailClosing(false); }, 200);
   }, []);
 
-  /* Close location picker on outside click */
+  /* Close dropdowns on outside click */
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (locRef.current && !locRef.current.contains(e.target as Node)) setShowLocPicker(false);
+      if (locRef.current && !locRef.current.contains(e.target as Node)) {
+        setShowLocPicker(false);
+        setShowModePicker(false);
+      }
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -2033,8 +2008,7 @@ const SearchPage: React.FC = () => {
       keyword: keyword.trim(),
       location: fullLocation.trim(),
       targetCount: Number(targetCount) || 1,
-      mode: searchMode,
-      sources: searchSources,
+      mode: activeMode.apiMode,
     };
     // ponytail: persist form so a refresh during the pipeline restores inputs.
     try {
@@ -2151,33 +2125,7 @@ const SearchPage: React.FC = () => {
         {DOT_CONFIG.map((d, i) => (
           <Dot key={i} $x={d.x} $y={d.y} $size={d.size} $delay={d.delay} $dur={d.dur} />
         ))}
-        <UnifiedBar as="form" onSubmit={handleSubmit} ref={locRef} $morphing={search.isPending || isPipelineRunning} $glow={searchMode === 'old_website'}>
-            <ModePill>
-              <ModeThumb $right={searchMode === 'old_website'} />
-              <ModeOption type="button" $active={searchMode === 'normal'} onClick={() => setSearchMode('normal')}>{t('search.modeNormal')}</ModeOption>
-              <ModeOption type="button" $active={searchMode === 'old_website'} onClick={() => setSearchMode('old_website')}>{t('search.modeOldSite')}</ModeOption>
-            </ModePill>
-            {searchMode === 'normal' && (
-              <SourceDropWrap ref={sourceDropRef}>
-                <SourceDropBtn type="button" onClick={() => setSourceDropOpen(p => !p)}>
-                  {t('search.sources')}
-                  <SourceDropBadge>{searchSources.length}</SourceDropBadge>
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ transform: sourceDropOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
-                    <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                </SourceDropBtn>
-                {sourceDropOpen && (
-                  <SourceDropMenu>
-                    {SEARCH_SOURCE_OPTIONS.map(s => (
-                      <SourceDropItem key={s.key} $checked={searchSources.includes(s.key)} onClick={() => toggleSearchSource(s.key)}>
-                        <SourceCheck $on={searchSources.includes(s.key)} />
-                        {t(s.i18nKey)}
-                      </SourceDropItem>
-                    ))}
-                  </SourceDropMenu>
-                )}
-              </SourceDropWrap>
-            )}
+        <UnifiedBar as="form" onSubmit={handleSubmit} ref={locRef} $morphing={search.isPending || isPipelineRunning} $glow={activeMode.apiMode === 'old_website'}>
             <BarInput
               type="text"
               placeholder={t('search.keywordPlaceholder')}
@@ -2186,33 +2134,60 @@ const SearchPage: React.FC = () => {
               required
               autoFocus
             />
-            <LocBadge type="button" onClick={() => setShowLocPicker(p => !p)}>
-              <MapPinIcon />
-              {t(`search.dist_${district}`)}
-            </LocBadge>
-            <NumberWrap>
-              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(200, (Number(c) || 1) + 5))}><ChevronUp /></NumArrowBtn>
-              <NumberInput
-                type="number"
-                min={1}
-                max={200}
-                value={targetCount}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  const v = e.target.value;
-                  if (v === '') { setTargetCount(''); return; }
-                  const n = Number(v);
-                  if (!isNaN(n)) setTargetCount(Math.min(200, n));
-                }}
-                onBlur={() => {
-                  const n = Number(targetCount);
-                  setTargetCount((!n || n < 1) ? 1 : Math.min(200, n));
-                }}
-              />
-              <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.max(1, (Number(c) || 1) - 5))}><ChevronDown /></NumArrowBtn>
-            </NumberWrap>
-            <BarSearchBtn type="submit" disabled={search.isPending || !keyword.trim()}>
-              {search.isPending ? <Spinner /> : <SearchBtnIcon />}
-            </BarSearchBtn>
+            <BarToolRow>
+              <ModePickerWrap>
+                <ModePickerTrigger type="button" onClick={() => setShowModePicker(p => !p)}>
+                  {activeMode.label}
+                </ModePickerTrigger>
+                {showModePicker && (
+                  <ModePickerDropdown>
+                    {MODE_CONFIGS.map(m => (
+                      <ModePickerItem
+                        key={m.key}
+                        type="button"
+                        $active={searchMode === m.key}
+                        onClick={() => { setSearchMode(m.key); setShowModePicker(false); }}
+                      >
+                        <ModeItemCheck $active={searchMode === m.key}>
+                          {searchMode === m.key && '✓'}
+                        </ModeItemCheck>
+                        <ModeItemText>
+                          <ModeItemLabel>{m.label}</ModeItemLabel>
+                          <ModeItemDesc>{m.desc}</ModeItemDesc>
+                        </ModeItemText>
+                      </ModePickerItem>
+                    ))}
+                  </ModePickerDropdown>
+                )}
+              </ModePickerWrap>
+              <LocBadge type="button" onClick={() => setShowLocPicker(p => !p)}>
+                <MapPinIcon />
+                {t(`search.dist_${district}`)}
+              </LocBadge>
+              <NumberWrap>
+                <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(200, (Number(c) || 1) + 5))}><ChevronUp /></NumArrowBtn>
+                <NumberInput
+                  type="number"
+                  min={1}
+                  max={200}
+                  value={targetCount}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    const v = e.target.value;
+                    if (v === '') { setTargetCount(''); return; }
+                    const n = Number(v);
+                    if (!isNaN(n)) setTargetCount(Math.min(200, n));
+                  }}
+                  onBlur={() => {
+                    const n = Number(targetCount);
+                    setTargetCount((!n || n < 1) ? 1 : Math.min(200, n));
+                  }}
+                />
+                <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.max(1, (Number(c) || 1) - 5))}><ChevronDown /></NumArrowBtn>
+              </NumberWrap>
+              <BarSearchBtn type="submit" disabled={search.isPending || !keyword.trim()}>
+                {search.isPending ? <Spinner /> : <SearchBtnIcon />}
+              </BarSearchBtn>
+            </BarToolRow>
             {showLocPicker && (
               <LocDropdown>
                 {HK_DISTRICT_KEYS.map(dk => (
