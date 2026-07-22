@@ -1216,7 +1216,7 @@ const Dashboard: React.FC = () => {
               $pastel={theme.pastel.olive}
               $accent={theme.strong.olive}
               style={{ flex: 1 }}
-              onClick={() => navigate('/cms-leads?tab=replied')}
+              onClick={() => navigate('/client-pool?tab=replied')}
             >
               <ActionWatermark $fg={theme.strong.olive} $rot={22}><IconReplyArrow /></ActionWatermark>
               <ActionArrow $fg={theme.strong.olive}>
@@ -1276,7 +1276,7 @@ const Dashboard: React.FC = () => {
               $pastel={theme.pastel.mauve}
               $accent={theme.strong.mauve}
               style={{ flex: 1 }}
-              onClick={() => navigate('/cms-leads?tab=awaiting&sub=no_followup')}
+              onClick={() => navigate('/client-pool?tab=awaiting&sub=no_followup')}
             >
               <ActionWatermark $fg={theme.strong.mauve} $rot={-12}><IconAlert /></ActionWatermark>
               <ActionArrow $fg={theme.strong.mauve}>
@@ -1328,7 +1328,7 @@ const Dashboard: React.FC = () => {
               $pastel={theme.pastel.blue}
               $accent={theme.strong.blue}
               style={{ flex: 1 }}
-              onClick={() => navigate('/cms-leads?tab=replied&sub=meeting')}
+              onClick={() => navigate('/client-pool?tab=replied&sub=meeting')}
             >
               <ActionWatermark $fg={theme.strong.blue} $rot={28}><IconClock /></ActionWatermark>
               <ActionArrow $fg={theme.strong.blue}>

@@ -691,14 +691,14 @@ const Calendar: React.FC = () => {
 
   const months = useMemo(() => [
     t('calendar.january'), t('calendar.february'), t('calendar.march'),
-    t('calendar.april'), t('calendar.may'), t('calendar.june'),
+    t('calendar.april'), t('calendar.mayFull'), t('calendar.june'),
     t('calendar.july'), t('calendar.august'), t('calendar.september'),
     t('calendar.october'), t('calendar.november'), t('calendar.december'),
   ], [t]);
 
   const monthsShort = useMemo(() => [
     t('calendar.janShort'), t('calendar.febShort'), t('calendar.marShort'),
-    t('calendar.aprShort'), t('calendar.mayShort'), t('calendar.junShort'),
+    t('calendar.aprShort'), t('calendar.mayAbbr'), t('calendar.junShort'),
     t('calendar.julShort'), t('calendar.augShort'), t('calendar.sepShort'),
     t('calendar.octShort'), t('calendar.novShort'), t('calendar.decShort'),
   ], [t]);

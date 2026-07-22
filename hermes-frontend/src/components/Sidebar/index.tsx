@@ -1,11 +1,8 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import styled, { css, keyframes } from 'styled-components';
-import { NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { media } from '../../styles/media';
-import { glassSurface } from '../../styles/glassSurface';
-import { useAuth } from '../../contexts/AuthContext';
 import { useBadge } from '../../contexts/BadgeContext';
 
 /* ── FitSpan: auto-shrink text to fit container ── */
@@ -198,13 +195,6 @@ const IconAgent = () => (
   </svg>
 );
 
-const IconVerifiedEmail = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="currentColor" viewBox="0 0 16 16">
-    <path d="M2.5 1A1.5 1.5 0 0 0 1 2.5v11A1.5 1.5 0 0 0 2.5 15h3.05a3.5 3.5 0 0 1-.713-1H2.5a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 .5.5V5h1V2.5A1.5 1.5 0 0 0 13.5 1h-11z" />
-    <path opacity="0.5" d="M16 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm-3.97-1.03a.75.75 0 0 0-1.06 1.06l1 1a.75.75 0 0 0 1.06 0l2-2a.75.75 0 0 0-1.06-1.06L12.5 7.44l-.47-.47z" />
-    <path d="M4.5 4a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zm0 2a.5.5 0 0 0 0 1h3.5a.5.5 0 0 0 0-1H4.5z" />
-  </svg>
-);
 
 /* Door + arrow logout icon */
 const IconLogout = () => (
@@ -663,8 +653,6 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, collapsed = false }) => {
   const { t } = useTranslation();
   const location = useLocation();
-  const navigate = useNavigate();
-  const { logout } = useAuth();
   const { counts, clearBadge } = useBadge();
 
   /* Clear badge when user visits a route */
@@ -673,12 +661,6 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
     if (counts[path]) clearBadge(path);
   }, [location.pathname, counts, clearBadge]);
 
-  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
-  const handleLogout = () => {
-    setShowLogoutDialog(false);
-    logout();
-    navigate('/login', { replace: true });
-  };
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     applications: location.pathname.startsWith('/app-'),
     account: location.pathname.startsWith('/account'),
@@ -711,8 +693,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
         <MenuSpacer />
         <li><MLink to="/dashboard"><IconHome /><FitSpan>{t('nav.myDashboard')}</FitSpan>{counts['/dashboard'] ? <Badge>{counts['/dashboard']}</Badge> : null}</MLink></li>
         <MenuSpacer />
-        <li><MLink to="/cms-leads"><IconLeads /><FitSpan>{t('nav.leadPool')}</FitSpan>{counts['/cms-leads'] ? <Badge>{counts['/cms-leads']}</Badge> : null}</MLink></li>
-        <li><MLink to="/cms-verified-emails"><IconVerifiedEmail /><FitSpan>{t('nav.verifiedEmails')}</FitSpan>{counts['/cms-verified-emails'] ? <Badge>{counts['/cms-verified-emails']}</Badge> : null}</MLink></li>
+        <li><MLink to="/client-pool"><IconLeads /><FitSpan>{t('nav.clientPool')}</FitSpan>{(counts['/cms-leads'] || counts['/cms-verified-emails']) ? <Badge>{(counts['/cms-leads'] || 0) + (counts['/cms-verified-emails'] || 0)}</Badge> : null}</MLink></li>
         <li><MLink to="/app-calendar"><IconSchedule /><FitSpan>{t('nav.calendar')}</FitSpan></MLink></li>
       </MenuList>
       <BottomMenuList>
@@ -721,47 +702,6 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
       </BottomMenuList>
       </ScrollArea>
 
-      {/* Footer icons */}
-      <FooterLinks>
-        <FooterBtnWrap>
-          <FooterBtn as={NavLink} to="/cms-user-info" title={t('nav.userInfo')}>
-            <IconUserInfo />
-          </FooterBtn>
-          <FooterTooltip>{t('nav.userInfo')}</FooterTooltip>
-        </FooterBtnWrap>
-        <FooterBtnWrap>
-          <FooterBtn as={NavLink} to="/cms-settings" title={t('nav.settings')}>
-            <IconSettings />
-          </FooterBtn>
-          <FooterTooltip>{t('nav.settings')}</FooterTooltip>
-        </FooterBtnWrap>
-        <FooterBtnWrap>
-          <FooterBtn title={t('nav.signOut')} onClick={() => setShowLogoutDialog(true)}>
-            <IconLogout />
-          </FooterBtn>
-          <FooterTooltip>{t('nav.signOut')}</FooterTooltip>
-        </FooterBtnWrap>
-      </FooterLinks>
-
-      {/* Logout confirmation dialog */}
-      {showLogoutDialog && createPortal(
-        <LogoutOverlay onClick={() => setShowLogoutDialog(false)}>
-          <LogoutDialog onClick={(e) => e.stopPropagation()}>
-            <LogoutIconWrap><IconLogout /></LogoutIconWrap>
-            <LogoutTitle>{t('nav.signOut')}</LogoutTitle>
-            <LogoutDesc>{t('nav.logoutConfirm')}</LogoutDesc>
-            <LogoutActions>
-              <LogoutCancelBtn onClick={() => setShowLogoutDialog(false)}>
-                {t('common.cancel')}
-              </LogoutCancelBtn>
-              <LogoutConfirmBtn onClick={handleLogout}>
-                {t('nav.signOut')}
-              </LogoutConfirmBtn>
-            </LogoutActions>
-          </LogoutDialog>
-        </LogoutOverlay>,
-        document.body
-      )}
     </Wrapper>
   );
 };
