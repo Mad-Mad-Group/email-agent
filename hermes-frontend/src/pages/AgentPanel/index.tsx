@@ -1009,7 +1009,7 @@ const PoolPane = styled.div`
   /* Both Client Pool and Verified Pool pages have their own internal
      <Page> wrapper. Set a moderate inset so content sits comfortably
      below the popup header + tabs without the wider 24/32 default. */
-  & > div:first-child { padding: 16px 24px 24px; }
+  & > div:first-child { padding: 0 16px 16px; }
 `;
 
 /* ── Fountain (static background prop in the village) ── */

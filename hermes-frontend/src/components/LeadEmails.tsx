@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import { useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail } from '../api/hooks';
 import { EmailItem } from '../api/emailQueue';
 import { useDialog } from '../components';
@@ -380,6 +381,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
   const { t } = useTranslation();
   const { showPrompt } = useDialog();
   const leTheme = useTheme() as any;
+  const queryClient = useQueryClient();
   const { data } = useEmailQueue({ search: companyName });
   const approve = useApproveEmail();
   const reject = useRejectEmail();
@@ -407,8 +409,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
       await client.patch(`/email-queue/${editingEmail._id}`, { subject: editSubject, body: editBody });
       setEditingEmail(null);
       toast.success(t('emailQueue.editSuccess'));
-      // refetch email data
-      window.location.reload();
+      queryClient.invalidateQueries({ queryKey: ['emailQueue'] });
     } catch (err: any) {
       toast.error(t('emailQueue.editFailed') + (err?.message || ''));
     }

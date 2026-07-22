@@ -79,7 +79,7 @@ const PageCard = styled.div`
 `;
 
 const PageTitle = styled.h1`
-  font-size: clamp(1.25rem, 2.2vw, 1.5rem);
+  font-size: clamp(1.35rem, 2.5vw, 1.85rem);
   font-weight: 700;
   margin: 0;
   background: ${({ theme }) => theme.gradients.brand};
@@ -90,6 +90,7 @@ const PageTitle = styled.h1`
     -webkit-background-clip: text; background-clip: text;
   `}
 `;
+const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 
 /* ── Circular Action Buttons with Tooltip ── */
@@ -1445,7 +1446,10 @@ const Leads: React.FC = () => {
   return (
     <Page>
         <PageCard>
-        <div><PageTitle>{pageTitle}</PageTitle></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <SpriteAvatar src={AGENTS.S1.sprite} frames={AGENTS.S1.frames} frameW={AGENTS.S1.frameW} frameH={AGENTS.S1.frameH} size={48} />
+          <div><PageTitle>{pageTitle}</PageTitle><PageSub>{t('leads.subtitle')}</PageSub></div>
+        </div>
 
         {/* ── Orbital-style View Tabs ── */}
         <TabsRow ref={tabsRowRef}>

@@ -218,9 +218,7 @@ const DpHeader = styled.div`
   gap: 6px;
   padding: 10px 20px;
   background: transparent;
-  cursor: grab;
   min-height: 24px;
-  &:active { cursor: grabbing; }
 `;
 
 const DpHeaderInfo = styled.div`
@@ -672,7 +670,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
         <div onMouseDown={e => onDpResizeStart(e, 'ne')} style={{ position:'absolute', top:0, right:0, width:8, height:8, cursor:'ne-resize', zIndex:11 }} />
         <div onMouseDown={e => onDpResizeStart(e, 'sw')} style={{ position:'absolute', bottom:0, left:0, width:8, height:8, cursor:'sw-resize', zIndex:11 }} />
         <div onMouseDown={e => onDpResizeStart(e, 'se')} style={{ position:'absolute', bottom:0, right:0, width:8, height:8, cursor:'se-resize', zIndex:11 }} />
-        <DpHeader onMouseDown={onDpDragStart}>
+        <DpHeader>
           <Avatar $colorIndex={hashColorIndex(name)} style={{ width: 40, height: 40, fontSize: '0.8rem', borderRadius: 10 }} />
           <DpHeaderInfo>
             <DpCompanyName>

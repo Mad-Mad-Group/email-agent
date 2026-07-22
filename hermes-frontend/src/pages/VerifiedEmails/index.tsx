@@ -410,7 +410,6 @@ const VerifiedEmailsPage: React.FC = () => {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
           />
-          <Btn onClick={() => toast(t('verifiedEmails.demoFollowUpMsg'))}>{t('verifiedEmails.demoFollowUp')}</Btn>
           <Btn onClick={handleExport}><ExportIcon /> {t('verifiedEmails.export')}</Btn>
           <Btn $variant="primary" onClick={() => setShowAdd(true)}><PlusIcon /> {t('verifiedEmails.add')}</Btn>
         </div>

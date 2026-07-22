@@ -9,6 +9,8 @@ export interface RegisterPayload {
   email: string;
   password: string;
   name: string;
+  company_name?: string;
+  company_description?: string;
 }
 
 export interface User {
