@@ -112,7 +112,7 @@ const Register: React.FC = () => {
     if (!name.trim()) errs.name = 'register.nameRequired';
     if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) errs.email = 'register.emailRequired';
     if (!companyName.trim()) errs.companyName = 'register.companyNameRequired';
-    if (!companyDesc.trim()) errs.companyDesc = 'register.companyDescRequired';
+    // companyDesc is optional
     if (!password || password.length < 8) errs.password = 'register.passwordRequired';
     if (!confirmPassword || confirmPassword.length < 8) errs.confirmPassword = 'register.confirmRequired';
     if (password && confirmPassword && password !== confirmPassword) {

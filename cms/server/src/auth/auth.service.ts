@@ -62,11 +62,14 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
+    const { company_name, company_description, ...rest } = registerDto;
     let user;
     try {
       user = await this.usersService.create({
-        ...registerDto,
+        ...rest,
         password: hashedPassword,
+        ...(company_name && { companyName: company_name }),
+        ...(company_description && { companyDescription: company_description }),
       });
     } catch (err) {
       this.logger.error('Register create user failed', err);
