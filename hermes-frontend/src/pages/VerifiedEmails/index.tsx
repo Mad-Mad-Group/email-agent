@@ -1,7 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import styled, { keyframes, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import toast from 'react-hot-toast';
 import { media } from '../../styles/media';
 import { glassSurface } from '../../styles/glassSurface';
 import { useVerifiedEmails, useVerifiedEmailStats, useCreateVerifiedEmail, useDeleteVerifiedEmail } from '../../api/hooks';
@@ -50,13 +49,7 @@ const PlusIcon = () => (
 
 /* ── Layout ── */
 
-const Page = styled.div`
-  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.lg}px;
-  padding: 36px 32px 44px;
-  animation: fadeSlideUp 0.5s var(--ease-out) both;
-  ${media.tablet} { padding: 24px 18px 32px; }
-  ${media.mobile} { padding: 20px 16px 32px; }
-`;
+const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
 
 const PageCard = styled.div`
   background: transparent;
@@ -74,15 +67,7 @@ const Breadcrumb = styled.ol`
   a { color: ${({ theme }) => theme.colors.textSecondary}; text-decoration: none; &:hover { text-decoration: underline; } }
 `;
 
-const PageTitle = styled.h1`
-  font-size: clamp(1.35rem, 2.5vw, 1.85rem); font-weight: 700; margin: 0;
-  background: ${({ theme }) => theme.gradients.brand};
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-  ${({ theme }) => theme.mode === 'dark' && `
-    background: linear-gradient(135deg, #E0ACD2, #ACC0DE);
-    -webkit-background-clip: text; background-clip: text;
-  `}
-`;
+const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
 const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const ToolbarRow = styled.div`
@@ -102,10 +87,10 @@ const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'ghost' }>`
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 14px; border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.8125rem; font-weight: 500;
-  cursor: pointer; border: 1px solid transparent; transition: background 150ms var(--ease-out), color 150ms var(--ease-out), border-color 150ms var(--ease-out), opacity 150ms var(--ease-out);
+  cursor: pointer; border: 1px solid transparent; transition: all 0.15s;
   ${({ $variant, theme }) => {
     if ($variant === 'primary') return `background: ${theme.colors.accent}; color: ${theme.colors.textInverted}; &:hover { opacity: 0.9; }`;
-    if ($variant === 'danger') return `background: transparent; color: ${theme.colors.accent}; border-color: ${theme.colors.accent}; &:hover { background: ${theme.colors.accent}; color: ${theme.colors.textInverted}; }`;
+    if ($variant === 'danger') return `background: transparent; color: ${theme.strong.mauve}; border-color: ${theme.strong.mauve}; &:hover { background: ${theme.strong.mauve}; color: ${theme.colors.textInverted}; }`;
     return `background: ${theme.colors.surface}; color: ${theme.colors.textSecondary}; border-color: ${theme.colors.border}; &:hover { background: ${theme.colors.surfaceMuted}; }`;
   }}
 `;
@@ -145,7 +130,7 @@ const StatLabel = styled.span`
 `;
 
 const StatValueRow = styled.div`display: flex; align-items: baseline; gap: 6px;`;
-const StatNumber = styled.span<{ $color: string }>`font-size: 2rem; font-weight: 700; color: ${({ $color }) => $color}; line-height: 1; font-variant-numeric: tabular-nums;`;
+const StatNumber = styled.span<{ $color: string }>`font-size: 2rem; font-weight: 800; color: ${({ $color }) => $color}; line-height: 1;`;
 const StatUnit = styled.span`font-size: 0.875rem; color: ${({ theme }) => theme.colors.textTertiary};`;
 
 /* watermark icons (stroke style, matching Leads) */
@@ -170,66 +155,26 @@ const WmStar = () => (
   </svg>
 );
 
-/* ── Table (rounded, matching Leads page) ── */
+/* ── Table ── */
 
-const TableWrap = styled.div`
-  overflow-x: auto;
-  padding: 0;
+const Card = styled.div`
+  ${glassSurface}
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  overflow: hidden;
 `;
+
+const TableWrap = styled.div`overflow-x: auto;`;
 
 const Table = styled.table`
-  width: 100%;
-  table-layout: fixed;
-  border-collapse: separate;
-  border-spacing: 0;
-  font-family: ${({ theme }) => theme.fonts.primary};
-  font-size: 0.8rem;
-  min-width: 960px;
-  th:nth-child(1) { width: 22%; }
-  th:nth-child(2) { width: 14%; }
-  th:nth-child(3) { width: 12%; }
-  th:nth-child(4) { width: 10%; }
-  th:nth-child(5) { width: 8%; }
-  th:nth-child(6) { width: 8%; }
-  th:nth-child(7) { width: 9%; }
-  th:nth-child(8) { width: 11%; }
-  th:nth-child(9) { width: 6%; }
-  th, td {
-    padding: 10px 14px;
-    text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  th {
-    font-weight: 600;
-    font-size: 0.6875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: ${({ theme }) => theme.colors.textTertiary};
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-    user-select: none;
-    cursor: default;
-  }
-  td {
-    font-size: 0.8125rem;
-    line-height: 1.4;
-    border-bottom: none;
-  }
-  ${media.mobile} {
-    min-width: 640px;
-    font-size: 0.75rem;
-    th, td { padding: 6px 10px; }
-    th { font-size: 0.5625rem; }
-  }
-`;
-
-const TRow = styled.tr`
-  transition: background 0.15s;
-  cursor: pointer;
-  animation: fadeInRow 0.35s var(--ease-out) both;
-  &:nth-child(even) td { background: ${({ theme }) => theme.colors.surfaceMuted}40; }
-  &:hover td { background: ${({ theme }) => `${theme.colors.accent}08`}; }
+  width: 100%; border-collapse: separate; border-spacing: 0; font-size: 0.8125rem;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 12px;
+  overflow: hidden;
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
+  th { font-weight: 600; color: ${({ theme }) => theme.colors.textTertiary}; background: ${({ theme }) => theme.colors.canvas}; font-size: 0.6875rem; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { color: ${({ theme }) => theme.colors.textPrimary}; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: ${({ theme }) => theme.colors.surfaceMuted}; }
 `;
 
 const Badge = styled.span<{ $color?: string }>`
@@ -266,12 +211,11 @@ const PaginationRow = styled.div`
 `;
 
 const PageBtn = styled.button<{ $active?: boolean }>`
-  padding: 4px 12px; border-radius: 999px;
-  border: 1px solid ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.border};
+  padding: 4px 10px; border-radius: ${({ theme }) => theme.radii.control}px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
   color: ${({ $active, theme }) => $active ? theme.colors.textInverted : 'inherit'};
   cursor: pointer; font-size: 0.75rem; margin: 0 2px;
-  transition: background 0.15s, border-color 0.15s;
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 `;
 
@@ -410,6 +354,7 @@ const VerifiedEmailsPage: React.FC = () => {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
           />
+          <Btn onClick={() => window.alert(t('verifiedEmails.demoFollowUpMsg'))}>{t('verifiedEmails.demoFollowUp')}</Btn>
           <Btn onClick={handleExport}><ExportIcon /> {t('verifiedEmails.export')}</Btn>
           <Btn $variant="primary" onClick={() => setShowAdd(true)}><PlusIcon /> {t('verifiedEmails.add')}</Btn>
         </div>
@@ -443,7 +388,7 @@ const VerifiedEmailsPage: React.FC = () => {
                 </thead>
                 <tbody>
                   {items.map(item => (
-                    <TRow key={item._id}>
+                    <tr key={item._id}>
                       <td>{item.email}</td>
                       <td>{item.company_name}</td>
                       <td style={{ color: 'inherit', opacity: 0.7 }}>{item.domain}</td>
@@ -467,7 +412,7 @@ const VerifiedEmailsPage: React.FC = () => {
                           <TrashIcon />
                         </Btn>
                       </td>
-                    </TRow>
+                    </tr>
                   ))}
                 </tbody>
               </Table>
