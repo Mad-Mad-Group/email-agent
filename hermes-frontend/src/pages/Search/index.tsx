@@ -407,7 +407,7 @@ const BarSearchBtn = styled.button`
 
 /* Location picker dropdown */
 const LocDropdown = styled.div`
-  position: absolute; top: calc(100% + 6px); left: 0;
+  position: absolute; top: calc(100% + 6px); right: 0;
   background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 14px;
