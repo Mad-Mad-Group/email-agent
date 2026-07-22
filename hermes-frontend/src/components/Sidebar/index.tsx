@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import styled, { css, keyframes } from 'styled-components';
@@ -7,6 +7,40 @@ import { media } from '../../styles/media';
 import { glassSurface } from '../../styles/glassSurface';
 import { useAuth } from '../../contexts/AuthContext';
 import { useBadge } from '../../contexts/BadgeContext';
+
+/* ── FitSpan: auto-shrink text to fit container ── */
+const FitSpan: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const outerRef = useRef<HTMLSpanElement>(null);
+  const innerRef = useRef<HTMLSpanElement>(null);
+
+  const fit = useCallback(() => {
+    const outer = outerRef.current;
+    const inner = innerRef.current;
+    if (!outer || !inner) return;
+    inner.style.transform = 'none';
+    const available = outer.clientWidth;
+    const needed = inner.scrollWidth;
+    if (needed > available && available > 0) {
+      inner.style.transform = `scaleX(${available / needed})`;
+    }
+  }, []);
+
+  useEffect(() => { fit(); }, [children, fit]);
+
+  useEffect(() => {
+    const obs = new ResizeObserver(fit);
+    if (outerRef.current) obs.observe(outerRef.current);
+    return () => obs.disconnect();
+  }, [fit]);
+
+  return (
+    <span ref={outerRef} style={{ overflow: 'hidden', display: 'block', minWidth: 0 }}>
+      <span ref={innerRef} style={{ display: 'inline-block', whiteSpace: 'nowrap', transformOrigin: 'left center' }}>
+        {children}
+      </span>
+    </span>
+  );
+};
 
 /* ── LUNO SVG Icons ── */
 
@@ -198,7 +232,7 @@ const ScrollArea = styled.div`
   flex: 1;
   overflow-y: auto;
   min-height: 0;
-  padding: 0 0 8px 8px;
+  padding: 0 8px 8px 8px;
 
   [data-collapsed="true"] & {
     padding: 0 0 8px 0;
@@ -308,14 +342,12 @@ const PlusBtn = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  @media (hover: hover) and (pointer: fine) {
-    &:hover { opacity: 0.9; }
-  }
+  &:hover { opacity: 0.9; }
 `;
 
 const MenuList = styled.ul`
   list-style: none;
-  margin: 4px 6px 4px 8px;
+  margin: 4px 8px;
   padding: 0;
 
   [data-collapsed="true"] & {
@@ -370,28 +402,26 @@ const MLink = styled(NavLink)`
   font-size: 0.9375rem;
   color: ${({ theme }) => theme.sidebar.text};
   text-decoration: none;
-  transition: background 150ms var(--ease-out), color 150ms var(--ease-out);
+  transition: all 0.15s ease;
 
   svg { transition: transform 0.2s ease; }
 
-  @media (hover: hover) and (pointer: fine) {
-    &:hover {
-      color: ${({ theme }) => theme.sidebar.text};
-      background: ${({ theme }) => theme.sidebar.hoverBg};
-      svg { animation: ${iconFloat} 0.6s ease-in-out; }
-    }
+  &:hover {
+    color: ${({ theme }) => theme.sidebar.text};
+    background: ${({ theme }) => theme.sidebar.hoverBg};
+    svg { animation: ${iconFloat} 0.6s ease-in-out; }
   }
 
   &.active {
-    background: ${({ theme }) => theme.colors.accent}22;
-    color: ${({ theme }) => theme.colors.accent};
+    background: ${({ theme }) => theme.strong.blue}22;
+    color: ${({ theme }) => theme.strong.blue};
     font-weight: 600;
-    svg { color: ${({ theme }) => theme.colors.accent}; }
+    svg { color: ${({ theme }) => theme.strong.blue}; }
   }
 
   svg { flex-shrink: 0; }
 
-  span { white-space: nowrap; }
+  span { white-space: nowrap; min-width: 0; }
 
   [data-collapsed="true"] & {
     padding: 8px 0;
@@ -418,7 +448,7 @@ const SearchLink = styled(MLink)`
 const Badge = styled.span`
   font-size: 0.625rem;
   font-weight: 700;
-  background: ${({ theme }) => theme.colors.accent};
+  background: ${({ theme }) => theme.strong.mauve};
   color: ${({ theme }) => theme.colors.textInverted};
   min-width: 18px;
   height: 18px;
@@ -475,17 +505,15 @@ const FooterBtn = styled.a`
   color: ${({ theme }) => theme.sidebar.textMuted};
   text-decoration: none;
   border-radius: 14px;
-  transition: background 150ms var(--ease-out), color 150ms var(--ease-out);
+  transition: all 0.15s;
   cursor: pointer;
 
   svg { transition: transform 0.2s ease; }
 
-  @media (hover: hover) and (pointer: fine) {
-    &:hover {
-      color: ${({ theme }) => theme.sidebar.text};
-      background: ${({ theme }) => theme.sidebar.hoverBg};
-      svg { animation: ${iconFloat} 0.6s ease-in-out; }
-    }
+  &:hover {
+    color: ${({ theme }) => theme.sidebar.text};
+    background: ${({ theme }) => theme.sidebar.hoverBg};
+    svg { animation: ${iconFloat} 0.6s ease-in-out; }
   }
 
   &.active {
@@ -535,8 +563,8 @@ const LogoutIconWrap = styled.div`
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: ${({ theme }) => theme.colors.accent}12;
-  color: ${({ theme }) => theme.colors.accent};
+  background: ${({ theme }) => theme.strong.mauve}12;
+  color: ${({ theme }) => theme.strong.mauve};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -574,9 +602,7 @@ const LogoutCancelBtn = styled.button`
   font-weight: 600;
   cursor: pointer;
   transition: background 0.15s;
-  @media (hover: hover) and (pointer: fine) {
-    &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
-  }
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
 `;
 
 const LogoutConfirmBtn = styled.button`
@@ -584,15 +610,13 @@ const LogoutConfirmBtn = styled.button`
   padding: 10px;
   border-radius: 10px;
   border: none;
-  background: ${({ theme }) => theme.colors.accent};
+  background: ${({ theme }) => theme.strong.mauve};
   color: ${({ theme }) => theme.colors.textInverted};
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   transition: opacity 0.15s;
-  @media (hover: hover) and (pointer: fine) {
-    &:hover { opacity: 0.9; }
-  }
+  &:hover { opacity: 0.9; }
 `;
 
 /* ── Tooltip for footer buttons ── */
@@ -618,10 +642,8 @@ const FooterBtnWrap = styled.div`
   flex: 1;
   text-align: center;
 
-  @media (hover: hover) and (pointer: fine) {
-    &:hover ${FooterTooltip} {
-      opacity: 1;
-    }
+  &:hover ${FooterTooltip} {
+    opacity: 1;
   }
 
   [data-collapsed="true"] & {
@@ -685,20 +707,61 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
       </TitleRow>
 
       <MenuList>
-        <li><MLink to="/cms-search"><IconSearch /><span>{t('nav.leadSearch')}</span></MLink></li>
-        <li><MLink to="/dashboard"><IconHome /><span>{t('nav.myDashboard')}</span>{counts['/dashboard'] ? <Badge>{counts['/dashboard']}</Badge> : null}</MLink></li>
-        <li><MLink to="/cms-agents"><IconAgent /><span>{t('nav.agents')}</span>{counts['/cms-agents'] ? <Badge>{counts['/cms-agents']}</Badge> : null}</MLink></li>
+        <li><SearchLink to="/cms-search"><IconSearch /><FitSpan>{t('nav.leadSearch')}</FitSpan></SearchLink></li>
         <MenuSpacer />
-        <li><MLink to="/cms-leads"><IconLeads /><span>{t('nav.leadPool')}</span>{counts['/cms-leads'] ? <Badge>{counts['/cms-leads']}</Badge> : null}</MLink></li>
-        <li><MLink to="/cms-verified-emails"><IconVerifiedEmail /><span>{t('nav.verifiedEmails')}</span>{counts['/cms-verified-emails'] ? <Badge>{counts['/cms-verified-emails']}</Badge> : null}</MLink></li>
-        <li><MLink to="/app-calendar"><IconSchedule /><span>{t('nav.calendar')}</span></MLink></li>
+        <li><MLink to="/dashboard"><IconHome /><FitSpan>{t('nav.myDashboard')}</FitSpan>{counts['/dashboard'] ? <Badge>{counts['/dashboard']}</Badge> : null}</MLink></li>
+        <MenuSpacer />
+        <li><MLink to="/cms-leads"><IconLeads /><FitSpan>{t('nav.leadPool')}</FitSpan>{counts['/cms-leads'] ? <Badge>{counts['/cms-leads']}</Badge> : null}</MLink></li>
+        <li><MLink to="/cms-verified-emails"><IconVerifiedEmail /><FitSpan>{t('nav.verifiedEmails')}</FitSpan>{counts['/cms-verified-emails'] ? <Badge>{counts['/cms-verified-emails']}</Badge> : null}</MLink></li>
+        <li><MLink to="/app-calendar"><IconSchedule /><FitSpan>{t('nav.calendar')}</FitSpan></MLink></li>
       </MenuList>
       <BottomMenuList>
-        <li><MLink to="/cms-users"><IconUsers /><span>{t('nav.team')}</span></MLink></li>
+        <li><MLink to="/cms-agents"><IconAgent /><FitSpan>{t('nav.agents')}</FitSpan>{counts['/cms-agents'] ? <Badge>{counts['/cms-agents']}</Badge> : null}</MLink></li>
+        <li><MLink to="/cms-users"><IconUsers /><FitSpan>{t('nav.team')}</FitSpan></MLink></li>
       </BottomMenuList>
       </ScrollArea>
 
-      {/* Footer icons moved to Topbar avatar dropdown */}
+      {/* Footer icons */}
+      <FooterLinks>
+        <FooterBtnWrap>
+          <FooterBtn as={NavLink} to="/cms-user-info" title={t('nav.userInfo')}>
+            <IconUserInfo />
+          </FooterBtn>
+          <FooterTooltip>{t('nav.userInfo')}</FooterTooltip>
+        </FooterBtnWrap>
+        <FooterBtnWrap>
+          <FooterBtn as={NavLink} to="/cms-settings" title={t('nav.settings')}>
+            <IconSettings />
+          </FooterBtn>
+          <FooterTooltip>{t('nav.settings')}</FooterTooltip>
+        </FooterBtnWrap>
+        <FooterBtnWrap>
+          <FooterBtn title={t('nav.signOut')} onClick={() => setShowLogoutDialog(true)}>
+            <IconLogout />
+          </FooterBtn>
+          <FooterTooltip>{t('nav.signOut')}</FooterTooltip>
+        </FooterBtnWrap>
+      </FooterLinks>
+
+      {/* Logout confirmation dialog */}
+      {showLogoutDialog && createPortal(
+        <LogoutOverlay onClick={() => setShowLogoutDialog(false)}>
+          <LogoutDialog onClick={(e) => e.stopPropagation()}>
+            <LogoutIconWrap><IconLogout /></LogoutIconWrap>
+            <LogoutTitle>{t('nav.signOut')}</LogoutTitle>
+            <LogoutDesc>{t('nav.logoutConfirm')}</LogoutDesc>
+            <LogoutActions>
+              <LogoutCancelBtn onClick={() => setShowLogoutDialog(false)}>
+                {t('common.cancel')}
+              </LogoutCancelBtn>
+              <LogoutConfirmBtn onClick={handleLogout}>
+                {t('nav.signOut')}
+              </LogoutConfirmBtn>
+            </LogoutActions>
+          </LogoutDialog>
+        </LogoutOverlay>,
+        document.body
+      )}
     </Wrapper>
   );
 };
