@@ -473,6 +473,79 @@ const ModeOption = styled.button<{ $active: boolean }>`
   ${media.mobile} { padding: 5px 8px; font-size: 0.625rem; }
 `;
 
+/* ── Source Dropdown (multi-select) ── */
+
+const SourceDropWrap = styled.div`
+  position: relative;
+  margin: 0 4px; flex-shrink: 0;
+  ${media.mobile} { margin: 2px 0; }
+`;
+
+const SourceDropBtn = styled.button`
+  display: flex; align-items: center; gap: 4px;
+  padding: 4px 10px; border-radius: 8px; border: none;
+  font-size: 0.625rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  transition: background 0.2s, color 0.2s;
+  &:hover { background: ${({ theme }) => theme.colors.accent}20; color: ${({ theme }) => theme.colors.accent}; }
+  ${media.mobile} { padding: 3px 7px; font-size: 0.5625rem; }
+`;
+
+const SourceDropBadge = styled.span`
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 14px; height: 14px; border-radius: 7px;
+  font-size: 0.5rem; font-weight: 700;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textInverted};
+`;
+
+const SourceDropMenu = styled.div`
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 170px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+  z-index: 50;
+  padding: 4px 0;
+  animation: fadeSlideUp 0.15s ease-out;
+`;
+
+const SourceDropItem = styled.label<{ $checked: boolean }>`
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  color: ${({ $checked, theme }) => $checked ? theme.colors.accent : theme.colors.textPrimary};
+  transition: background 0.15s;
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}80; }
+`;
+
+const SourceCheck = styled.span<{ $on: boolean }>`
+  display: flex; align-items: center; justify-content: center;
+  width: 14px; height: 14px; border-radius: 3px;
+  border: 1.5px solid ${({ $on, theme }) => $on ? theme.colors.accent : theme.colors.border};
+  background: ${({ $on, theme }) => $on ? theme.colors.accent : 'transparent'};
+  transition: all 0.15s;
+  flex-shrink: 0;
+  &::after {
+    content: '${({ $on }) => $on ? '✓' : ''}';
+    font-size: 9px; font-weight: 700;
+    color: ${({ theme }) => theme.colors.textInverted};
+  }
+`;
+
+const SEARCH_SOURCE_OPTIONS = [
+  { key: 'google_maps', i18nKey: 'search.sourceGoogleMaps' },
+  { key: 'google_search', i18nKey: 'search.sourceGoogleSearch' },
+  { key: 'linkedin', i18nKey: 'search.sourceLinkedIn' },
+] as const;
+
 const HK_DISTRICT_KEYS = [
   'all', 'centralWestern', 'wanChai', 'eastern', 'southern',
   'yauTsimMong', 'shamShuiPo', 'kowloonCity', 'wongTaiSin', 'kwunTong',
@@ -1677,6 +1750,26 @@ const SearchPage: React.FC = () => {
   const [showLocPicker, setShowLocPicker] = useState(false);
   const [targetCount, setTargetCount] = useState<number | string>(saved.tc);
   const [searchMode, setSearchMode] = useState<'normal' | 'old_website'>('normal');
+  const [searchSources, setSearchSources] = useState<string[]>(['google_maps']);
+  const [sourceDropOpen, setSourceDropOpen] = useState(false);
+  const sourceDropRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!sourceDropOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (sourceDropRef.current && !sourceDropRef.current.contains(e.target as Node)) setSourceDropOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [sourceDropOpen]);
+  const toggleSearchSource = (src: string) => {
+    setSearchSources(prev => {
+      if (prev.includes(src)) {
+        const next = prev.filter(s => s !== src);
+        return next.length > 0 ? next : prev; // at least one source
+      }
+      return [...prev, src];
+    });
+  };
   const locRef = useRef<HTMLFormElement>(null);
 
   /* ── Detail panel state ── */
@@ -1941,6 +2034,7 @@ const SearchPage: React.FC = () => {
       location: fullLocation.trim(),
       targetCount: Number(targetCount) || 1,
       mode: searchMode,
+      sources: searchSources,
     };
     // ponytail: persist form so a refresh during the pipeline restores inputs.
     try {
@@ -2063,6 +2157,27 @@ const SearchPage: React.FC = () => {
               <ModeOption type="button" $active={searchMode === 'normal'} onClick={() => setSearchMode('normal')}>{t('search.modeNormal')}</ModeOption>
               <ModeOption type="button" $active={searchMode === 'old_website'} onClick={() => setSearchMode('old_website')}>{t('search.modeOldSite')}</ModeOption>
             </ModePill>
+            {searchMode === 'normal' && (
+              <SourceDropWrap ref={sourceDropRef}>
+                <SourceDropBtn type="button" onClick={() => setSourceDropOpen(p => !p)}>
+                  {t('search.sources')}
+                  <SourceDropBadge>{searchSources.length}</SourceDropBadge>
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ transform: sourceDropOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+                    <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </SourceDropBtn>
+                {sourceDropOpen && (
+                  <SourceDropMenu>
+                    {SEARCH_SOURCE_OPTIONS.map(s => (
+                      <SourceDropItem key={s.key} $checked={searchSources.includes(s.key)} onClick={() => toggleSearchSource(s.key)}>
+                        <SourceCheck $on={searchSources.includes(s.key)} />
+                        {t(s.i18nKey)}
+                      </SourceDropItem>
+                    ))}
+                  </SourceDropMenu>
+                )}
+              </SourceDropWrap>
+            )}
             <BarInput
               type="text"
               placeholder={t('search.keywordPlaceholder')}

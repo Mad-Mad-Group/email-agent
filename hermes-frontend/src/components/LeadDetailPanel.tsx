@@ -452,6 +452,61 @@ const ScoreCaption = styled.span`
   margin-top: 3px;
   line-height: 1.4;
 `;
+const DimScoreList = styled.div`
+  display: flex; flex-direction: column; gap: 3px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: ${({ theme }) => theme.colors.surfaceMuted}40;
+  border: 1px solid ${({ theme }) => theme.colors.border}50;
+`;
+const DimScoreRow = styled.div`
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.6875rem;
+`;
+const DimScoreName = styled.span`
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+const DimScoreVal = styled.span<{ $color: string }>`
+  font-weight: 600;
+  color: ${({ $color }) => $color};
+  min-width: 24px; text-align: right;
+`;
+
+const DIMENSION_LABEL_MAP: Record<string, string> = {
+  tone_match: 'dimensionToneMatch',
+  personalization: 'dimensionPersonalization',
+  content_quality: 'dimensionContentQuality',
+  cta_clarity: 'dimensionCtaClarity',
+  length_compliance: 'dimensionLengthCompliance',
+};
+
+/* ── AI Section Mini Tabs ── */
+
+const AiTabBar = styled.div`
+  display: flex; gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.surfaceMuted}60;
+  margin-bottom: 6px;
+`;
+
+const AiTab = styled.button<{ $active: boolean }>`
+  flex: 1;
+  padding: 4px 8px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.625rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  background: ${({ $active, theme }) => $active ? theme.colors.surface : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.textTertiary};
+  box-shadow: ${({ $active }) => $active ? '0 1px 4px rgba(0,0,0,0.08)' : 'none'};
+  &:hover { color: ${({ theme }) => theme.colors.accent}; }
+`;
+
 const AiParagraph = styled.p`
   font-size: 0.75rem;
   color: ${({ theme }) => theme.colors.textSecondary};
@@ -564,6 +619,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
 }) => {
   const { t, i18n } = useTranslation();
   const styledTheme = useTheme() as any;
+  const [aiTab, setAiTab] = useState<'scores' | 'collab'>('scores');
 
   // Drag & resize state
   const dpRef = useRef<HTMLDivElement>(null);
@@ -784,62 +840,95 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
             </DpTagList>
             </DpSectionContent>
 
-            {/* ── AI 分析 section ── */}
+            {/* ── AI 分析 section (tabbed) ── */}
             {(lead._tech_score != null || lead._email_draft_score != null || lead._collab_primary) && (
               <>
                 <DpDivider />
                 <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1l2 4.5 5 .5-3.75 3.5L12.25 15 8 12.5 3.75 15l1-5.5L1 6l5-.5L8 1z" stroke="#6C97D1" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.aiAnalysis')}</DpSectionTitle>
                 <DpSectionContent>
-                  {lead._tech_score != null && (
-                    <DpField>
-                      <DpFieldLabel>{t('leads.techScore')}</DpFieldLabel>
-                      <DpFieldValue>
-                        <ScoreBarWrap>
-                          <ScoreBarTrack>
-                            <ScoreBarFill $pct={lead._tech_score} $color={lead._tech_score >= 50 ? styledTheme.strong.mauve : lead._tech_score >= 25 ? styledTheme.strong.gold : styledTheme.strong.olive} />
-                          </ScoreBarTrack>
-                          <ScoreValue $color={lead._tech_score >= 50 ? styledTheme.strong.mauve : lead._tech_score >= 25 ? styledTheme.strong.gold : styledTheme.strong.olive}>{lead._tech_score}</ScoreValue>
-                        </ScoreBarWrap>
-                      </DpFieldValue>
-                    </DpField>
+                  <AiTabBar>
+                    <AiTab $active={aiTab === 'scores'} onClick={() => setAiTab('scores')}>{t('leads.aiTabScores')}</AiTab>
+                    <AiTab $active={aiTab === 'collab'} onClick={() => setAiTab('collab')}>{t('leads.aiTabCollab')}</AiTab>
+                  </AiTabBar>
+
+                  {/* ── Scores tab ── */}
+                  {aiTab === 'scores' && (
+                    <>
+                      {lead._tech_score != null && (
+                        <DpField>
+                          <DpFieldLabel>{t('leads.techScore')}</DpFieldLabel>
+                          <DpFieldValue>
+                            <ScoreBarWrap>
+                              <ScoreBarTrack>
+                                <ScoreBarFill $pct={lead._tech_score} $color={lead._tech_score >= 50 ? styledTheme.strong.mauve : lead._tech_score >= 25 ? styledTheme.strong.gold : styledTheme.strong.olive} />
+                              </ScoreBarTrack>
+                              <ScoreValue $color={lead._tech_score >= 50 ? styledTheme.strong.mauve : lead._tech_score >= 25 ? styledTheme.strong.gold : styledTheme.strong.olive}>{lead._tech_score}</ScoreValue>
+                            </ScoreBarWrap>
+                          </DpFieldValue>
+                        </DpField>
+                      )}
+                      {lead._email_draft_score != null && (
+                        <DpField>
+                          <DpFieldLabel>{t('leads.emailScore')}</DpFieldLabel>
+                          <DpFieldValue>
+                            <ScoreBarWrap>
+                              <ScoreBarTrack>
+                                <ScoreBarFill $pct={lead._email_draft_score} $color={lead._email_draft_score >= 70 ? styledTheme.strong.olive : lead._email_draft_score >= 40 ? styledTheme.strong.gold : styledTheme.strong.mauve} />
+                              </ScoreBarTrack>
+                              <ScoreValue $color={lead._email_draft_score >= 70 ? styledTheme.strong.olive : lead._email_draft_score >= 40 ? styledTheme.strong.gold : styledTheme.strong.mauve}>{lead._email_draft_score}</ScoreValue>
+                            </ScoreBarWrap>
+                            {lead._email_draft_score_reason && (
+                              <ScoreCaption>{lead._email_draft_score_reason}</ScoreCaption>
+                            )}
+                          </DpFieldValue>
+                        </DpField>
+                      )}
+                      {lead._email_draft_dimension_scores && Object.keys(lead._email_draft_dimension_scores).length > 0 && (
+                        <DimScoreList>
+                          {Object.entries(lead._email_draft_dimension_scores).map(([key, val]) => {
+                            const v = Number(val) || 0;
+                            const color = v >= 70 ? styledTheme.strong.olive : v >= 40 ? styledTheme.strong.gold : styledTheme.strong.mauve;
+                            return (
+                              <DimScoreRow key={key}>
+                                <DimScoreName>{t(`settings.${DIMENSION_LABEL_MAP[key] || key}`)}</DimScoreName>
+                                <DimScoreVal $color={color}>{v}</DimScoreVal>
+                              </DimScoreRow>
+                            );
+                          })}
+                        </DimScoreList>
+                      )}
+                    </>
                   )}
-                  {lead._email_draft_score != null && (
-                    <DpField>
-                      <DpFieldLabel>{t('leads.emailScore')}</DpFieldLabel>
-                      <DpFieldValue>
-                        <ScoreBarWrap>
-                          <ScoreBarTrack>
-                            <ScoreBarFill $pct={lead._email_draft_score} $color={lead._email_draft_score >= 70 ? styledTheme.strong.olive : lead._email_draft_score >= 40 ? styledTheme.strong.gold : styledTheme.strong.mauve} />
-                          </ScoreBarTrack>
-                          <ScoreValue $color={lead._email_draft_score >= 70 ? styledTheme.strong.olive : lead._email_draft_score >= 40 ? styledTheme.strong.gold : styledTheme.strong.mauve}>{lead._email_draft_score}</ScoreValue>
-                        </ScoreBarWrap>
-                        {lead._email_draft_score_reason && (
-                          <ScoreCaption>{lead._email_draft_score_reason}</ScoreCaption>
-                        )}
-                      </DpFieldValue>
-                    </DpField>
-                  )}
-                  {lead._collab_primary && (
-                    <DpField>
-                      <DpFieldLabel>{t('leads.collabDirection')}</DpFieldLabel>
-                      <DpFieldValue>{lead._collab_primary}</DpFieldValue>
-                    </DpField>
-                  )}
-                  {lead._collab_pitch && (
-                    <AiParagraph>{lead._collab_pitch}</AiParagraph>
-                  )}
-                  {lead._collab_reason && (
-                    <AiParagraph style={{ fontSize: '0.6875rem', color: styledTheme.colors.textTertiary }}>{lead._collab_reason}</AiParagraph>
-                  )}
-                  {lead._collab_services && lead._collab_services.length > 0 && (
-                    <DpField>
-                      <DpFieldLabel>{t('leads.collabServices')}</DpFieldLabel>
-                      <DpFieldValue>
-                        <DpTagList>
-                          {lead._collab_services.map(s => <DpTag key={s}>{s}</DpTag>)}
-                        </DpTagList>
-                      </DpFieldValue>
-                    </DpField>
+
+                  {/* ── Collaboration tab ── */}
+                  {aiTab === 'collab' && (
+                    <>
+                      {lead._collab_primary && (
+                        <DpField>
+                          <DpFieldLabel>{t('leads.collabDirection')}</DpFieldLabel>
+                          <DpFieldValue>{lead._collab_primary}</DpFieldValue>
+                        </DpField>
+                      )}
+                      {lead._collab_pitch && (
+                        <AiParagraph>{lead._collab_pitch}</AiParagraph>
+                      )}
+                      {lead._collab_reason && (
+                        <AiParagraph style={{ fontSize: '0.6875rem', color: styledTheme.colors.textTertiary }}>{lead._collab_reason}</AiParagraph>
+                      )}
+                      {lead._collab_services && lead._collab_services.length > 0 && (
+                        <DpField>
+                          <DpFieldLabel>{t('leads.collabServices')}</DpFieldLabel>
+                          <DpFieldValue>
+                            <DpTagList>
+                              {lead._collab_services.map(s => <DpTag key={s}>{s}</DpTag>)}
+                            </DpTagList>
+                          </DpFieldValue>
+                        </DpField>
+                      )}
+                      {!lead._collab_primary && !lead._collab_pitch && (
+                        <AiParagraph style={{ textAlign: 'center', color: styledTheme.colors.textTertiary }}>{t('leads.noCollabData')}</AiParagraph>
+                      )}
+                    </>
                   )}
                 </DpSectionContent>
               </>

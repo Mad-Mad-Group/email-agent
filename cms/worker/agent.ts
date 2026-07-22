@@ -857,6 +857,22 @@ async function doSearch(p: any, db: Db) {
       : '';
 
     const isOldWebsiteMode = p.mode === 'old_website';
+    const sources: string[] = Array.isArray(p.sources) && p.sources.length > 0 ? p.sources : ['google_maps'];
+    console.log(`[search-debug] mode=${p.mode}, sources=${JSON.stringify(sources)}, keyword="${p.keyword}", location="${p.location}"`);
+
+    // Build source-specific instructions for normal mode
+    const sourceInstructions = sources.map((s: string) => {
+      switch (s) {
+        case 'google_maps':
+          return `- Google Maps: Search for "${p.keyword} ${p.location}" on Google Maps, read the business listings.`;
+        case 'google_search':
+          return `- Web Search: Search for "${p.keyword} ${p.location}" on the web, read the organic results.`;
+        case 'linkedin':
+          return `- LinkedIn: Search for "${p.keyword} ${p.location}" on LinkedIn, read company profiles.`;
+        default:
+          return `- ${s}: Search for "${p.keyword} ${p.location}" on ${s}.`;
+      }
+    }).join('\n');
 
     const prompt = isOldWebsiteMode
       ? `IMPORTANT: Do NOT use your built-in browser. Use Computer Use (CUA) to control the local desktop Chrome browser instead.
@@ -882,15 +898,20 @@ Reply with ONLY a JSON array:
 
 TASK: Find up to ${still_need} real "${p.keyword}" businesses in ${p.location}.
 ${excludeClause}
+SEARCH SOURCES — use ALL of the following:
+${sourceInstructions}
+
 INSTRUCTIONS:
-1. Open your browser and go to Google Maps or Google Search. You have a stealth browser that handles captchas automatically — it is safe and expected to use it.
-2. Search for "${p.keyword} ${p.location}" and read the results.
-3. For each business get: name, website, and EMAIL address. EMAIL is the priority — if it is not shown in the listing, open the business's own website / contact page to find it. Phone and address are NOT needed, skip them.
+1. Open your browser and visit each of the search sources listed above. You have a stealth browser that handles captchas automatically — it is safe and expected to use it.
+2. For each source, search and read the results. Combine results from all sources, removing duplicates.
+3. For each business get: name, website, EMAIL address, and source (which platform you found it on). EMAIL is the priority — if it is not shown in the listing, open the business's own website / contact page to find it. Phone and address are NOT needed, skip them.
 4. Use "" for any field you cannot find. Only include businesses that actually appeared in your search results.
 5. If you find no results, return an empty array: []
 
 RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
-[{"name":"Example School","website":"https://example.com","email":"info@example.com"}]`;
+[{"name":"Example School","website":"https://example.com","email":"info@example.com","source":"google_maps"}]`;
+
+    console.log(`[search-debug] prompt (first 500 chars):\n${prompt.slice(0, 500)}`);
 
     let arr: any[];
     const searchT0 = Date.now();
@@ -904,6 +925,7 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
     }
     const searchElapsed = ((Date.now() - searchT0) / 1000).toFixed(1);
     log(`  [search] hermes 回應 (${searchElapsed}s)：${arr.length} 筆結果 → ${JSON.stringify(arr).slice(0, 300)}`);
+    console.log(`[search-debug] 完整結果:\n${JSON.stringify(arr, null, 2)}`);
 
     let newThisRound = 0;
     for (const r of arr.slice(0, still_need)) {
@@ -924,7 +946,7 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
         email: r.email || '', // 主力攞 email（outreach 用）
         website: r.website,
         address: r.address || '', // 電話唔再要；address 有就存，冇就留空
-        source: isOldWebsiteMode ? 'google_dork' : 'google_maps',
+        source: isOldWebsiteMode ? 'google_dork' : (r.source || sources[0] || 'google_maps'),
         _via: 'hermes',
         _search_mode: p.mode || 'normal',
         search_query: `${p.keyword} ${p.location}`,
@@ -1417,6 +1439,73 @@ Output ONLY one JSON object, no other text:
   return { analyzed: true, via, primary: c.primary };
 }
 
+/* ── Email Scoring Rules ── */
+
+interface ScoringDimension {
+  key: string;
+  label: string;
+  weight: number; // 0-100, sum = 100
+}
+
+interface ScoringRules {
+  tone: string;
+  minLength: number;
+  maxLength: number;
+  requiredPoints: string;
+  customInstructions: string;
+  dimensions: ScoringDimension[];
+}
+
+const DEFAULT_DIMENSIONS: ScoringDimension[] = [
+  { key: 'tone_match', label: 'Tone Match', weight: 20 },
+  { key: 'personalization', label: 'Personalization', weight: 25 },
+  { key: 'content_quality', label: 'Content Quality', weight: 25 },
+  { key: 'cta_clarity', label: 'CTA Clarity', weight: 15 },
+  { key: 'length_compliance', label: 'Length Compliance', weight: 15 },
+];
+
+const DEFAULT_SCORING_RULES: ScoringRules = {
+  tone: 'professional',
+  minLength: 50,
+  maxLength: 300,
+  requiredPoints: '',
+  customInstructions: '',
+  dimensions: DEFAULT_DIMENSIONS,
+};
+
+async function getScoringRules(db: Db): Promise<ScoringRules> {
+  try {
+    const doc = await db.collection('settings').findOne({ key: 'email_scoring_rules' });
+    if (doc?.value) {
+      const parsed = typeof doc.value === 'string' ? JSON.parse(doc.value) : doc.value;
+      return { ...DEFAULT_SCORING_RULES, ...parsed };
+    }
+  } catch { /* fallback */ }
+  return DEFAULT_SCORING_RULES;
+}
+
+function buildScoringBlock(rules: ScoringRules): string {
+  const lines: string[] = [];
+  lines.push(`\n【Scoring Criteria — 評分準則】`);
+  lines.push(`- Preferred tone: ${rules.tone}`);
+  lines.push(`- Target body word count: ${rules.minLength}–${rules.maxLength} words.`);
+  if (rules.requiredPoints) {
+    lines.push(`- Required key points (if relevant): ${rules.requiredPoints}.`);
+  }
+  if (rules.customInstructions) {
+    lines.push(`- Additional instructions: ${rules.customInstructions}`);
+  }
+  const dims = rules.dimensions?.length ? rules.dimensions : DEFAULT_DIMENSIONS;
+  lines.push(`\n【Multi-Dimension Scoring — 多維度評分】`);
+  lines.push(`Score EACH dimension 0-100 independently:`);
+  for (const d of dims) {
+    lines.push(`  - "${d.key}" (${d.label}, weight ${d.weight}%)`);
+  }
+  lines.push(`Output a "dimension_scores" object in your JSON with each key mapped to its 0-100 score.`);
+  lines.push(`The overall "confidence" MUST equal the weighted average (rounded to integer).`);
+  return lines.join('\n');
+}
+
 /** S3 草稿 → 叫 Hermes(LLM) 寫 outreach email → email_draft + email_queue */
 async function doDraft(p: any, db: Db) {
   const _id = new ObjectId(p.lead_object_id);
@@ -1428,25 +1517,40 @@ async function doDraft(p: any, db: Db) {
   const brandBlock = uCtx ? uCtx.context : BRAND_CONTEXT_BLOCK;
   const sigBlock = uCtx ? uCtx.signature : BRAND_SIGNATURE;
   const senderDesc = uCtx ? `${uCtx.name}（見下方寄件人公司資料）` : `${BRAND_NAME} (${BRAND_TAGLINE}) — a Hong Kong digital agency`;
-  const prompt = `Write a short, warm B2B outreach email in professional English OR formal written 繁體中文 書面語 (pick whichever best fits the lead — English-medium / international leads → English is fine; but if you write in Chinese it MUST be 書面語, NOT Cantonese colloquial: 用不/沒有/的/在/這，不用唔/冇/嘅/喺/呢; avoid emoji in the body) from ${senderDesc} to the company「${lead.company_name}」.
+  const scoringRules = await getScoringRules(db);
+  const scoringBlock = buildScoringBlock(scoringRules);
+  const prompt = `Write a short, warm B2B outreach email in ${scoringRules.tone} English OR formal written 繁體中文 書面語 (pick whichever best fits the lead — English-medium / international leads → English is fine; but if you write in Chinese it MUST be 書面語, NOT Cantonese colloquial: 用不/沒有/的/在/這，不用唔/冇/嘅/喺/呢; avoid emoji in the body) from ${senderDesc} to the company「${lead.company_name}」.
 
 ${brandBlock}
 ${leadCtx}
 Collaboration angle: ${lead._collab_primary || ''} — ${lead._collab_pitch || ''}.
 ${BRAND_TONE_GUIDE}
+${scoringBlock}
 
 重要：只可以引用上面提供嘅公司資料。如果資料唔夠，寧願寫得籠統啲，都唔好虛構對方嘅業務細節。
 
-Output ONLY JSON with subject, body, summary, confidence, and reason. Body MUST end with this signature block:
+Output ONLY JSON with subject, body, summary, dimension_scores, confidence, and reason. Body MUST end with this signature block:
 
 ${sigBlock}
 
-{"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）","confidence":0,"reason":""}
+{"subject":"","body":"","summary":"一句繁中摘要：呢封 email 嘅重點（20字內）","dimension_scores":{"tone_match":0,"personalization":0,"content_quality":0,"cta_clarity":0,"length_compliance":0},"confidence":0,"reason":""}
 
-- "confidence": 你對呢封 draft 有幾滿意，0-100 整數。考慮因素：公司資料充足度、合作點位明確度、語氣同場合匹配度、有冇需要虛構細節。如果資料不足以寫出具體 pitch，要誠實打低分（例：40-60）。
+- "dimension_scores": 每個維度 0-100 分，key 必須同上方【多維度評分】嘅 key 一致。
+- "confidence": 所有維度嘅加權平均（四捨五入整數）。如果資料不足以寫出具體 pitch，要誠實打低分（例：40-60）。
 - "reason": 一句繁中解釋（30字內），例如「公司資料齊全，合作點位明確」或「缺少服務描述，pitch 偏籠統」。`;
   const c = await hermesJson(prompt);
-  const score = Math.max(0, Math.min(100, Math.round(Number(c.confidence) || 0)));
+  const dimScores = c.dimension_scores && typeof c.dimension_scores === 'object' ? c.dimension_scores : {};
+  const dims = scoringRules.dimensions?.length ? scoringRules.dimensions : DEFAULT_DIMENSIONS;
+  // Calculate weighted average from dimension scores
+  let weightedSum = 0, totalWeight = 0;
+  for (const d of dims) {
+    const s = Number(dimScores[d.key]) || 0;
+    weightedSum += s * d.weight;
+    totalWeight += d.weight;
+  }
+  const score = totalWeight > 0
+    ? Math.max(0, Math.min(100, Math.round(weightedSum / totalWeight)))
+    : Math.max(0, Math.min(100, Math.round(Number(c.confidence) || 0)));
   const reason = String(c.reason || '').slice(0, 200);
   await db.collection('leads').updateOne(
     { _id },
@@ -1455,6 +1559,7 @@ ${sigBlock}
         _has_email_draft: true,
         _email_draft_score: score,
         _email_draft_score_reason: reason,
+        _email_draft_dimension_scores: dimScores,
         _email_draft_scored_at: nowIso(),
       } },
   );
@@ -1471,6 +1576,7 @@ ${sigBlock}
     _summary: c.summary || '',
     _confidence: score,
     _confidence_reason: reason,
+    _dimension_scores: dimScores,
     status: 'pending',
     _via: 'hermes',
     created_at: nowIso(),

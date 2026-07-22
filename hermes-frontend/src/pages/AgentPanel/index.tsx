@@ -15,6 +15,7 @@ import IsometricWorld, { FountainWrap, FountainSVG } from './IsometricWorld';
 import CalendarPage from '../Calendar';
 import LeadsPage from '../Leads';
 import VerifiedPoolPage from '../VerifiedEmails';
+import OnboardingTour, { OnboardingHelpBtn, isOnboardingCompleted } from '../../components/OnboardingTour';
 
 /* ── Skill → i18n key mapping ── */
 const SKILL_I18N: Record<string, { nameKey: string; typeKey: string }> = {
@@ -1936,6 +1937,7 @@ const AgentPanel: React.FC = () => {
   const [showCalendar, setShowCalendar] = useState(false);
   const [showPool, setShowPool] = useState(false);
   const [poolTab, setPoolTab] = useState<'leads' | 'verified'>('leads');
+  const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingCompleted());
   const search = useSearch();
   const isPipelineRunning = !!campaignId && !pipelineComplete;
 
@@ -2222,6 +2224,7 @@ const AgentPanel: React.FC = () => {
         {/* Notice Board sits inside the world-background layer so foreground
            sprites (z=5+) can overlap it. */}
         <NoticeBoardWrap
+          data-tour="notice-board"
           onClick={() => setShowCalendar(true)}
           aria-label={t('agentPanel.noticeBoardHint')}
         >
@@ -2286,6 +2289,7 @@ const AgentPanel: React.FC = () => {
          on click). Inner FountainWrap / FountainSVG come from
          IsometricWorld so the visual styling stays single-sourced. ── */}
       <FountainAnchor
+        data-tour="fountain"
         onClick={() => setShowPool(true)}
         title={t('agentPanel.fountainHint')}
         aria-label={t('agentPanel.fountainHint')}
@@ -2314,7 +2318,7 @@ const AgentPanel: React.FC = () => {
       </TitleBar>
 
       {/* ── Status panel — top-left, below title ── */}
-      <StatusPanel>
+      <StatusPanel data-tour="status-panel">
         {agentCards.map((ag) => {
           const sprite = AGENT_SPRITES[ag.skill];
           const isRunning = ag.status === 'running' ;
@@ -2388,7 +2392,7 @@ const AgentPanel: React.FC = () => {
       })}
 
       {/* ── Farmer NPC — bottom-left corner ── */}
-      <FarmerWrap $freeze={showSearch || isPipelineRunning || pipelineComplete} style={{ bottom: scene.farmerPos.bottom, left: scene.farmerPos.left }}>
+      <FarmerWrap data-tour="farmer" $freeze={showSearch || isPipelineRunning || pipelineComplete} style={{ bottom: scene.farmerPos.bottom, left: scene.farmerPos.left }}>
         {/* Search dialog */}
         {showSearch && !isPipelineRunning && (
           <SearchDialogWrap style={{ pointerEvents: 'auto' }} onClick={(e) => e.stopPropagation()}>
@@ -2719,6 +2723,8 @@ const AgentPanel: React.FC = () => {
         </>,
         document.body
       )}
+      <OnboardingTour show={showOnboarding} onClose={() => setShowOnboarding(false)} />
+      <OnboardingHelpBtn onClick={() => setShowOnboarding(true)} />
     </SceneContainer>
   );
 };

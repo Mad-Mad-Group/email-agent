@@ -95,6 +95,7 @@ export class HermesService implements OnModuleInit {
       location: dto.location,
       target_count: dto.targetCount,
       mode,
+      sources: dto.sources || ['google_maps'],
       user_id: userId,
     });
 

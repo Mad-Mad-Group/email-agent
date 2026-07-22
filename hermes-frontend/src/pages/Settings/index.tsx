@@ -330,6 +330,122 @@ const SlidersIcon = () => (
   </svg>
 );
 
+const StarIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+  </svg>
+);
+
+const Select = styled.select`
+  padding: 10px 14px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  background: ${({ theme }) => theme.colors.canvas};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s;
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
+`;
+
+const Textarea = styled.textarea`
+  padding: 10px 14px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  background: ${({ theme }) => theme.colors.canvas};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 0.875rem;
+  outline: none;
+  resize: vertical;
+  min-height: 80px;
+  font-family: inherit;
+  transition: border-color 0.15s;
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
+  &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
+`;
+
+const DefaultBanner = styled.div`
+  padding: 10px 14px;
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  background: ${({ theme }) => theme.colors.accent}10;
+  border: 1px dashed ${({ theme }) => theme.colors.accent}40;
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+/* ── Preview Card ── */
+
+const PreviewCard = styled.div`
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surfaceMuted}30;
+  overflow: hidden;
+`;
+
+const PreviewHeader = styled.div`
+  padding: 10px 16px;
+  background: ${({ theme }) => theme.colors.accent}12;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  font-size: 0.8125rem; font-weight: 600;
+  color: ${({ theme }) => theme.colors.accent};
+  display: flex; align-items: center; gap: 6px;
+`;
+
+const PreviewBody = styled.div`
+  padding: 14px 16px;
+  display: flex; flex-direction: column; gap: 10px;
+`;
+
+const PreviewRow = styled.div`
+  display: flex; gap: 12px; font-size: 0.8125rem;
+  ${media.mobile} { flex-direction: column; gap: 2px; }
+`;
+
+const PreviewLabel = styled.span`
+  color: ${({ theme }) => theme.colors.textTertiary};
+  min-width: 100px; flex-shrink: 0;
+`;
+
+const PreviewValue = styled.span`
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-weight: 500;
+`;
+
+/* ── Dimension Row ── */
+
+const DimRow = styled.div`
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border}40;
+  &:last-child { border-bottom: none; }
+  ${media.mobile} { flex-wrap: wrap; gap: 6px; }
+`;
+
+const DimLabel = styled.span`
+  font-size: 0.8125rem; font-weight: 500;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  min-width: 140px; flex-shrink: 0;
+  ${media.mobile} { min-width: 100px; }
+`;
+
+const DimSlider = styled.input`
+  flex: 1; min-width: 80px;
+  accent-color: ${({ theme }) => theme.colors.accent};
+`;
+
+const DimWeight = styled.span<{ $warn?: boolean }>`
+  font-size: 0.8125rem; font-weight: 600;
+  min-width: 40px; text-align: right;
+  color: ${({ $warn, theme }) => $warn ? theme.strong.mauve : theme.colors.textSecondary};
+`;
+
+const DimTotalRow = styled.div<{ $ok: boolean }>`
+  display: flex; justify-content: flex-end; align-items: center; gap: 8px;
+  padding-top: 6px;
+  font-size: 0.8125rem; font-weight: 600;
+  color: ${({ $ok, theme }) => $ok ? theme.strong.olive : theme.strong.mauve};
+`;
+
 /* ── Helpers ── */
 
 function renderValue(val: unknown, t: (key: string) => string): string {
@@ -349,7 +465,7 @@ function extractSetting(data: unknown, key: string): string {
   return found?.value != null ? String(found.value) : '';
 }
 
-const MANAGED_KEYS = new Set(['agent_ip_address']);
+const MANAGED_KEYS = new Set(['agent_ip_address', 'email_scoring_rules']);
 
 function toDisplayEntries(data: unknown): [string, unknown][] {
   if (!Array.isArray(data)) return [];
@@ -360,7 +476,7 @@ function toDisplayEntries(data: unknown): [string, unknown][] {
 
 /* ── Tabs config ── */
 
-type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'other';
+type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'other';
 
 /* ── Component ── */
 
@@ -388,14 +504,59 @@ const Settings: React.FC = () => {
   const [autoSendMaxPerDay, setAutoSendMaxPerDay] = useState(20);
   const [autoSendRequireVerified, setAutoSendRequireVerified] = useState(true);
 
+  // Email scoring rules local state
+  const DEFAULT_DIMS = [
+    { key: 'tone_match', label: t('settings.dimensionToneMatch'), weight: 20 },
+    { key: 'personalization', label: t('settings.dimensionPersonalization'), weight: 25 },
+    { key: 'content_quality', label: t('settings.dimensionContentQuality'), weight: 25 },
+    { key: 'cta_clarity', label: t('settings.dimensionCtaClarity'), weight: 15 },
+    { key: 'length_compliance', label: t('settings.dimensionLengthCompliance'), weight: 15 },
+  ];
+  const [scoringTone, setScoringTone] = useState('professional');
+  const [scoringMinLength, setScoringMinLength] = useState(50);
+  const [scoringMaxLength, setScoringMaxLength] = useState(300);
+  const [scoringRequiredPoints, setScoringRequiredPoints] = useState('');
+  const [scoringCustomInstructions, setScoringCustomInstructions] = useState('');
+  const [scoringDimensions, setScoringDimensions] = useState(DEFAULT_DIMS);
+  const [scoringLoaded, setScoringLoaded] = useState(false);
+  const [scoringBusy, setScoringBusy] = useState(false);
+  const [scoringFeedback, setScoringFeedback] = useState<string | null>(null);
+  const dimTotal = scoringDimensions.reduce((s, d) => s + d.weight, 0);
+  const dimTotalOk = dimTotal === 100;
+  const updateDimWeight = (key: string, weight: number) => {
+    setScoringDimensions(prev => prev.map(d => d.key === key ? { ...d, weight } : d));
+  };
+
   // Sync from server data
   useEffect(() => {
     if (data) {
       const ip = extractSetting(data, 'agent_ip_address');
       setAgentIp(ip);
       setAgentIpDraft(ip);
+      // Load scoring rules if present
+      if (!scoringLoaded) {
+        const raw = extractSetting(data, 'email_scoring_rules');
+        if (raw) {
+          try {
+            const rules = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            if (rules.tone) setScoringTone(rules.tone);
+            if (rules.minLength != null) setScoringMinLength(Number(rules.minLength));
+            if (rules.maxLength != null) setScoringMaxLength(Number(rules.maxLength));
+            if (rules.requiredPoints) setScoringRequiredPoints(rules.requiredPoints);
+            if (rules.customInstructions) setScoringCustomInstructions(rules.customInstructions);
+            if (Array.isArray(rules.dimensions) && rules.dimensions.length) {
+              setScoringDimensions(rules.dimensions.map((d: any) => ({
+                key: String(d.key),
+                label: String(d.label),
+                weight: Number(d.weight) || 0,
+              })));
+            }
+          } catch { /* use defaults */ }
+        }
+        setScoringLoaded(true);
+      }
     }
-  }, [data]);
+  }, [data, scoringLoaded]);
 
   const entries = toDisplayEntries(data);
   const hasOther = entries.length > 0;
@@ -432,6 +593,31 @@ const Settings: React.FC = () => {
 
   const handleDiscard = () => setAgentIpDraft(agentIp);
 
+  // Save scoring rules
+  const handleSaveScoring = async () => {
+    if (scoringBusy) return;
+    setScoringBusy(true);
+    setScoringFeedback(null);
+    try {
+      const rules = {
+        tone: scoringTone,
+        minLength: scoringMinLength,
+        maxLength: scoringMaxLength,
+        requiredPoints: scoringRequiredPoints.trim(),
+        customInstructions: scoringCustomInstructions.trim(),
+        dimensions: scoringDimensions,
+      };
+      await settingsApi.update({ settings: { email_scoring_rules: JSON.stringify(rules) } });
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      setScoringFeedback(t('settings.scoringSaved'));
+    } catch {
+      setScoringFeedback(t('settings.scoringSaveFailed'));
+    } finally {
+      setScoringBusy(false);
+      setTimeout(() => setScoringFeedback(null), 3000);
+    }
+  };
+
   /* ── Build visible tabs ── */
   const tabs: { key: SettingsTab; label: string; icon: React.ReactNode }[] = [
     { key: 'agent-ip', label: t('settings.agentIpAddress'), icon: <NetworkIcon /> },
@@ -439,6 +625,7 @@ const Settings: React.FC = () => {
   ];
   tabs.push({ key: 'follow-up', label: t('settings.followUpSettings'), icon: <RepeatIcon /> });
   tabs.push({ key: 'auto-send', label: t('settings.autoSendRules'), icon: <ZapIcon /> });
+  tabs.push({ key: 'email-scoring', label: t('settings.emailScoringRules'), icon: <StarIcon /> });
   if (hasOther) {
     tabs.push({ key: 'other', label: t('settings.currentConfig'), icon: <SlidersIcon /> });
   }
@@ -672,6 +859,146 @@ const Settings: React.FC = () => {
                 </SettingRow>
                 <BtnRow>
                   <SaveBtn disabled>{t('settings.save')}</SaveBtn>
+                </BtnRow>
+              </ContentBody>
+            </>
+          )}
+
+          {/* ── Email Scoring Rules ── */}
+          {tab === 'email-scoring' && (
+            <>
+              <ContentHeader><h2>{t('settings.emailScoringRules')}</h2></ContentHeader>
+              <ContentBody>
+                {/* Preview Card */}
+                <PreviewCard>
+                  <PreviewHeader>
+                    <StarIcon />
+                    {t('settings.scoringPreviewTitle')}
+                  </PreviewHeader>
+                  <PreviewBody>
+                    <PreviewRow>
+                      <PreviewLabel>{t('settings.scoringPreviewTone')}</PreviewLabel>
+                      <PreviewValue>{t(`settings.tone${scoringTone.charAt(0).toUpperCase() + scoringTone.slice(1)}`)}</PreviewValue>
+                    </PreviewRow>
+                    <PreviewRow>
+                      <PreviewLabel>{t('settings.scoringPreviewWordRange')}</PreviewLabel>
+                      <PreviewValue>{scoringMinLength} – {scoringMaxLength}</PreviewValue>
+                    </PreviewRow>
+                    <PreviewRow>
+                      <PreviewLabel>{t('settings.scoringPreviewPoints')}</PreviewLabel>
+                      <PreviewValue>{scoringRequiredPoints || t('settings.scoringPreviewNoPoints')}</PreviewValue>
+                    </PreviewRow>
+                    <PreviewRow>
+                      <PreviewLabel>{t('settings.scoringPreviewCustom')}</PreviewLabel>
+                      <PreviewValue style={{ fontSize: '0.75rem' }}>{scoringCustomInstructions || t('settings.scoringPreviewNoCustom')}</PreviewValue>
+                    </PreviewRow>
+                    <PreviewRow style={{ flexDirection: 'column', gap: 4 }}>
+                      <PreviewLabel>{t('settings.scoringPreviewDimensions')}</PreviewLabel>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                        {scoringDimensions.map(d => (
+                          <span key={d.key} style={{
+                            padding: '2px 8px',
+                            borderRadius: 10,
+                            fontSize: '0.6875rem',
+                            fontWeight: 600,
+                            background: `${theme.colors.accent}18`,
+                            color: theme.colors.accent,
+                          }}>
+                            {d.label} {d.weight}%
+                          </span>
+                        ))}
+                      </div>
+                    </PreviewRow>
+                  </PreviewBody>
+                </PreviewCard>
+
+                <DefaultBanner>{t('settings.emailScoringDesc')}</DefaultBanner>
+                <FormGroup>
+                  <Label>{t('settings.scoringTone')}</Label>
+                  <Select value={scoringTone} onChange={e => setScoringTone(e.target.value)}>
+                    <option value="professional">{t('settings.toneProfessional')}</option>
+                    <option value="friendly">{t('settings.toneFriendly')}</option>
+                    <option value="casual">{t('settings.toneCasual')}</option>
+                    <option value="formal">{t('settings.toneFormal')}</option>
+                  </Select>
+                  <FormHint>{t('settings.scoringToneHint')}</FormHint>
+                </FormGroup>
+                <FormGroup>
+                  <Label>{t('settings.scoringMinLength')}</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={1000}
+                    value={scoringMinLength}
+                    onChange={e => setScoringMinLength(Number(e.target.value))}
+                  />
+                  <FormHint>{t('settings.scoringMinLengthHint')}</FormHint>
+                </FormGroup>
+                <FormGroup>
+                  <Label>{t('settings.scoringMaxLength')}</Label>
+                  <Input
+                    type="number"
+                    min={0}
+                    max={2000}
+                    value={scoringMaxLength}
+                    onChange={e => setScoringMaxLength(Number(e.target.value))}
+                  />
+                  <FormHint>{t('settings.scoringMaxLengthHint')}</FormHint>
+                </FormGroup>
+                <FormGroup>
+                  <Label>{t('settings.scoringRequiredPoints')}</Label>
+                  <Input
+                    type="text"
+                    value={scoringRequiredPoints}
+                    onChange={e => setScoringRequiredPoints(e.target.value)}
+                    placeholder={t('settings.scoringRequiredPointsPlaceholder')}
+                  />
+                  <FormHint>{t('settings.scoringRequiredPointsHint')}</FormHint>
+                </FormGroup>
+                <FormGroup>
+                  <Label>{t('settings.scoringCustomInstructions')}</Label>
+                  <Textarea
+                    value={scoringCustomInstructions}
+                    onChange={e => setScoringCustomInstructions(e.target.value)}
+                    placeholder={t('settings.scoringCustomInstructionsPlaceholder')}
+                  />
+                  <FormHint>{t('settings.scoringCustomInstructionsHint')}</FormHint>
+                </FormGroup>
+
+                {/* Dimension Weights */}
+                <FormGroup>
+                  <Label>{t('settings.scoringDimensions')}</Label>
+                  <FormHint>{t('settings.scoringDimensionsDesc')}</FormHint>
+                  {scoringDimensions.map(d => (
+                    <DimRow key={d.key}>
+                      <DimLabel>{d.label}</DimLabel>
+                      <DimSlider
+                        type="range"
+                        min={0}
+                        max={50}
+                        step={5}
+                        value={d.weight}
+                        onChange={e => updateDimWeight(d.key, Number(e.target.value))}
+                      />
+                      <DimWeight $warn={!dimTotalOk}>{d.weight}%</DimWeight>
+                    </DimRow>
+                  ))}
+                  <DimTotalRow $ok={dimTotalOk}>
+                    <span>{t('settings.dimensionWeightTotal')}: {dimTotal}%</span>
+                    {!dimTotalOk && <span>⚠ {t('settings.dimensionWeightWarning')}</span>}
+                  </DimTotalRow>
+                </FormGroup>
+
+                {scoringFeedback && (
+                  <FormHint style={{ color: scoringFeedback === t('settings.scoringSaved') ? theme.strong.olive : theme.strong.mauve }}>
+                    {scoringFeedback}
+                  </FormHint>
+                )}
+
+                <BtnRow>
+                  <SaveBtn onClick={handleSaveScoring} disabled={scoringBusy || !dimTotalOk}>
+                    {scoringBusy ? t('settings.updating') : t('settings.save')}
+                  </SaveBtn>
                 </BtnRow>
               </ContentBody>
             </>

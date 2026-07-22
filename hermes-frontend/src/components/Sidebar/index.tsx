@@ -707,7 +707,13 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
       </TitleRow>
 
       <MenuList>
+<<<<<<< Updated upstream
         <li><SearchLink to="/cms-search"><IconSearch /><FitSpan>{t('nav.leadSearch')}</FitSpan></SearchLink></li>
+=======
+        <li><MLink to="/dashboard"><IconHome /><span>{t('nav.myDashboard')}</span>{counts['/dashboard'] ? <Badge>{counts['/dashboard']}</Badge> : null}</MLink></li>
+        <li><SearchLink to="/cms-search"><IconSearch /><span>{t('nav.leadSearch')}</span>{counts['/cms-search'] ? <Badge>{counts['/cms-search']}</Badge> : null}</SearchLink></li>
+        <li><MLink to="/cms-agents"><IconAgent /><span>{t('nav.agents')}</span>{counts['/cms-agents'] ? <Badge>{counts['/cms-agents']}</Badge> : null}</MLink></li>
+>>>>>>> Stashed changes
         <MenuSpacer />
         <li><MLink to="/dashboard"><IconHome /><FitSpan>{t('nav.myDashboard')}</FitSpan>{counts['/dashboard'] ? <Badge>{counts['/dashboard']}</Badge> : null}</MLink></li>
         <MenuSpacer />

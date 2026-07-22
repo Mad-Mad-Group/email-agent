@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsArray, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class RunHermesDto {
   @IsString() keyword: string;
@@ -15,4 +15,9 @@ export class RunHermesDto {
   @IsOptional()
   @IsString()
   mode?: 'normal' | 'old_website';
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  sources?: string[];
 }

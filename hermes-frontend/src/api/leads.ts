@@ -42,6 +42,7 @@ export interface Lead {
   _tech_score?: number;
   _email_draft_score?: number;
   _email_draft_score_reason?: string;
+  _email_draft_dimension_scores?: Record<string, number>;
   _collab_primary?: string;
   _collab_pitch?: string;
   _collab_reason?: string;

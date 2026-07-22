@@ -101,6 +101,7 @@ export interface SearchPayload {
   location: string;
   targetCount: number;
   mode?: 'normal' | 'old_website';
+  sources?: string[];
 }
 
 export const searchApi = {
