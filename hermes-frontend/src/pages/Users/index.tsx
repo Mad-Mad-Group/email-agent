@@ -47,21 +47,15 @@ const TeamIcon = () => (
 
 /* ── Layout primitives ── */
 
-const Page = styled.div`
-  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.lg}px;
-  padding: 36px 32px 44px;
-  animation: fadeSlideUp 0.5s var(--ease-out) both;
-  ${media.tablet} { padding: 24px 18px 32px; }
-  ${media.mobile} { padding: 20px 16px 32px; }
-`;
+const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
 
 const PageCard = styled.div`
   background: transparent;
   border: none;
   box-shadow: none;
   border-radius: ${({ theme }) => theme.radii.card}px;
-  padding: 28px;
-  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.lg}px;
+  padding: 24px;
+  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
 `;
 
 const Breadcrumb = styled.ol`
@@ -75,16 +69,7 @@ const ToolbarRow = styled.div`
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
 `;
 
-const PageTitle = styled.h1`
-  font-size: clamp(1.25rem, 2.2vw, 1.5rem); font-weight: 700; margin: 0;
-  background: ${({ theme }) => theme.gradients.brand};
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
-  ${({ theme }) => theme.mode === 'dark' && `
-    background: linear-gradient(135deg, #E0ACD2, #ACC0DE);
-    -webkit-background-clip: text; background-clip: text;
-  `}
-`;
+const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
 const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const StatsRow = styled.div`
@@ -146,10 +131,9 @@ const StatCardInfo = styled.div`
 `;
 
 const StatCardValue = styled.div<{ $color: string }>`
-  font-size: 2rem; font-weight: 700;
+  font-size: 2rem; font-weight: 800;
   color: ${({ $color }) => $color};
   line-height: 1;
-  font-variant-numeric: tabular-nums;
 `;
 
 const StatCardLabel = styled.div`
@@ -163,25 +147,22 @@ const StatCardLabel = styled.div`
 /* ── Tabs ── */
 
 const TabBar = styled.div`
-  display: inline-flex; gap: 2px; overflow-x: auto;
-  padding: 4px; border-radius: 999px;
-  background: ${({ theme }) => theme.colors.surfaceMuted}40;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  ${media.mobile} { flex-wrap: wrap; }
+  display: flex; gap: 0; overflow-x: auto;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  ${media.mobile} { gap: 0; }
 `;
 
 const Tab = styled.button<{ $active?: boolean; $color?: string }>`
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 7px 18px;
+  padding: 10px 24px;
   border: none;
-  border-radius: 999px;
+  background: transparent;
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.2s var(--ease-out), color 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
-  background: ${({ $active, theme }) => $active ? theme.colors.surface : 'transparent'};
   color: ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) : theme.colors.textTertiary};
-  box-shadow: ${({ $active }) => $active ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'};
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+  border-bottom: 2px solid ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) : 'transparent'};
+  margin-bottom: -1px; white-space: nowrap;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; background: rgba(0,0,0,0.02); }
   svg { flex-shrink: 0; opacity: ${({ $active }) => $active ? 0.7 : 0.35}; }
 `;
 
@@ -201,38 +182,41 @@ const TabCount = styled.span<{ $active?: boolean }>`
 const TableWrap = styled.div`overflow-x: auto;`;
 
 const Table = styled.table`
-  width: 100%; border-collapse: collapse; font-size: 0.8125rem;
+  width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0;
+  font-family: ${({ theme }) => theme.fonts.primary}; font-size: 0.8125rem;
   min-width: 700px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 12px; overflow: hidden;
   th, td {
-    padding: 10px 14px;
+    padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
     text-align: left; white-space: nowrap;
   }
   th {
     font-weight: 600; text-transform: uppercase; font-size: 0.6875rem;
-    letter-spacing: 0.05em;
     color: ${({ theme }) => theme.colors.textTertiary};
+    background: ${({ theme }) => theme.colors.canvas};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   }
   ${media.tablet} {
     min-width: 0;
     font-size: 0.75rem;
-    th, td { padding: 8px 10px; white-space: normal; }
-    th { font-size: 0.5625rem; }
+    th, td { padding: 6px 8px; white-space: normal; }
+    th { font-size: 0.625rem; }
   }
   ${media.mobile} {
     min-width: 480px;
     font-size: 0.75rem;
-    th, td { padding: 6px 8px; }
-    th { font-size: 0.5625rem; }
+    th, td { padding: ${({ theme }) => theme.spacing.xs}px ${({ theme }) => theme.spacing.sm}px; }
+    th { font-size: 0.625rem; }
   }
 `;
 
-const TRow = styled.tr<{ $even?: boolean }>`
-  background: ${({ $even, theme }) => $even ? `${theme.colors.surfaceMuted}40` : 'transparent'};
+const TRow = styled.tr`
   transition: background 0.15s;
-  animation: fadeInRow 0.35s var(--ease-out) both;
-  &:hover { background: ${({ theme }) => `${theme.colors.accent}08`}; }
   cursor: pointer;
+  &:hover td { background: ${({ theme }) => theme.colors.canvas}; }
+  td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
+  &:last-child td { border-bottom: none; }
 `;
 
 const NameCell = styled.div`
@@ -560,8 +544,8 @@ function formatNumber(n: number): string {
   return n.toLocaleString('en-US');
 }
 
-/* ── Token cost estimate: default $0.005 / 1K tokens ── */
-const DEFAULT_COST_PER_1K = 0.005;
+/* ── Token cost estimate: MiniMax-M3 ≈ $0.005 / 1K tokens ── */
+const COST_PER_1K = 0.005;
 
 /* ── Tab Icons ── */
 
@@ -589,16 +573,23 @@ const TabIconUser = () => (
   </svg>
 );
 
+const TabIconToken = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+  </svg>
+);
+
 const TAB_ICONS: Record<string, React.FC> = {
   all: TabIconAll,
   admin: TabIconAdmin,
   manager: TabIconManager,
   user: TabIconUser,
+  tokenUsage: TabIconToken,
 };
 
 /* ── Tab definitions ── */
 
-type RoleFilter = 'all' | 'admin' | 'manager' | 'user';
+type RoleFilter = 'all' | 'admin' | 'manager' | 'user' | 'tokenUsage';
 
 /* ── Component ── */
 
@@ -629,17 +620,6 @@ const Users: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', email: '', role: '' });
-  const [resetPwUser, setResetPwUser] = useState<UserItem | null>(null);
-  const [newPassword, setNewPassword] = useState('');
-  const [showPw, setShowPw] = useState(false);
-  const [costPer1k, setCostPer1k] = useState(() => {
-    const saved = localStorage.getItem('token_cost_per_1k');
-    return saved ? parseFloat(saved) : DEFAULT_COST_PER_1K;
-  });
-  const resetPassword = useMutation({
-    mutationFn: ({ id, password }: { id: string; password: string }) => usersApi.update(id, { password }),
-    onSuccess: () => { setResetPwUser(null); setNewPassword(''); setShowPw(false); },
-  });
 
   const updateUser = useMutation({
     mutationFn: ({ id, data: d }: { id: string; data: Record<string, unknown> }) => usersApi.update(id, d),
@@ -661,12 +641,16 @@ const Users: React.FC = () => {
     updateUser.mutate({ id: selectedUser._id, data: editForm });
   }, [selectedUser, editForm, updateUser]);
 
-  const translatedTabs = useMemo(() => [
-    { key: 'all' as RoleFilter, label: t('users.allUsers'), color: theme.colors.accent },
-    { key: 'admin' as RoleFilter, label: t('users.admins'), color: theme.colors.accent },
-    { key: 'manager' as RoleFilter, label: t('users.managers'), color: theme.strong.gold },
-    { key: 'user' as RoleFilter, label: t('users.users'), color: theme.strong.olive },
-  ], [t, theme]);
+  const translatedTabs = useMemo(() => {
+    const tabs: { key: RoleFilter; label: string; color: string }[] = [
+      { key: 'all', label: t('users.allUsers'), color: theme.colors.accent },
+      { key: 'admin', label: t('users.admins'), color: theme.colors.accent },
+      { key: 'manager', label: t('users.managers'), color: theme.strong.gold },
+      { key: 'user', label: t('users.users'), color: theme.strong.olive },
+    ];
+    if (isAdmin) tabs.push({ key: 'tokenUsage', label: t('users.tokenUsage'), color: theme.strong.blue });
+    return tabs;
+  }, [t, theme, isAdmin]);
 
   /* Filtered list based on active tab */
   const filtered = useMemo(() => {
@@ -680,7 +664,8 @@ const Users: React.FC = () => {
     admin: users.filter(u => u.role.toLowerCase() === 'admin').length,
     manager: users.filter(u => u.role.toLowerCase() === 'manager').length,
     user: users.filter(u => u.role.toLowerCase() === 'user').length,
-  }), [users]);
+    tokenUsage: tokenUsage.length,
+  }), [users, tokenUsage]);
 
   return (
     <Page>
@@ -733,139 +718,103 @@ const Users: React.FC = () => {
           ))}
         </TabBar>
 
-        {/* User Table */}
+        {/* Table content — switches between user list and token usage based on active tab */}
         <CardBody>
           <TableWrap>
-            <Table>
-              <thead>
-                <tr>
-                  <th>{t('users.name')}</th>
-                  <th>{t('users.email')}</th>
-                  <th>{t('users.role')}</th>
-                  <th>{t('users.permissions')}</th>
-                  <th>{t('users.created')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr><EmptyCell colSpan={5}>{t('users.loading')}</EmptyCell></tr>
-                ) : filtered.length === 0 ? (
-                  <tr><EmptyCell colSpan={5}><div><EmptyTeamIllustration />{t('users.noUsers')}<EmptyHint>{t('users.inviteHint')}</EmptyHint></div></EmptyCell></tr>
-                ) : (
-                  filtered.map((u, i) => {
-                    const { bg, fg, avatar } = roleProps(u.role);
-                    const perms = u.permissions ?? [];
-                    return (
-                      <TRow key={u._id} $even={i % 2 === 1} onClick={() => setSelectedUser(u)}>
-                        <td>
-                          <NameCell>
-                            <AvatarCircle $bg={avatar}>
-                              {getInitials(u.name)}
-                            </AvatarCircle>
-                            <UserName>{u.name}</UserName>
-                          </NameCell>
-                        </td>
-                        <td>{u.email}</td>
-                        <td><RoleBadge $bg={bg} $fg={fg}>{u.role}</RoleBadge></td>
-                        <td>
-                          {perms.length === 0 ? (
-                            <PermCount>{t('users.noPermissions')}</PermCount>
-                          ) : (
-                            <PermList>
-                              {perms.slice(0, 2).map(p => (
-                                <PermTag key={p}>{p}</PermTag>
-                              ))}
-                              {perms.length > 2 && (
-                                <PermCount>{t('users.morePerms', { count: perms.length - 2 })}</PermCount>
-                              )}
-                            </PermList>
-                          )}
-                        </td>
-                        <td>{formatDate(u.created_at ?? u.createdAt)}</td>
-                      </TRow>
-                    );
-                  })
-                )}
-              </tbody>
-            </Table>
+            {activeTab === 'tokenUsage' ? (
+              /* ── Token Usage Table ── */
+              <Table>
+                <thead>
+                  <tr>
+                    <th>{t('users.userName')}</th>
+                    <th>{t('users.totalTokens')}</th>
+                    <th>{t('users.estimatedCost')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tokenUsage.length === 0 ? (
+                    <tr><EmptyCell colSpan={3}>{t('users.noUsageData')}</EmptyCell></tr>
+                  ) : (
+                    tokenUsage.map((u, i) => {
+                      const user = users.find(usr => usr._id === u.user_id);
+                      const name = user?.name || u.user_id || 'Unknown';
+                      const cost = (u.total_tokens / 1000) * COST_PER_1K;
+                      return (
+                        <TRow key={u.user_id || i}>
+                          <td>
+                            <NameCell>
+                              <AvatarCircle $bg={theme.colors.surfaceMuted}>
+                                {getInitials(name)}
+                              </AvatarCircle>
+                              <UserName>{name}</UserName>
+                            </NameCell>
+                          </td>
+                          <td>{formatNumber(u.total_tokens)}</td>
+                          <td>${cost.toFixed(2)}</td>
+                        </TRow>
+                      );
+                    })
+                  )}
+                </tbody>
+              </Table>
+            ) : (
+              /* ── User Table ── */
+              <Table>
+                <thead>
+                  <tr>
+                    <th>{t('users.name')}</th>
+                    <th>{t('users.email')}</th>
+                    <th>{t('users.role')}</th>
+                    <th>{t('users.permissions')}</th>
+                    <th>{t('users.created')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    <tr><EmptyCell colSpan={5}>{t('users.loading')}</EmptyCell></tr>
+                  ) : filtered.length === 0 ? (
+                    <tr><EmptyCell colSpan={5}><div><EmptyTeamIllustration />{t('users.noUsers')}<EmptyHint>{t('users.inviteHint')}</EmptyHint></div></EmptyCell></tr>
+                  ) : (
+                    filtered.map((u, i) => {
+                      const { bg, fg, avatar } = roleProps(u.role);
+                      const perms = u.permissions ?? [];
+                      return (
+                        <TRow key={u._id} onClick={() => setSelectedUser(u)}>
+                          <td>
+                            <NameCell>
+                              <AvatarCircle $bg={avatar}>
+                                {getInitials(u.name)}
+                              </AvatarCircle>
+                              <UserName>{u.name}</UserName>
+                            </NameCell>
+                          </td>
+                          <td>{u.email}</td>
+                          <td><RoleBadge $bg={bg} $fg={fg}>{u.role}</RoleBadge></td>
+                          <td>
+                            {perms.length === 0 ? (
+                              <PermCount>{t('users.noPermissions')}</PermCount>
+                            ) : (
+                              <PermList>
+                                {perms.slice(0, 2).map(p => (
+                                  <PermTag key={p}>{p}</PermTag>
+                                ))}
+                                {perms.length > 2 && (
+                                  <PermCount>{t('users.morePerms', { count: perms.length - 2 })}</PermCount>
+                                )}
+                              </PermList>
+                            )}
+                          </td>
+                          <td>{formatDate(u.createdAt)}</td>
+                        </TRow>
+                      );
+                    })
+                  )}
+                </tbody>
+              </Table>
+            )}
           </TableWrap>
         </CardBody>
       </PageCard>
-
-      {/* Token Usage / Billing Section (Admin only) */}
-      {isAdmin && (
-        <UsageSection>
-          <Card>
-            <SectionTitleRow>
-              <SectionTitle>{t('users.tokenUsage')}</SectionTitle>
-              <SectionHint>{t('users.tokenUsageHint')}</SectionHint>
-            </SectionTitleRow>
-            <CardBody>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: '0.8125rem' }}>
-                <span style={{ color: theme.colors.textSecondary }}>{t('users.pricePerToken')}</span>
-                <span style={{ color: theme.colors.textTertiary }}>$</span>
-                <input
-                  type="number"
-                  step="0.001"
-                  min="0"
-                  value={costPer1k}
-                  onChange={e => {
-                    const v = parseFloat(e.target.value);
-                    if (!isNaN(v) && v >= 0) { setCostPer1k(v); localStorage.setItem('token_cost_per_1k', String(v)); }
-                  }}
-                  style={{
-                    width: 90,
-                    padding: '4px 8px',
-                    fontSize: '0.8125rem',
-                    border: `1px solid ${theme.colors.border}`,
-                    borderRadius: theme.radii.badge,
-                    background: theme.colors.surface,
-                    color: theme.colors.textPrimary,
-                    outline: 'none',
-                  }}
-                />
-                <span style={{ color: theme.colors.textTertiary, fontSize: '0.75rem' }}>/ 1K tokens</span>
-              </div>
-              <TableWrap>
-                <Table>
-                  <thead>
-                    <tr>
-                      <th>{t('users.userName')}</th>
-                      <th>{t('users.totalTokens')}</th>
-                      <th>{t('users.estimatedCost')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tokenUsage.length === 0 ? (
-                      <tr><EmptyCell colSpan={3}>{t('users.noUsageData')}</EmptyCell></tr>
-                    ) : (
-                      tokenUsage.map((u, i) => {
-                        const user = users.find(usr => usr._id === u.user_id);
-                        const name = user?.name || u.user_id || 'Unknown';
-                        const cost = (u.total_tokens / 1000) * costPer1k;
-                        return (
-                          <TRow key={u.user_id || i} $even={i % 2 === 1}>
-                            <td>
-                              <NameCell>
-                                <AvatarCircle $bg={theme.colors.surfaceMuted}>
-                                  {getInitials(name)}
-                                </AvatarCircle>
-                                <UserName>{name}</UserName>
-                              </NameCell>
-                            </td>
-                            <td>{formatNumber(u.total_tokens)}</td>
-                            <td>${cost.toFixed(2)}</td>
-                          </TRow>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </Table>
-              </TableWrap>
-            </CardBody>
-          </Card>
-        </UsageSection>
-      )}
 
       {/* Footer */}
       <Footer>
@@ -930,7 +879,7 @@ const Users: React.FC = () => {
                     </DpField>
                     <DpField>
                       <DpFieldLabel>{t('users.joinDate')}</DpFieldLabel>
-                      <DpFieldValue>{formatDate(selectedUser.created_at ?? selectedUser.createdAt)}</DpFieldValue>
+                      <DpFieldValue>{formatDate(selectedUser.createdAt)}</DpFieldValue>
                     </DpField>
                   </DpGrid>
 
@@ -951,7 +900,7 @@ const Users: React.FC = () => {
 
             <DpFooter>
               <DpFooterStatus>
-                {t('users.memberSince', { date: formatDate(selectedUser.created_at ?? selectedUser.createdAt) })}
+                {t('users.memberSince', { date: formatDate(selectedUser.createdAt) })}
               </DpFooterStatus>
               {editing ? (
                 <div style={{ display: 'flex', gap: 8 }}>
@@ -961,68 +910,8 @@ const Users: React.FC = () => {
                   </DpActionBtn>
                 </div>
               ) : (
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <DpActionBtn onClick={() => { setResetPwUser(selectedUser); setNewPassword(''); }}>{t('users.resetPassword')}</DpActionBtn>
-                  <DpActionBtn $variant="primary" onClick={handleStartEdit}>{t('common.edit')}</DpActionBtn>
-                </div>
+                <DpActionBtn $variant="primary" onClick={handleStartEdit}>{t('common.edit')}</DpActionBtn>
               )}
-            </DpFooter>
-          </DpPanel>
-        </>,
-        document.body
-      )}
-      {/* Reset Password Modal */}
-      {resetPwUser && createPortal(
-        <>
-          <DpOverlay onClick={() => { setResetPwUser(null); setNewPassword(''); setShowPw(false); }} />
-          <DpPanel style={{ width: 380 }}>
-            <DpHeader>
-              <DpHeaderInfo>
-                <DpUserName>{t('users.resetPasswordFor', { name: resetPwUser.name })}</DpUserName>
-              </DpHeaderInfo>
-              <DpCloseBtn onClick={() => { setResetPwUser(null); setNewPassword(''); setShowPw(false); }}>
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
-              </DpCloseBtn>
-            </DpHeader>
-            <DpBody>
-              <DpField>
-                <DpFieldLabel>{t('users.newPassword')}</DpFieldLabel>
-                <div style={{ position: 'relative' }}>
-                  <DpInput
-                    type={showPw ? 'text' : 'password'}
-                    value={newPassword}
-                    onChange={e => setNewPassword(e.target.value)}
-                    placeholder={t('users.newPasswordPlaceholder')}
-                    autoFocus
-                    style={{ width: '100%', paddingRight: 36 }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPw(v => !v)}
-                    style={{ position: 'absolute', right: 6, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'inherit', opacity: 0.5 }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-                      {showPw
-                        ? <><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" /><circle cx="8" cy="8" r="2" /></>
-                        : <><path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z" /><circle cx="8" cy="8" r="2" /><line x1="2" y1="14" x2="14" y2="2" /></>
-                      }
-                    </svg>
-                  </button>
-                </div>
-              </DpField>
-            </DpBody>
-            <DpFooter>
-              <span />
-              <div style={{ display: 'flex', gap: 8 }}>
-                <DpActionBtn onClick={() => { setResetPwUser(null); setNewPassword(''); setShowPw(false); }}>{t('common.cancel')}</DpActionBtn>
-                <DpActionBtn
-                  $variant="primary"
-                  disabled={newPassword.length < 6 || resetPassword.isPending}
-                  onClick={() => resetPassword.mutate({ id: resetPwUser._id, password: newPassword })}
-                >
-                  {resetPassword.isPending ? t('users.saving') : t('users.confirmReset')}
-                </DpActionBtn>
-              </div>
             </DpFooter>
           </DpPanel>
         </>,

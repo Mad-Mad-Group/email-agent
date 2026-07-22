@@ -2,7 +2,7 @@ import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme, keyframes } from 'styled-components';
-import { useLeads, useEmailQueue } from '../../api/hooks';
+import { useLeads, useEmailQueue, useTokenUsage } from '../../api/hooks';
 import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
 import { media } from '../../styles/media';
@@ -17,25 +17,19 @@ import { AGENTS, FARMER, ACTIVITY_AGENT } from '../../config/agents';
 /* ── Layout ── */
 
 const Page = styled.div`
-  display: flex; flex-direction: column; gap: 28px;
-  padding: 36px 32px 44px; min-width: 0; overflow-x: hidden;
-  animation: fadeSlideUp 0.5s var(--ease-out) both;
-  ${media.tablet} { padding: 24px 18px 32px; gap: 20px; }
+  display: flex; flex-direction: column; gap: 24px;
+  padding: 32px 28px 40px; min-width: 0;
+  ${media.tablet} { padding: 20px 16px 28px; gap: 16px; }
   ${media.mobile} { padding: 20px 16px 32px; }
 `;
 
 /* ── Intelly Greeting ── */
 const GreetingBlock = styled.div`display: flex; flex-direction: column; gap: 4px;`;
 const GreetingHeading = styled.h1`
-  font-size: clamp(1.35rem, 2.5vw, 1.85rem); font-weight: 700; margin: 0;
-  background: ${({ theme }) => theme.gradients.brand};
-  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 1.75rem; font-weight: 700; margin: 0;
+  color: ${({ theme }) => theme.colors.textPrimary};
   font-family: ${({ theme }) => theme.fonts.primary};
-  ${({ theme }) => theme.mode === 'dark' && `
-    background: linear-gradient(135deg, #E0ACD2, #ACC0DE);
-    -webkit-background-clip: text; background-clip: text;
-  `}
+  ${media.tablet} { font-size: 1.35rem; }
 `;
 const GreetingDate = styled.p`
   font-size: 0.875rem; margin: 0;
@@ -44,14 +38,25 @@ const GreetingDate = styled.p`
 
 /* ── Dashboard Grid: cards area + calendar sidebar ── */
 const DashGrid = styled.div`
-  display: flex; flex-direction: column; gap: 20px;
+  display: grid;
+  grid-template-columns: 1fr minmax(300px, 340px);
+  gap: 20px; align-items: stretch;
+  ${media.tablet} { grid-template-columns: 1fr; gap: 14px; }
+  ${media.mobile} { grid-template-columns: 1fr; }
 `;
 const CardsArea = styled.div`
-  display: flex; flex-direction: column; gap: 20px; min-width: 0;
+  display: flex; flex-direction: column; gap: 20px;
+  ${media.tablet} { gap: 12px; }
 `;
 const CardRow = styled.div`
   display: flex; gap: 20px; align-items: stretch;
-  ${media.tabletDown} { flex-direction: column; }
+  ${media.tablet} { gap: 12px; }
+  ${media.mobile} { flex-direction: column; }
+`;
+const CalendarSidebar = styled.div`
+  display: flex; flex-direction: column; gap: 16px;
+  ${media.tablet} { flex-direction: row; gap: 12px; grid-column: 1 / -1; }
+  ${media.mobile} { grid-column: 1 / -1; }
 `;
 /* Embedded section inside a board — no bg, dark text */
 const EmbedTitle = styled.div`
@@ -94,29 +99,21 @@ const CardIcon = styled.span<{ $color: string }>`
   color: ${({ $color }) => $color};
 `;
 
-/* ── Intelly Stat Cards — tinted bg + left accent bar ── */
+/* ── Intelly Pastel Stat Cards (now inside masonry) ── */
 const ActionCard = styled.div<{ $accent: string; $pastel: string }>`
   position: relative; border-radius: ${({ theme }) => theme.radii.card}px;
-  padding: 24px 20px 20px 24px;
+  padding: 24px 20px 20px;
   background: ${({ $pastel }) => $pastel};
-  border: 1px solid ${({ $accent }) => `${$accent}20`};
-  border-left: 4px solid ${({ $accent }) => $accent};
   cursor: pointer; overflow: hidden;
   display: flex; flex-direction: column;
   min-width: 0;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.03);
-  transition: transform 0.2s var(--ease-out), box-shadow 0.3s ease, border-color 0.3s ease;
-  animation: fadeInRow 0.4s var(--ease-out) both;
-  &:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px ${({ $accent }) => `${$accent}18`}, 0 2px 8px rgba(0,0,0,0.06);
-    border-color: ${({ $accent }) => `${$accent}40`};
-  }
-  ${media.tablet} { padding: 16px 14px 14px 18px; }
+  transition: transform ${({ theme }) => theme.motion.fast}, box-shadow ${({ theme }) => theme.motion.fast};
+  &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
+  ${media.tablet} { padding: 16px 14px 14px; }
 `;
 const ActionWatermark = styled.div<{ $fg: string; $rot?: number }>`
   position: absolute; right: -8px; top: -10px;
-  width: 105px; height: 105px; opacity: 0.07;
+  width: 105px; height: 105px; opacity: 0.38;
   color: ${({ $fg }) => $fg}; z-index: 1; pointer-events: none;
   transform: rotate(${({ $rot }) => $rot ?? 14}deg);
   svg { width: 100%; height: 100%; }
@@ -129,18 +126,17 @@ const ActionArrow = styled.div<{ $fg: string }>`
   color: ${({ $fg }) => $fg}; font-size: 0.65rem;
 `;
 const ActionTitle = styled.div`
-  font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
-  letter-spacing: 0.08em; color: ${({ theme }) => theme.colors.textTertiary};
-  margin-bottom: 6px;
-  ${media.tablet} { font-size: 0.6875rem; margin-bottom: 4px; }
+  font-size: 1.75rem; font-weight: 800; text-transform: uppercase;
+  letter-spacing: 0.06em; color: ${({ theme }) => theme.colors.textPrimary};
+  opacity: 0.7; margin-bottom: 8px;
+  ${media.tablet} { font-size: 1.1rem; margin-bottom: 4px; }
 `;
 const ActionCountRow = styled.div`
   display: flex; align-items: baseline; gap: 10px;
 `;
 const ActionCount = styled.div`
-  font-size: 2rem; font-weight: 700; color: ${({ theme }) => theme.colors.textPrimary}; line-height: 1;
-  font-variant-numeric: tabular-nums;
-  ${media.tablet} { font-size: 1.5rem; }
+  font-size: 2.5rem; font-weight: 800; color: ${({ theme }) => theme.colors.textPrimary}; line-height: 1;
+  ${media.tablet} { font-size: 1.75rem; }
 `;
 const ActionLabel = styled.div`
   font-size: 0.8125rem; font-weight: 500; color: ${({ theme }) => theme.colors.textSecondary};
@@ -165,10 +161,8 @@ const MiniBar = styled.div<{ $color: string; $pct: number }>`
       return `${theme.colors.textPrimary}${Math.round(a * 255).toString(16).padStart(2, '0')}`;
     }};
     border-radius: 4px;
-    transition: width 0.6s var(--ease-out);
-    animation: barGrow 0.8s var(--ease-out) both;
+    transition: width 0.4s ease;
   }
-  @keyframes barGrow { from { width: 0; } }
 `;
 
 /* ── Vertical Funnel (inside pastel card) ── */
@@ -343,7 +337,6 @@ const BarChart: React.FC<{ bars: BarData[] }> = ({ bars }) => {
 /* ── Donut Chart (redesigned) ── */
 const DonutWrap = styled.div`
   display: flex; align-items: center; gap: 20px; justify-content: center; padding: 8px;
-  flex-wrap: wrap;
   ${media.tablet} {
     gap: 10px; padding: 2px;
     & > div:first-child svg { width: 165px; height: 165px; }
@@ -545,11 +538,117 @@ const CalendarLink = styled.div`
     text-decoration: none; &:hover { text-decoration: underline; } }
 `;
 
-/* ── Embed section inside card ── */
+/* ── Embed white section inside pastel card ── */
 const EmbedWhite = styled.div`
-  margin-top: 20px; background: ${({ theme }) => theme.mode === 'dark' ? theme.colors.surfaceMuted : '#fff'};
+  margin-top: 32px; background: ${({ theme }) => theme.colors.surface};
   border-radius: 12px; overflow: hidden;
   ${media.tablet} { margin-top: 14px; }
+`;
+
+/* ── Mini Calendar ── */
+const CalendarCard = styled.div`
+  ${glassSurface};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  padding: 16px;
+  ${media.tablet} { flex: 1; padding: 12px; }
+`;
+const CalMonth = styled.div`
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+`;
+const CalMonthTitle = styled.div`
+  font-size: 0.875rem; font-weight: 700;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+const CalMonthNav = styled.button`
+  background: none; border: none; cursor: pointer; padding: 4px 6px;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  font-size: 0.75rem; line-height: 1;
+  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+`;
+const CalDaysGrid = styled.div`
+  display: grid; grid-template-columns: repeat(7, 1fr); text-align: center;
+`;
+const CalDayHeader = styled.div`
+  font-size: 0.5625rem; font-weight: 600;
+  color: ${({ theme }) => theme.colors.textTertiary}; padding: 4px 0;
+`;
+const CalDayCell = styled.div<{ $today?: boolean; $selected?: boolean; $muted?: boolean; $hasEvent?: boolean }>`
+  font-size: 0.6875rem;
+  font-weight: ${({ $today, $selected }) => ($today || $selected) ? 700 : 400};
+  color: ${({ $today, $selected, $muted, theme }) =>
+    $muted ? `${theme.colors.textTertiary}60`
+    : ($today || $selected) ? '#fff'
+    : theme.colors.textPrimary};
+  background: ${({ $today, $selected, theme }) =>
+    $today ? theme.strong.mauve
+    : $selected ? `${theme.strong.mauve}cc`
+    : 'transparent'};
+  border-radius: 50%; width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center; margin: 1px auto;
+  position: relative; cursor: ${({ $muted }) => $muted ? 'default' : 'pointer'};
+  transition: background 0.15s, transform 0.1s;
+  &:hover { ${({ $muted, theme }) => !$muted ? `background: ${theme.pastel.mauve};` : ''} }
+  ${({ $hasEvent, $today, $selected, theme }) => $hasEvent && !$today && !$selected ? `
+    &::after {
+      content: ''; position: absolute; bottom: 1px;
+      width: 4px; height: 4px; border-radius: 50%;
+      background: ${theme.strong.mauve};
+    }
+  ` : ''}
+`;
+const CalAddBtn = styled.button`
+  background: ${({ theme }) => theme.colors.surfaceInverted};
+  color: ${({ theme }) => theme.colors.textInverted};
+  border: none; border-radius: 10px; padding: 9px 14px;
+  font-size: 0.8125rem; font-weight: 600; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  width: 100%; margin-top: 12px;
+  transition: opacity 0.15s;
+  &:hover { opacity: 0.85; }
+`;
+
+/* ── Day Timeline ── */
+const TimelineCard = styled.div`
+  ${glassSurface};
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  padding: 16px; flex: 1; min-height: 0;
+  overflow-y: auto;
+  &::-webkit-scrollbar { width: 3px; }
+  &::-webkit-scrollbar-thumb { background: ${({ theme }) => theme.colors.border}; border-radius: 3px; }
+  ${media.tablet} { padding: 12px; }
+`;
+const TimelineHeader = styled.div`
+  font-size: 0.8125rem; font-weight: 700;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
+`;
+const TlItem = styled.div<{ $past?: boolean }>`
+  display: flex; gap: 10px; padding: 8px 0;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border}20;
+  opacity: ${({ $past }) => $past ? 0.3 : 1};
+  &:last-child { border-bottom: none; }
+`;
+const TlTime = styled.div`
+  font-size: 0.6875rem; font-weight: 600;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  min-width: 44px; flex-shrink: 0;
+`;
+const TlDot = styled.div<{ $color: string }>`
+  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  background: ${({ $color }) => $color}; margin-top: 4px;
+`;
+const TlBody = styled.div`flex: 1; min-width: 0;`;
+const TlTitle = styled.div`
+  font-size: 0.8125rem; font-weight: 500;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+`;
+const TlSub = styled.div`
+  font-size: 0.6875rem; color: ${({ theme }) => theme.colors.textTertiary}; margin-top: 2px;
+`;
+const EmptyTimeline = styled.div`
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 24px 8px; gap: 10px; color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
 `;
 
 /* ── Meeting list inside blue card ── */
@@ -559,7 +658,7 @@ const MtgList = styled.div`
 const MtgItem = styled.div`
   display: flex; align-items: center; gap: 10px;
   padding: 8px 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  border-bottom: 1px dashed ${({ theme }) => theme.colors.textPrimary}18;
   &:last-child { border-bottom: none; }
 `;
 const MtgDot = styled.div<{ $color: string }>`
@@ -860,41 +959,21 @@ const PixelTypewriter: React.FC<{ text: string }> = ({ text }) => {
   return <>{text.slice(0, shown)}<span style={{ opacity: shown < text.length ? 1 : 0 }}>_</span></>;
 };
 
-/* ── Count-up animation ── */
-const CountUp: React.FC<{ value: number }> = ({ value }) => {
-  const [display, setDisplay] = React.useState(0);
-  const ref = useRef(value);
-  ref.current = value;
-  useEffect(() => {
-    let start = 0;
-    const end = ref.current;
-    if (end === 0) { setDisplay(0); return; }
-    const duration = 600;
-    const t0 = performance.now();
-    let raf: number;
-    const tick = (now: number) => {
-      const p = Math.min((now - t0) / duration, 1);
-      const ease = 1 - Math.pow(1 - p, 3);
-      setDisplay(Math.round(ease * end));
-      if (p < 1) raf = requestAnimationFrame(tick);
-    };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [value]);
-  return <>{display}</>;
-};
-
 /* ══════════ COMPONENT ══════════ */
 
 const Dashboard: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const theme = useTheme();
   const dark = theme.mode === 'dark';
-  const dateLocale = ({ en: 'en-US', 'zh-TW': 'zh-HK', 'zh-CN': 'zh-CN' } as Record<string,string>)[i18n.language] || 'en-US';
   const navigate = useNavigate();
 
   const { data: leadsData, isLoading: leadsLoading } = useLeads({ page: 1, limit: 100 });
   const { data: emailData, isLoading: emailsLoading } = useEmailQueue({ page: 1, limit: 100 });
+  const { data: tokenUsageRaw } = useTokenUsage();
+  const tokenUsage: { user_id: string; total_tokens: number; prompt_tokens: number; completion_tokens: number; call_count: number }[] =
+    (Array.isArray(tokenUsageRaw) ? tokenUsageRaw : (tokenUsageRaw as any)?.data ?? []) as any;
+  const tokenTotal = useMemo(() => tokenUsage.reduce((s, u) => s + u.total_tokens, 0), [tokenUsage]);
+  const COST_PER_1K = 0.005;
 
   /* ── Demo mode: auto-use mock data when real data is empty ── */
   const demoLeads = useMemo(() => generateDemoLeads(), []);
@@ -1040,6 +1119,47 @@ const Dashboard: React.FC = () => {
     return pool[Math.floor(Math.random() * pool.length)];
   }, []);
 
+  // ── Calendar sidebar state ──
+  const now = new Date();
+  const [calYear, setCalYear] = useState(now.getFullYear());
+  const [calMonth, setCalMonth] = useState(now.getMonth()); // 0-based
+  const [selectedDay, setSelectedDay] = useState<number | null>(now.getDate());
+
+  const MONTH_KEYS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
+  const DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
+
+  const calDays = useMemo(() => {
+    const dim = new Date(calYear, calMonth + 1, 0).getDate(); // days in month
+    const firstDow = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
+    const prevDim = new Date(calYear, calMonth, 0).getDate(); // prev month last day
+    const cells: { day: number; muted: boolean; today: boolean }[] = [];
+    // prev month tail
+    for (let i = firstDow - 1; i >= 0; i--) {
+      cells.push({ day: prevDim - i, muted: true, today: false });
+    }
+    // current month
+    const todayDate = new Date();
+    for (let d = 1; d <= dim; d++) {
+      const isToday = d === todayDate.getDate() && calMonth === todayDate.getMonth() && calYear === todayDate.getFullYear();
+      cells.push({ day: d, muted: false, today: isToday });
+    }
+    // next month head — fill to 42 cells (6 rows)
+    const remainder = 42 - cells.length;
+    for (let d = 1; d <= remainder; d++) {
+      cells.push({ day: d, muted: true, today: false });
+    }
+    return cells;
+  }, [calYear, calMonth]);
+
+  const handlePrevMonth = useCallback(() => {
+    setCalMonth(m => { if (m === 0) { setCalYear(y => y - 1); return 11; } return m - 1; });
+    setSelectedDay(null);
+  }, []);
+  const handleNextMonth = useCallback(() => {
+    setCalMonth(m => { if (m === 11) { setCalYear(y => y + 1); return 0; } return m + 1; });
+    setSelectedDay(null);
+  }, []);
+
   const loading = leadsLoading || emailsLoading;
   if (loading) return <Page><SpinnerWrap><Spinner /><SpinnerText>{t('dashboard.loading')}</SpinnerText></SpinnerWrap></Page>;
 
@@ -1051,19 +1171,20 @@ const Dashboard: React.FC = () => {
       {/* ── Intelly Greeting ── */}
       <GreetingBlock>
         <GreetingHeading>{t(greetingKey)}</GreetingHeading>
-        <GreetingDate>{new Date().toLocaleDateString(dateLocale, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</GreetingDate>
+        <GreetingDate>{new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</GreetingDate>
       </GreetingBlock>
 
       {/* ── Dashboard cards ── */}
       <DashGrid>
-          {/* ═══ Top row: 審核 (flex:1) + 回覆 (flex:1) ═══ */}
+        <CardsArea>
+          {/* ═══ Top row: 審核 (flex:3) + 回覆 (flex:2) — irregular widths ═══ */}
           <CardRow>
             {/* 審核 — gold card with funnel + embedded Schedule (truncated) */}
             <ActionCard
               $pastel={theme.pastel.gold}
               $accent={theme.strong.gold}
-              style={{ flex: 1 }}
-              onClick={() => navigate('/cms-leads')}
+              style={{ flex: 3 }}
+              onClick={() => navigate('/cms-email?status=pending')}
             >
               <ActionWatermark $fg={theme.strong.gold} $rot={-18}><IconDraft /></ActionWatermark>
               <ActionArrow $fg={theme.strong.gold}>
@@ -1073,7 +1194,7 @@ const Dashboard: React.FC = () => {
                 <StatsLeft>
                   <ActionTitle>{t('dashboard.cardTitleDraft')}</ActionTitle>
                   <ActionCountRow>
-                    <ActionCount><CountUp value={actions.pendingDrafts} /></ActionCount>
+                    <ActionCount>{actions.pendingDrafts}</ActionCount>
                     <ActionTrend>
                       {actions.pendingDrafts > 0 ? '↑' : '—'} {stats.sentEmails} {t('dashboard.totalEmailsSent')}
                     </ActionTrend>
@@ -1117,7 +1238,7 @@ const Dashboard: React.FC = () => {
                     </SchedList>
                   )}
                   <CalendarLink>
-                    <a href="/cms-email-queue" onClick={e => { e.preventDefault(); navigate('/cms-email-queue'); }}>
+                    <a href="/cms-email" onClick={e => { e.preventDefault(); navigate('/cms-email'); }}>
                       {t('dashboard.viewFullCalendar')}
                     </a>
                   </CalendarLink>
@@ -1125,11 +1246,11 @@ const Dashboard: React.FC = () => {
               </EmbedWhite>
             </ActionCard>
 
-            {/* 回覆 — olive card with Donut (enlarged) */}
+            {/* 回覆 — olive card with Donut */}
             <ActionCard
               $pastel={theme.pastel.olive}
               $accent={theme.strong.olive}
-              style={{ flex: 1 }}
+              style={{ flex: 2 }}
               onClick={() => navigate('/cms-leads?tab=replied')}
             >
               <ActionWatermark $fg={theme.strong.olive} $rot={22}><IconReplyArrow /></ActionWatermark>
@@ -1138,7 +1259,7 @@ const Dashboard: React.FC = () => {
               </ActionArrow>
               <ActionTitle>{t('dashboard.cardTitleReply')}</ActionTitle>
               <ActionCountRow>
-                <ActionCount><CountUp value={actions.newReplies} /></ActionCount>
+                <ActionCount>{actions.newReplies}</ActionCount>
                 <ActionTrend>
                   {stats.replyRate}% {t('dashboard.replied')}
                   <MiniBar $color={theme.colors.textPrimary} $pct={stats.replyRate} />
@@ -1184,13 +1305,13 @@ const Dashboard: React.FC = () => {
             </ActionCard>
           </CardRow>
 
-          {/* ═══ Bottom row: 跟進 (flex:3, wider) + 會議 (flex:2, narrower) — equal height ═══ */}
+          {/* ═══ Bottom row: 跟進 (flex:3) + Token (flex:2) + 會議 (flex:2) — three cards ═══ */}
           <CardRow>
             {/* 跟進 — mauve (wider) with embedded Activity (height-limited) */}
             <ActionCard
               $pastel={theme.pastel.mauve}
               $accent={theme.strong.mauve}
-              style={{ flex: 1 }}
+              style={{ flex: 3 }}
               onClick={() => navigate('/cms-leads?tab=awaiting&sub=no_followup')}
             >
               <ActionWatermark $fg={theme.strong.mauve} $rot={-12}><IconAlert /></ActionWatermark>
@@ -1198,7 +1319,7 @@ const Dashboard: React.FC = () => {
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
               </ActionArrow>
               <ActionTitle>{t('dashboard.cardTitleFollowup')}</ActionTitle>
-              <ActionCount><CountUp value={actions.noReplyNoFollowup} /></ActionCount>
+              <ActionCount>{actions.noReplyNoFollowup}</ActionCount>
 
               {/* What Just Happened — embedded, white bg, height limited */}
               <EmbedWhite onClick={e => e.stopPropagation()} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
@@ -1239,19 +1360,75 @@ const Dashboard: React.FC = () => {
               </EmbedWhite>
             </ActionCard>
 
-            {/* 今日議程 — blue card (schedule + meetings combined) */}
+            {/* Token 消耗 — blue card with donut */}
             <ActionCard
               $pastel={theme.pastel.blue}
               $accent={theme.strong.blue}
-              style={{ flex: 1 }}
-              onClick={() => navigate('/app-calendar')}
+              style={{ flex: 2 }}
+              onClick={() => navigate('/cms-users')}
             >
-              <ActionWatermark $fg={theme.strong.blue} $rot={28}><IconClock /></ActionWatermark>
+              <ActionWatermark $fg={theme.strong.blue} $rot={-8}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                </svg>
+              </ActionWatermark>
               <ActionArrow $fg={theme.strong.blue}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
               </ActionArrow>
+              <ActionTitle>{t('dashboard.tokenConsumption')}</ActionTitle>
+              <ActionCountRow>
+                <ActionCount>{tokenTotal > 1000 ? `${(tokenTotal / 1000).toFixed(1)}K` : tokenTotal}</ActionCount>
+                <ActionTrend>
+                  ${(tokenTotal / 1000 * COST_PER_1K).toFixed(2)} {t('dashboard.estimatedCost')}
+                </ActionTrend>
+              </ActionCountRow>
+
+              {/* Token usage donut by user */}
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 12 }} onClick={e => e.stopPropagation()}>
+                {tokenUsage.length === 0 ? (
+                  <Empty><EmptyDonutSvg borderColor={theme.colors.border} borderStrongColor={theme.colors.borderStrong} />{t('dashboard.noTokenData')}</Empty>
+                ) : (
+                  <DonutWrap>
+                    <DonutChart size={140} slices={tokenUsage.slice(0, 5).map((u, i) => {
+                      const opacities = ['', 'CC', '99', '66', '44'];
+                      return { value: u.total_tokens, color: `${theme.colors.textPrimary}${opacities[i] || '33'}`, label: u.user_id.slice(0, 8) };
+                    })} />
+                    <LegendList>
+                      {tokenUsage.slice(0, 5).map((u, i) => {
+                        const opacities = ['', 'CC', '99', '66', '44'];
+                        const color = `${theme.colors.textPrimary}${opacities[i] || '33'}`;
+                        return (
+                          <LegendRow key={i}>
+                            <LegendRowTop>
+                              <LegendDot $color={color} />
+                              <LegendLabel>{u.user_id.slice(0, 8)}</LegendLabel>
+                              <LegendVal>{u.total_tokens.toLocaleString()}</LegendVal>
+                            </LegendRowTop>
+                            <LegendBarTrack>
+                              <LegendBarFill $color={color} $pct={tokenTotal > 0 ? (u.total_tokens / tokenTotal) * 100 : 0} />
+                            </LegendBarTrack>
+                          </LegendRow>
+                        );
+                      })}
+                    </LegendList>
+                  </DonutWrap>
+                )}
+              </div>
+            </ActionCard>
+
+            {/* 今日議程 — olive card (schedule + meetings combined) */}
+            <ActionCard
+              $pastel={theme.pastel.olive}
+              $accent={theme.strong.olive}
+              style={{ flex: 2 }}
+              onClick={() => navigate('/cms-leads?tab=replied&sub=meeting')}
+            >
+              <ActionWatermark $fg={theme.strong.olive} $rot={28}><IconClock /></ActionWatermark>
+              <ActionArrow $fg={theme.strong.olive}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+              </ActionArrow>
               <ActionTitle>{t('dashboard.todayScheduleTitle')}</ActionTitle>
-              <ActionCount><CountUp value={todayTimeline.length + meetingList.length} /></ActionCount>
+              <ActionCount>{todayTimeline.length + meetingList.length}</ActionCount>
 
               {todayTimeline.length === 0 && meetingList.length === 0 ? (
                 <ActionLabel>{t('dashboard.noScheduleToday')}</ActionLabel>
@@ -1266,7 +1443,7 @@ const Dashboard: React.FC = () => {
                   ))}
                   {meetingList.map((m, i) => (
                     <MtgItem key={`mtg-${i}`}>
-                      <MtgDot $color={theme.strong.blue} />
+                      <MtgDot $color={theme.strong.olive} />
                       <MtgName>{m.company}</MtgName>
                       <MtgTime>{m.time}</MtgTime>
                     </MtgItem>
@@ -1275,6 +1452,73 @@ const Dashboard: React.FC = () => {
               )}
             </ActionCard>
           </CardRow>
+        </CardsArea>
+
+        {/* ═══ Calendar Sidebar ═══ */}
+        <CalendarSidebar>
+          {/* Mini Calendar */}
+          <CalendarCard>
+            <CalMonth>
+              <CalMonthNav onClick={handlePrevMonth}>◀</CalMonthNav>
+              <CalMonthTitle>
+                {t(`calendar.${MONTH_KEYS[calMonth]}`)} {calYear}
+              </CalMonthTitle>
+              <CalMonthNav onClick={handleNextMonth}>▶</CalMonthNav>
+            </CalMonth>
+            <CalDaysGrid>
+              {DAY_KEYS.map(dk => (
+                <CalDayHeader key={dk}>{t(`calendar.${dk}`)}</CalDayHeader>
+              ))}
+              {calDays.map((cell, i) => (
+                <CalDayCell
+                  key={i}
+                  $muted={cell.muted}
+                  $today={cell.today}
+                  $selected={!cell.muted && cell.day === selectedDay}
+                  onClick={() => { if (!cell.muted) setSelectedDay(cell.day); }}
+                >
+                  {cell.day}
+                </CalDayCell>
+              ))}
+            </CalDaysGrid>
+            <CalAddBtn onClick={() => navigate('/cms-email')}>
+              + {t('dashboard.addEvent')}
+            </CalAddBtn>
+          </CalendarCard>
+
+          {/* Day Timeline */}
+          <TimelineCard>
+            <TimelineHeader>
+              📅 {t('dashboard.todayScheduleTitle')}
+            </TimelineHeader>
+            {todayTimeline.length === 0 && meetingList.length === 0 ? (
+              <EmptyTimeline>{t('dashboard.noScheduleToday')}</EmptyTimeline>
+            ) : (
+              <>
+                {todayTimeline.map((item, i) => (
+                  <TlItem key={`tl-${i}`}>
+                    <TlTime>{item.displayTime}</TlTime>
+                    <TlDot $color={item.status === 'approved' ? theme.strong.olive : theme.strong.gold} />
+                    <TlBody>
+                      <TlTitle>{item.to}</TlTitle>
+                      <TlSub>{item.subject}</TlSub>
+                    </TlBody>
+                  </TlItem>
+                ))}
+                {meetingList.map((m, i) => (
+                  <TlItem key={`mtg-tl-${i}`}>
+                    <TlTime>{m.time}</TlTime>
+                    <TlDot $color={theme.strong.blue} />
+                    <TlBody>
+                      <TlTitle>{m.company}</TlTitle>
+                      <TlSub>{t('dashboard.meetingLabel')}</TlSub>
+                    </TlBody>
+                  </TlItem>
+                ))}
+              </>
+            )}
+          </TimelineCard>
+        </CalendarSidebar>
       </DashGrid>
     </Page>
   );
