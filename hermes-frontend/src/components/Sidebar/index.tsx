@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import styled, { css, keyframes } from 'styled-components';
 import { NavLink, useLocation } from 'react-router-dom';
 import { media } from '../../styles/media';
+import { glassSurface } from '../../styles/glassSurface';
 import { useBadge } from '../../contexts/BadgeContext';
 
 /* ── FitSpan: auto-shrink text to fit container ── */

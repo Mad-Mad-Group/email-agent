@@ -577,10 +577,10 @@ const WebsiteIcon: React.FC<{ color?: string }> = ({ color }) => (
 );
 
 const MODE_CONFIGS: ModeConfig[] = [
-  { key: 'normal',        label: 'Google Maps',  descKey: 'search.descGoogleMaps',    apiMode: 'normal',      color: '#4285F4' },
-  { key: 'old_website',   labelKey: 'search.modeOldSite', descKey: 'search.descOldSite', apiMode: 'old_website', color: '#A0784C' },
-  { key: 'google_search', label: 'Google Search', descKey: 'search.descGoogleSearch',  apiMode: 'normal',      color: '#4285F4' },
-  { key: 'linkedin',      label: 'LinkedIn',      descKey: 'search.descLinkedIn',      apiMode: 'normal',      color: '#0A66C2' },
+  { key: 'normal',        label: 'Google Maps',  descKey: 'search.modeGoogleMapsDesc',  apiMode: 'normal',      color: '#4285F4' },
+  { key: 'old_website',   labelKey: 'search.modeOldSite', descKey: 'search.modeOldSiteDesc', apiMode: 'old_website', color: '#A0784C' },
+  { key: 'google_search', label: 'Google Search', descKey: 'search.modeGoogleSearchDesc', apiMode: 'normal',      color: '#4285F4' },
+  { key: 'linkedin',      label: 'LinkedIn',      descKey: 'search.modeLinkedInDesc',     apiMode: 'normal',      color: '#0A66C2' },
 ];
 
 const HK_DISTRICT_KEYS = [
@@ -666,7 +666,7 @@ const FieldGroup = styled.div`
 `;
 
 /* 数字圆圈 */
-const NumberWrap = styled.div<{ $pushRight?: boolean }>`
+const NumberWrap = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -676,7 +676,6 @@ const NumberWrap = styled.div<{ $pushRight?: boolean }>`
   background: transparent;
   flex-shrink: 0;
   margin: 0 4px;
-  ${({ $pushRight }) => $pushRight && 'margin-left: auto;'}
   gap: 0;
   position: relative;
   ${media.mobile} { width: 32px; height: 32px; margin: 0 2px; }
@@ -2215,13 +2214,11 @@ const SearchPage: React.FC = () => {
                   </ModePickerDropdown>
                 )}
               </ModePickerWrap>
-              {searchMode === 'normal' && (
-                <LocBadge type="button" onClick={() => setShowLocPicker(p => !p)}>
-                  <MapPinIcon />
-                  {t(`search.dist_${district}`)}
-                </LocBadge>
-              )}
-              <NumberWrap $pushRight={searchMode !== 'normal'}>
+              <LocBadge type="button" onClick={() => setShowLocPicker(p => !p)}>
+                <MapPinIcon />
+                {t(`search.dist_${district}`)}
+              </LocBadge>
+              <NumberWrap>
                 <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(200, (Number(c) || 1) + 5))}><ChevronUp /></NumArrowBtn>
                 <NumberInput
                   type="number"
@@ -2245,7 +2242,7 @@ const SearchPage: React.FC = () => {
                 {search.isPending ? <Spinner /> : <SearchBtnIcon />}
               </BarSearchBtn>
             </BarToolRow>
-            {searchMode === 'normal' && showLocPicker && (
+            {showLocPicker && (
               <LocDropdown>
                 {HK_DISTRICT_KEYS.map(dk => (
                   <LocOption key={dk} $active={district === dk} onClick={() => { setDistrict(dk); setShowLocPicker(false); }}>

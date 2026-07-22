@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "check:no-quarter": "bash ../scripts/check-no-quarter.sh",
+    "build": "npm run check:no-quarter && tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",

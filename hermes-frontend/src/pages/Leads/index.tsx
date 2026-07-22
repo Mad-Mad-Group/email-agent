@@ -49,7 +49,7 @@ const IconPlus = () => (
 );
 
 const IconOldWebsite = () => (
-  <span style={{ fontSize: '11px', fontWeight: 700, lineHeight: 1, letterSpacing: '0.5px', color: '#A0784C' }}>Old</span>
+  <span style={{ fontSize: '11px', fontWeight: 700, lineHeight: 1, letterSpacing: '0.5px' }}>Old</span>
 );
 
 const IconSortArrow = () => (

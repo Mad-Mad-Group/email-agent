@@ -165,10 +165,10 @@ const StatsLeft = styled.div`
   flex: 1; min-width: 0;
 `;
 const VFunnelWrap = styled.div`
-  display: flex; align-items: flex-end; gap: 8px; padding: 0; flex-shrink: 0; margin-top: 12px;
+  display: flex; align-items: flex-end; gap: 4px; padding: 0; flex-shrink: 0;
 `;
 const VFunnelCol = styled.div`
-  display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; width: 44px;
+  display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; width: 32px;
 `;
 const VFunnelBar = styled.div<{ $h: number; $opacity: number }>`
   width: 100%; max-width: 18px; border-radius: 5px 5px 3px 3px;
@@ -490,11 +490,11 @@ const TokenRow = styled.div`
 `;
 
 const TokenChartCard = styled(Card)`
-  min-width: 0;
+  flex: 3; min-width: 0;
 `;
 
 const TokenGaugeCard = styled(Card)`
-  min-width: 0; display: flex; flex-direction: column;
+  flex: 2; min-width: 0; display: flex; flex-direction: column;
 `;
 
 /* ── Granularity Pill Switcher ── */
@@ -535,7 +535,7 @@ const GRAN_OPTIONS = [
 
 /* ── Token Bar Chart (blue gradient bars) ── */
 const TokenBarChartWrap = styled.div`
-  position: relative; padding: 12px 16px 8px; min-width: 0; min-height: 280px;
+  position: relative; padding: 12px 16px 8px; min-width: 0;
 `;
 
 const TokenBarTooltip = styled.div<{ $x: number; $y: number; $visible: boolean }>`
@@ -561,7 +561,7 @@ const TokenBarChart: React.FC<{ data: { period: string; total_tokens: number }[]
 
   const items = data.length > 0 ? data : [];
   const maxVal = Math.max(...items.map(d => d.total_tokens), 1);
-  const w = 560, h = 260, pl = 60, pr = 12, pt = 16, pb = 40;
+  const w = 560, h = 220, pl = 60, pr = 12, pt = 16, pb = 40;
   const chartW = w - pl - pr, chartH = h - pt - pb;
   const barCount = items.length || 1;
   const gap = Math.min(chartW / barCount, 64);
@@ -1140,87 +1140,15 @@ const Dashboard: React.FC = () => {
         <GreetingDate>{new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</GreetingDate>
       </GreetingBlock>
 
-      {/* ── Dashboard ── */}
+      {/* ── Dashboard cards (2×2) ── */}
       <DashGrid>
-          {/* ═══ Row 1: Token 柱狀圖（全寬） ═══ */}
-          <TokenChartCard>
-            <CardHeader>
-              <CardIcon $color={theme.colors.accent}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="18" y="3" width="4" height="18" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="2" y="13" width="4" height="8" rx="1"/>
-                </svg>
-              </CardIcon>
-              {t('dashboard.tokenConsumption')}
-              <div style={{ marginLeft: 'auto' }}>
-                <GranPillBar>
-                  <GranPillSlider $idx={GRAN_OPTIONS.findIndex(g => g.key === granularity)} $count={GRAN_OPTIONS.length} />
-                  {GRAN_OPTIONS.map(g => (
-                    <GranPillBtn key={g.key} $active={granularity === g.key} onClick={() => setGranularity(g.key)}>
-                      {t(g.labelKey)}
-                    </GranPillBtn>
-                  ))}
-                </GranPillBar>
-              </div>
-            </CardHeader>
-            <TokenBarChart data={tokenTimeseriesData || []} />
-          </TokenChartCard>
-
-          {/* ═══ Row 2: Token 儀表盤 + 今日議程 + 審核 ═══ */}
+          {/* ═══ Top row: 審核 + 回覆 ═══ */}
           <CardRow>
-            {/* Token 餘額儀表盤 */}
-            <TokenGaugeCard style={{ flex: 1 }}>
-              <CardHeader>
-                <CardIcon $color={theme.colors.accent}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-                  </svg>
-                </CardIcon>
-                {t('dashboard.tokenBalance')}
-              </CardHeader>
-              <TokenGauge used={tokenBalanceData?.total_tokens || 0} />
-            </TokenGaugeCard>
-
-            {/* 今日議程 — BLUE card */}
-            <ActionCard
-              $pastel={theme.pastel.blue}
-              $accent={theme.strong.blue}
-              style={{ flex: 0.7 }}
-              onClick={() => navigate('/cms-leads?tab=replied&sub=meeting')}
-            >
-              <ActionWatermark $fg={theme.strong.blue} $rot={28}><IconClock /></ActionWatermark>
-              <ActionArrow $fg={theme.strong.blue}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-              </ActionArrow>
-              <ActionTitle>{t('dashboard.todayScheduleTitle')}</ActionTitle>
-              <ActionCount>{todayTimeline.length + meetingList.length}</ActionCount>
-
-              {todayTimeline.length === 0 && meetingList.length === 0 ? (
-                <ActionLabel>{t('dashboard.noScheduleToday')}</ActionLabel>
-              ) : (
-                <MtgList style={{ flex: 1 }}>
-                  {todayTimeline.map((item, i) => (
-                    <MtgItem key={`sched-${i}`} onClick={e => e.stopPropagation()}>
-                      <MtgDot $color={item.status === 'approved' ? theme.strong.olive : theme.strong.gold} />
-                      <MtgName>{item.to}</MtgName>
-                      <MtgTime>{item.displayTime}</MtgTime>
-                    </MtgItem>
-                  ))}
-                  {meetingList.map((m, i) => (
-                    <MtgItem key={`mtg-${i}`}>
-                      <MtgDot $color={theme.strong.blue} />
-                      <MtgName>{m.company}</MtgName>
-                      <MtgTime>{m.time}</MtgTime>
-                    </MtgItem>
-                  ))}
-                </MtgList>
-              )}
-            </ActionCard>
-
             {/* 審核 — gold card */}
             <ActionCard
               $pastel={theme.pastel.gold}
               $accent={theme.strong.gold}
-              style={{ flex: 1.3 }}
+              style={{ flex: 1 }}
               onClick={() => navigate('/cms-email?status=pending')}
             >
               <ActionWatermark $fg={theme.strong.gold} $rot={-18}><IconDraft /></ActionWatermark>
@@ -1282,16 +1210,13 @@ const Dashboard: React.FC = () => {
                 </CardBody>
               </EmbedWhite>
             </ActionCard>
-          </CardRow>
 
-          {/* ═══ Row 3: 回覆 + 跟進 ═══ */}
-          <CardRow>
             {/* 回覆 — olive card */}
             <ActionCard
               $pastel={theme.pastel.olive}
               $accent={theme.strong.olive}
               style={{ flex: 1 }}
-              onClick={() => navigate('/cms-leads?tab=replied')}
+              onClick={() => navigate('/client-pool?tab=replied')}
             >
               <ActionWatermark $fg={theme.strong.olive} $rot={22}><IconReplyArrow /></ActionWatermark>
               <ActionArrow $fg={theme.strong.olive}>
@@ -1342,13 +1267,16 @@ const Dashboard: React.FC = () => {
                 )}
               </div>
             </ActionCard>
+          </CardRow>
 
+          {/* ═══ Second row: 跟進 + 議程 (blue) ═══ */}
+          <CardRow>
             {/* 跟進 — mauve card */}
             <ActionCard
               $pastel={theme.pastel.mauve}
               $accent={theme.strong.mauve}
               style={{ flex: 1 }}
-              onClick={() => navigate('/cms-leads?tab=awaiting&sub=no_followup')}
+              onClick={() => navigate('/client-pool?tab=awaiting&sub=no_followup')}
             >
               <ActionWatermark $fg={theme.strong.mauve} $rot={-12}><IconAlert /></ActionWatermark>
               <ActionArrow $fg={theme.strong.mauve}>
@@ -1394,8 +1322,82 @@ const Dashboard: React.FC = () => {
                 </NotebookBody>
               </EmbedWhite>
             </ActionCard>
+
+            {/* 今日議程 — BLUE card */}
+            <ActionCard
+              $pastel={theme.pastel.blue}
+              $accent={theme.strong.blue}
+              style={{ flex: 1 }}
+              onClick={() => navigate('/client-pool?tab=replied&sub=meeting')}
+            >
+              <ActionWatermark $fg={theme.strong.blue} $rot={28}><IconClock /></ActionWatermark>
+              <ActionArrow $fg={theme.strong.blue}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+              </ActionArrow>
+              <ActionTitle>{t('dashboard.todayScheduleTitle')}</ActionTitle>
+              <ActionCount>{todayTimeline.length + meetingList.length}</ActionCount>
+
+              {todayTimeline.length === 0 && meetingList.length === 0 ? (
+                <ActionLabel>{t('dashboard.noScheduleToday')}</ActionLabel>
+              ) : (
+                <MtgList style={{ flex: 1 }}>
+                  {todayTimeline.map((item, i) => (
+                    <MtgItem key={`sched-${i}`} onClick={e => e.stopPropagation()}>
+                      <MtgDot $color={item.status === 'approved' ? theme.strong.olive : theme.strong.gold} />
+                      <MtgName>{item.to}</MtgName>
+                      <MtgTime>{item.displayTime}</MtgTime>
+                    </MtgItem>
+                  ))}
+                  {meetingList.map((m, i) => (
+                    <MtgItem key={`mtg-${i}`}>
+                      <MtgDot $color={theme.strong.blue} />
+                      <MtgName>{m.company}</MtgName>
+                      <MtgTime>{m.time}</MtgTime>
+                    </MtgItem>
+                  ))}
+                </MtgList>
+              )}
+            </ActionCard>
           </CardRow>
 
+          {/* ═══ Third row: Token 消耗柱狀圖 + Token 餘額儀表盤 ═══ */}
+          <TokenRow>
+            {/* Token consumption bar chart */}
+            <TokenChartCard>
+              <CardHeader>
+                <CardIcon $color={theme.colors.accent}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="18" y="3" width="4" height="18" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="2" y="13" width="4" height="8" rx="1"/>
+                  </svg>
+                </CardIcon>
+                {t('dashboard.tokenConsumption')}
+                <div style={{ marginLeft: 'auto' }}>
+                  <GranPillBar>
+                    <GranPillSlider $idx={GRAN_OPTIONS.findIndex(g => g.key === granularity)} $count={GRAN_OPTIONS.length} />
+                    {GRAN_OPTIONS.map(g => (
+                      <GranPillBtn key={g.key} $active={granularity === g.key} onClick={() => setGranularity(g.key)}>
+                        {t(g.labelKey)}
+                      </GranPillBtn>
+                    ))}
+                  </GranPillBar>
+                </div>
+              </CardHeader>
+              <TokenBarChart data={tokenTimeseriesData || []} />
+            </TokenChartCard>
+
+            {/* Token balance gauge */}
+            <TokenGaugeCard>
+              <CardHeader>
+                <CardIcon $color={theme.colors.accent}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                  </svg>
+                </CardIcon>
+                {t('dashboard.tokenBalance')}
+              </CardHeader>
+              <TokenGauge used={tokenBalanceData?.total_tokens || 0} />
+            </TokenGaugeCard>
+          </TokenRow>
       </DashGrid>
     </Page>
   );
