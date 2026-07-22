@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import styled, { keyframes, useTheme } from 'styled-components';
 import { Button, FormField } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
-import { media } from '../../styles/media';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER } from '../../config/agents';
 
@@ -14,178 +13,27 @@ const LANGUAGES = [
   { code: 'zh-CN', label: '简' },
 ];
 
-const SLOGANS = [
-  'login.slogan1',
-  'login.slogan2',
-  'login.slogan3',
-  'login.slogan4',
-  'login.slogan5',
-];
-
-/* ── Layout ── */
-
-const PageWrap = styled.div`
-  position: relative;
-  display: flex;
-  min-height: 100vh;
-  background: ${({ theme }) => theme.colors.canvas};
-  overflow: hidden;
-
-  ${media.mobile} {
-    flex-direction: column;
-  }
-`;
-
-/* ── Left panel ── */
-
-const LeftPanel = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  padding: 60px 48px 60px 64px;
-  z-index: 2;
-  max-width: 520px;
-
-  ${media.tablet} { padding: 48px 32px; max-width: 440px; }
-  ${media.mobile} {
-    max-width: 100%;
-    padding: 100px 24px 32px;
-    align-items: center;
-    text-align: center;
-  }
-`;
-
-const Brand = styled.div`
-  font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.1rem;
-  letter-spacing: 1.5px;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  margin-bottom: 24px;
-`;
-
-const fadeIn = keyframes`
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
-`;
-
-const HeroTitle = styled.h1`
-  font-size: clamp(2rem, 5vw, 3rem);
-  font-weight: 800;
-  line-height: 1.2;
-  margin: 0 0 12px;
-  background: ${({ theme }) => theme.gradients.brand};
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: ${fadeIn} 0.6s ease-out both;
-`;
-
-const HeroSub = styled.p`
-  font-size: 1rem;
-  color: ${({ theme }) => theme.colors.textSecondary};
-  margin: 0 0 36px;
-  max-width: 380px;
-  line-height: 1.6;
-  animation: ${fadeIn} 0.6s 0.15s ease-out both;
-`;
-
-const FormWrap = styled.div`
-  width: 100%;
-  max-width: 360px;
-  animation: ${fadeIn} 0.6s 0.3s ease-out both;
-
-  ${media.mobile} { max-width: 100%; }
-`;
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-`;
-
-const BtnRow = styled.div`
-  display: flex;
-  gap: 12px;
-  margin-top: 4px;
-`;
-
-const PrimaryBtn = styled.button`
-  flex: 1;
-  padding: 12px;
-  border: none;
-  border-radius: 10px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  background: ${({ theme }) => theme.colors.accent};
-  color: ${({ theme }) => theme.colors.textInverted};
-  transition: opacity 0.15s;
-  &:hover { opacity: 0.9; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-`;
-
-const SecondaryBtn = styled(Link)`
-  flex: 1;
-  padding: 12px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 10px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: pointer;
-  background: ${({ theme }) => theme.colors.surface};
-  color: ${({ theme }) => theme.colors.textPrimary};
-  text-align: center;
-  text-decoration: none;
-  transition: background 0.15s;
-  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
-`;
-
-const ForgotLink = styled(Link)`
-  font-size: 0.8125rem;
-  color: ${({ theme }) => theme.colors.accent};
-  text-decoration: none;
-  text-align: right;
-  display: block;
-  margin-top: -8px;
-  &:hover { text-decoration: underline; }
-`;
-
-const ErrorMsg = styled.div`
-  color: ${({ theme }) => theme.strong.mauve};
-  font-size: 0.8125rem;
-  text-align: center;
-`;
-
-/* ── Right panel — orbital animation ── */
-
-const RightPanel = styled.div`
-  flex: 1;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  min-height: 500px;
-
-  ${media.mobile} {
-    min-height: 300px;
-    flex: none;
-  }
-`;
-
+/* ═══════════════════════════════════════
+   Orbital Animation (same as Search page)
+   ═══════════════════════════════════════ */
 const orbitSpin = keyframes`
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
 `;
 
 const OrbitalHero = styled.div`
-  position: relative;
-  width: min(60vmin, 600px);
-  height: min(60vmin, 600px);
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translate(35%, -50%);
+  width: 900px;
+  height: 900px;
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  z-index: 0;
+  pointer-events: none;
 
   &::before {
     content: '';
@@ -200,14 +48,11 @@ const OrbitalHero = styled.div`
       circle,
       ${({ theme }) => theme.colors.accent}18 0%,
       ${({ theme }) => theme.colors.accent}0c 35%,
-      transparent 70%
+      ${({ theme }) => theme.colors.accent}06 60%,
+      transparent 100%
     );
     filter: blur(30px);
-  }
-
-  ${media.mobile} {
-    width: min(70vmin, 320px);
-    height: min(70vmin, 320px);
+    pointer-events: none;
   }
 `;
 
@@ -225,7 +70,7 @@ const OrbitNodeWrap = styled.div<{ $dur: number; $reverse?: boolean }>`
   position: absolute;
   transform: translate(-50%, -50%);
   animation: ${orbitSpin} ${({ $dur }) => $dur}s linear infinite;
-  animation-direction: ${({ $reverse }) => $reverse ? 'normal' : 'reverse'};
+  animation-direction: ${({ $reverse }) => ($reverse ? 'normal' : 'reverse')};
 `;
 
 const OrbitAvatar = styled.div`
@@ -239,7 +84,6 @@ const OrbitAvatar = styled.div`
   box-shadow: ${({ theme }) => theme.shadows.card};
   overflow: hidden;
   border: 2px solid ${({ theme }) => theme.colors.border};
-  ${media.mobile} { width: 34px; height: 34px; }
 `;
 
 const OrbitDot = styled.div<{ $color: string; $s: number }>`
@@ -250,91 +94,196 @@ const OrbitDot = styled.div<{ $color: string; $s: number }>`
   box-shadow: 0 0 ${({ $s }) => $s * 2}px ${({ $color }) => $color}55;
 `;
 
-const CenterLogo = styled.div`
-  position: relative;
-  z-index: 2;
-  font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.5rem;
-  font-weight: 700;
-  letter-spacing: 2px;
-  color: ${({ theme }) => theme.colors.accent};
-  background: ${({ theme }) => theme.colors.surface};
-  width: 80px;
-  height: 80px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: ${({ theme }) => theme.shadows.card}, 0 0 40px ${({ theme }) => theme.colors.accent}22;
-  border: 2px solid ${({ theme }) => theme.colors.border};
-`;
-
 const ORBIT_RINGS = [
-  { frac: 0.22, dur: 25, reverse: false },
-  { frac: 0.38, dur: 35, reverse: true },
-  { frac: 0.55, dur: 50, reverse: false },
-  { frac: 0.72, dur: 70, reverse: true },
-  { frac: 0.88, dur: 90, reverse: false },
-  { frac: 0.98, dur: 120, reverse: true },
+  { frac: 0.20, dur: 75, reverse: false },
+  { frac: 0.34, dur: 105, reverse: true },
+  { frac: 0.50, dur: 150, reverse: false },
+  { frac: 0.67, dur: 210, reverse: true },
+  { frac: 0.83, dur: 270, reverse: false },
+  { frac: 0.97, dur: 360, reverse: true },
 ];
 
 const orbitNodePos = (angle: number) => ({
-  top: `${50 - 50 * Math.cos(angle * Math.PI / 180)}%`,
-  left: `${50 + 50 * Math.sin(angle * Math.PI / 180)}%`,
+  top: `${50 - 50 * Math.cos((angle * Math.PI) / 180)}%`,
+  left: `${50 + 50 * Math.sin((angle * Math.PI) / 180)}%`,
 });
 
-/* ── Lang pill ── */
+/* ═══════════════════════════════════════
+   Page Layout
+   ═══════════════════════════════════════ */
+const Page = styled.div`
+  position: relative;
+  min-height: 100vh;
+  background: ${({ theme }) => theme.colors.canvas};
+  overflow: hidden;
+`;
 
-const LangBar = styled.div`
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 10;
+const LeftSide = styled.div`
+  position: relative;
+  z-index: 2;
   display: flex;
-  background: ${({ theme }) => theme.colors.surface};
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 18vh 4vw 6vh 12vw;
+
+  @media (max-width: 900px) {
+    padding: 10vh 6vw 4vh;
+  }
+`;
+
+/* ═══════════════════════════════════════
+   Hero text
+   ═══════════════════════════════════════ */
+const Brand = styled.div`
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.colors.accent};
+  margin-bottom: 16px;
+`;
+
+const HeroTitle = styled.h1`
+  font-family: ${({ theme }) => theme.fonts.display};
+  font-size: clamp(2.4rem, 5vw, 3.8rem);
+  font-weight: 800;
+  line-height: 1.15;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  max-width: 92%;
+  margin: 0 0 20px;
+  letter-spacing: -0.5px;
+`;
+
+const HeroSub = styled.p`
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  line-height: 1.7;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  max-width: 88%;
+  margin: 0 0 44px;
+`;
+
+/* ═══════════════════════════════════════
+   Form
+   ═══════════════════════════════════════ */
+const FormCard = styled.div`
+  width: 100%;
+  max-width: 400px;
+`;
+
+const FormTitle = styled.h2`
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin: 0 0 24px;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const Form = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+`;
+
+const ForgotLink = styled(Link)`
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.accent};
+  text-decoration: none;
+  text-align: right;
+  display: block;
+  margin-top: -6px;
+  &:hover { text-decoration: underline; }
+`;
+
+const FooterRow = styled.div`
+  text-align: center;
+  margin-top: 20px;
+  font-size: 14px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+`;
+
+const FooterLink = styled(Link)`
+  color: ${({ theme }) => theme.colors.accent};
+  text-decoration: none;
+  font-weight: 500;
+  &:hover { text-decoration: underline; }
+`;
+
+const ErrorMsg = styled.div`
+  color: ${({ theme }) => theme.strong.mauve};
+  font-size: 0.8125rem;
+  text-align: center;
+`;
+
+const LangPill = styled.div`
+  position: absolute;
+  top: 20px;
+  left: 12vw;
+  display: inline-flex;
+  border-radius: 999px;
+  z-index: 3;
+  background: ${({ theme }) => theme.colors.surface}88;
+  backdrop-filter: blur(8px);
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 20px;
   padding: 3px;
+
+  @media (max-width: 900px) {
+    left: 6vw;
+  }
+`;
+
+const LangPillInner = styled.div`
+  position: relative;
+  display: inline-flex;
+`;
+
+const LangSlider = styled.div<{ $index: number }>`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: calc(100% / 3);
+  height: 100%;
+  border-radius: 999px;
+  background: ${({ theme }) => theme.colors.accent};
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: translateX(${({ $index }) => $index * 100}%);
 `;
 
 const LangBtn = styled.button<{ $active?: boolean }>`
-  position: relative;
-  z-index: 1;
-  padding: 4px 12px;
+  padding: 5px 14px;
   border: none;
-  border-radius: 16px;
+  background: transparent;
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  background: transparent;
   color: ${({ $active, theme }) => $active ? theme.colors.textInverted : theme.colors.textSecondary};
   transition: color 0.25s;
+  position: relative;
+  z-index: 1;
   &:hover { opacity: 0.8; }
 `;
 
-const LangSlider = styled.div<{ $idx: number; $count: number }>`
-  position: absolute;
-  top: 3px;
-  bottom: 3px;
-  left: ${({ $idx, $count }) => `calc(3px + ${$idx} * (100% - 6px) / ${$count})`};
-  width: ${({ $count }) => `calc((100% - 6px) / ${$count})`};
-  background: ${({ theme }) => theme.colors.accent};
-  border-radius: 16px;
-  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-`;
-
-/* ── Component ── */
-
+/* ═══════════════════════════════════════
+   Component
+   ═══════════════════════════════════════ */
 const Login: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const theme = useTheme();
   const { login, loading } = useAuth();
+  const theme = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const sloganKey = useMemo(() => SLOGANS[Math.floor(Math.random() * SLOGANS.length)], []);
+  const slogan = useMemo(() => {
+    const slogans = [
+      t('login.slogan1'),
+      t('login.slogan2'),
+      t('login.slogan3'),
+      t('login.slogan4'),
+      t('login.slogan5'),
+    ];
+    return slogans[Math.floor(Math.random() * slogans.length)];
+  }, [t]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -348,22 +297,24 @@ const Login: React.FC = () => {
   };
 
   return (
-    <PageWrap>
-      <LangBar>
-        <LangSlider $idx={LANGUAGES.findIndex(l => l.code === i18n.language)} $count={LANGUAGES.length} />
-        {LANGUAGES.map((lang) => (
-          <LangBtn key={lang.code} $active={i18n.language === lang.code} onClick={() => i18n.changeLanguage(lang.code)}>
-            {lang.label}
-          </LangBtn>
-        ))}
-      </LangBar>
-
-      <LeftPanel>
-        <Brand>CLIENT RADAR AI</Brand>
-        <HeroTitle>{t(sloganKey)}</HeroTitle>
+    <Page>
+      <LangPill>
+        <LangPillInner>
+          <LangSlider $index={Math.max(0, LANGUAGES.findIndex(l => l.code === i18n.language))} />
+          {LANGUAGES.map((lang) => (
+            <LangBtn key={lang.code} $active={i18n.language === lang.code} onClick={() => i18n.changeLanguage(lang.code)}>
+              {lang.label}
+            </LangBtn>
+          ))}
+        </LangPillInner>
+      </LangPill>
+      <LeftSide>
+        <Brand>ClientRadar AI</Brand>
+        <HeroTitle>{slogan}</HeroTitle>
         <HeroSub>{t('login.heroSub')}</HeroSub>
 
-        <FormWrap>
+        <FormCard>
+          <FormTitle>{t('login.title')}</FormTitle>
           <Form onSubmit={handleSubmit}>
             <FormField
               label={t('common.email')}
@@ -383,22 +334,20 @@ const Login: React.FC = () => {
               {t('login.forgotPassword')}
             </ForgotLink>
             {error && <ErrorMsg>{error}</ErrorMsg>}
-            <BtnRow>
-              <PrimaryBtn type="submit" disabled={loading}>
-                {loading ? t('auth.loadingBtn') : t('login.loginButton')}
-              </PrimaryBtn>
-              <SecondaryBtn to="/register">
-                {t('login.register')}
-              </SecondaryBtn>
-            </BtnRow>
+            <Button variant="primary" type="submit" disabled={loading}>
+              {loading ? t('auth.loadingBtn') : t('login.loginButton')}
+            </Button>
           </Form>
-        </FormWrap>
-      </LeftPanel>
+          <FooterRow>
+            {t('login.noAccount')}{' '}
+            <FooterLink to="/register">{t('login.register')}</FooterLink>
+          </FooterRow>
+        </FormCard>
+      </LeftSide>
 
-      <RightPanel>
-        <OrbitalHero>
-          <CenterLogo>CR</CenterLogo>
-          {/* Ring 0 — Agent avatars */}
+      {/* ── Orbital system (center at top-right, oversized) ── */}
+      <OrbitalHero>
+          {/* Ring 0 — S1 Fox + S3 Chicken */}
           <OrbitPath $frac={ORBIT_RINGS[0].frac} $dur={ORBIT_RINGS[0].dur}>
             <OrbitNodeWrap style={orbitNodePos(0)} $dur={ORBIT_RINGS[0].dur}>
               <OrbitAvatar>
@@ -411,7 +360,8 @@ const Login: React.FC = () => {
               </OrbitAvatar>
             </OrbitNodeWrap>
           </OrbitPath>
-          {/* Ring 1 — More agents */}
+
+          {/* Ring 1 — S2 Cow + S4 Duck + Farmer */}
           <OrbitPath $frac={ORBIT_RINGS[1].frac} $dur={ORBIT_RINGS[1].dur} $reverse>
             <OrbitNodeWrap style={orbitNodePos(30)} $dur={ORBIT_RINGS[1].dur} $reverse>
               <OrbitAvatar>
@@ -429,41 +379,44 @@ const Login: React.FC = () => {
               </OrbitAvatar>
             </OrbitNodeWrap>
           </OrbitPath>
-          {/* Ring 2 — Colored dots */}
+
+          {/* Ring 2 — accent dots */}
           <OrbitPath $frac={ORBIT_RINGS[2].frac} $dur={ORBIT_RINGS[2].dur}>
             <OrbitNodeWrap style={orbitNodePos(0)} $dur={ORBIT_RINGS[2].dur}><OrbitDot $color={theme.colors.accent} $s={10} /></OrbitNodeWrap>
             <OrbitNodeWrap style={orbitNodePos(72)} $dur={ORBIT_RINGS[2].dur}><OrbitDot $color={theme.colors.accent} $s={7} /></OrbitNodeWrap>
             <OrbitNodeWrap style={orbitNodePos(144)} $dur={ORBIT_RINGS[2].dur}><OrbitDot $color={theme.strong.olive} $s={9} /></OrbitNodeWrap>
-            <OrbitNodeWrap style={orbitNodePos(216)} $dur={ORBIT_RINGS[2].dur}><OrbitDot $color={theme.strong.gold} $s={6} /></OrbitNodeWrap>
-            <OrbitNodeWrap style={orbitNodePos(288)} $dur={ORBIT_RINGS[2].dur}><OrbitDot $color={theme.colors.accent} $s={8} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(216)} $dur={ORBIT_RINGS[2].dur}><OrbitDot $color={theme.strong.mauve} $s={6} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(288)} $dur={ORBIT_RINGS[2].dur}><OrbitDot $color={theme.strong.gold} $s={8} /></OrbitNodeWrap>
           </OrbitPath>
+
           {/* Ring 3 */}
           <OrbitPath $frac={ORBIT_RINGS[3].frac} $dur={ORBIT_RINGS[3].dur} $reverse>
             <OrbitNodeWrap style={orbitNodePos(20)} $dur={ORBIT_RINGS[3].dur} $reverse><OrbitDot $color={theme.colors.accent} $s={8} /></OrbitNodeWrap>
-            <OrbitNodeWrap style={orbitNodePos(110)} $dur={ORBIT_RINGS[3].dur} $reverse><OrbitDot $color={theme.strong.olive} $s={6} /></OrbitNodeWrap>
-            <OrbitNodeWrap style={orbitNodePos(200)} $dur={ORBIT_RINGS[3].dur} $reverse><OrbitDot $color={theme.strong.gold} $s={7} /></OrbitNodeWrap>
-            <OrbitNodeWrap style={orbitNodePos(290)} $dur={ORBIT_RINGS[3].dur} $reverse><OrbitDot $color={theme.colors.accent} $s={5} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(110)} $dur={ORBIT_RINGS[3].dur} $reverse><OrbitDot $color={theme.colors.accent} $s={6} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(200)} $dur={ORBIT_RINGS[3].dur} $reverse><OrbitDot $color={theme.strong.olive} $s={7} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(290)} $dur={ORBIT_RINGS[3].dur} $reverse><OrbitDot $color={theme.strong.gold} $s={5} /></OrbitNodeWrap>
           </OrbitPath>
+
           {/* Ring 4 */}
           <OrbitPath $frac={ORBIT_RINGS[4].frac} $dur={ORBIT_RINGS[4].dur}>
             <OrbitNodeWrap style={orbitNodePos(15)} $dur={ORBIT_RINGS[4].dur}><OrbitDot $color={theme.colors.accent} $s={5} /></OrbitNodeWrap>
-            <OrbitNodeWrap style={orbitNodePos(87)} $dur={ORBIT_RINGS[4].dur}><OrbitDot $color={theme.strong.gold} $s={4} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(87)} $dur={ORBIT_RINGS[4].dur}><OrbitDot $color={theme.strong.mauve} $s={4} /></OrbitNodeWrap>
             <OrbitNodeWrap style={orbitNodePos(159)} $dur={ORBIT_RINGS[4].dur}><OrbitDot $color={theme.colors.accent} $s={6} /></OrbitNodeWrap>
             <OrbitNodeWrap style={orbitNodePos(231)} $dur={ORBIT_RINGS[4].dur}><OrbitDot $color={theme.strong.olive} $s={4} /></OrbitNodeWrap>
             <OrbitNodeWrap style={orbitNodePos(303)} $dur={ORBIT_RINGS[4].dur}><OrbitDot $color={theme.strong.gold} $s={5} /></OrbitNodeWrap>
           </OrbitPath>
+
           {/* Ring 5 — outermost */}
           <OrbitPath $frac={ORBIT_RINGS[5].frac} $dur={ORBIT_RINGS[5].dur} $reverse>
             <OrbitNodeWrap style={orbitNodePos(0)} $dur={ORBIT_RINGS[5].dur} $reverse><OrbitDot $color={theme.colors.accent} $s={3} /></OrbitNodeWrap>
             <OrbitNodeWrap style={orbitNodePos(60)} $dur={ORBIT_RINGS[5].dur} $reverse><OrbitDot $color={theme.colors.accent} $s={4} /></OrbitNodeWrap>
             <OrbitNodeWrap style={orbitNodePos(120)} $dur={ORBIT_RINGS[5].dur} $reverse><OrbitDot $color={theme.strong.olive} $s={3} /></OrbitNodeWrap>
             <OrbitNodeWrap style={orbitNodePos(180)} $dur={ORBIT_RINGS[5].dur} $reverse><OrbitDot $color={theme.strong.gold} $s={4} /></OrbitNodeWrap>
-            <OrbitNodeWrap style={orbitNodePos(240)} $dur={ORBIT_RINGS[5].dur} $reverse><OrbitDot $color={theme.colors.accent} $s={3} /></OrbitNodeWrap>
+            <OrbitNodeWrap style={orbitNodePos(240)} $dur={ORBIT_RINGS[5].dur} $reverse><OrbitDot $color={theme.strong.mauve} $s={3} /></OrbitNodeWrap>
             <OrbitNodeWrap style={orbitNodePos(300)} $dur={ORBIT_RINGS[5].dur} $reverse><OrbitDot $color={theme.colors.accent} $s={4} /></OrbitNodeWrap>
           </OrbitPath>
-        </OrbitalHero>
-      </RightPanel>
-    </PageWrap>
+      </OrbitalHero>
+    </Page>
   );
 };
 
