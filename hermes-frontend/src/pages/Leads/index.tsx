@@ -216,7 +216,7 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
   font-size: 0.875rem;
   font-weight: ${({ $active }) => $active ? 600 : 500};
   transition: color 0.2s;
-  svg { flex-shrink: 0; color: ${({ theme }) => theme.strong.mauve}; }
+  svg { flex-shrink: 0; color: ${({ theme }) => theme.colors.accent}; }
   &:hover {
     background: ${({ $active }) => $active ? 'transparent' : 'rgba(0,0,0,0.04)'};
   }
@@ -309,7 +309,7 @@ const SubPill = styled.button<{ $active?: boolean; $color?: string }>`
   cursor: pointer;
   white-space: nowrap;
   transition: color 0.2s;
-  svg { flex-shrink: 0; width: 13px; height: 13px; color: ${({ theme }) => theme.strong.mauve}; }
+  svg { flex-shrink: 0; width: 13px; height: 13px; color: ${({ theme }) => theme.colors.accent}; }
   &:hover { background: ${({ $active }) => $active ? 'transparent' : 'rgba(0,0,0,0.04)'}; }
 `;
 
@@ -601,7 +601,7 @@ const DeleteIconBtn = styled.button`
   border-radius: 6px;
   transition: color 0.15s, transform 0.15s;
   &:hover {
-    color: ${({ theme }) => theme.strong.mauve};
+    color: ${({ theme }) => theme.colors.accent};
     transform: translateY(-1px);
   }
 `;

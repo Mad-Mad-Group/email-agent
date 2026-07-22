@@ -105,7 +105,7 @@ const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'ghost' }>`
   cursor: pointer; border: 1px solid transparent; transition: background 150ms var(--ease-out), color 150ms var(--ease-out), border-color 150ms var(--ease-out), opacity 150ms var(--ease-out);
   ${({ $variant, theme }) => {
     if ($variant === 'primary') return `background: ${theme.colors.accent}; color: ${theme.colors.textInverted}; &:hover { opacity: 0.9; }`;
-    if ($variant === 'danger') return `background: transparent; color: ${theme.strong.mauve}; border-color: ${theme.strong.mauve}; &:hover { background: ${theme.strong.mauve}; color: ${theme.colors.textInverted}; }`;
+    if ($variant === 'danger') return `background: transparent; color: ${theme.colors.accent}; border-color: ${theme.colors.accent}; &:hover { background: ${theme.colors.accent}; color: ${theme.colors.textInverted}; }`;
     return `background: ${theme.colors.surface}; color: ${theme.colors.textSecondary}; border-color: ${theme.colors.border}; &:hover { background: ${theme.colors.surfaceMuted}; }`;
   }}
 `;

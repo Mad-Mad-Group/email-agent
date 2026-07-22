@@ -354,17 +354,17 @@ const EditModalFooter = styled.div`
 const EditInput = styled.input`
   width: 100%; box-sizing: border-box; padding: 10px 14px;
   border: 1px solid #ddd; border-radius: 8px; font-size: 0.875rem;
-  outline: none; &:focus { border-color: #d689bf; }
+  outline: none; &:focus { border-color: #6C97D1; }
 `;
 const EditTextarea = styled.textarea`
   width: 100%; box-sizing: border-box; padding: 10px 14px;
   border: 1px solid #ddd; border-radius: 8px; font-size: 0.875rem;
   outline: none; resize: vertical; font-family: inherit; line-height: 1.6;
-  &:focus { border-color: #d689bf; }
+  &:focus { border-color: #6C97D1; }
 `;
 const EditSaveBtn = styled.button`
   padding: 8px 22px; border: none; border-radius: 8px;
-  background: #d689bf; color: #fff; font-weight: 600; font-size: 0.875rem;
+  background: #6C97D1; color: #fff; font-weight: 600; font-size: 0.875rem;
   cursor: pointer; &:hover { background: #c47aae; }
 `;
 const EditCancelBtn = styled.button`
@@ -453,7 +453,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
 
   return (
     <>
-      <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="#D689BF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.emailRecords')} ({emails.length})</DpSectionTitle>
+      <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="#6C97D1" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.emailRecords')} ({emails.length})</DpSectionTitle>
       <EmailTimeline>
         {emails.map((d) => {
           const typeTag = d._type ? getEmailTypeLabel(t, leTheme)[d._type] : null;

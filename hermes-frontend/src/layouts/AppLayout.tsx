@@ -55,7 +55,7 @@ const JunctionHamburger = styled.button<{ $collapsed?: boolean }>`
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: ${({ theme }) => theme.pastel.mauve};
+  background: ${({ theme }) => theme.colors.accent};
   cursor: pointer;
   display: flex;
   align-items: center;

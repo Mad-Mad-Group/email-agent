@@ -104,7 +104,7 @@ const FolderItem = styled.li<{ $active?: boolean }>`
 
 const FolderBadge = styled.span`
   margin-left: auto;
-  background: ${({ theme }) => theme.strong.mauve};
+  background: ${({ theme }) => theme.colors.accent};
   color: ${({ theme }) => theme.colors.textInverted};
   font-size: 0.6875rem;
   font-weight: 600;

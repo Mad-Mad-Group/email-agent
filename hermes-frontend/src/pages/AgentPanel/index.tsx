@@ -2030,7 +2030,7 @@ const AgentPanel: React.FC = () => {
   const stageColor = useCallback((stage: string) => {
     if (['search', 'scrape', 'crawl'].includes(stage)) return '#6C97D1';
     if (['analyze', 'enrich', 'qualify'].includes(stage)) return '#E5B920';
-    if (['draft', 'email_draft'].includes(stage)) return '#D689BF';
+    if (['draft', 'email_draft'].includes(stage)) return '#6C97D1';
     if (['send', 'email_send', 'reply'].includes(stage)) return '#97A33B';
     if (stage === 'complete') return '#97A33B';
     return '#9CA3AF';

@@ -321,8 +321,8 @@ const DpColLeft = styled.div`
   background: transparent;
   &::-webkit-scrollbar { width: 5px; }
   &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { background: #D689BF99; border-radius: 99px; }
-  &::-webkit-scrollbar-thumb:hover { background: #D689BFCC; }
+  &::-webkit-scrollbar-thumb { background: #6C97D199; border-radius: 99px; }
+  &::-webkit-scrollbar-thumb:hover { background: #6C97D1CC; }
   ${media.tabletDown} { overflow-y: visible; padding: 10px 16px; }
 `;
 
@@ -336,8 +336,8 @@ const DpColCenter = styled.div`
   min-width: 0;
   &::-webkit-scrollbar { width: 5px; }
   &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { background: #D689BF99; border-radius: 99px; }
-  &::-webkit-scrollbar-thumb:hover { background: #D689BFCC; }
+  &::-webkit-scrollbar-thumb { background: #6C97D199; border-radius: 99px; }
+  &::-webkit-scrollbar-thumb:hover { background: #6C97D1CC; }
   ${media.tabletDown} { overflow-y: visible; padding: 12px 16px; }
 `;
 
@@ -346,7 +346,7 @@ export const DpSectionTitle = styled.h3`
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: #D689BF;
+  color: #6C97D1;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -526,12 +526,12 @@ export const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   white-space: nowrap;
   transition: background 0.15s var(--ease-out);
   border: 0.5px solid ${({ $variant }) =>
-    $variant === 'primary' ? '#D689BF' :
+    $variant === 'primary' ? '#6C97D1' :
     $variant === 'danger' ? '#e57373' :
     '#999'};
   background: transparent;
   color: ${({ $variant, theme }) =>
-    $variant === 'primary' ? '#D689BF' :
+    $variant === 'primary' ? '#6C97D1' :
     $variant === 'danger' ? '#e57373' :
     theme.colors.textPrimary};
   @media (hover: hover) and (pointer: fine) {
@@ -686,7 +686,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
         <DpBody>
           {/* Left: Avatar + Name + About + Journey + Tags */}
           <DpColLeft>
-            <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1a5 5 0 015 5c0 2.5-2 4-5 4s-5-1.5-5-4a5 5 0 015-5zM3 13c0-1.66 2.24-3 5-3s5 1.34 5 3" stroke="#D689BF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.about')}</DpSectionTitle>
+            <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1a5 5 0 015 5c0 2.5-2 4-5 4s-5-1.5-5-4a5 5 0 015-5zM3 13c0-1.66 2.24-3 5-3s5 1.34 5 3" stroke="#6C97D1" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.about')}</DpSectionTitle>
             <DpSectionContent>
             <DpField>
               <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.email')}</DpFieldLabel>
@@ -720,7 +720,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
 
             <DpDivider />
 
-            <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 14V4l4 2 4-2 4 2v10l-4-2-4 2-4-2z" stroke="#D689BF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.leadJourney')}</DpSectionTitle>
+            <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 14V4l4 2 4-2 4 2v10l-4-2-4 2-4-2z" stroke="#6C97D1" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.leadJourney')}</DpSectionTitle>
             <DpSectionContent>
             <DpTimeline>
               <DpTimelineItem>
@@ -772,7 +772,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
             </DpSectionContent>
 
             <DpDivider />
-            <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 8.5V2.5a1 1 0 011-1h6l6.5 6.5-7 7L1 8.5z" stroke="#D689BF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><circle cx="5" cy="5" r="1" fill="#D689BF"/></svg>{t('leads.tags')}</DpSectionTitle>
+            <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 8.5V2.5a1 1 0 011-1h6l6.5 6.5-7 7L1 8.5z" stroke="#6C97D1" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><circle cx="5" cy="5" r="1" fill="#6C97D1"/></svg>{t('leads.tags')}</DpSectionTitle>
             <DpSectionContent>
             <DpTagList>
               {lead.industry_tags && lead.industry_tags.length > 0
@@ -788,7 +788,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
             {(lead._tech_score != null || lead._email_draft_score != null || lead._collab_primary) && (
               <>
                 <DpDivider />
-                <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1l2 4.5 5 .5-3.75 3.5L12.25 15 8 12.5 3.75 15l1-5.5L1 6l5-.5L8 1z" stroke="#D689BF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.aiAnalysis')}</DpSectionTitle>
+                <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1l2 4.5 5 .5-3.75 3.5L12.25 15 8 12.5 3.75 15l1-5.5L1 6l5-.5L8 1z" stroke="#6C97D1" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.aiAnalysis')}</DpSectionTitle>
                 <DpSectionContent>
                   {lead._tech_score != null && (
                     <DpField>
@@ -850,7 +850,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
               return (
                 <>
                   <DpDivider />
-                  <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 10c0 .55-.45 1-1 1H5l-3 3V3c0-.55.45-1 1-1h10c.55 0 1 .45 1 1v7z" stroke="#D689BF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.replyInfo')}</DpSectionTitle>
+                  <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 10c0 .55-.45 1-1 1H5l-3 3V3c0-.55.45-1 1-1h10c.55 0 1 .45 1 1v7z" stroke="#6C97D1" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.replyInfo')}</DpSectionTitle>
                   <DpSectionContent>
                   <DpField>
                     <DpFieldLabel>{t('leads.replyCategory')}</DpFieldLabel>

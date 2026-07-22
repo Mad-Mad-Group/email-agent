@@ -279,7 +279,7 @@ const NotifBadge = styled.span`
   height: 16px;
   padding: 0 4px;
   border-radius: 8px;
-  background: ${({ theme }) => theme.strong.mauve};
+  background: ${({ theme }) => theme.colors.accent};
   color: ${({ theme }) => theme.colors.textInverted};
   font-size: 0.625rem;
   font-weight: 700;

@@ -337,7 +337,7 @@ const NowLine = styled.div`
   position: absolute;
   left: 0; right: 0;
   height: 2px;
-  background: ${({ theme }) => theme.strong.mauve};
+  background: ${({ theme }) => theme.colors.accent};
   z-index: 3;
   &::before {
     content: '';
@@ -345,7 +345,7 @@ const NowLine = styled.div`
     left: -4px; top: -3px;
     width: 8px; height: 8px;
     border-radius: 50%;
-    background: ${({ theme }) => theme.strong.mauve};
+    background: ${({ theme }) => theme.colors.accent};
   }
 `;
 
@@ -353,7 +353,7 @@ const NowBadge = styled.div`
   position: absolute;
   left: 2px; right: 2px;
   height: 2px;
-  background: ${({ theme }) => theme.strong.mauve};
+  background: ${({ theme }) => theme.colors.accent};
   z-index: 3;
 `;
 

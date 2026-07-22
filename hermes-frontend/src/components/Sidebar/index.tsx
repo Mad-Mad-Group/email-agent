@@ -383,10 +383,10 @@ const MLink = styled(NavLink)`
   }
 
   &.active {
-    background: ${({ theme }) => theme.strong.mauve}22;
-    color: ${({ theme }) => theme.strong.mauve};
+    background: ${({ theme }) => theme.colors.accent}22;
+    color: ${({ theme }) => theme.colors.accent};
     font-weight: 600;
-    svg { color: ${({ theme }) => theme.strong.mauve}; }
+    svg { color: ${({ theme }) => theme.colors.accent}; }
   }
 
   svg { flex-shrink: 0; }
@@ -418,7 +418,7 @@ const SearchLink = styled(MLink)`
 const Badge = styled.span`
   font-size: 0.625rem;
   font-weight: 700;
-  background: ${({ theme }) => theme.strong.mauve};
+  background: ${({ theme }) => theme.colors.accent};
   color: ${({ theme }) => theme.colors.textInverted};
   min-width: 18px;
   height: 18px;

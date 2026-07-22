@@ -397,7 +397,7 @@ const Customers: React.FC = () => {
                     <td>
                       <ActionBtn $color={theme.strong.gold} title={t('customers.favorite')}>&#9733;</ActionBtn>
                       <ActionBtn $color={theme.colors.accent} title={t('customers.settings')}>&#9881;</ActionBtn>
-                      <ActionBtn $color={theme.strong.mauve} title={t('customers.delete')}>&#128465;</ActionBtn>
+                      <ActionBtn $color={theme.colors.accent} title={t('customers.delete')}>&#128465;</ActionBtn>
                     </td>
                   </TRow>
                 ))}

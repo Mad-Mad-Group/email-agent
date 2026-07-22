@@ -580,8 +580,8 @@ const CalDayCell = styled.div<{ $today?: boolean; $selected?: boolean; $muted?: 
     : ($today || $selected) ? '#fff'
     : theme.colors.textPrimary};
   background: ${({ $today, $selected, theme }) =>
-    $today ? theme.strong.mauve
-    : $selected ? `${theme.strong.mauve}cc`
+    $today ? theme.colors.accent
+    : $selected ? `${theme.colors.accent}cc`
     : 'transparent'};
   border-radius: 50%; width: 28px; height: 28px;
   display: flex; align-items: center; justify-content: center; margin: 1px auto;
@@ -592,7 +592,7 @@ const CalDayCell = styled.div<{ $today?: boolean; $selected?: boolean; $muted?: 
     &::after {
       content: ''; position: absolute; bottom: 1px;
       width: 4px; height: 4px; border-radius: 50%;
-      background: ${theme.strong.mauve};
+      background: ${theme.colors.accent};
     }
   ` : ''}
 `;
