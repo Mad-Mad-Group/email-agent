@@ -31,8 +31,26 @@ export interface TokenUsageByUser {
   call_count: number;
 }
 
+export interface TokenTimeSeriesItem {
+  period: string;
+  total_tokens: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  call_count: number;
+}
+
+export interface TokenBalanceInfo {
+  total_tokens: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  call_count: number;
+}
+
 export const tokenUsageApi = {
   byUser: () => client.get<TokenUsageByUser[]>('/token-usage'),
+  timeseries: (granularity: 'hour' | 'day' | 'week' | 'month' = 'month') =>
+    client.get<TokenTimeSeriesItem[]>('/token-usage/timeseries', { params: { granularity } }),
+  balance: () => client.get<TokenBalanceInfo>('/token-usage/balance'),
 };
 
 /* ── Roles ── */

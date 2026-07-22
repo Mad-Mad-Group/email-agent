@@ -13,6 +13,7 @@ const LANGUAGES = [
 ];
 
 const RegisterContainer = styled.div`
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -77,21 +78,38 @@ const LangBar = styled.div`
   position: absolute;
   top: 16px;
   right: 16px;
+  z-index: 10;
   display: flex;
-  gap: 4px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 20px;
+  padding: 3px;
 `;
 
 const LangBtn = styled.button<{ $active?: boolean }>`
-  padding: 4px 10px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 6px;
+  position: relative;
+  z-index: 1;
+  padding: 4px 12px;
+  border: none;
+  border-radius: 16px;
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  background: ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
+  background: transparent;
   color: ${({ $active, theme }) => $active ? theme.colors.textInverted : theme.colors.textSecondary};
-  transition: all 0.15s;
+  transition: color 0.25s;
   &:hover { opacity: 0.8; }
+`;
+
+const LangSlider = styled.div<{ $idx: number; $count: number }>`
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: ${({ $idx, $count }) => `calc(3px + ${$idx} * (100% - 6px) / ${$count})`};
+  width: ${({ $count }) => `calc((100% - 6px) / ${$count})`};
+  background: ${({ theme }) => theme.colors.accent};
+  border-radius: 16px;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 `;
 
 const Register: React.FC = () => {
@@ -141,6 +159,7 @@ const Register: React.FC = () => {
   return (
     <RegisterContainer>
       <LangBar>
+        <LangSlider $idx={LANGUAGES.findIndex(l => l.code === i18n.language)} $count={LANGUAGES.length} />
         {LANGUAGES.map((lang) => (
           <LangBtn key={lang.code} $active={i18n.language === lang.code} onClick={() => i18n.changeLanguage(lang.code)}>
             {lang.label}

@@ -206,6 +206,18 @@ export const useTokenUsage = () =>
     queryFn: () => tokenUsageApi.byUser().then(r => r.data),
   });
 
+export const useTokenTimeseries = (granularity: 'hour' | 'day' | 'week' | 'month' = 'month') =>
+  useQuery({
+    queryKey: ['token-timeseries', granularity],
+    queryFn: () => tokenUsageApi.timeseries(granularity).then(r => r.data),
+  });
+
+export const useTokenBalance = () =>
+  useQuery({
+    queryKey: ['token-balance'],
+    queryFn: () => tokenUsageApi.balance().then(r => r.data),
+  });
+
 /* ── Settings ── */
 
 export const useSettings = () =>

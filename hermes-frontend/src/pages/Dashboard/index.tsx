@@ -2,7 +2,7 @@ import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import styled, { useTheme, keyframes } from 'styled-components';
-import { useLeads, useEmailQueue, useTokenUsage } from '../../api/hooks';
+import { useLeads, useEmailQueue, useTokenTimeseries, useTokenBalance } from '../../api/hooks';
 import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
 import { media } from '../../styles/media';
@@ -11,14 +11,14 @@ import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER, ACTIVITY_AGENT } from '../../config/agents';
 
 /* ══════════════════════════════════════
-   Lead Scraper CMS Dashboard — v2
+   Lead Scraper CMS Dashboard — v3
    ══════════════════════════════════════ */
 
 /* ── Layout ── */
 
 const Page = styled.div`
   display: flex; flex-direction: column; gap: 24px;
-  padding: 32px 28px 40px; min-width: 0;
+  padding: 32px 28px 40px; min-width: 0; overflow-x: hidden;
   ${media.tablet} { padding: 20px 16px 28px; gap: 16px; }
   ${media.mobile} { padding: 20px 16px 32px; }
 `;
@@ -36,27 +36,17 @@ const GreetingDate = styled.p`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
-/* ── Dashboard Grid: cards area + calendar sidebar ── */
+/* ── Dashboard Grid: full width, no calendar sidebar ── */
 const DashGrid = styled.div`
-  display: grid;
-  grid-template-columns: 1fr minmax(300px, 340px);
-  gap: 20px; align-items: stretch;
-  ${media.tablet} { grid-template-columns: 1fr; gap: 14px; }
-  ${media.mobile} { grid-template-columns: 1fr; }
+  display: flex; flex-direction: column; gap: 20px;
 `;
 const CardsArea = styled.div`
-  display: flex; flex-direction: column; gap: 20px;
-  ${media.tablet} { gap: 12px; }
+  display: flex; flex-direction: column; gap: 20px; min-width: 0;
 `;
 const CardRow = styled.div`
   display: flex; gap: 20px; align-items: stretch;
   ${media.tablet} { gap: 12px; }
   ${media.mobile} { flex-direction: column; }
-`;
-const CalendarSidebar = styled.div`
-  display: flex; flex-direction: column; gap: 16px;
-  ${media.tablet} { flex-direction: row; gap: 12px; grid-column: 1 / -1; }
-  ${media.mobile} { grid-column: 1 / -1; }
 `;
 /* Embedded section inside a board — no bg, dark text */
 const EmbedTitle = styled.div`
@@ -99,7 +89,7 @@ const CardIcon = styled.span<{ $color: string }>`
   color: ${({ $color }) => $color};
 `;
 
-/* ── Intelly Pastel Stat Cards (now inside masonry) ── */
+/* ── Intelly Pastel Stat Cards ── */
 const ActionCard = styled.div<{ $accent: string; $pastel: string }>`
   position: relative; border-radius: ${({ theme }) => theme.radii.card}px;
   padding: 24px 20px 20px;
@@ -183,7 +173,7 @@ const VFunnelCol = styled.div`
 const VFunnelBar = styled.div<{ $h: number; $opacity: number }>`
   width: 100%; max-width: 18px; border-radius: 5px 5px 3px 3px;
   height: ${({ $h }) => Math.max($h, 4)}px;
-  background: ${({ theme, $opacity }) => theme.colors.textPrimary};
+  background: ${({ theme }) => theme.colors.textPrimary};
   opacity: ${({ $opacity }) => $opacity};
   transition: height 0.4s ease;
 `;
@@ -205,7 +195,6 @@ const VerticalFunnel: React.FC<{ bars: VFunnelBar[] }> = ({ bars }) => {
     <VFunnelWrap>
       {bars.map((b, i) => {
         const h = (b.value / maxVal) * maxH;
-        // more = darker (1.0), less = lighter (0.25)
         const opacity = bars.length > 1
           ? 0.25 + 0.75 * (b.value / maxVal)
           : 0.8;
@@ -222,121 +211,10 @@ const VerticalFunnel: React.FC<{ bars: VFunnelBar[] }> = ({ bars }) => {
   );
 };
 
-/* ── Bar Chart ── */
-interface BarData { label: string; value: number; color: string; formula?: string }
-
-const niceCeil = (v: number): number => {
-  if (v <= 0) return 5;
-  const steps = [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000, 10000, 50000, 100000];
-  const target = v * 3;
-  return steps.find(s => s >= target) ?? Math.ceil(target);
-};
-
-const BarChartTooltip = styled.div<{ $x: number; $y: number; $visible: boolean }>`
-  position: absolute;
-  left: ${({ $x }) => $x}px; top: ${({ $y }) => $y}px;
-  transform: translate(-50%, -100%);
-  background: ${({ theme }) => theme.colors.surfaceInverted}; color: ${({ theme }) => theme.colors.textInverted}; font-size: 0.6875rem; font-weight: 600;
-  padding: 4px 10px; border-radius: 8px; pointer-events: none; white-space: nowrap;
-  opacity: ${({ $visible }) => $visible ? 1 : 0}; transition: opacity 0.12s; z-index: 10; white-space: pre-line; text-align: center;
-  &::after { content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); border: 4px solid transparent; border-top-color: ${({ theme }) => theme.colors.surfaceInverted}; }
-`;
-const BarChartWrap = styled.div`
-  position: relative; padding: 8px; border-radius: 8px; min-width: 0; overflow: hidden;
-`;
-
-const EmptyBarSvg: React.FC<{ borderColor: string }> = ({ borderColor }) => (
-  <svg width="120" height="80" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <rect x="25" y="10" width="80" height="4" rx="2" fill={borderColor} opacity="0.4"/>
-    <rect x="25" y="22" width="55" height="4" rx="2" fill={borderColor} opacity="0.3"/>
-    <rect x="25" y="34" width="70" height="4" rx="2" fill={borderColor} opacity="0.25"/>
-    <rect x="25" y="46" width="40" height="4" rx="2" fill={borderColor} opacity="0.2"/>
-    <rect x="25" y="58" width="60" height="4" rx="2" fill={borderColor} opacity="0.15"/>
-    <line x1="22" y1="5" x2="22" y2="68" stroke={borderColor} strokeWidth="1" opacity="0.3"/>
-  </svg>
-);
-
-const BarChart: React.FC<{ bars: BarData[] }> = ({ bars }) => {
-  const { t } = useTranslation();
-  const theme = useTheme();
-  const allZero = bars.every(b => b.value === 0);
-  const [hover, setHover] = useState<{ idx: number; x: number; y: number } | null>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const w = 440, h = 180, pl = 80, pr = 12, pt = 6, pb = 22;
-  const chartW = w - pl - pr, chartH = h - pt - pb;
-  const rawMax = Math.max(...bars.map(b => b.value));
-  const maxVal = niceCeil(rawMax);
-  const barH = Math.min(20, (chartH / bars.length) * 0.55);
-  const gap = chartH / bars.length;
-  const tickCount = maxVal <= 5 ? maxVal : Math.min(5, maxVal);
-  const tickStep = maxVal / tickCount;
-  const ticks: number[] = [];
-  for (let i = 0; i <= tickCount; i++) ticks.push(Math.round(tickStep * i));
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<SVGElement>, idx: number) => {
-    if (!svgRef.current) return;
-    const rect = svgRef.current.getBoundingClientRect();
-    setHover({ idx, x: e.clientX - rect.left, y: e.clientY - rect.top - 6 });
-  }, []);
-
-  if (allZero) {
-    return (
-      <BarChartWrap style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '32px 16px', color: theme.colors.textTertiary, fontSize: '0.8125rem' }}>
-        <EmptyBarSvg borderColor={theme.colors.border} />
-        {t('dashboard.noFunnelData')}
-      </BarChartWrap>
-    );
-  }
-
-  return (
-    <BarChartWrap>
-      {hover !== null && (
-        <BarChartTooltip $x={hover.x} $y={hover.y} $visible>
-          {bars[hover.idx].label}: {bars[hover.idx].value}
-          {bars[hover.idx].formula && <><br/><span style={{ opacity: 0.7, fontSize: '0.625rem' }}>{bars[hover.idx].formula}</span></>}
-        </BarChartTooltip>
-      )}
-      <svg ref={svgRef} width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }}>
-        <defs>
-          {bars.map((b, i) => (
-            <linearGradient key={i} id={`bar${i}`} x1="0" y1="0" x2="1" y2="0">
-              <stop offset="0%" stopColor={b.color} stopOpacity="0.65" />
-              <stop offset="100%" stopColor={b.color} stopOpacity="0.95" />
-            </linearGradient>
-          ))}
-        </defs>
-        {ticks.map((tick, i) => {
-          const x = pl + (tick / maxVal) * chartW;
-          return (
-            <g key={`tick${i}`}>
-              <line x1={x} y1={pt} x2={x} y2={pt + chartH} stroke={theme.colors.border} strokeWidth="0.5" strokeDasharray={i === 0 ? undefined : '3,3'} />
-              <text x={x} y={pt + chartH + 14} textAnchor="middle" fill={theme.colors.textTertiary} fontSize="8" fontWeight="400">{tick}</text>
-            </g>
-          );
-        })}
-        {bars.map((b, i) => {
-          const y = pt + gap * i + (gap - barH) / 2;
-          const barW = maxVal > 0 ? Math.max((b.value / maxVal) * chartW, b.value > 0 ? 6 : 0) : 0;
-          const r = 5;
-          return (
-            <g key={i} style={{ cursor: 'pointer' }}
-               onMouseMove={(e) => handleMouseMove(e, i)}
-               onMouseLeave={() => setHover(null)}>
-              <rect x={0} y={pt + gap * i} width={w} height={gap} fill="transparent" />
-              <rect x={pl} y={y} width={chartW} height={barH} rx={r} ry={r} fill={theme.colors.surfaceMuted} />
-              <rect x={pl} y={y} width={barW} height={barH} rx={r} ry={r} fill={`url(#bar${i})`} />
-              <text x={pl - 6} y={y + barH / 2} textAnchor="end" fill={theme.colors.textTertiary} fontSize="8" fontWeight="500" dominantBaseline="central">{b.label}</text>
-            </g>
-          );
-        })}
-      </svg>
-    </BarChartWrap>
-  );
-};
-
-/* ── Donut Chart (redesigned) ── */
+/* ── Donut Chart ── */
 const DonutWrap = styled.div`
   display: flex; align-items: center; gap: 20px; justify-content: center; padding: 8px;
+  flex-wrap: wrap;
   ${media.tablet} {
     gap: 10px; padding: 2px;
     & > div:first-child svg { width: 165px; height: 165px; }
@@ -416,9 +294,7 @@ const DonutChart: React.FC<{ slices: { value: number; color: string; label?: str
             </linearGradient>
           ))}
         </defs>
-        {/* background track */}
         <circle cx={cx} cy={cy} r={r} fill="none" stroke="currentColor" strokeWidth={strokeW} opacity={0.06} />
-        {/* arcs */}
         <g style={{ transform: 'rotate(-90deg)', transformOrigin: 'center' }}>
           {arcs.map((a, i) => (
             <circle key={i} cx={cx} cy={cy} r={r} fill="none"
@@ -429,7 +305,6 @@ const DonutChart: React.FC<{ slices: { value: number; color: string; label?: str
               onMouseLeave={() => setHover(null)} />
           ))}
         </g>
-        {/* center text */}
         <text x={cx} y={cy - 8} textAnchor="middle" dominantBaseline="central"
           style={{ fontSize: '1.75rem', fontWeight: 700, fill: 'currentColor' }}>
           {total}
@@ -444,7 +319,6 @@ const DonutChart: React.FC<{ slices: { value: number; color: string; label?: str
 };
 
 /* ── Activity Feed ── */
-/* ── Notebook-style Activity Feed ── */
 const NotebookCard = styled(Card)`
   position: relative;
 `;
@@ -496,10 +370,9 @@ const Spinner = styled.div<{ $color?: string }>`
 `;
 const SpinnerText = styled.div`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary};`;
 
-/* ── Spiral-bound Calendar card ── */
+/* ── Schedule card components ── */
 const SpiralCard = styled(Card)`
   position: relative; overflow: visible;
-  /* stacked-paper shadow */
   &::before, &::after {
     content: ''; position: absolute; border-radius: ${({ theme }) => theme.radii.card}px;
     background: ${({ theme }) => theme.colors.surface};
@@ -543,112 +416,6 @@ const EmbedWhite = styled.div`
   margin-top: 32px; background: ${({ theme }) => theme.colors.surface};
   border-radius: 12px; overflow: hidden;
   ${media.tablet} { margin-top: 14px; }
-`;
-
-/* ── Mini Calendar ── */
-const CalendarCard = styled.div`
-  ${glassSurface};
-  border-radius: ${({ theme }) => theme.radii.card}px;
-  padding: 16px;
-  ${media.tablet} { flex: 1; padding: 12px; }
-`;
-const CalMonth = styled.div`
-  display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
-`;
-const CalMonthTitle = styled.div`
-  font-size: 0.875rem; font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-const CalMonthNav = styled.button`
-  background: none; border: none; cursor: pointer; padding: 4px 6px;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  font-size: 0.75rem; line-height: 1;
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
-`;
-const CalDaysGrid = styled.div`
-  display: grid; grid-template-columns: repeat(7, 1fr); text-align: center;
-`;
-const CalDayHeader = styled.div`
-  font-size: 0.5625rem; font-weight: 600;
-  color: ${({ theme }) => theme.colors.textTertiary}; padding: 4px 0;
-`;
-const CalDayCell = styled.div<{ $today?: boolean; $selected?: boolean; $muted?: boolean; $hasEvent?: boolean }>`
-  font-size: 0.6875rem;
-  font-weight: ${({ $today, $selected }) => ($today || $selected) ? 700 : 400};
-  color: ${({ $today, $selected, $muted, theme }) =>
-    $muted ? `${theme.colors.textTertiary}60`
-    : ($today || $selected) ? '#fff'
-    : theme.colors.textPrimary};
-  background: ${({ $today, $selected, theme }) =>
-    $today ? theme.colors.accent
-    : $selected ? `${theme.colors.accent}cc`
-    : 'transparent'};
-  border-radius: 50%; width: 28px; height: 28px;
-  display: flex; align-items: center; justify-content: center; margin: 1px auto;
-  position: relative; cursor: ${({ $muted }) => $muted ? 'default' : 'pointer'};
-  transition: background 0.15s, transform 0.1s;
-  &:hover { ${({ $muted, theme }) => !$muted ? `background: ${theme.pastel.mauve};` : ''} }
-  ${({ $hasEvent, $today, $selected, theme }) => $hasEvent && !$today && !$selected ? `
-    &::after {
-      content: ''; position: absolute; bottom: 1px;
-      width: 4px; height: 4px; border-radius: 50%;
-      background: ${theme.colors.accent};
-    }
-  ` : ''}
-`;
-const CalAddBtn = styled.button`
-  background: ${({ theme }) => theme.colors.surfaceInverted};
-  color: ${({ theme }) => theme.colors.textInverted};
-  border: none; border-radius: 10px; padding: 9px 14px;
-  font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-  display: flex; align-items: center; justify-content: center; gap: 6px;
-  width: 100%; margin-top: 12px;
-  transition: opacity 0.15s;
-  &:hover { opacity: 0.85; }
-`;
-
-/* ── Day Timeline ── */
-const TimelineCard = styled.div`
-  ${glassSurface};
-  border-radius: ${({ theme }) => theme.radii.card}px;
-  padding: 16px; flex: 1; min-height: 0;
-  overflow-y: auto;
-  &::-webkit-scrollbar { width: 3px; }
-  &::-webkit-scrollbar-thumb { background: ${({ theme }) => theme.colors.border}; border-radius: 3px; }
-  ${media.tablet} { padding: 12px; }
-`;
-const TimelineHeader = styled.div`
-  font-size: 0.8125rem; font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  margin-bottom: 12px; display: flex; align-items: center; gap: 6px;
-`;
-const TlItem = styled.div<{ $past?: boolean }>`
-  display: flex; gap: 10px; padding: 8px 0;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border}20;
-  opacity: ${({ $past }) => $past ? 0.3 : 1};
-  &:last-child { border-bottom: none; }
-`;
-const TlTime = styled.div`
-  font-size: 0.6875rem; font-weight: 600;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  min-width: 44px; flex-shrink: 0;
-`;
-const TlDot = styled.div<{ $color: string }>`
-  width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
-  background: ${({ $color }) => $color}; margin-top: 4px;
-`;
-const TlBody = styled.div`flex: 1; min-width: 0;`;
-const TlTitle = styled.div`
-  font-size: 0.8125rem; font-weight: 500;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-`;
-const TlSub = styled.div`
-  font-size: 0.6875rem; color: ${({ theme }) => theme.colors.textTertiary}; margin-top: 2px;
-`;
-const EmptyTimeline = styled.div`
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  padding: 24px 8px; gap: 10px; color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
 `;
 
 /* ── Meeting list inside blue card ── */
@@ -696,17 +463,6 @@ const IconAlert = () => (
     <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
   </svg>
 );
-/* Card header icons (for chart modules) */
-const IconFunnel = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-  </svg>
-);
-const IconPieChart = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/>
-  </svg>
-);
 const IconCalendar = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
@@ -717,27 +473,297 @@ const IconActivity = () => (
     <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
   </svg>
 );
-
-const IconSent = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
-  </svg>
-);
-const IconReply = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>
-  </svg>
-);
 const IconPen = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/>
   </svg>
 );
-const IconPlus = () => (
-  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-  </svg>
-);
+
+/* ══════════════════════════════════════
+   TOKEN USAGE CHART + GAUGE
+   ══════════════════════════════════════ */
+
+const TokenRow = styled.div`
+  display: flex; gap: 20px; align-items: stretch;
+  ${media.tablet} { gap: 12px; }
+  ${media.mobile} { flex-direction: column; }
+`;
+
+const TokenChartCard = styled(Card)`
+  flex: 3; min-width: 0;
+`;
+
+const TokenGaugeCard = styled(Card)`
+  flex: 2; min-width: 0; display: flex; flex-direction: column;
+`;
+
+/* ── Granularity Pill Switcher ── */
+const GranPillBar = styled.div`
+  position: relative;
+  display: flex;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 20px;
+  padding: 2px;
+`;
+const GranPillSlider = styled.div<{ $idx: number; $count: number }>`
+  position: absolute;
+  top: 2px; bottom: 2px;
+  left: ${({ $idx, $count }) => `calc(2px + ${$idx} * (100% - 4px) / ${$count})`};
+  width: ${({ $count }) => `calc((100% - 4px) / ${$count})`};
+  background: ${({ theme }) => theme.colors.accent};
+  border-radius: 18px;
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+`;
+const GranPillBtn = styled.button<{ $active?: boolean }>`
+  position: relative; z-index: 1;
+  padding: 5px 14px;
+  border: none; border-radius: 18px;
+  font-size: 0.75rem; font-weight: 600;
+  cursor: pointer; background: transparent;
+  color: ${({ $active, theme }) => $active ? theme.colors.textInverted : theme.colors.textSecondary};
+  transition: color 0.25s;
+  &:hover { opacity: 0.8; }
+`;
+
+const GRAN_OPTIONS = [
+  { key: 'month' as const, labelKey: 'dashboard.granMonth' },
+  { key: 'week' as const, labelKey: 'dashboard.granWeek' },
+  { key: 'day' as const, labelKey: 'dashboard.granDay' },
+  { key: 'hour' as const, labelKey: 'dashboard.granHour' },
+];
+
+/* ── Token Bar Chart (blue gradient bars) ── */
+const TokenBarChartWrap = styled.div`
+  position: relative; padding: 12px 16px 8px; min-width: 0;
+`;
+
+const TokenBarTooltip = styled.div<{ $x: number; $y: number; $visible: boolean }>`
+  position: absolute;
+  left: ${({ $x }) => $x}px; top: ${({ $y }) => $y}px;
+  transform: translate(-50%, -100%);
+  background: ${({ theme }) => theme.colors.surfaceInverted};
+  color: ${({ theme }) => theme.colors.textInverted};
+  font-size: 0.6875rem; font-weight: 600;
+  padding: 4px 10px; border-radius: 8px; pointer-events: none; white-space: nowrap;
+  opacity: ${({ $visible }) => $visible ? 1 : 0}; transition: opacity 0.12s; z-index: 10;
+  &::after {
+    content: ''; position: absolute; top: 100%; left: 50%; transform: translateX(-50%);
+    border: 4px solid transparent; border-top-color: ${({ theme }) => theme.colors.surfaceInverted};
+  }
+`;
+
+const TokenBarChart: React.FC<{ data: { period: string; total_tokens: number }[] }> = ({ data }) => {
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const svgRef = useRef<SVGSVGElement>(null);
+  const [hover, setHover] = useState<{ idx: number; x: number; y: number } | null>(null);
+
+  const items = data.length > 0 ? data : [];
+  const maxVal = Math.max(...items.map(d => d.total_tokens), 1);
+  const w = 560, h = 220, pl = 60, pr = 12, pt = 16, pb = 40;
+  const chartW = w - pl - pr, chartH = h - pt - pb;
+  const barCount = items.length || 1;
+  const gap = Math.min(chartW / barCount, 64);
+  const barW = gap * 0.55;
+
+  const formatNum = (n: number) => {
+    if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+    return String(n);
+  };
+
+  const tickCount = 5;
+  const tickStep = maxVal / tickCount;
+  const ticks: number[] = [];
+  for (let i = 0; i <= tickCount; i++) ticks.push(Math.round(tickStep * i));
+
+  const handleMouseMove = useCallback((e: React.MouseEvent<SVGElement>, idx: number) => {
+    if (!svgRef.current) return;
+    const rect = svgRef.current.getBoundingClientRect();
+    setHover({ idx, x: e.clientX - rect.left, y: e.clientY - rect.top - 6 });
+  }, []);
+
+  if (items.length === 0) {
+    return (
+      <TokenBarChartWrap style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '48px', color: theme.colors.textTertiary, fontSize: '0.8125rem' }}>
+        {t('dashboard.noTokenData')}
+      </TokenBarChartWrap>
+    );
+  }
+
+  return (
+    <TokenBarChartWrap>
+      {hover !== null && (
+        <TokenBarTooltip $x={hover.x} $y={hover.y} $visible>
+          {items[hover.idx].period}: {items[hover.idx].total_tokens.toLocaleString()} tokens
+        </TokenBarTooltip>
+      )}
+      <svg ref={svgRef} width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }}>
+        <defs>
+          <linearGradient id="tokenBarGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={theme.colors.accent} stopOpacity="1" />
+            <stop offset="100%" stopColor={theme.colors.accent} stopOpacity="0.4" />
+          </linearGradient>
+          <linearGradient id="tokenBarGradHover" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={theme.colors.accent} stopOpacity="1" />
+            <stop offset="100%" stopColor={theme.colors.accent} stopOpacity="0.7" />
+          </linearGradient>
+        </defs>
+        {/* Y-axis grid lines */}
+        {ticks.map((tick, i) => {
+          const y = pt + chartH - (tick / maxVal) * chartH;
+          return (
+            <g key={`tick${i}`}>
+              <line x1={pl} y1={y} x2={pl + chartW} y2={y} stroke={theme.colors.border} strokeWidth="0.5" strokeDasharray={i === 0 ? undefined : '3,3'} />
+              <text x={pl - 8} y={y} textAnchor="end" fill={theme.colors.textTertiary} fontSize="9" fontWeight="400" dominantBaseline="central">{formatNum(tick)}</text>
+            </g>
+          );
+        })}
+        {/* Bars */}
+        {items.map((d, i) => {
+          const x = pl + i * gap + (gap - barW) / 2;
+          const barH = maxVal > 0 ? Math.max((d.total_tokens / maxVal) * chartH, d.total_tokens > 0 ? 4 : 0) : 0;
+          const y = pt + chartH - barH;
+          const isHovered = hover?.idx === i;
+          // Short label
+          const label = d.period.length > 7 ? d.period.slice(-5) : d.period;
+          return (
+            <g key={i} style={{ cursor: 'pointer' }}
+               onMouseMove={(e) => handleMouseMove(e, i)}
+               onMouseLeave={() => setHover(null)}>
+              <rect x={pl + i * gap} y={pt} width={gap} height={chartH} fill="transparent" />
+              <rect x={x} y={y} width={barW} height={barH} rx={4} ry={4}
+                fill={isHovered ? 'url(#tokenBarGradHover)' : 'url(#tokenBarGrad)'}
+                style={{ transition: 'all 0.15s ease' }} />
+              {/* Highlight effect on hover */}
+              {isHovered && d.total_tokens > 0 && (
+                <>
+                  <circle cx={x + barW / 2} cy={y} r={4} fill={theme.colors.accent} />
+                  <text x={x + barW / 2} y={y - 10} textAnchor="middle" fill={theme.colors.accent}
+                    fontSize="9" fontWeight="700">{formatNum(d.total_tokens)}</text>
+                </>
+              )}
+              <text x={pl + i * gap + gap / 2} y={pt + chartH + 16}
+                textAnchor="middle" fill={theme.colors.textTertiary}
+                fontSize="8" fontWeight="400">{label}</text>
+            </g>
+          );
+        })}
+      </svg>
+    </TokenBarChartWrap>
+  );
+};
+
+/* ── Token Gauge (half-circle) ── */
+const GaugeWrap = styled.div`
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; padding: 24px 16px 16px; flex: 1;
+`;
+const GaugeLabel = styled.div`
+  font-size: 0.75rem; font-weight: 500;
+  color: ${({ theme }) => theme.colors.textSecondary}; margin-top: 8px;
+`;
+const GaugeValue = styled.div`
+  font-size: 1.5rem; font-weight: 800;
+  color: ${({ theme }) => theme.colors.textPrimary}; margin-top: 4px;
+`;
+const GaugeTarget = styled.div`
+  font-size: 0.75rem; font-weight: 500;
+  color: ${({ theme }) => theme.colors.textTertiary}; margin-top: 4px;
+`;
+const GaugeBar = styled.div`
+  width: 100%; height: 6px; border-radius: 3px; margin-top: 12px;
+  background: ${({ theme }) => theme.colors.surfaceMuted}; overflow: hidden;
+`;
+const GaugeBarFill = styled.div<{ $pct: number }>`
+  height: 100%; border-radius: 3px;
+  width: ${({ $pct }) => Math.min($pct, 100)}%;
+  background: ${({ theme }) => theme.colors.accent};
+  transition: width 0.6s ease;
+`;
+
+const TOKEN_QUOTA = 5000000; // 5M total token quota (configurable)
+
+const TokenGauge: React.FC<{ used: number; quota?: number }> = ({ used, quota = TOKEN_QUOTA }) => {
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const pct = quota > 0 ? (used / quota) * 100 : 0;
+  const remaining = Math.max(quota - used, 0);
+  const cx = 120, cy = 110, r = 90;
+  const strokeW = 18;
+  // Half circle: pi * r
+  const halfC = Math.PI * r;
+  const fillLen = (pct / 100) * halfC;
+
+  const formatNum = (n: number) => {
+    if (n >= 1000000) return `${(n / 1000000).toFixed(2)}M`;
+    if (n >= 1000) return `${(n / 1000).toFixed(1)}K`;
+    return String(n);
+  };
+
+  // Generate arc segments for the gauge
+  const segCount = 12;
+  const segGap = 3;
+  const segAngle = 180 / segCount;
+
+  return (
+    <GaugeWrap>
+      <svg width="240" height="140" viewBox="0 0 240 140" style={{ display: 'block', maxWidth: '100%', height: 'auto' }}>
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor={theme.colors.accent} stopOpacity="0.35" />
+            <stop offset="100%" stopColor={theme.colors.accent} stopOpacity="1" />
+          </linearGradient>
+        </defs>
+        {/* Background segments */}
+        {Array.from({ length: segCount }).map((_, i) => {
+          const startAngle = 180 + i * segAngle + segGap / 2;
+          const endAngle = 180 + (i + 1) * segAngle - segGap / 2;
+          const x1 = cx + r * Math.cos((startAngle * Math.PI) / 180);
+          const y1 = cy + r * Math.sin((startAngle * Math.PI) / 180);
+          const x2 = cx + r * Math.cos((endAngle * Math.PI) / 180);
+          const y2 = cy + r * Math.sin((endAngle * Math.PI) / 180);
+          const filled = (i + 1) / segCount <= pct / 100;
+          const partial = i / segCount < pct / 100 && (i + 1) / segCount > pct / 100;
+          return (
+            <path key={i}
+              d={`M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`}
+              fill="none"
+              stroke={filled ? theme.colors.accent : partial ? `${theme.colors.accent}80` : `${theme.colors.border}`}
+              strokeWidth={strokeW}
+              strokeLinecap="round"
+              opacity={filled ? 0.35 + 0.65 * ((i + 1) / segCount) : partial ? 0.5 : 0.3}
+            />
+          );
+        })}
+        {/* Center percentage */}
+        <text x={cx} y={cy - 10} textAnchor="middle" dominantBaseline="central"
+          style={{ fontSize: '2rem', fontWeight: 800, fill: theme.colors.textPrimary }}>
+          {pct.toFixed(1)}%
+        </text>
+        <text x={cx} y={cy + 14} textAnchor="middle" dominantBaseline="central"
+          style={{ fontSize: '0.7rem', fontWeight: 500, fill: theme.colors.textSecondary }}>
+          {t('dashboard.tokenUsed')}
+        </text>
+      </svg>
+      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', maxWidth: 220, marginTop: 8 }}>
+        <div>
+          <div style={{ fontSize: '0.7rem', color: theme.colors.textTertiary }}>{t('dashboard.tokenUsedLabel')}</div>
+          <div style={{ fontSize: '1rem', fontWeight: 700, color: theme.colors.textPrimary }}>{formatNum(used)}</div>
+        </div>
+        <div style={{ textAlign: 'right' }}>
+          <div style={{ fontSize: '0.7rem', color: theme.colors.textTertiary }}>{t('dashboard.tokenQuota')}</div>
+          <div style={{ fontSize: '1rem', fontWeight: 700, color: theme.colors.textPrimary }}>{formatNum(quota)}</div>
+        </div>
+      </div>
+      <GaugeBar>
+        <GaugeBarFill $pct={pct} />
+      </GaugeBar>
+    </GaugeWrap>
+  );
+};
+
 /* ══════════ Helpers ══════════ */
 
 const timeAgo = (dateStr: string | undefined, t: (key: string, opts?: Record<string, unknown>) => string) => {
@@ -759,19 +785,13 @@ const DemoHint = styled.div`
 
 /* ══════════ DEMO MOCK DATA ══════════ */
 const DEMO_COMPANIES = [
-  /* 0–9   contacted + replied */
   'Stripe', 'Notion', 'Vercel', 'Figma', 'Linear',
   'Retool', 'Supabase', 'Clerk', 'Resend', 'Neon',
-  /* 10–14  contacted + replied (more categories) */
   'PostHog', 'Cal.com', 'Dub.co', 'Trigger.dev', 'Inngest',
-  /* 15–22  contacted, no reply yet */
   'Tiptap', 'Liveblocks', 'Prisma', 'PlanetScale', 'Turso',
   'Warp', 'Railway', 'Render',
-  /* 23–28  pending (已驗證信箱，等待發信) */
   'Loops', 'Ashby', 'Attio', 'Folk', 'Instantly', 'Apollo',
-  /* 29–34  new / null (潛在客戶) */
   'HubSpot', 'Salesforce', 'Zoho', 'Pipedrive', 'Close', 'Freshsales',
-  /* 35–39  contacted + bounced / special */
   'Outreach', 'Salesloft', 'Lemlist', 'Woodpecker', 'Mailshake',
 ];
 
@@ -812,7 +832,6 @@ function generateDemoLeads(): Lead[] {
     let replyAt: string | undefined;
 
     if (i < 15) {
-      // 0–14: contacted + replied
       status = 'contacted';
       replied = true;
       cat = replyCats[i];
@@ -821,20 +840,16 @@ function generateDemoLeads(): Lead[] {
       verification = 'verified';
       replyAt = new Date(now - (i + 1) * day * 0.4).toISOString();
     } else if (i < 23) {
-      // 15–22: contacted, no reply
       status = 'contacted';
       followupCount = i < 18 ? 1 : 0;
       verification = i < 20 ? 'verified' : 'unverified';
     } else if (i < 29) {
-      // 23–28: pending (驗證完等待發信)
       status = 'pending';
       verification = verifications[i % verifications.length];
     } else if (i < 35) {
-      // 29–34: new / null (潛在客戶，剛匯入)
       status = i % 2 === 0 ? 'new' : null;
       verification = i < 32 ? undefined : 'unverified';
     } else {
-      // 35–39: contacted but bounced / edge cases
       status = 'contacted';
       verification = i < 38 ? 'bounced' : 'verified';
       replied = i === 38;
@@ -870,37 +885,29 @@ function generateDemoEmails(): EmailItem[] {
   const now = Date.now();
   const day = 86400000;
   const items: { company: string; status: string; type: string; daysAgo: number }[] = [
-    // sent — outreach
     { company: 'Stripe', status: 'sent', type: 'outreach', daysAgo: 8 },
     { company: 'Notion', status: 'sent', type: 'outreach', daysAgo: 7 },
     { company: 'Vercel', status: 'sent', type: 'outreach', daysAgo: 6 },
     { company: 'Figma', status: 'sent', type: 'outreach', daysAgo: 5 },
     { company: 'Linear', status: 'sent', type: 'outreach', daysAgo: 5 },
     { company: 'Retool', status: 'sent', type: 'outreach', daysAgo: 4 },
-    // sent — followup
     { company: 'Tiptap', status: 'sent', type: 'followup', daysAgo: 3 },
     { company: 'Liveblocks', status: 'sent', type: 'followup', daysAgo: 3 },
     { company: 'Prisma', status: 'sent', type: 'followup', daysAgo: 2 },
-    // sent — reply
     { company: 'PostHog', status: 'sent', type: 'reply', daysAgo: 1 },
     { company: 'Cal.com', status: 'sent', type: 'reply', daysAgo: 1 },
-    // pending — awaiting approval
     { company: 'PlanetScale', status: 'pending', type: 'outreach', daysAgo: 0.5 },
     { company: 'Turso', status: 'pending', type: 'followup', daysAgo: 0.3 },
     { company: 'Warp', status: 'pending', type: 'outreach', daysAgo: 0.2 },
     { company: 'Railway', status: 'pending', type: 'followup', daysAgo: 0.1 },
     { company: 'Dub.co', status: 'pending', type: 'reply', daysAgo: 0.05 },
-    // approved — queued to send
     { company: 'Loops', status: 'approved', type: 'outreach', daysAgo: 0.4 },
     { company: 'Ashby', status: 'approved', type: 'outreach', daysAgo: 0.3 },
     { company: 'Attio', status: 'approved', type: 'outreach', daysAgo: 0.2 },
-    // rejected — human declined
     { company: 'Outreach', status: 'rejected', type: 'outreach', daysAgo: 2 },
     { company: 'Salesloft', status: 'rejected', type: 'followup', daysAgo: 1.5 },
-    // failed — delivery error
     { company: 'Lemlist', status: 'failed', type: 'outreach', daysAgo: 4 },
     { company: 'Woodpecker', status: 'failed', type: 'followup', daysAgo: 3 },
-    // more sent for volume
     { company: 'Supabase', status: 'sent', type: 'outreach', daysAgo: 6 },
     { company: 'Clerk', status: 'sent', type: 'outreach', daysAgo: 5.5 },
   ];
@@ -919,8 +926,8 @@ function generateDemoEmails(): EmailItem[] {
       status: item.status,
       _type: item.type,
       error: item.status === 'failed' ? { rejected_reason: 'Mailbox not found (550)' } : null,
-      sent_at: item.status === 'sent' ? new Date(now - item.daysAgo * day).toISOString() : undefined,
-      created_at: new Date(now - item.daysAgo * day).toISOString(),
+      sent_at: item.status === 'sent' ? new Date(Date.now() - item.daysAgo * 86400000).toISOString() : undefined,
+      created_at: new Date(Date.now() - item.daysAgo * 86400000).toISOString(),
     } as any;
   });
 }
@@ -969,13 +976,13 @@ const Dashboard: React.FC = () => {
 
   const { data: leadsData, isLoading: leadsLoading } = useLeads({ page: 1, limit: 100 });
   const { data: emailData, isLoading: emailsLoading } = useEmailQueue({ page: 1, limit: 100 });
-  const { data: tokenUsageRaw } = useTokenUsage();
-  const tokenUsage: { user_id: string; total_tokens: number; prompt_tokens: number; completion_tokens: number; call_count: number }[] =
-    (Array.isArray(tokenUsageRaw) ? tokenUsageRaw : (tokenUsageRaw as any)?.data ?? []) as any;
-  const tokenTotal = useMemo(() => tokenUsage.reduce((s, u) => s + u.total_tokens, 0), [tokenUsage]);
-  const COST_PER_1K = 0.005;
 
-  /* ── Demo mode: auto-use mock data when real data is empty ── */
+  /* ── Token usage state ── */
+  const [granularity, setGranularity] = useState<'hour' | 'day' | 'week' | 'month'>('month');
+  const { data: tokenTimeseriesData } = useTokenTimeseries(granularity);
+  const { data: tokenBalanceData } = useTokenBalance();
+
+  /* ── Demo mode ── */
   const demoLeads = useMemo(() => generateDemoLeads(), []);
   const demoEmails = useMemo(() => generateDemoEmails(), []);
 
@@ -992,7 +999,7 @@ const Dashboard: React.FC = () => {
     ? [...realEmails, ...demoEmails.filter(d => !realEmails.some(r => r._id === d._id))]
     : realEmails;
 
-  // ── Stats (header pills) ──
+  // ── Stats ──
   const stats = useMemo(() => {
     const total = allLeads.length;
     const contacted = allLeads.filter(l => l.status === 'contacted').length;
@@ -1076,7 +1083,7 @@ const Dashboard: React.FC = () => {
     return items.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
   }, [allLeads, allEmails, t]);
 
-  // ── Upcoming schedule (pending + approved emails) ──
+  // ── Upcoming schedule ──
   const upcomingSchedule = useMemo(() => {
     return allEmails
       .filter(e => e.status === 'pending' || e.status === 'approved')
@@ -1092,7 +1099,7 @@ const Dashboard: React.FC = () => {
       }));
   }, [allEmails, t]);
 
-  // ── Today's timeline (for day timeline sidebar) ──
+  // ── Today's timeline ──
   const todayTimeline = useMemo(() => {
     const nowH = new Date().getHours();
     const times = ['09:00', '09:30', '10:30', '11:00', '13:00', '14:30', '15:30', '16:00'];
@@ -1119,53 +1126,12 @@ const Dashboard: React.FC = () => {
     return pool[Math.floor(Math.random() * pool.length)];
   }, []);
 
-  // ── Calendar sidebar state ──
-  const now = new Date();
-  const [calYear, setCalYear] = useState(now.getFullYear());
-  const [calMonth, setCalMonth] = useState(now.getMonth()); // 0-based
-  const [selectedDay, setSelectedDay] = useState<number | null>(now.getDate());
-
-  const MONTH_KEYS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
-  const DAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
-
-  const calDays = useMemo(() => {
-    const dim = new Date(calYear, calMonth + 1, 0).getDate(); // days in month
-    const firstDow = new Date(calYear, calMonth, 1).getDay(); // 0=Sun
-    const prevDim = new Date(calYear, calMonth, 0).getDate(); // prev month last day
-    const cells: { day: number; muted: boolean; today: boolean }[] = [];
-    // prev month tail
-    for (let i = firstDow - 1; i >= 0; i--) {
-      cells.push({ day: prevDim - i, muted: true, today: false });
-    }
-    // current month
-    const todayDate = new Date();
-    for (let d = 1; d <= dim; d++) {
-      const isToday = d === todayDate.getDate() && calMonth === todayDate.getMonth() && calYear === todayDate.getFullYear();
-      cells.push({ day: d, muted: false, today: isToday });
-    }
-    // next month head — fill to 42 cells (6 rows)
-    const remainder = 42 - cells.length;
-    for (let d = 1; d <= remainder; d++) {
-      cells.push({ day: d, muted: true, today: false });
-    }
-    return cells;
-  }, [calYear, calMonth]);
-
-  const handlePrevMonth = useCallback(() => {
-    setCalMonth(m => { if (m === 0) { setCalYear(y => y - 1); return 11; } return m - 1; });
-    setSelectedDay(null);
-  }, []);
-  const handleNextMonth = useCallback(() => {
-    setCalMonth(m => { if (m === 11) { setCalYear(y => y + 1); return 0; } return m + 1; });
-    setSelectedDay(null);
-  }, []);
-
   const loading = leadsLoading || emailsLoading;
   if (loading) return <Page><SpinnerWrap><Spinner /><SpinnerText>{t('dashboard.loading')}</SpinnerText></SpinnerWrap></Page>;
 
   return (
     <Page>
-      {/* ── Demo hint (auto, no toggle) ── */}
+      {/* ── Demo hint ── */}
       {sparse && <DemoHint>{t('dashboard.demoHint')}</DemoHint>}
 
       {/* ── Intelly Greeting ── */}
@@ -1174,16 +1140,15 @@ const Dashboard: React.FC = () => {
         <GreetingDate>{new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</GreetingDate>
       </GreetingBlock>
 
-      {/* ── Dashboard cards ── */}
+      {/* ── Dashboard cards (2×2) ── */}
       <DashGrid>
-        <CardsArea>
-          {/* ═══ Top row: 審核 (flex:3) + 回覆 (flex:2) — irregular widths ═══ */}
+          {/* ═══ Top row: 審核 + 回覆 ═══ */}
           <CardRow>
-            {/* 審核 — gold card with funnel + embedded Schedule (truncated) */}
+            {/* 審核 — gold card */}
             <ActionCard
               $pastel={theme.pastel.gold}
               $accent={theme.strong.gold}
-              style={{ flex: 3 }}
+              style={{ flex: 1 }}
               onClick={() => navigate('/cms-email?status=pending')}
             >
               <ActionWatermark $fg={theme.strong.gold} $rot={-18}><IconDraft /></ActionWatermark>
@@ -1208,7 +1173,7 @@ const Dashboard: React.FC = () => {
                 ]} />
               </StatsRow>
 
-              {/* Queued to Send — compact, max 2 items */}
+              {/* Queued to Send */}
               <EmbedWhite onClick={e => e.stopPropagation()}>
                 <CardHeader>
                   <CardIcon $color={theme.strong.gold}><IconCalendar /></CardIcon>
@@ -1246,11 +1211,11 @@ const Dashboard: React.FC = () => {
               </EmbedWhite>
             </ActionCard>
 
-            {/* 回覆 — olive card with Donut */}
+            {/* 回覆 — olive card */}
             <ActionCard
               $pastel={theme.pastel.olive}
               $accent={theme.strong.olive}
-              style={{ flex: 2 }}
+              style={{ flex: 1 }}
               onClick={() => navigate('/cms-leads?tab=replied')}
             >
               <ActionWatermark $fg={theme.strong.olive} $rot={22}><IconReplyArrow /></ActionWatermark>
@@ -1266,7 +1231,6 @@ const Dashboard: React.FC = () => {
                 </ActionTrend>
               </ActionCountRow>
 
-              {/* Donut — dark monochrome */}
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 12 }} onClick={e => e.stopPropagation()}>
                 {stats.replied === 0 ? (
                   <Empty><EmptyDonutSvg borderColor={theme.colors.border} borderStrongColor={theme.colors.borderStrong} />{t('dashboard.noReplyData')}</Empty>
@@ -1305,13 +1269,13 @@ const Dashboard: React.FC = () => {
             </ActionCard>
           </CardRow>
 
-          {/* ═══ Bottom row: 跟進 (flex:3) + Token (flex:2) + 會議 (flex:2) — three cards ═══ */}
+          {/* ═══ Second row: 跟進 + 議程 (blue) ═══ */}
           <CardRow>
-            {/* 跟進 — mauve (wider) with embedded Activity (height-limited) */}
+            {/* 跟進 — mauve card */}
             <ActionCard
               $pastel={theme.pastel.mauve}
               $accent={theme.strong.mauve}
-              style={{ flex: 3 }}
+              style={{ flex: 1 }}
               onClick={() => navigate('/cms-leads?tab=awaiting&sub=no_followup')}
             >
               <ActionWatermark $fg={theme.strong.mauve} $rot={-12}><IconAlert /></ActionWatermark>
@@ -1321,7 +1285,6 @@ const Dashboard: React.FC = () => {
               <ActionTitle>{t('dashboard.cardTitleFollowup')}</ActionTitle>
               <ActionCount>{actions.noReplyNoFollowup}</ActionCount>
 
-              {/* What Just Happened — embedded, white bg, height limited */}
               <EmbedWhite onClick={e => e.stopPropagation()} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <CardHeader>
                   <CardIcon $color={theme.colors.accent}><IconActivity /></CardIcon>
@@ -1360,71 +1323,15 @@ const Dashboard: React.FC = () => {
               </EmbedWhite>
             </ActionCard>
 
-            {/* Token 消耗 — blue card with donut */}
+            {/* 今日議程 — BLUE card */}
             <ActionCard
               $pastel={theme.pastel.blue}
               $accent={theme.strong.blue}
-              style={{ flex: 2 }}
-              onClick={() => navigate('/cms-users')}
-            >
-              <ActionWatermark $fg={theme.strong.blue} $rot={-8}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
-                </svg>
-              </ActionWatermark>
-              <ActionArrow $fg={theme.strong.blue}>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-              </ActionArrow>
-              <ActionTitle>{t('dashboard.tokenConsumption')}</ActionTitle>
-              <ActionCountRow>
-                <ActionCount>{tokenTotal > 1000 ? `${(tokenTotal / 1000).toFixed(1)}K` : tokenTotal}</ActionCount>
-                <ActionTrend>
-                  ${(tokenTotal / 1000 * COST_PER_1K).toFixed(2)} {t('dashboard.estimatedCost')}
-                </ActionTrend>
-              </ActionCountRow>
-
-              {/* Token usage donut by user */}
-              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 12 }} onClick={e => e.stopPropagation()}>
-                {tokenUsage.length === 0 ? (
-                  <Empty><EmptyDonutSvg borderColor={theme.colors.border} borderStrongColor={theme.colors.borderStrong} />{t('dashboard.noTokenData')}</Empty>
-                ) : (
-                  <DonutWrap>
-                    <DonutChart size={140} slices={tokenUsage.slice(0, 5).map((u, i) => {
-                      const opacities = ['', 'CC', '99', '66', '44'];
-                      return { value: u.total_tokens, color: `${theme.colors.textPrimary}${opacities[i] || '33'}`, label: u.user_id.slice(0, 8) };
-                    })} />
-                    <LegendList>
-                      {tokenUsage.slice(0, 5).map((u, i) => {
-                        const opacities = ['', 'CC', '99', '66', '44'];
-                        const color = `${theme.colors.textPrimary}${opacities[i] || '33'}`;
-                        return (
-                          <LegendRow key={i}>
-                            <LegendRowTop>
-                              <LegendDot $color={color} />
-                              <LegendLabel>{u.user_id.slice(0, 8)}</LegendLabel>
-                              <LegendVal>{u.total_tokens.toLocaleString()}</LegendVal>
-                            </LegendRowTop>
-                            <LegendBarTrack>
-                              <LegendBarFill $color={color} $pct={tokenTotal > 0 ? (u.total_tokens / tokenTotal) * 100 : 0} />
-                            </LegendBarTrack>
-                          </LegendRow>
-                        );
-                      })}
-                    </LegendList>
-                  </DonutWrap>
-                )}
-              </div>
-            </ActionCard>
-
-            {/* 今日議程 — olive card (schedule + meetings combined) */}
-            <ActionCard
-              $pastel={theme.pastel.olive}
-              $accent={theme.strong.olive}
-              style={{ flex: 2 }}
+              style={{ flex: 1 }}
               onClick={() => navigate('/cms-leads?tab=replied&sub=meeting')}
             >
-              <ActionWatermark $fg={theme.strong.olive} $rot={28}><IconClock /></ActionWatermark>
-              <ActionArrow $fg={theme.strong.olive}>
+              <ActionWatermark $fg={theme.strong.blue} $rot={28}><IconClock /></ActionWatermark>
+              <ActionArrow $fg={theme.strong.blue}>
                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
               </ActionArrow>
               <ActionTitle>{t('dashboard.todayScheduleTitle')}</ActionTitle>
@@ -1443,7 +1350,7 @@ const Dashboard: React.FC = () => {
                   ))}
                   {meetingList.map((m, i) => (
                     <MtgItem key={`mtg-${i}`}>
-                      <MtgDot $color={theme.strong.olive} />
+                      <MtgDot $color={theme.strong.blue} />
                       <MtgName>{m.company}</MtgName>
                       <MtgTime>{m.time}</MtgTime>
                     </MtgItem>
@@ -1452,73 +1359,45 @@ const Dashboard: React.FC = () => {
               )}
             </ActionCard>
           </CardRow>
-        </CardsArea>
 
-        {/* ═══ Calendar Sidebar ═══ */}
-        <CalendarSidebar>
-          {/* Mini Calendar */}
-          <CalendarCard>
-            <CalMonth>
-              <CalMonthNav onClick={handlePrevMonth}>◀</CalMonthNav>
-              <CalMonthTitle>
-                {t(`calendar.${MONTH_KEYS[calMonth]}`)} {calYear}
-              </CalMonthTitle>
-              <CalMonthNav onClick={handleNextMonth}>▶</CalMonthNav>
-            </CalMonth>
-            <CalDaysGrid>
-              {DAY_KEYS.map(dk => (
-                <CalDayHeader key={dk}>{t(`calendar.${dk}`)}</CalDayHeader>
-              ))}
-              {calDays.map((cell, i) => (
-                <CalDayCell
-                  key={i}
-                  $muted={cell.muted}
-                  $today={cell.today}
-                  $selected={!cell.muted && cell.day === selectedDay}
-                  onClick={() => { if (!cell.muted) setSelectedDay(cell.day); }}
-                >
-                  {cell.day}
-                </CalDayCell>
-              ))}
-            </CalDaysGrid>
-            <CalAddBtn onClick={() => navigate('/cms-email')}>
-              + {t('dashboard.addEvent')}
-            </CalAddBtn>
-          </CalendarCard>
+          {/* ═══ Third row: Token 消耗柱狀圖 + Token 餘額儀表盤 ═══ */}
+          <TokenRow>
+            {/* Token consumption bar chart */}
+            <TokenChartCard>
+              <CardHeader>
+                <CardIcon $color={theme.colors.accent}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="18" y="3" width="4" height="18" rx="1"/><rect x="10" y="8" width="4" height="13" rx="1"/><rect x="2" y="13" width="4" height="8" rx="1"/>
+                  </svg>
+                </CardIcon>
+                {t('dashboard.tokenConsumption')}
+                <div style={{ marginLeft: 'auto' }}>
+                  <GranPillBar>
+                    <GranPillSlider $idx={GRAN_OPTIONS.findIndex(g => g.key === granularity)} $count={GRAN_OPTIONS.length} />
+                    {GRAN_OPTIONS.map(g => (
+                      <GranPillBtn key={g.key} $active={granularity === g.key} onClick={() => setGranularity(g.key)}>
+                        {t(g.labelKey)}
+                      </GranPillBtn>
+                    ))}
+                  </GranPillBar>
+                </div>
+              </CardHeader>
+              <TokenBarChart data={tokenTimeseriesData || []} />
+            </TokenChartCard>
 
-          {/* Day Timeline */}
-          <TimelineCard>
-            <TimelineHeader>
-              📅 {t('dashboard.todayScheduleTitle')}
-            </TimelineHeader>
-            {todayTimeline.length === 0 && meetingList.length === 0 ? (
-              <EmptyTimeline>{t('dashboard.noScheduleToday')}</EmptyTimeline>
-            ) : (
-              <>
-                {todayTimeline.map((item, i) => (
-                  <TlItem key={`tl-${i}`}>
-                    <TlTime>{item.displayTime}</TlTime>
-                    <TlDot $color={item.status === 'approved' ? theme.strong.olive : theme.strong.gold} />
-                    <TlBody>
-                      <TlTitle>{item.to}</TlTitle>
-                      <TlSub>{item.subject}</TlSub>
-                    </TlBody>
-                  </TlItem>
-                ))}
-                {meetingList.map((m, i) => (
-                  <TlItem key={`mtg-tl-${i}`}>
-                    <TlTime>{m.time}</TlTime>
-                    <TlDot $color={theme.strong.blue} />
-                    <TlBody>
-                      <TlTitle>{m.company}</TlTitle>
-                      <TlSub>{t('dashboard.meetingLabel')}</TlSub>
-                    </TlBody>
-                  </TlItem>
-                ))}
-              </>
-            )}
-          </TimelineCard>
-        </CalendarSidebar>
+            {/* Token balance gauge */}
+            <TokenGaugeCard>
+              <CardHeader>
+                <CardIcon $color={theme.colors.accent}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+                  </svg>
+                </CardIcon>
+                {t('dashboard.tokenBalance')}
+              </CardHeader>
+              <TokenGauge used={tokenBalanceData?.total_tokens || 0} />
+            </TokenGaugeCard>
+          </TokenRow>
       </DashGrid>
     </Page>
   );

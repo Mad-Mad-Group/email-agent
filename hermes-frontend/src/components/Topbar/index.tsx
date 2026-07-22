@@ -662,8 +662,8 @@ const LogoutDialog = styled.div`
 const LogoutIconWrap = styled.div`
   display: flex; align-items: center; justify-content: center;
   width: 48px; height: 48px; border-radius: 50%;
-  background: ${({ theme }) => `${theme.strong.mauve}18`};
-  color: ${({ theme }) => theme.strong.mauve};
+  background: ${({ theme }) => `${theme.colors.accent}18`};
+  color: ${({ theme }) => theme.colors.accent};
   margin: 0 auto 12px;
 `;
 
@@ -689,7 +689,7 @@ const LogoutCancelBtn = styled.button`
 
 const LogoutConfirmBtn = styled.button`
   padding: 9px 20px; border-radius: 8px; font-size: 0.8125rem; font-weight: 600;
-  border: none; background: ${({ theme }) => theme.strong.mauve};
+  border: none; background: ${({ theme }) => theme.colors.accent};
   color: #fff; cursor: pointer; transition: opacity 0.15s;
   @media (hover: hover) and (pointer: fine) { &:hover { opacity: 0.85; } }
 `;

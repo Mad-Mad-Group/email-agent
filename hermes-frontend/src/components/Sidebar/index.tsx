@@ -535,8 +535,8 @@ const LogoutIconWrap = styled.div`
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: ${({ theme }) => theme.strong.mauve}12;
-  color: ${({ theme }) => theme.strong.mauve};
+  background: ${({ theme }) => theme.colors.accent}12;
+  color: ${({ theme }) => theme.colors.accent};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -584,7 +584,7 @@ const LogoutConfirmBtn = styled.button`
   padding: 10px;
   border-radius: 10px;
   border: none;
-  background: ${({ theme }) => theme.strong.mauve};
+  background: ${({ theme }) => theme.colors.accent};
   color: ${({ theme }) => theme.colors.textInverted};
   font-size: 13px;
   font-weight: 600;
