@@ -70,21 +70,6 @@ export const Avatar = styled.div<{ $colorIndex: number }>`
   line-height: 1;
 `;
 
-export const QuarterTag = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: 1px 6px;
-  border-radius: 99px;
-  font-size: 0.625rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: #2d8a4e;
-  background: #e6f4ea;
-  border: 1px solid #b7dfbf;
-  margin-left: 4px;
-  flex-shrink: 0;
-  line-height: 1.4;
-`;
 
 export const NEXT_STATUS: Record<string, string> = {
   new: 'pending',
@@ -514,6 +499,44 @@ const AiParagraph = styled.p`
   margin: 4px 0 0;
 `;
 
+/* ── Collapsible pitch block ── */
+
+const PitchText = styled.p<{ $clamped: boolean }>`
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  line-height: 1.55;
+  margin: 4px 0 0;
+  ${({ $clamped }) => $clamped && css`
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  `}
+`;
+
+const PitchToggle = styled.button`
+  border: none; background: none; padding: 0;
+  font-size: 0.6875rem; font-weight: 600;
+  color: ${({ theme }) => theme.colors.accent};
+  cursor: pointer; margin-top: 2px;
+  &:hover { text-decoration: underline; }
+`;
+
+const CollabPitchBlock: React.FC<{ pitch: string; moreLabel: string; lessLabel: string }> = ({ pitch, moreLabel, lessLabel }) => {
+  const [expanded, setExpanded] = useState(false);
+  const needsClamp = pitch.length > 120;
+  return (
+    <>
+      <PitchText $clamped={!expanded && needsClamp}>{pitch}</PitchText>
+      {needsClamp && (
+        <PitchToggle onClick={() => setExpanded(p => !p)}>
+          {expanded ? lessLabel : moreLabel}
+        </PitchToggle>
+      )}
+    </>
+  );
+};
+
 const DpTimeline = styled.div`
   display: flex;
   flex-direction: column;
@@ -910,10 +933,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
                         </DpField>
                       )}
                       {lead._collab_pitch && (
-                        <AiParagraph>{lead._collab_pitch}</AiParagraph>
-                      )}
-                      {lead._collab_reason && (
-                        <AiParagraph style={{ fontSize: '0.6875rem', color: styledTheme.colors.textTertiary }}>{lead._collab_reason}</AiParagraph>
+                        <CollabPitchBlock pitch={lead._collab_pitch} moreLabel={t('leads.showMore')} lessLabel={t('leads.showLess')} />
                       )}
                       {lead._collab_services && lead._collab_services.length > 0 && (
                         <DpField>

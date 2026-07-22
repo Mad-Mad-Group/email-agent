@@ -1,21 +1,21 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
+import toast from 'react-hot-toast';
 import { useSearchParams } from 'react-router-dom';
 import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useClearAllLeads, useReprocessLead, useMe } from '../../api/hooks';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from '../../api/services';
-import { Lead } from '../../api/leads';
+import { Lead, leadsApi } from '../../api/leads';
 import client from '../../api/client';
 import { media } from '../../styles/media';
 import { glassSurface } from '../../styles/glassSurface';
 import { useDialog } from '../../components';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER, SOURCE_AGENT } from '../../config/agents';
-import LeadDetailPanel, { hashColorIndex, AvatarIcon, Avatar, QuarterTag, ReplyBadge, DpSectionTitle, DpActionBtn, DpField, DpFieldLabel, DpFieldValue, DpFieldIcon, getReplyBadge, NEXT_STATUS, REPLY_ICONS } from '../../components/LeadDetailPanel';
+import LeadDetailPanel, { hashColorIndex, AvatarIcon, Avatar, ReplyBadge, DpSectionTitle, DpActionBtn, DpField, DpFieldLabel, DpFieldValue, DpFieldIcon, getReplyBadge, NEXT_STATUS, REPLY_ICONS } from '../../components/LeadDetailPanel';
 import LeadEmails from '../../components/LeadEmails';
-import { getQuarterTag, matchesQuarterFilter, dateToYQ, buildQuarterOptions, type QuarterFilterValue } from '../../utils/quarter';
 
 /* ══════════════════════════════════════
    CMS Leads — Luno Contacts-style UI
@@ -987,6 +987,7 @@ const LIMIT = 10;
 const Leads: React.FC = () => {
   const { t } = useTranslation();
   const { showConfirm } = useDialog();
+  const queryClient = useQueryClient();
 
   const isNew = (l: Lead) => l.status === 'new' || l.status === null || l.status === undefined;
 
@@ -1173,6 +1174,8 @@ const Leads: React.FC = () => {
     setRefreshing(false);
   }, [refetch]);
 
+  const [simulating, setSimulating] = useState(false);
+
   const deleteLead = useDeleteLead();
   const changeStatus = useChangeLeadStatus();
   const createLead = useCreateLead();
@@ -1198,24 +1201,37 @@ const Leads: React.FC = () => {
   const [oldWebsiteOnly, setOldWebsiteOnly] = useState(false);
   const [sortByTech, setSortByTech] = useState(false);
 
-  // ── Quarter filter (driven by URL ?quarter= param, set from sidebar) ──
-  const now = useMemo(() => new Date(), []);
-  const { year: currentYear, quarter: currentQuarter } = dateToYQ(now);
-  const defaultQuarter: QuarterFilterValue = `${currentYear}Q${currentQuarter}`;
-  const quarterFilter: QuarterFilterValue = (searchParams.get('quarter') as QuarterFilterValue) || defaultQuarter;
-  const quarterOptions = useMemo(() => buildQuarterOptions(now), [now]);
-
   const apiLeads: Lead[] = data?.data ?? [];
   // Always include MOCK_LEADS for demo richness + any real API data
-  const allLeadsRaw: Lead[] = [...MOCK_LEADS, ...apiLeads];
+  const allLeads: Lead[] = [...MOCK_LEADS, ...apiLeads];
 
-  // Quarter filtering (applied before all other filters so counts reflect the chosen quarter)
-  const allLeads = useMemo(() =>
-    quarterFilter === 'all'
-      ? allLeadsRaw
-      : allLeadsRaw.filter(l => matchesQuarterFilter((l as any)._imported_at, quarterFilter)),
-    [allLeadsRaw, quarterFilter]
-  );
+  const handleSimulateNoReply = async () => {
+    const candidates = allLeads.filter(lead =>
+      !lead._id.startsWith('mock-') &&
+      lead.status === 'contacted' &&
+      !lead._replied &&
+      !(lead as any)._no_reply &&
+      !((lead as any)._followup_count > 0),
+    );
+    if (candidates.length === 0) {
+      toast(t('leads.noLeadsToSimulate'));
+      return;
+    }
+
+    const names = candidates.slice(0, 10).map(lead => lead.company_name || lead._id).join('、');
+    const ok = await showConfirm(t('leads.confirmSimulateNoReply', { count: candidates.length, names }));
+    if (!ok) return;
+
+    setSimulating(true);
+    const results = await Promise.allSettled(candidates.map(lead => leadsApi.simulateNoReply(lead._id)));
+    const success = results.filter(result => result.status === 'fulfilled').length;
+    const failed = results.length - success;
+    if (success > 0) toast.success(t('leads.simulateDone', { count: success }));
+    if (failed > 0) toast.error(t('leads.simulateFailed', { count: failed }));
+    setSimulating(false);
+    await refetch();
+    queryClient.invalidateQueries({ queryKey: ['emailQueue'] });
+  };
 
   /* ── Auto-open detail panel from URL ?detail=<leadId> ── */
   const detailHandled = useRef<string | null>(null);
@@ -1294,18 +1310,6 @@ const Leads: React.FC = () => {
   // 保留 stats.total 畀 KPI header
   const stats = useMemo(() => ({ total: allLeads.length }), [allLeads]);
 
-  // Dynamic page title based on quarter filter
-  const pageTitle = useMemo(() => {
-    if (quarterFilter === 'all') return t('quarter.titleAll');
-    if (quarterFilter === 'prev_years') return t('quarter.titleOlder');
-    if (quarterFilter.startsWith('year_')) {
-      const y = quarterFilter.slice(5);
-      return t('quarter.titleYear', { year: y });
-    }
-    // e.g. "2026Q3" → "Q3 接觸中的客戶"
-    const qPart = quarterFilter.slice(-2); // "Q3"
-    return t('quarter.titleCurrent', { q: qPart });
-  }, [quarterFilter, t]);
 
   const handleDelete = async (id: string) => {
     const ok = await showConfirm(t('leads.confirmDelete'));
@@ -1359,7 +1363,7 @@ const Leads: React.FC = () => {
   return (
     <Page>
         <PageCard>
-        <div><PageTitle>{pageTitle}</PageTitle></div>
+        <div><PageTitle>{t('leads.title')}</PageTitle></div>
 
         {/* ── Orbital-style View Tabs ── */}
         <TabsRow ref={tabsRowRef}>
@@ -1412,15 +1416,11 @@ const Leads: React.FC = () => {
               onChange={e => { setSearch(e.target.value); setPage(1); }}
             />
           </SearchWrap>
-          <select
-            value={quarterFilter}
-            onChange={e => { const q = e.target.value as QuarterFilterValue; const next = new URLSearchParams(searchParams); if (q === defaultQuarter) next.delete('quarter'); else next.set('quarter', q); setSearchParams(next, { replace: true }); setPage(1); }}
-            style={{ padding: '6px 10px', borderRadius: 10, border: `1px solid ${styledTheme.colors.border}`, background: styledTheme.colors.surfaceMuted, color: styledTheme.colors.textPrimary, fontSize: 13, cursor: 'pointer', minWidth: 100 }}
-          >
-            {quarterOptions.map(opt => (
-              <option key={opt.value} value={opt.value}>{t(opt.labelKey, opt.labelParams)}</option>
-            ))}
-          </select>
+
+          <CircleActionBtn title={t('leads.simulateNoReply')} onClick={handleSimulateNoReply} disabled={simulating} $spinning={simulating}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l14 14M4 4a5 5 0 007 7M3 8a5 5 0 010-5M13 8a5 5 0 010 5"/></svg>
+          </CircleActionBtn>
+
           <CircleActionBtn title={t('leads.filterOldWebsiteOn')} onClick={() => { setOldWebsiteOnly(v => !v); setPage(1); }} style={oldWebsiteOnly ? { background: styledTheme.colors.accent, color: '#fff', borderColor: 'transparent' } : undefined}>
             <IconOldWebsite />
           </CircleActionBtn>
@@ -1509,10 +1509,7 @@ const Leads: React.FC = () => {
                               <strong>{name}</strong>
                               {lead.website && <small>{lead.website}</small>}
                             </NameText>
-                            {(() => {
-                              const qt = getQuarterTag((lead as any)._imported_at);
-                              return qt ? <QuarterTag>{qt}</QuarterTag> : null;
-                            })()}
+
                             {(() => {
                               const src = lead.source || '';
                               const agentKey = SOURCE_AGENT[src];

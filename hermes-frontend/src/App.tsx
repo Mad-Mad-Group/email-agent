@@ -14,14 +14,14 @@ import Customers from './pages/Customers';
 import EmailApp from './pages/EmailApp';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import Leads from './pages/Leads';
+import ClientPool from './pages/ClientPool';
 import EmailQueue from './pages/EmailQueue';
 import SearchPage from './pages/Search';
 import TasksPage from './pages/Tasks';
 import UsersPage from './pages/Users';
 import SettingsPage from './pages/Settings';
 import AgentPanel from './pages/AgentPanel';
-import VerifiedEmailsPage from './pages/VerifiedEmails';
+
 import UserInfoPage from './pages/UserInfo';
 import { DialogProvider } from './components';
 import './i18n';
@@ -99,14 +99,15 @@ function App() {
                   <Route path="/market-capital" element={<Placeholder />} />
                   <Route path="/bank-accounts" element={<Placeholder />} />
                   {/* CMS */}
-                  <Route path="/cms-leads" element={<Leads />} />
+                  <Route path="/client-pool" element={<ClientPool />} />
+                  <Route path="/cms-leads" element={<Navigate to="/client-pool" replace />} />
                   <Route path="/cms-search" element={<SearchPage />} />
                   <Route path="/cms-email-queue" element={<EmailQueue />} />
                   <Route path="/cms-tasks" element={<TasksPage />} />
                   <Route path="/cms-users" element={<UsersPage />} />
                   <Route path="/cms-settings" element={<SettingsPage />} />
                   <Route path="/cms-agents" element={<AgentPanel />} />
-                  <Route path="/cms-verified-emails" element={<VerifiedEmailsPage />} />
+                  <Route path="/cms-verified-emails" element={<Navigate to="/client-pool?view=verified" replace />} />
                   <Route path="/cms-user-info" element={<UserInfoPage />} />
                   {/* RESOURCES */}
                   <Route path="/auth-404" element={<Placeholder />} />

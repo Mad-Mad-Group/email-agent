@@ -544,8 +544,9 @@ function formatNumber(n: number): string {
   return n.toLocaleString('en-US');
 }
 
-/* ── Token cost estimate: MiniMax-M3 ≈ $0.005 / 1K tokens ── */
-const COST_PER_1K = 0.005;
+/* ── Token cost estimate ── */
+const DEFAULT_COST_PER_1K = 0.005;
+const TOKEN_COST_STORAGE_KEY = 'token_cost_per_1k';
 
 /* ── Tab Icons ── */
 
@@ -620,6 +621,11 @@ const Users: React.FC = () => {
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
   const [editing, setEditing] = useState(false);
   const [editForm, setEditForm] = useState({ name: '', email: '', role: '' });
+  const [costPer1k, setCostPer1k] = useState(() => {
+    const saved = localStorage.getItem(TOKEN_COST_STORAGE_KEY);
+    const parsed = saved === null ? NaN : Number(saved);
+    return Number.isFinite(parsed) && parsed >= 0 ? parsed : DEFAULT_COST_PER_1K;
+  });
 
   const updateUser = useMutation({
     mutationFn: ({ id, data: d }: { id: string; data: Record<string, unknown> }) => usersApi.update(id, d),
@@ -722,7 +728,26 @@ const Users: React.FC = () => {
         <CardBody>
           <TableWrap>
             {activeTab === 'tokenUsage' ? (
-              /* ── Token Usage Table ── */
+              <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12, fontSize: '0.8125rem' }}>
+                <label htmlFor="token-cost-per-1k" style={{ color: theme.colors.textSecondary }}>{t('users.costPer1kTokens')}</label>
+                <span style={{ color: theme.colors.textTertiary }}>$</span>
+                <input
+                  id="token-cost-per-1k"
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  value={costPer1k}
+                  onChange={e => {
+                    const value = Number(e.target.value);
+                    if (!Number.isFinite(value) || value < 0) return;
+                    setCostPer1k(value);
+                    localStorage.setItem(TOKEN_COST_STORAGE_KEY, String(value));
+                  }}
+                  style={{ width: 90, padding: '4px 8px', fontSize: '0.8125rem', border: `1px solid ${theme.colors.border}`, borderRadius: theme.radii.control, background: theme.colors.surface, color: theme.colors.textPrimary, outline: 'none' }}
+                />
+                <span style={{ color: theme.colors.textTertiary, fontSize: '0.75rem' }}>{t('users.per1kTokens')}</span>
+              </div>
               <Table>
                 <thead>
                   <tr>
@@ -738,7 +763,7 @@ const Users: React.FC = () => {
                     tokenUsage.map((u, i) => {
                       const user = users.find(usr => usr._id === u.user_id);
                       const name = user?.name || u.user_id || 'Unknown';
-                      const cost = (u.total_tokens / 1000) * COST_PER_1K;
+                      const cost = (u.total_tokens / 1000) * costPer1k;
                       return (
                         <TRow key={u.user_id || i}>
                           <td>
@@ -757,6 +782,7 @@ const Users: React.FC = () => {
                   )}
                 </tbody>
               </Table>
+              </>
             ) : (
               /* ── User Table ── */
               <Table>

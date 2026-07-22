@@ -30,7 +30,7 @@ const LANGUAGES = [
 
 /* ── NAV_ITEMS for page search ── */
 const NAV_ITEMS = [
-  { labelKey: 'nav.leadPool', path: '/cms-leads', icon: 'leads' },
+  { labelKey: 'nav.clientPool', path: '/client-pool', icon: 'leads' },
   { labelKey: 'nav.leadSearch', path: '/cms-search', icon: 'search' },
   { labelKey: 'nav.outbox', path: '/cms-email-queue', icon: 'email' },
   { labelKey: 'nav.workflows', path: '/cms-tasks', icon: 'tasks' },
@@ -857,7 +857,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
             category: 'lead',
             label: lead.company_name || lead.email || 'Unknown Lead',
             sub: lead.email || lead.phone || '',
-            path: `/cms-leads/${lead._id}`,
+            path: `/client-pool?detail=${lead._id}`,
             icon: 'leads',
             color: theme.strong.olive,
           });

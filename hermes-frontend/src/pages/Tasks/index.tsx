@@ -507,7 +507,7 @@ const MOCK_TASKS: TaskItem[] = [
 
   // ── Completed ──
   { _id: 'mock-c1', title: 'tasks.mockTitles.sendTechCorpEmail', skill_id: 'S3', params: { to: 'ceo@techcorp.com' }, priority: 'normal', status: 'completed', result: { sent: true, opened: true, replied: false }, _created_at: '2026-06-21T10:00:00Z', assigned_agent_id: 'Agent-A' } as unknown as TaskItem,
-  { _id: 'mock-c2', title: 'tasks.mockTitles.analyzeQ2Conversion', skill_id: 'S2', params: { quarter: 'Q2', metric: 'conversion' }, priority: 'low', status: 'completed', result: { analyzed: true, score: 87 }, _created_at: '2026-06-20T16:30:00Z', assigned_agent_id: 'Agent-B' } as unknown as TaskItem,
+
   { _id: 'mock-c3', title: 'tasks.mockTitles.generateDailyLeadSummary', skill_id: 'S4', params: { mode: 'daily_digest' }, priority: 'normal', status: 'completed', result: { leads_found: 34, qualified: 12 }, _created_at: '2026-06-22T06:00:00Z' } as unknown as TaskItem,
   { _id: 'mock-c4', title: 'tasks.mockTitles.updateCompanyDatabase', skill_id: 'S5', params: { source: 'LinkedIn', records: 250 }, priority: 'normal', status: 'completed', result: { updated: 248, skipped: 2 }, _created_at: '2026-06-23T11:00:00Z', assigned_agent_id: 'Worker-2' } as unknown as TaskItem,
 
@@ -581,12 +581,7 @@ const TASK_WORKFLOWS: Record<string, WorkflowStep[]> = {
     { label: 'tasks.wf.emailOpened', status: 'done', time: '06/21 14:22', detail: 'tasks.wfDetail.recipientOpened' },
     { label: 'tasks.wf.awaitingReply', status: 'done', time: '06/21 14:22', detail: 'tasks.wfDetail.noReply3DayFollowup' },
   ],
-  'mock-c2': [
-    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/20 16:30' },
-    { label: 'tasks.wf.readQ2Data', status: 'done', time: '06/20 16:32' },
-    { label: 'tasks.wf.aiAnalysisComplete', status: 'done', time: '06/20 16:40', detail: 'tasks.wfDetail.conversionScore87' },
-    { label: 'tasks.wf.reportGenerated', status: 'done', time: '06/20 16:42' },
-  ],
+
   'mock-c3': [
     { label: 'tasks.wf.taskCreated', status: 'done', time: '06/22 06:00' },
     { label: 'tasks.wf.scanAllSources', status: 'done', time: '06/22 06:05' },
