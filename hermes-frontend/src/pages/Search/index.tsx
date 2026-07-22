@@ -528,7 +528,7 @@ interface ModeConfig {
   key: string;
   label?: string;
   labelKey?: string;
-  desc: string;
+  descKey: string;
   apiMode: 'normal' | 'old_website';
   color?: string;
 }
@@ -577,10 +577,10 @@ const WebsiteIcon: React.FC<{ color?: string }> = ({ color }) => (
 );
 
 const MODE_CONFIGS: ModeConfig[] = [
-  { key: 'normal',        label: 'Google Maps',  desc: '在 Google Maps 搜索商家資訊',         apiMode: 'normal',      color: '#4285F4' },
-  { key: 'old_website',   labelKey: 'search.modeOldSite', desc: '搜索全網技術棧比較老舊的網站', apiMode: 'old_website', color: '#A0784C' },
-  { key: 'google_search', label: 'Google Search', desc: '用 Google 搜索引擎找結果',            apiMode: 'normal',      color: '#4285F4' },
-  { key: 'linkedin',      label: 'LinkedIn',      desc: '在領英找聯繫人',                      apiMode: 'normal',      color: '#0A66C2' },
+  { key: 'normal',        label: 'Google Maps',  descKey: 'search.descGoogleMaps',    apiMode: 'normal',      color: '#4285F4' },
+  { key: 'old_website',   labelKey: 'search.modeOldSite', descKey: 'search.descOldSite', apiMode: 'old_website', color: '#A0784C' },
+  { key: 'google_search', label: 'Google Search', descKey: 'search.descGoogleSearch',  apiMode: 'normal',      color: '#4285F4' },
+  { key: 'linkedin',      label: 'LinkedIn',      descKey: 'search.descLinkedIn',      apiMode: 'normal',      color: '#0A66C2' },
 ];
 
 const HK_DISTRICT_KEYS = [
@@ -666,7 +666,7 @@ const FieldGroup = styled.div`
 `;
 
 /* 数字圆圈 */
-const NumberWrap = styled.div`
+const NumberWrap = styled.div<{ $pushRight?: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -676,6 +676,7 @@ const NumberWrap = styled.div`
   background: transparent;
   flex-shrink: 0;
   margin: 0 4px;
+  ${({ $pushRight }) => $pushRight && 'margin-left: auto;'}
   gap: 0;
   position: relative;
   ${media.mobile} { width: 32px; height: 32px; margin: 0 2px; }
@@ -2207,18 +2208,20 @@ const SearchPage: React.FC = () => {
                               : m.key === 'linkedin' ? <LinkedInText />
                               : <>{m.labelKey ? t(m.labelKey) : m.label}<WebsiteIcon color={m.color} /></>}
                           </ModeItemLabel>
-                          <ModeItemDesc>{m.desc}</ModeItemDesc>
+                          <ModeItemDesc>{t(m.descKey)}</ModeItemDesc>
                         </ModeItemText>
                       </ModePickerItem>
                     ))}
                   </ModePickerDropdown>
                 )}
               </ModePickerWrap>
-              <LocBadge type="button" onClick={() => setShowLocPicker(p => !p)}>
-                <MapPinIcon />
-                {t(`search.dist_${district}`)}
-              </LocBadge>
-              <NumberWrap>
+              {searchMode === 'normal' && (
+                <LocBadge type="button" onClick={() => setShowLocPicker(p => !p)}>
+                  <MapPinIcon />
+                  {t(`search.dist_${district}`)}
+                </LocBadge>
+              )}
+              <NumberWrap $pushRight={searchMode !== 'normal'}>
                 <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(200, (Number(c) || 1) + 5))}><ChevronUp /></NumArrowBtn>
                 <NumberInput
                   type="number"
@@ -2242,7 +2245,7 @@ const SearchPage: React.FC = () => {
                 {search.isPending ? <Spinner /> : <SearchBtnIcon />}
               </BarSearchBtn>
             </BarToolRow>
-            {showLocPicker && (
+            {searchMode === 'normal' && showLocPicker && (
               <LocDropdown>
                 {HK_DISTRICT_KEYS.map(dk => (
                   <LocOption key={dk} $active={district === dk} onClick={() => { setDistrict(dk); setShowLocPicker(false); }}>
