@@ -49,24 +49,24 @@ const Shell = styled.div<{ $collapsed?: boolean }>`
 /* ── Circular hamburger at sidebar ↔ main junction ── */
 
 const JunctionHamburger = styled.button<{ $collapsed?: boolean }>`
-  position: absolute;
+  position: fixed;
   z-index: 20;
   width: 36px;
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: ${({ theme }) => theme.colors.accent};
+  background: ${({ theme }) => theme.strong.blue};
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Position: right edge of sidebar column + half the gap, vertically centred on topbar */
-  top: 48px;                        /* 16px shell pad + 32px (half topbar 64px) */
+  top: 48px;
   left: ${({ $collapsed }) => $collapsed
-    ? 'calc(16px + 56px + 8px - 18px)'     /* collapsed sidebar */
-    : 'calc(16px + 200px + 8px - 18px)'};  /* expanded sidebar */
-  transform: translateY(-50%);
+    ? 'calc(16px + 56px + 8px - 18px)'
+    : 'calc(16px + 200px + 8px - 18px)'};
+  margin-top: -18px;
   transition: left 0.3s ease, box-shadow 0.2s;
+  will-change: left;
   box-shadow: 0 2px 8px rgba(0,0,0,0.12);
 
   &:hover {
@@ -91,7 +91,7 @@ const JunctionLines = styled.span<{ $collapsed?: boolean }>`
     height: 2px;
     background: ${({ theme }) => theme.colors.surfaceInverted};
     border-radius: 2px;
-    transition: transform 0.3s ease, width 0.3s ease;
+    transition: all 0.3s ease;
     position: absolute;
     left: 0;
 

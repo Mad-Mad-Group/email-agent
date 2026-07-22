@@ -12,8 +12,10 @@ interface ButtonProps {
 const primaryStyles = css`
   background: ${({ theme }) => theme.colors.accent};
   color: ${({ theme }) => theme.colors.textInverted};
+  border-color: transparent;
   &:hover:not(:disabled) {
-    opacity: 0.9;
+    border-color: ${({ theme }) => theme.strong.blue};
+    background: ${({ theme }) => theme.colors.accent};
   }
 `;
 

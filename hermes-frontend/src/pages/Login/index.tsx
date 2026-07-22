@@ -290,7 +290,7 @@ const Login: React.FC = () => {
     setError('');
     try {
       await login({ email, password });
-      navigate('/search');
+      navigate('/cms-search');
     } catch (err: any) {
       setError(err.response?.data?.message || t('login.loginFailed'));
     }

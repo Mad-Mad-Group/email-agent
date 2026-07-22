@@ -37,7 +37,7 @@ const ProtectedRoute: React.FC = () => {
 const AdminRoute: React.FC = () => {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
-  return isAdmin ? <Outlet /> : <Navigate to="/search" replace />;
+  return isAdmin ? <Outlet /> : <Navigate to="/cms-search" replace />;
 };
 
 const queryClient = new QueryClient({
@@ -122,7 +122,7 @@ function App() {
                   <Route path="/changelog" element={<Placeholder />} />
                 </Route>
               </Route>
-              <Route path="*" element={<Navigate to="/search" replace />} />
+              <Route path="*" element={<Navigate to="/cms-search" replace />} />
             </Routes>
           </BrowserRouter>
         </ThemedApp>
