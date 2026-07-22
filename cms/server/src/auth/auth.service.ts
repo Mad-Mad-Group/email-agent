@@ -54,12 +54,27 @@ export class AuthService {
   }
 
   async register(registerDto: RegisterDto) {
+    // 檢查 email 係咪已經存在
+    const existing = await this.usersService.findByEmail(registerDto.email);
+    if (existing) {
+      throw new BadRequestException('Email already registered');
+    }
+
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
-    const user = await this.usersService.create({
-      ...registerDto,
-      password: hashedPassword,
-    });
+    let user;
+    try {
+      user = await this.usersService.create({
+        ...registerDto,
+        password: hashedPassword,
+      });
+    } catch (err) {
+      this.logger.error('Register create user failed', err);
+      if ((err as any)?.code === 11000) {
+        throw new BadRequestException('Email already registered');
+      }
+      throw err;
+    }
 
     const payload = {
       sub: user._id,

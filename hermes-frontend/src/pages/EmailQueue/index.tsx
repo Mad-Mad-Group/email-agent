@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import { useSearchParams } from 'react-router-dom';
+import styled, { useTheme } from 'styled-components';
+import toast from 'react-hot-toast';
 import { useEmailQueue, useApproveEmail, useRejectEmail, useSendEmail, useBulkApproveEmails, useBulkRejectEmails, useBulkSendEmails } from '../../api/hooks';
 import { EmailItem } from '../../api/emailQueue';
 import { Lead } from '../../api/leads';
 import client from '../../api/client';
 import { media } from '../../styles/media';
+import { glassSurface } from '../../styles/glassSurface';
+import { useDialog } from '../../components';
 import EmailTemplateEditor from './EmailTemplateEditor';
 
 /* ══════════════════════════════════════
@@ -48,7 +52,7 @@ const icons = {
 
 /* ── Avatar helper ── */
 
-const avatarPalette = ['#bfdbfe', '#c4b5fd', '#a5f3fc', '#bbf7d0'];
+const avatarPalette = ['#EFEAE3', '#E8E3DB', '#E2DDD5', '#F5F2ED'];
 
 const getAvatarColor = (name: string): string => {
   let hash = 0;
@@ -81,29 +85,14 @@ interface StatusFolderDef {
   badgeColor: string;
 }
 
-const statusFolders: StatusFolderDef[] = [
-  { id: 'all', label: 'All', icon: 'inbox', filterValue: '', badgeColor: '#94a3b8' },
-  { id: 'pending', label: 'Pending', icon: 'clock', filterValue: 'pending', badgeColor: '#d97706' },
-  { id: 'approved', label: 'Approved', icon: 'check', filterValue: 'approved', badgeColor: '#16a34a' },
-  { id: 'rejected', label: 'Rejected', icon: 'x', filterValue: 'rejected', badgeColor: '#dc2626' },
-  { id: 'sent', label: 'Sent', icon: 'send', filterValue: 'sent', badgeColor: '#2563eb' },
-  { id: 'failed', label: 'Failed', icon: 'exclamation', filterValue: 'failed', badgeColor: '#475569' },
-];
+/* statusFolders, statusColorMap, REPLY_CATEGORY_STYLE moved inside component (theme-aware) */
 
-const statusColorMap: Record<string, string> = {
-  pending: '#d97706',
-  approved: '#16a34a',
-  rejected: '#dc2626',
-  sent: '#2563eb',
-  failed: '#475569',
-};
-
-const REPLY_CATEGORY_LABEL: Record<string, { text: string; bg: string; fg: string }> = {
-  interested:     { text: '有興趣',   bg: '#dcfce7', fg: '#16a34a' },
-  not_interested: { text: '冇興趣',   bg: '#fee2e2', fg: '#dc2626' },
-  meeting:        { text: '約時間',   bg: '#dbeafe', fg: '#2563eb' },
-  auto_reply:     { text: '自動回覆', bg: '#f3f4f6', fg: '#6b7280' },
-  question:       { text: '有問題',   bg: '#fef3c7', fg: '#d97706' },
+const REPLY_CATEGORY_I18N_KEY: Record<string, string> = {
+  interested:     'emailQueue.replyCategoryInterested',
+  not_interested: 'emailQueue.replyCategoryNotInterested',
+  meeting:        'emailQueue.replyCategoryMeeting',
+  auto_reply:     'emailQueue.replyCategoryAutoReply',
+  question:       'emailQueue.replyCategoryQuestion',
 };
 
 /* ══════════════════════════════════════
@@ -115,8 +104,23 @@ const REPLY_CATEGORY_LABEL: Record<string, { text: string; bg: string; fg: strin
 const Page = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.md}px;
+  gap: ${({ theme }) => theme.spacing.lg}px;
+  padding: 36px 32px 44px;
+  animation: fadeSlideUp 0.5s var(--ease-out) both;
+  ${media.tablet} { padding: 24px 18px 32px; }
+  ${media.mobile} { padding: 20px 16px 32px; }
 `;
+const PageTitle = styled.h1`
+  font-size: clamp(1.25rem, 2.2vw, 1.5rem); font-weight: 700; margin: 0;
+  background: ${({ theme }) => theme.gradients.brand};
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  ${({ theme }) => theme.mode === 'dark' && `
+    background: linear-gradient(135deg, #E0ACD2, #ACC0DE);
+    -webkit-background-clip: text; background-clip: text;
+  `}
+`;
+const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const PageTabs = styled.div`
   display: flex;
@@ -134,23 +138,54 @@ const PageTab = styled.button<{ $active: boolean }>`
   font-size: 0.875rem;
   font-weight: ${({ $active }) => $active ? 700 : 500};
   cursor: pointer;
-  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textSecondary};
-  border-bottom: 2px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.textSecondary};
+  border-bottom: 2px solid ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
   margin-bottom: -1px;
-  transition: all 0.15s;
-  &:hover {
-    color: ${({ theme }) => theme.colors.textPrimary};
+  transition: color 150ms var(--ease-out), border-color 150ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: ${({ theme }) => theme.colors.textPrimary};
+    }
   }
 `;
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  ${glassSurface}
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
   display: flex;
   min-height: 620px;
-  overflow: hidden;
+  overflow: visible;
+  position: relative;
+
+  /* airmail stripe bottom edge */
+  &::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -4px;
+    height: 4px;
+    border-radius: 0 0 ${({ theme }) => theme.radii.card}px ${({ theme }) => theme.radii.card}px;
+    background: repeating-linear-gradient(
+      -45deg,
+      ${({ theme }) => theme.strong.mauve} 0, ${({ theme }) => theme.strong.mauve} 4px,
+      transparent 4px, transparent 8px,
+      ${({ theme }) => theme.colors.accent} 8px, ${({ theme }) => theme.colors.accent} 12px,
+      transparent 12px, transparent 16px
+    );
+    opacity: 0.35;
+  }
+
+  /* envelope flap triangle */
+  &::before {
+    content: '';
+    position: absolute;
+    top: -12px; left: 50%; transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 28px solid transparent;
+    border-right: 28px solid transparent;
+    border-bottom: 12px solid ${({ theme }) => theme.colors.border};
+    opacity: 0.5;
+  }
+
   ${media.mobile} {
     flex-direction: column;
     min-height: auto;
@@ -201,7 +236,7 @@ const SearchInput = styled.input`
   }
   &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
   &:focus {
-    border-color: ${({ theme }) => theme.colors.blue};
+    border-color: ${({ theme }) => theme.colors.accent};
     box-shadow: 0 0 0 3px rgba(37,99,235,0.12), 0 1px 2px rgba(15,23,42,0.04);
   }
 `;
@@ -235,18 +270,18 @@ const FolderItem = styled.li<{ $active?: boolean }>`
   color: ${({ $active, theme }) => ($active ? theme.colors.textPrimary : theme.colors.textSecondary)};
   font-weight: ${({ $active }) => ($active ? 600 : 400)};
   background: ${({ $active, theme }) => ($active
-    ? '#eff6ff'
+    ? `${theme.colors.accent}15`
     : 'transparent')};
   cursor: pointer;
   transition: background 0.15s, transform 0.1s;
   &:hover {
     background: ${({ $active, theme }) => ($active
-      ? '#dbeafe'
+      ? `${theme.colors.accent}22`
       : theme.colors.surfaceMuted)};
   }
   svg {
     flex-shrink: 0;
-    color: ${({ $active, theme }) => ($active ? '#2563eb' : theme.colors.textTertiary)};
+    color: ${({ $active, theme }) => ($active ? theme.colors.accent : theme.colors.textTertiary)};
   }
 `;
 
@@ -317,7 +352,7 @@ const IconBtn = styled.button`
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.textSecondary};
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
   transition: background 0.15s, color 0.15s, transform 0.1s, border-color 0.15s;
   &:hover:not(:disabled) {
     background: ${({ theme }) => theme.colors.surfaceMuted};
@@ -344,18 +379,18 @@ const EmailRow = styled.div<{ $selected?: boolean }>`
   gap: ${({ theme }) => theme.spacing.sm}px;
   padding: 8px ${({ theme }) => theme.spacing.md}px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  border-left: 3px solid ${({ $selected, theme }) => $selected ? (theme.colors as any).accent || theme.colors.blue : 'transparent'};
+  border-left: 3px solid ${({ $selected, theme }) => $selected ? (theme.colors as any).accent || theme.colors.accent : 'transparent'};
   cursor: pointer;
   position: relative;
   background: ${({ $selected, theme }) => $selected
-    ? '#f0f7ff'
+    ? `${theme.colors.accent}15`
     : 'transparent'};
   transition: background 0.12s, border-left-color 0.12s;
   &:hover {
     background: ${({ $selected, theme }) => $selected
-      ? '#e0eef9'
+      ? `${theme.colors.accent}22`
       : theme.colors.surfaceMuted};
-    box-shadow: 0 1px 4px rgba(15,23,42,0.06);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.08);
   }
   &:hover .hover-actions {
     display: flex;
@@ -372,7 +407,7 @@ const AvatarCircle = styled.div<{ $bg: string }>`
   min-width: 28px;
   border-radius: 50%;
   background: ${({ $bg }) => $bg};
-  color: #334155;
+  color: ${({ theme }) => theme.colors.textPrimary};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -381,7 +416,7 @@ const AvatarCircle = styled.div<{ $bg: string }>`
   text-transform: uppercase;
   user-select: none;
   box-shadow: none;
-  border: 1px solid rgba(255,255,255,0.4);
+  border: 1px solid rgba(255,255,255,0.25);
 `;
 
 const SenderCol = styled.div`
@@ -405,7 +440,7 @@ const EmailContent = styled.div`
 const SenderName = styled.span`
   font-size: 0.8125rem;
   font-weight: 500;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -440,9 +475,16 @@ const StatusBadge = styled.span<{ $status?: string }>`
   text-transform: capitalize;
   white-space: nowrap;
   flex-shrink: 0;
-  ${({ $status }) => {
-    const color = statusColorMap[$status || ''] || '#d97706';
-    return `background: #ffffff; color: ${color}; border: 1px solid ${color}33;`;
+  ${({ $status, theme }) => {
+    const map: Record<string, string> = {
+      pending: theme.strong.gold,
+      approved: theme.strong.olive,
+      rejected: theme.strong.mauve,
+      sent: theme.colors.accent,
+      failed: theme.colors.textSecondary,
+    };
+    const color = map[$status || ''] || theme.strong.gold;
+    return `background: ${theme.colors.surface}; color: ${color}; border: 1px solid ${color}33;`;
   }}
 `;
 
@@ -461,7 +503,7 @@ const HoverActions = styled.div`
   transform: translateY(-50%);
   gap: 2px;
   background: ${({ theme }) => theme.colors.surface};
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.12);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.15);
   border-radius: ${({ theme }) => theme.radii.control}px;
   padding: 2px;
 `;
@@ -485,6 +527,28 @@ const HoverBtn = styled.button<{ $color?: string }>`
   &:disabled {
     opacity: 0.4;
     cursor: not-allowed;
+  }
+`;
+
+/* ── Toolbar Feedback ── */
+
+const ToolbarFeedbackArea = styled.div`
+  padding: 0 ${({ theme }) => theme.spacing.md}px;
+  min-height: 0;
+`;
+
+const FeedbackMsg = styled.span<{ $error?: boolean }>`
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: ${({ $error, theme }) => $error ? theme.strong.mauve : theme.strong.olive};
+  padding: 4px 0;
+  animation: feedbackFade 4s ease-out forwards;
+  @keyframes feedbackFade {
+    0% { opacity: 0; transform: translateY(-4px); }
+    10% { opacity: 1; transform: translateY(0); }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
   }
 `;
 
@@ -516,11 +580,11 @@ const BulkCheckbox = styled.input`
   flex-shrink: 0;
   background: ${({ theme }) => theme.colors.surface};
   position: relative;
-  transition: all 0.15s;
+  transition: background 150ms var(--ease-out), border-color 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
 
   &:checked {
-    background: ${({ theme }) => (theme.colors as any).accent || theme.colors.blue};
-    border-color: ${({ theme }) => (theme.colors as any).accent || theme.colors.blue};
+    background: ${({ theme }) => (theme.colors as any).accent || theme.colors.accent};
+    border-color: ${({ theme }) => (theme.colors as any).accent || theme.colors.accent};
   }
   &:checked::after {
     content: '';
@@ -529,12 +593,12 @@ const BulkCheckbox = styled.input`
     top: 1px;
     width: 5px;
     height: 10px;
-    border: solid #fff;
+    border: solid ${({ theme }) => theme.colors.textInverted};
     border-width: 0 2px 2px 0;
     transform: rotate(45deg);
   }
-  &:hover { border-color: ${({ theme }) => (theme.colors as any).accent || theme.colors.blue}; }
-  &:focus { outline: none; box-shadow: 0 0 0 3px ${({ theme }) => `${(theme.colors as any).accent || theme.colors.blue}33`}; }
+  &:hover { border-color: ${({ theme }) => (theme.colors as any).accent || theme.colors.accent}; }
+  &:focus { outline: none; box-shadow: 0 0 0 3px ${({ theme }) => `${(theme.colors as any).accent || theme.colors.accent}33`}; }
 `;
 
 const ToolbarCheckbox = styled(BulkCheckbox)`
@@ -547,13 +611,13 @@ const BulkActionBar = styled.div`
   gap: 12px;
   padding: 10px 16px;
   margin: 0 0 12px;
-  background: ${({ theme }) => `${(theme.colors as any).accent || theme.colors.blue}15`};
-  border: 1px solid ${({ theme }) => `${(theme.colors as any).accent || theme.colors.blue}44`};
+  background: ${({ theme }) => `${(theme.colors as any).accent || theme.colors.accent}15`};
+  border: 1px solid ${({ theme }) => `${(theme.colors as any).accent || theme.colors.accent}44`};
   border-radius: 8px;
   font-size: 0.875rem;
   color: ${({ theme }) => theme.colors.textPrimary};
 
-  strong { color: ${({ theme }) => (theme.colors as any).accent || theme.colors.blue}; margin: 0 4px; }
+  strong { color: ${({ theme }) => (theme.colors as any).accent || theme.colors.accent}; margin: 0 4px; }
 `;
 
 const BulkBtn = styled.button<{ $color: string }>`
@@ -561,7 +625,7 @@ const BulkBtn = styled.button<{ $color: string }>`
   border-radius: 6px;
   border: none;
   background: ${({ $color }) => $color};
-  color: #fff;
+  color: ${({ theme }) => theme.colors.textInverted};
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
@@ -571,15 +635,79 @@ const BulkBtn = styled.button<{ $color: string }>`
   &:disabled { opacity: 0.4; cursor: not-allowed; }
 `;
 
-/* ── Detail View ── */
+/* ── Detail Floating Modal ── */
 
-const DetailToolbar = styled.div`
+const DetailOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
   display: flex;
   align-items: center;
-  gap: 4px;
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
+  justify-content: center;
+  z-index: 1000;
+  animation: detailFadeIn 0.2s ease-out;
+  @keyframes detailFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+`;
+
+const DetailModal = styled.div`
+  ${glassSurface}
+  border-radius: ${({ theme }) => theme.radii.card + 2}px;
+  width: 90vw;
+  max-width: 880px;
+  height: 85vh;
+  display: flex;
+  flex-direction: column;
+  animation: detailSlideUp 0.25s ease-out;
+  overflow: hidden;
+  @keyframes detailSlideUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  ${media.mobile} {
+    width: 95vw;
+    height: 92vh;
+  }
+`;
+
+const DetailModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  min-height: 48px;
+  flex-shrink: 0;
+  gap: ${({ theme }) => theme.spacing.md}px;
+`;
+
+const DetailModalHeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+`;
+
+const DetailModalClose = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.accent};
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 150ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: ${({ theme }) => `${theme.colors.accent}15`};
+    }
+  }
 `;
 
 const DetailToolbarBtn = styled.button<{ $color?: string }>`
@@ -594,6 +722,7 @@ const DetailToolbarBtn = styled.button<{ $color?: string }>`
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
+  flex-shrink: 0;
   transition: background 0.12s;
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceMuted};
@@ -604,31 +733,33 @@ const DetailToolbarBtn = styled.button<{ $color?: string }>`
   }
 `;
 
-const DetailWrap = styled.div`
+const SendBtn = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 20px;
+  border: none;
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  background: ${({ theme }) => theme.strong.olive};
+  color: ${({ theme }) => theme.colors.textInverted};
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+  &:hover { opacity: 0.85; }
+  &:disabled { opacity: 0.4; cursor: not-allowed; }
+`;
+
+const DetailModalBody = styled.div`
   flex: 1;
   overflow-y: auto;
-  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.lg}px;
+  padding: ${({ theme }) => theme.spacing.lg}px;
   display: flex;
   flex-direction: column;
   gap: ${({ theme }) => theme.spacing.md}px;
   ${media.mobile} {
-    padding: ${({ theme }) => theme.spacing.sm}px;
-  }
-`;
-
-const BackLink = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: none;
-  border: none;
-  color: ${({ theme }) => theme.colors.blue};
-  font-size: 0.8125rem;
-  font-weight: 500;
-  cursor: pointer;
-  padding: 0;
-  &:hover {
-    text-decoration: underline;
+    padding: ${({ theme }) => theme.spacing.md}px;
   }
 `;
 
@@ -661,7 +792,7 @@ const DetailSenderName = styled.span`
 
 const DetailSenderEmail = styled.span`
   font-size: 0.8125rem;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   margin-left: 6px;
 `;
 
@@ -710,7 +841,7 @@ const ActionButton = styled.button<{ $color: string }>`
   border: 1px solid ${({ $color }) => $color};
   border-radius: ${({ theme }) => theme.radii.control}px;
   background: ${({ $color }) => $color};
-  color: #fff;
+  color: ${({ theme }) => theme.colors.textInverted};
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
@@ -759,13 +890,12 @@ const Overlay = styled.div`
 `;
 
 const Modal = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface}
   border-radius: ${({ theme }) => theme.radii.card}px;
   width: 600px;
   max-width: 95vw;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
   ${media.mobile} {
     width: 95%;
   }
@@ -786,13 +916,22 @@ const ModalHeader = styled.div`
 `;
 
 const CloseBtn = styled.button`
-  background: none;
+  background: transparent;
   border: none;
-  font-size: 1.25rem;
   cursor: pointer;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  &:hover {
-    color: ${({ theme }) => theme.colors.textPrimary};
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.colors.accent};
+  flex-shrink: 0;
+  transition: background 150ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: ${({ theme }) => `${theme.colors.accent}15`};
+    }
   }
 `;
 
@@ -925,14 +1064,17 @@ const FooterLinks = styled.div`
 
 const LIMIT = 10;
 
-type ViewType = 'list' | 'detail';
-
 const EmailQueue: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const { showConfirm, showPrompt } = useDialog();
+  const [urlParams] = useSearchParams();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [view, setView] = useState<ViewType>('list');
+  const [statusFilter, setStatusFilter] = useState(() => {
+    const s = urlParams.get('status');
+    return s && ['pending', 'approved', 'rejected', 'sent', 'failed'].includes(s) ? s : '';
+  });
   const [activeEmail, setActiveEmail] = useState<EmailItem | null>(null);
   const [modalPreview, setModalPreview] = useState<EmailItem | null>(null);
   const [pageTab, setPageTab] = useState<'queue' | 'templates'>('queue');
@@ -941,16 +1083,48 @@ const EmailQueue: React.FC = () => {
   const [replyCheckMsg, setReplyCheckMsg] = useState('');
   const [followupChecking, setFollowupChecking] = useState(false);
   const [followupCheckMsg, setFollowupCheckMsg] = useState('');
+  const [replyCheckError, setReplyCheckError] = useState(false);
+  const [followupCheckError, setFollowupCheckError] = useState(false);
+  const [editingEmail, setEditingEmail] = useState<EmailItem | null>(null);
+  const [editSubject, setEditSubject] = useState('');
+  const [editBody, setEditBody] = useState('');
+
+  const handleStartEdit = (item: EmailItem) => {
+    setEditingEmail(item);
+    setEditSubject(item.subject || '');
+    setEditBody(item.body || '');
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingEmail) return;
+    try {
+      await client.patch(`/email-queue/${editingEmail._id}`, {
+        subject: editSubject,
+        body: editBody,
+      });
+      refetch();
+      setEditingEmail(null);
+      toast.success(t('emailQueue.editSuccess'));
+    } catch (err: any) {
+      toast.error(t('emailQueue.editFailed') + (err?.message || ''));
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEmail(null);
+  };
 
   const handleCheckReplies = async () => {
     setReplyChecking(true);
     setReplyCheckMsg('');
+    setReplyCheckError(false);
     try {
       await client.post('/jobs/check-replies/run');
-      setReplyCheckMsg('已派發檢查回覆任務');
+      setReplyCheckMsg(t('emailQueue.replyCheckDispatched'));
       setTimeout(() => setReplyCheckMsg(''), 4000);
     } catch (err: any) {
-      setReplyCheckMsg('觸發失敗: ' + (err?.message || '未知錯誤'));
+      setReplyCheckError(true);
+      setReplyCheckMsg(t('emailQueue.triggerFailed', { message: err?.message || t('emailQueue.unknownError') }));
       setTimeout(() => setReplyCheckMsg(''), 5000);
     } finally {
       setReplyChecking(false);
@@ -960,25 +1134,43 @@ const EmailQueue: React.FC = () => {
   const handleCheckFollowups = async () => {
     setFollowupChecking(true);
     setFollowupCheckMsg('');
+    setFollowupCheckError(false);
     try {
       await client.post('/jobs/check-followups/run');
-      setFollowupCheckMsg('已派發檢查跟進任務');
+      setFollowupCheckMsg(t('emailQueue.followupCheckDispatched'));
       setTimeout(() => setFollowupCheckMsg(''), 4000);
     } catch (err: any) {
-      setFollowupCheckMsg('觸發失敗: ' + (err?.message || '未知錯誤'));
+      setFollowupCheckError(true);
+      setFollowupCheckMsg(t('emailQueue.triggerFailed', { message: err?.message || t('emailQueue.unknownError') }));
       setTimeout(() => setFollowupCheckMsg(''), 5000);
     } finally {
       setFollowupChecking(false);
     }
   };
 
+  const statusColorMap: Record<string, string> = {
+    pending: theme.strong.gold,
+    approved: theme.strong.olive,
+    rejected: theme.strong.mauve,
+    sent: theme.colors.accent,
+    failed: theme.colors.textSecondary,
+  };
+
+  const REPLY_CATEGORY_STYLE: Record<string, { bg: string; fg: string }> = {
+    interested:     { bg: theme.strong.olive + '1a', fg: theme.strong.olive },
+    not_interested: { bg: theme.strong.mauve + '1a', fg: theme.strong.mauve },
+    meeting:        { bg: theme.colors.accent + '1a', fg: theme.colors.accent },
+    auto_reply:     { bg: theme.colors.surfaceMuted, fg: theme.colors.textSecondary },
+    question:       { bg: theme.strong.gold + '1a', fg: theme.strong.gold },
+  };
+
   const translatedStatusFolders: StatusFolderDef[] = [
-    { id: 'all', label: t('emailQueue.all'), icon: 'inbox', filterValue: '', badgeColor: '#94a3b8' },
-    { id: 'pending', label: t('emailQueue.pending'), icon: 'clock', filterValue: 'pending', badgeColor: '#d97706' },
-    { id: 'approved', label: t('emailQueue.approved'), icon: 'check', filterValue: 'approved', badgeColor: '#16a34a' },
-    { id: 'rejected', label: t('emailQueue.rejected'), icon: 'x', filterValue: 'rejected', badgeColor: '#dc2626' },
-    { id: 'sent', label: t('emailQueue.sent'), icon: 'send', filterValue: 'sent', badgeColor: '#2563eb' },
-    { id: 'failed', label: t('emailQueue.failed'), icon: 'exclamation', filterValue: 'failed', badgeColor: '#475569' },
+    { id: 'all', label: t('emailQueue.all'), icon: 'inbox', filterValue: '', badgeColor: theme.colors.textTertiary },
+    { id: 'pending', label: t('emailQueue.pending'), icon: 'clock', filterValue: 'pending', badgeColor: theme.strong.gold },
+    { id: 'approved', label: t('emailQueue.approved'), icon: 'check', filterValue: 'approved', badgeColor: theme.strong.olive },
+    { id: 'rejected', label: t('emailQueue.rejected'), icon: 'x', filterValue: 'rejected', badgeColor: theme.strong.mauve },
+    { id: 'sent', label: t('emailQueue.sent'), icon: 'send', filterValue: 'sent', badgeColor: theme.colors.accent },
+    { id: 'failed', label: t('emailQueue.failed'), icon: 'exclamation', filterValue: 'failed', badgeColor: theme.colors.textSecondary },
   ];
 
   // 攞可攞到嘅全部 email（backend DTO 限 limit ≤ 100）。
@@ -1012,23 +1204,24 @@ const EmailQueue: React.FC = () => {
     if (selectedIds.size === 0) return;
     bulkApprove.mutate([...selectedIds], { onSuccess: () => clearSelection() });
   };
-  const handleBulkReject = () => {
+  const handleBulkReject = async () => {
     if (selectedIds.size === 0) return;
-    const reason = window.prompt(`拒絕 ${selectedIds.size} 個 email 嘅原因?（可空）`) || undefined;
+    const reason = await showPrompt(t('emailQueue.bulkRejectPrompt', { count: selectedIds.size }));
+    if (reason === null) return;
     bulkReject.mutate(
-      { ids: [...selectedIds], reason },
+      { ids: [...selectedIds], reason: reason || undefined },
       { onSuccess: () => clearSelection() },
     );
   };
-  const handleBulkSend = () => {
+  const handleBulkSend = async () => {
     if (selectedIds.size === 0) return;
-    if (!window.confirm(`寄出 ${selectedIds.size} 個 email?`)) return;
+    if (!(await showConfirm(t('emailQueue.bulkSendConfirm', { count: selectedIds.size })))) return;
     bulkSend.mutate([...selectedIds], { onSuccess: () => clearSelection() });
   };
 
   // Fetch lead reply data when viewing detail of a sent email
   useEffect(() => {
-    if (view !== 'detail' || !activeEmail?.lead_id) {
+    if (!activeEmail?.lead_id) {
       setLeadReply(null);
       return;
     }
@@ -1039,7 +1232,7 @@ const EmailQueue: React.FC = () => {
         else setLeadReply(null);
       })
       .catch(() => setLeadReply(null));
-  }, [view, activeEmail?.lead_id]);
+  }, [activeEmail?.lead_id]);
 
   const apiEmails: EmailItem[] = data?.data ?? [];
   // 唔再 fall back 去 MOCK_EMAILS —— backend 失敗應該 user-facing 出 error，
@@ -1074,18 +1267,17 @@ const EmailQueue: React.FC = () => {
     statusCounts[s] = (statusCounts[s] || 0) + 1;
   }
 
-  const handleReject = (id: string) => {
-    const reason = window.prompt(t('emailQueue.rejectPrompt'));
+  const handleReject = async (id: string) => {
+    const reason = await showPrompt(t('emailQueue.rejectPrompt'));
+    if (reason === null) return;
     reject.mutate({ id, reason: reason || undefined });
   };
 
   const openDetail = (item: EmailItem) => {
     setActiveEmail(item);
-    setView('detail');
   };
 
-  const goList = () => {
-    setView('list');
+  const closeDetail = () => {
     setActiveEmail(null);
   };
 
@@ -1133,7 +1325,7 @@ const EmailQueue: React.FC = () => {
             onClick={() => {
               setStatusFilter(f.filterValue);
               setPage(1);
-              if (view === 'detail') goList();
+              closeDetail();
             }}
           >
             <I d={(icons as Record<string, string>)[f.icon] || icons.inbox} />
@@ -1167,37 +1359,27 @@ const EmailQueue: React.FC = () => {
               if (e.target.checked) selectAll(visibleIds);
               else deselectAll();
             }}
-            aria-label="全選/全不選"
+            aria-label={t('emailQueue.selectAllLabel')}
           />
           <ToolbarTitle>{t('emailQueue.outbox')}</ToolbarTitle>
           <DetailToolbarBtn
-            $color="#8b5cf6"
+            $color={theme.colors.accent}
             onClick={handleCheckReplies}
             disabled={replyChecking}
             style={{ marginLeft: 8 }}
           >
             <I d={icons.envelope} />
-            {replyChecking ? '檢查中…' : '檢查回覆'}
+            {replyChecking ? t('emailQueue.checking') : t('emailQueue.checkReplies')}
           </DetailToolbarBtn>
-          {replyCheckMsg && (
-            <span style={{ fontSize: '0.75rem', color: replyCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a', marginLeft: 4 }}>
-              {replyCheckMsg}
-            </span>
-          )}
           <DetailToolbarBtn
-            $color="#d97706"
+            $color={theme.strong.gold}
             onClick={handleCheckFollowups}
             disabled={followupChecking}
             style={{ marginLeft: 4 }}
           >
             <I d={icons.clock} />
-            {followupChecking ? '檢查中…' : '檢查跟進'}
+            {followupChecking ? t('emailQueue.checking') : t('emailQueue.checkFollowups')}
           </DetailToolbarBtn>
-          {followupCheckMsg && (
-            <span style={{ fontSize: '0.75rem', color: followupCheckMsg.startsWith('觸發失敗') ? '#dc2626' : '#16a34a', marginLeft: 4 }}>
-              {followupCheckMsg}
-            </span>
-          )}
         </ToolbarLeft>
         <ToolbarRight>
           {total > 0 && (
@@ -1213,29 +1395,43 @@ const EmailQueue: React.FC = () => {
           </IconBtn>
         </ToolbarRight>
       </Toolbar>
+      {(replyCheckMsg || followupCheckMsg) && (
+        <ToolbarFeedbackArea>
+          {replyCheckMsg && (
+            <FeedbackMsg key={replyCheckMsg} $error={replyCheckError}>
+              {replyCheckMsg}
+            </FeedbackMsg>
+          )}
+          {followupCheckMsg && (
+            <FeedbackMsg key={followupCheckMsg} $error={followupCheckError} style={{ marginLeft: replyCheckMsg ? 12 : 0 }}>
+              {followupCheckMsg}
+            </FeedbackMsg>
+          )}
+        </ToolbarFeedbackArea>
+      )}
 
       <EmailListWrap>
         {error ? (
           <EmptyState>
-            <strong style={{ color: '#dc2626', display: 'block', marginBottom: 8 }}>
+            <strong style={{ color: theme.strong.mauve, display: 'block', marginBottom: 8 }}>
               {t('common.error')}
             </strong>
-            <span style={{ color: '#7f8c8d', fontSize: 13, display: 'block', marginBottom: 12 }}>
+            <span style={{ color: theme.colors.textTertiary, fontSize: 13, display: 'block', marginBottom: 12 }}>
               {(error as any)?.message || String(error)}
             </span>
             <button
               onClick={() => refetch()}
               style={{
                 padding: '6px 14px',
-                border: '1px solid #3b82f6',
-                background: '#3b82f6',
-                color: '#fff',
+                border: `1px solid ${theme.colors.accent}`,
+                background: theme.colors.accent,
+                color: theme.colors.textInverted,
                 borderRadius: 4,
                 cursor: 'pointer',
                 fontSize: 13,
               }}
             >
-              {t('common.retry') || '重試'}
+              {t('common.retry')}
             </button>
           </EmptyState>
         ) : isLoading ? (
@@ -1253,24 +1449,24 @@ const EmailQueue: React.FC = () => {
             {selectedIds.size > 0 && (
               <BulkActionBar>
                 <span>
-                  已選 <strong>{selectedIds.size}</strong> 個
+                  {t('emailQueue.selectedCount', { count: selectedIds.size })}
                 </span>
-                <BulkBtn $color="#2563eb" onClick={handleBulkApprove} disabled={bulkApprove.isPending}>
-                  Approve ({selectedIds.size})
+                <BulkBtn $color={theme.colors.accent} onClick={handleBulkApprove} disabled={bulkApprove.isPending}>
+                  {t('emailQueue.bulkApprove', { count: selectedIds.size })}
                 </BulkBtn>
-                <BulkBtn $color="#dc2626" onClick={handleBulkReject} disabled={bulkReject.isPending}>
-                  Reject ({selectedIds.size})
+                <BulkBtn $color={theme.strong.mauve} onClick={handleBulkReject} disabled={bulkReject.isPending}>
+                  {t('emailQueue.bulkReject', { count: selectedIds.size })}
                 </BulkBtn>
                 <BulkBtn
-                  $color="#2563eb"
+                  $color={theme.colors.accent}
                   onClick={handleBulkSend}
                   disabled={bulkSend.isPending || statusFilter !== 'approved'}
-                  title={statusFilter !== 'approved' ? 'Send 只可喺 Approved panel 做' : ''}
+                  title={statusFilter !== 'approved' ? t('emailQueue.bulkSendDisabledTip') : ''}
                 >
-                  Send ({selectedIds.size})
+                  {t('emailQueue.bulkSend', { count: selectedIds.size })}
                 </BulkBtn>
-                <BulkBtn $color="#888" onClick={clearSelection}>
-                  清除
+                <BulkBtn $color={theme.colors.textTertiary} onClick={clearSelection}>
+                  {t('emailQueue.clearSelection')}
                 </BulkBtn>
               </BulkActionBar>
             )}
@@ -1297,7 +1493,7 @@ const EmailQueue: React.FC = () => {
                   <SubjectLine>{item.subject || t('emailQueue.noSubject')}</SubjectLine>
                   <Preview>{(item.body || '').replace(/<[^>]*>/g, ' ').trim()}</Preview>
                 </EmailContent>
-                <StatusBadge $status={status}>{status}</StatusBadge>
+                <StatusBadge $status={status}>{t(`emailQueue.${status}` as any) || status}</StatusBadge>
                 <DateCell>{formatDate(item.created_at)}</DateCell>
 
                 {/* Hover action buttons */}
@@ -1305,7 +1501,7 @@ const EmailQueue: React.FC = () => {
                   {status === 'pending' && (
                     <>
                       <HoverBtn
-                        $color="#2563eb"
+                        $color={theme.colors.accent}
                         title={t('emailQueue.approve')}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1316,7 +1512,7 @@ const EmailQueue: React.FC = () => {
                         <I d={icons.check} />
                       </HoverBtn>
                       <HoverBtn
-                        $color="#dc2626"
+                        $color={theme.strong.mauve}
                         title={t('emailQueue.reject')}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -1330,7 +1526,7 @@ const EmailQueue: React.FC = () => {
                   )}
                   {status === 'approved' && (
                     <HoverBtn
-                      $color="#3b82f6"
+                      $color={theme.colors.accent}
                       title={t('emailQueue.send')}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -1341,8 +1537,20 @@ const EmailQueue: React.FC = () => {
                       <I d={icons.play} />
                     </HoverBtn>
                   )}
+                  {(status === 'pending' || status === 'approved') && (
+                    <HoverBtn
+                      $color={theme.strong.gold}
+                      title={t('emailQueue.edit')}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleStartEdit(item);
+                      }}
+                    >
+                      <I d="M11.5 2.5l2 2-7 7H4.5v-2l7-7zM10 4l2 2" />
+                    </HoverBtn>
+                  )}
                   <HoverBtn
-                    $color="#d97706"
+                    $color={theme.strong.gold}
                     title={t('emailQueue.preview')}
                     onClick={(e) => {
                       e.stopPropagation();
@@ -1361,7 +1569,7 @@ const EmailQueue: React.FC = () => {
     </MainPanel>
   );
 
-  /* ── Detail View ── */
+  /* ── Detail Floating Modal ── */
 
   const renderDetail = () => {
     if (!activeEmail) return null;
@@ -1372,123 +1580,140 @@ const EmailQueue: React.FC = () => {
     const status = item.status || 'pending';
 
     return (
-      <MainPanel>
-        <DetailToolbar>
-          {status === 'pending' && (
-            <>
-              <DetailToolbarBtn
-                $color="#2563eb"
-                onClick={() => {
-                  approve.mutate(item._id);
-                  goList();
-                }}
-                disabled={approve.isPending}
-              >
-                <I d={icons.check} />
-                {t('emailQueue.approve')}
-              </DetailToolbarBtn>
-              <DetailToolbarBtn
-                $color="#dc2626"
-                onClick={() => {
-                  handleReject(item._id);
-                  goList();
-                }}
-                disabled={reject.isPending}
-              >
-                <I d={icons.x} />
-                {t('emailQueue.reject')}
-              </DetailToolbarBtn>
-            </>
-          )}
-          {status === 'approved' && (
-            <DetailToolbarBtn
-              $color="#3b82f6"
-              onClick={() => {
-                send.mutate(item._id);
-                goList();
-              }}
-              disabled={send.isPending}
-            >
-              <I d={icons.send} />
-              {t('emailQueue.send')}
-            </DetailToolbarBtn>
-          )}
-        </DetailToolbar>
+      <DetailOverlay onClick={closeDetail}>
+        <DetailModal onClick={(e) => e.stopPropagation()}>
+          <DetailModalHeader>
+            <DetailModalHeaderLeft>
+              <AvatarCircle $bg={avatarColor}>{initial}</AvatarCircle>
+              <SubjectHeading style={{ fontSize: '1.05rem' }}>
+                {item.subject || t('emailQueue.noSubject')}
+              </SubjectHeading>
+            </DetailModalHeaderLeft>
+            <DetailModalHeaderLeft style={{ flex: 'none', gap: 6 }}>
+              {status === 'pending' && (
+                <>
+                  <DetailToolbarBtn
+                    $color={theme.colors.accent}
+                    onClick={() => {
+                      approve.mutate(item._id);
+                      closeDetail();
+                    }}
+                    disabled={approve.isPending}
+                  >
+                    <I d={icons.check} />
+                    {t('emailQueue.approve')}
+                  </DetailToolbarBtn>
+                  <DetailToolbarBtn
+                    $color={theme.strong.mauve}
+                    onClick={() => {
+                      handleReject(item._id);
+                      closeDetail();
+                    }}
+                    disabled={reject.isPending}
+                    style={{ background: theme.strong.mauve + '1a', border: `1px solid ${theme.strong.mauve}33` }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    {t('emailQueue.reject')}
+                  </DetailToolbarBtn>
+                </>
+              )}
+              {status === 'approved' && (
+                <SendBtn
+                  onClick={() => {
+                    send.mutate(item._id);
+                    closeDetail();
+                  }}
+                  disabled={send.isPending}
+                >
+                  <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {t('emailQueue.send')}
+                </SendBtn>
+              )}
+              {(status === 'pending' || status === 'approved') && (
+                <DetailToolbarBtn
+                  $color={theme.strong.gold}
+                  onClick={() => {
+                    handleStartEdit(item);
+                    closeDetail();
+                  }}
+                >
+                  <I d="M11.5 2.5l2 2-7 7H4.5v-2l7-7zM10 4l2 2" />
+                  {t('emailQueue.edit')}
+                </DetailToolbarBtn>
+              )}
+              <DetailModalClose onClick={closeDetail}>
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              </DetailModalClose>
+            </DetailModalHeaderLeft>
+          </DetailModalHeader>
 
-        <DetailWrap>
-          <BackLink onClick={goList}>
-            <I d={icons.arrowLeft} />
-            {t('emailQueue.backToList')}
-          </BackLink>
+          <DetailModalBody>
+            <DetailSenderRow>
+              <DetailSenderInfo>
+                <DetailSenderName>{displayName}</DetailSenderName>
+                {item.to_email && <DetailSenderEmail>&lt;{item.to_email}&gt;</DetailSenderEmail>}
+              </DetailSenderInfo>
+              <DetailDateRight>
+                <StatusBadge $status={status}>{t(`emailQueue.${status}` as any) || status}</StatusBadge>
+                <span>{formatDateFull(item.created_at)}</span>
+              </DetailDateRight>
+            </DetailSenderRow>
 
-          <SubjectHeading>{item.subject || t('emailQueue.noSubject')}</SubjectHeading>
+            <DetailMeta>
+              <span>{t('emailQueue.from')}: {import.meta.env.VITE_SMTP_FROM || '—'}</span>
+              <span>{t('emailQueue.to')}: {item.to_email || import.meta.env.VITE_TEST_RECIPIENT || '—'}</span>
+              {item.error?.rejected_reason && <span>{t('emailQueue.reason')} {item.error?.rejected_reason}</span>}
+              {item.lead_id && <span>{t('emailQueue.lead')} {item.lead_id}</span>}
+            </DetailMeta>
 
-          <DetailSenderRow>
-            <AvatarCircle $bg={avatarColor}>{initial}</AvatarCircle>
-            <DetailSenderInfo>
-              <DetailSenderName>{displayName}</DetailSenderName>
-              {item.to_email && <DetailSenderEmail>&lt;{item.to_email}&gt;</DetailSenderEmail>}
-            </DetailSenderInfo>
-            <DetailDateRight>
-              <span>{formatDateFull(item.created_at)}</span>
-            </DetailDateRight>
-          </DetailSenderRow>
+            <EmailBodyText dangerouslySetInnerHTML={{ __html: item.body || t('emailQueue.emptyBody') }} />
 
-          <DetailMeta>
-            <span>寄件人: {import.meta.env.VITE_SMTP_FROM || '—'}</span>
-            <span>收件人: {item.to_email || import.meta.env.VITE_TEST_RECIPIENT || '—'}</span>
-            <span>
-              {t('emailQueue.status')} <StatusBadge $status={status}>{status}</StatusBadge>
-            </span>
-            {item.error?.rejected_reason && <span>{t('emailQueue.reason')} {item.error?.rejected_reason}</span>}
-            {item.lead_id && <span>{t('emailQueue.lead')} {item.lead_id}</span>}
-          </DetailMeta>
-
-          <EmailBodyText dangerouslySetInnerHTML={{ __html: item.body || t('emailQueue.emptyBody') }} />
-
-          {/* Lead Reply Section */}
-          {leadReply && (() => {
-            const cat = REPLY_CATEGORY_LABEL[leadReply._reply_category || ''] || { text: leadReply._reply_category || '已回覆', bg: '#e0e7ff', fg: '#4338ca' };
-            return (
-              <ReplySection>
-                <ReplySectionHeader>
-                  📩 對方回覆
-                  <ReplyCategoryBadge $bg={cat.bg} $fg={cat.fg}>{cat.text}</ReplyCategoryBadge>
-                  {leadReply._reply_at && (
-                    <span style={{ fontSize: '0.75rem', fontWeight: 400, color: '#94a3b8', marginLeft: 'auto' }}>
-                      {new Date(leadReply._reply_at).toLocaleString('zh-HK')}
-                    </span>
-                  )}
-                </ReplySectionHeader>
-                <ReplyBody>
-                  <ReplyFieldRow>
-                    <ReplyField>
-                      <ReplyFieldLabel>摘要</ReplyFieldLabel>
-                      <ReplyFieldValue>{leadReply._reply_summary || '—'}</ReplyFieldValue>
-                    </ReplyField>
-                  </ReplyFieldRow>
-                  <ReplyFieldRow>
-                    <ReplyField>
-                      <ReplyFieldLabel>情緒</ReplyFieldLabel>
-                      <ReplyFieldValue>{leadReply._reply_sentiment || '—'}</ReplyFieldValue>
-                    </ReplyField>
-                    <ReplyField>
-                      <ReplyFieldLabel>回覆方式</ReplyFieldLabel>
-                      <ReplyFieldValue>{leadReply._reply_via || '—'}</ReplyFieldValue>
-                    </ReplyField>
-                  </ReplyFieldRow>
-                  <ReplyFieldRow>
-                    <ReplyField>
-                      <ReplyFieldLabel>建議下一步</ReplyFieldLabel>
-                      <ReplyFieldValue>{leadReply._reply_next_step || '—'}</ReplyFieldValue>
-                    </ReplyField>
-                  </ReplyFieldRow>
-                </ReplyBody>
-              </ReplySection>
-            );
-          })()}
-        </DetailWrap>
-      </MainPanel>
+            {/* Lead Reply Section */}
+            {leadReply && (() => {
+              const catStyle = REPLY_CATEGORY_STYLE[leadReply._reply_category || ''] || { bg: theme.colors.accent + '1a', fg: theme.colors.accent };
+              const catKey = REPLY_CATEGORY_I18N_KEY[leadReply._reply_category || ''];
+              const catText = catKey ? t(catKey) : (leadReply._reply_category || t('emailQueue.replyCategoryDefault'));
+              return (
+                <ReplySection>
+                  <ReplySectionHeader>
+                    {t('emailQueue.leadReplyTitle')}
+                    <ReplyCategoryBadge $bg={catStyle.bg} $fg={catStyle.fg}>{catText}</ReplyCategoryBadge>
+                    {leadReply._reply_at && (
+                      <span style={{ fontSize: '0.75rem', fontWeight: 400, color: theme.colors.textTertiary, marginLeft: 'auto' }}>
+                        {new Date(leadReply._reply_at).toLocaleString()}
+                      </span>
+                    )}
+                  </ReplySectionHeader>
+                  <ReplyBody>
+                    <ReplyFieldRow>
+                      <ReplyField>
+                        <ReplyFieldLabel>{t('emailQueue.replySummaryLabel')}</ReplyFieldLabel>
+                        <ReplyFieldValue>{leadReply._reply_summary || '—'}</ReplyFieldValue>
+                      </ReplyField>
+                    </ReplyFieldRow>
+                    <ReplyFieldRow>
+                      <ReplyField>
+                        <ReplyFieldLabel>{t('emailQueue.replySentimentLabel')}</ReplyFieldLabel>
+                        <ReplyFieldValue>{leadReply._reply_sentiment || '—'}</ReplyFieldValue>
+                      </ReplyField>
+                      <ReplyField>
+                        <ReplyFieldLabel>{t('emailQueue.replyViaLabel')}</ReplyFieldLabel>
+                        <ReplyFieldValue>{leadReply._reply_via || '—'}</ReplyFieldValue>
+                      </ReplyField>
+                    </ReplyFieldRow>
+                    <ReplyFieldRow>
+                      <ReplyField>
+                        <ReplyFieldLabel>{t('emailQueue.replyNextStepLabel')}</ReplyFieldLabel>
+                        <ReplyFieldValue>{leadReply._reply_next_step || '—'}</ReplyFieldValue>
+                      </ReplyField>
+                    </ReplyFieldRow>
+                  </ReplyBody>
+                </ReplySection>
+              );
+            })()}
+          </DetailModalBody>
+        </DetailModal>
+      </DetailOverlay>
     );
   };
 
@@ -1504,14 +1729,14 @@ const EmailQueue: React.FC = () => {
         <Modal onClick={(e) => e.stopPropagation()}>
           <ModalHeader>
             <h2>{item.subject || t('emailQueue.noSubject')}</h2>
-            <CloseBtn onClick={() => setModalPreview(null)}>&times;</CloseBtn>
+            <CloseBtn onClick={() => setModalPreview(null)}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
           </ModalHeader>
           <ModalBody>
             <ModalMeta>
-              <span>寄件人: {import.meta.env.VITE_SMTP_FROM || '—'}</span>
-              <span>收件人: {item.to_email || import.meta.env.VITE_TEST_RECIPIENT || '—'}</span>
+              <span>{t('emailQueue.from')}: {import.meta.env.VITE_SMTP_FROM || '—'}</span>
+              <span>{t('emailQueue.to')}: {item.to_email || import.meta.env.VITE_TEST_RECIPIENT || '—'}</span>
               <span>
-                {t('emailQueue.status')} <StatusBadge $status={status}>{status}</StatusBadge>
+                {t('emailQueue.status')} <StatusBadge $status={status}>{t(`emailQueue.${status}` as any) || status}</StatusBadge>
               </span>
               {item.error?.rejected_reason && <span>{t('emailQueue.reason')} {item.error?.rejected_reason}</span>}
               {item.lead_id && <span>{t('emailQueue.lead')} {item.lead_id}</span>}
@@ -1522,7 +1747,7 @@ const EmailQueue: React.FC = () => {
             {status === 'pending' && (
               <>
                 <ActionButton
-                  $color="#2563eb"
+                  $color={theme.colors.accent}
                   onClick={() => {
                     approve.mutate(item._id);
                     setModalPreview(null);
@@ -1532,28 +1757,30 @@ const EmailQueue: React.FC = () => {
                   {t('emailQueue.approve')}
                 </ActionButton>
                 <ActionButton
-                  $color="#dc2626"
+                  $color={theme.strong.mauve}
                   onClick={() => {
                     handleReject(item._id);
                     setModalPreview(null);
                   }}
                   disabled={reject.isPending}
+                  style={{ background: theme.strong.mauve + '1a', border: `1px solid ${theme.strong.mauve}33` }}
                 >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M10 4L4 10M4 4l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                   {t('emailQueue.reject')}
                 </ActionButton>
               </>
             )}
             {status === 'approved' && (
-              <ActionButton
-                $color="#3b82f6"
+              <SendBtn
                 onClick={() => {
                   send.mutate(item._id);
                   setModalPreview(null);
                 }}
                 disabled={send.isPending}
               >
+                <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M14 2L7 9M14 2l-4 12-3-5-5-3 12-4z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 {t('emailQueue.send')}
-              </ActionButton>
+              </SendBtn>
             )}
             <OutlineBtn onClick={() => setModalPreview(null)}>{t('common.close')}</OutlineBtn>
           </ModalFooter>
@@ -1562,14 +1789,87 @@ const EmailQueue: React.FC = () => {
     );
   };
 
+  /* ── Edit Modal ── */
+
+  const renderEditModal = () => {
+    if (!editingEmail) return null;
+    return (
+      <Overlay onClick={handleCancelEdit}>
+        <Modal onClick={(e) => e.stopPropagation()} style={{ width: 700 }}>
+          <ModalHeader>
+            <h2>{t('emailQueue.editEmail')}</h2>
+            <CloseBtn onClick={handleCancelEdit}>
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+            </CloseBtn>
+          </ModalHeader>
+          <ModalBody>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: theme.colors.textSecondary, marginBottom: 4 }}>
+                  {t('emailQueue.subject')}
+                </label>
+                <input
+                  value={editSubject}
+                  onChange={e => setEditSubject(e.target.value)}
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '10px 14px',
+                    border: `1px solid ${theme.colors.border}`,
+                    borderRadius: 8,
+                    fontSize: '0.875rem',
+                    color: theme.colors.textPrimary,
+                    background: theme.colors.canvas,
+                    outline: 'none',
+                  }}
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '0.8125rem', fontWeight: 600, color: theme.colors.textSecondary, marginBottom: 4 }}>
+                  {t('emailQueue.body')}
+                </label>
+                <textarea
+                  value={editBody}
+                  onChange={e => setEditBody(e.target.value)}
+                  rows={12}
+                  style={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    padding: '10px 14px',
+                    border: `1px solid ${theme.colors.border}`,
+                    borderRadius: 8,
+                    fontSize: '0.875rem',
+                    color: theme.colors.textPrimary,
+                    background: theme.colors.canvas,
+                    outline: 'none',
+                    resize: 'vertical',
+                    fontFamily: 'inherit',
+                    lineHeight: 1.6,
+                  }}
+                />
+              </div>
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <OutlineBtn onClick={handleCancelEdit}>{t('common.cancel')}</OutlineBtn>
+            <ActionButton $color={theme.colors.accent} onClick={handleSaveEdit}>
+              {t('common.save')}
+            </ActionButton>
+          </ModalFooter>
+        </Modal>
+      </Overlay>
+    );
+  };
+
   return (
     <Page>
+      <div><PageTitle>{t('emailQueue.title')}</PageTitle><PageSub>{t('emailQueue.subtitle')}</PageSub></div>
       <PageTabs>
         <PageTab $active={pageTab === 'queue'} onClick={() => setPageTab('queue')}>
-          寄件匣
+          {t('emailQueue.queueTab')}
         </PageTab>
         <PageTab $active={pageTab === 'templates'} onClick={() => setPageTab('templates')}>
-          郵件樣板
+          {t('emailQueue.templatesTab')}
         </PageTab>
       </PageTabs>
 
@@ -1577,17 +1877,18 @@ const EmailQueue: React.FC = () => {
         <>
           <Card>
             {renderSidebar()}
-            {view === 'list' && renderList()}
-            {view === 'detail' && renderDetail()}
+            {renderList()}
           </Card>
+          {renderDetail()}
           {renderModal()}
+          {renderEditModal()}
         </>
       ) : (
         <EmailTemplateEditor />
       )}
 
       <Footer>
-        <span>{t('footer.copyrightHermes', { year: 2024 })}</span>
+        <span>{t('footer.copyrightHermes', { year: 2026 })}</span>
         <FooterLinks>
           <a href="#">{t('footer.documentation')}</a>
           <a href="#">{t('footer.support')}</a>

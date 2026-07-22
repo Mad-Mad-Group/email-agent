@@ -14,6 +14,7 @@ build/
 uploads/
 hermes-frontend.zip
 ziiqRmns
+cms/worker/*.json
 
 # OS / Editor noise
 .DS_Store
@@ -34,7 +35,4 @@ cms/worker/agent.ts
 cms/server/.env.example
 cms/.DS_Store
 AGENTS.md
-cms/server/dist/tsconfig.build.tsbuildinfo
-cms/server/dist/tsconfig.build.tsbuildinfo
-cms/server/dist/tsconfig.build.tsbuildinfo
-cms/server/dist/tsconfig.build.tsbuildinfo
+cms/server/dist/

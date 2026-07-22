@@ -1,9 +1,11 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
   Get,
   HttpCode,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -18,60 +20,146 @@ import { ListLeadsQueryDto } from './dto/list-leads-query.dto';
 import { UpdateLeadStatusDto } from './dto/update-lead-status.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permission } from '../common/decorators/permission.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { TasksService } from '../tasks/tasks.service';
+import { SKILL } from '../tasks/dto/task-status.enum';
+
+interface JwtUser {
+  userId: string;
+  email: string;
+  role: string;
+  permissions: string[];
+}
+
+/** admin / super_admin 可睇全部 leads */
+function isAdmin(user: JwtUser): boolean {
+  return user.role === 'admin' || user.role === 'super_admin';
+}
+
+const STAGE_SKILL_MAP: Record<string, string> = {
+  enrich: SKILL.ANALYZE,
+  analyze: SKILL.ANALYZE,
+  draft: SKILL.EMAIL_DRAFT,
+  send: SKILL.EMAIL_SEND,
+};
 
 @ApiTags('Leads 搵客管理')
 @ApiBearerAuth()
 @Controller('leads')
-@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class LeadsController {
-  constructor(private readonly leads: LeadsService) {}
+  constructor(
+    private readonly leads: LeadsService,
+    private readonly tasks: TasksService,
+  ) {}
 
   @Get()
-  @Permission('leads.view')
-  async list(@Query() query: ListLeadsQueryDto) {
-    return this.leads.findAll(query);
+  async list(@Query() query: ListLeadsQueryDto, @CurrentUser() user: JwtUser) {
+    return this.leads.findAll(query, isAdmin(user) ? undefined : user.userId);
   }
 
   @Get(':id')
-  @Permission('leads.view')
-  async get(@Param('id') id: string) {
-    return this.leads.findOne(id);
+  async get(@Param('id') id: string, @CurrentUser() user: JwtUser) {
+    return this.leads.findOne(id, isAdmin(user) ? undefined : user.userId);
   }
 
   @Post()
-  @Permission('leads.create')
-  async create(@Body() dto: CreateLeadDto) {
-    return this.leads.create(dto);
+  async create(@Body() dto: CreateLeadDto, @CurrentUser() user: JwtUser) {
+    return this.leads.create(dto, user.userId);
   }
 
   @Patch(':id')
-  @Permission('leads.update')
-  async update(@Param('id') id: string, @Body() dto: UpdateLeadDto) {
-    return this.leads.update(id, dto);
+  async update(@Param('id') id: string, @Body() dto: UpdateLeadDto, @CurrentUser() user: JwtUser) {
+    return this.leads.update(id, dto, isAdmin(user) ? undefined : user.userId);
   }
 
   @Patch(':id/status')
-  @Permission('leads.update')
   async changeStatus(
     @Param('id') id: string,
     @Body() dto: UpdateLeadStatusDto,
+    @CurrentUser() user: JwtUser,
   ) {
-    return this.leads.changeStatus(id, dto);
+    return this.leads.changeStatus(id, dto, isAdmin(user) ? undefined : user.userId);
   }
 
   @Post(':id/mark-interested')
-  @Permission('leads.update')
-  async markInterested(@Param('id') id: string) {
-    return this.leads.markInterested(id);
+  async markInterested(@Param('id') id: string, @CurrentUser() user: JwtUser) {
+    return this.leads.markInterested(id, isAdmin(user) ? undefined : user.userId);
+  }
+
+  /** POST /leads/:id/simulate-no-reply — 模擬未回覆 → 重新 outreach */
+  @Post(':id/simulate-no-reply')
+  async simulateNoReply(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtUser,
+  ) {
+    const lead = await this.leads.findOne(id, isAdmin(user) ? undefined : user.userId);
+    if (!lead) throw new NotFoundException('Lead not found');
+
+    // Mark as no-reply, bump follow-up count, clear draft flag
+    const update: Record<string, any> = {
+      _no_reply: true,
+      _followup_count: ((lead as any)._followup_count || 0) + 1,
+      _has_email_draft: false,
+    };
+    await this.leads.update(id, update as any, isAdmin(user) ? undefined : user.userId);
+
+    // Enqueue a new draft task with followup flag
+    const task = await this.tasks.enqueue({
+      skill_id: STAGE_SKILL_MAP['draft'],
+      title: `[Follow-up #${update._followup_count}] Re-outreach — ${(lead as any).company_name || id}`,
+      params: {
+        lead_object_id: id,
+        user_id: user.userId,
+        followup: true,
+        followup_count: update._followup_count,
+      },
+    });
+
+    return {
+      task_id: task.task_id,
+      lead_id: id,
+      followup_count: update._followup_count,
+    };
+  }
+
+  /** POST /leads/:id/reprocess?stage=enrich|analyze|draft|send */
+  @Post(':id/reprocess')
+  async reprocess(
+    @Param('id') id: string,
+    @Query('stage') stage: string,
+    @CurrentUser() user: JwtUser,
+  ) {
+    const skillId = STAGE_SKILL_MAP[stage];
+    if (!skillId) {
+      throw new BadRequestException(
+        `Invalid stage: ${stage}. Valid: enrich, analyze, draft, send`,
+      );
+    }
+    const lead = await this.leads.findOne(id, isAdmin(user) ? undefined : user.userId);
+    if (!lead) throw new NotFoundException('Lead not found');
+
+    const task = await this.tasks.enqueue({
+      skill_id: skillId,
+      title: `[手動重跑] ${stage} — ${(lead as any).company_name || id}`,
+      params: { lead_object_id: id, user_id: user.userId, manual_reprocess: true },
+    });
+    return { task_id: task.task_id, stage, lead_id: id };
   }
 
   @Delete(':id')
   @HttpCode(200)
-  @Permission('leads.delete')
-  async remove(@Param('id') id: string) {
-    await this.leads.remove(id);
+  async remove(@Param('id') id: string, @CurrentUser() user: JwtUser) {
+    await this.leads.remove(id, isAdmin(user) ? undefined : user.userId);
     return { id };
+  }
+
+  @Delete()
+  @HttpCode(200)
+  @Roles('super_admin')
+  async clearAll() {
+    const count = await this.leads.clearAll();
+    return { deleted: count };
   }
 }

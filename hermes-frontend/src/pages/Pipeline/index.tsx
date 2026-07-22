@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
+import { glassSurface } from '../../styles/glassSurface';
 import { PageHeader, Button, FilterBar, FormField, Table, Pagination, StatusBadge, Card } from '../../components';
 import { useLeads } from '../../api/hooks';
 import { Lead } from '../../api/leads';
@@ -19,38 +20,41 @@ const KanbanGrid = styled.div`
 
 const KanbanColumn = styled.div`
   background: ${({ theme }) => theme.colors.canvas};
-  border-radius: 8px;
+  border-radius: 14px;
   padding: 16px;
   min-height: 400px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
 `;
 
 const ColumnHeader = styled.div`
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
 const ColumnTitle = styled.h3`
-  font-size: 14px;
-  font-weight: 600;
+  font-size: 1rem;
+  font-weight: 700;
   margin: 0;
 `;
 
 const ColumnCount = styled.span`
-  background: ${({ theme }) => theme.colors.blue};
+  background: ${({ theme }) => theme.colors.accent};
   color: ${({ theme }) => theme.colors.surface};
-  font-size: 11px;
-  padding: 2px 8px;
+  font-size: 12px;
+  padding: 3px 10px;
   border-radius: 12px;
+  font-weight: 600;
 `;
 
 const LeadCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface};
   border-radius: 8px;
   padding: 12px;
   margin-bottom: 8px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   cursor: pointer;
 
   &:hover {
@@ -79,7 +83,7 @@ const LeadCardFooter = styled.div`
 const LeadScore = styled.span`
   font-size: 11px;
   font-weight: 600;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
 `;
 
 const ScoreBadge = styled.span<{ score: number }>`
@@ -88,16 +92,15 @@ const ScoreBadge = styled.span<{ score: number }>`
   border-radius: 12px;
   font-size: 12px;
   font-weight: 600;
-  color: #fff;
-  background: ${({ score }) =>
-    score >= 80 ? '#22c55e' : score >= 50 ? '#c19862' : '#c47474'};
+  color: ${({ theme }) => theme.colors.textInverted};
+  background: ${({ score, theme }) =>
+    score >= 80 ? theme.strong.olive : score >= 50 ? theme.strong.gold : theme.strong.mauve};
 `;
 
 const TableSection = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface};
   border-radius: 8px;
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 `;
 
 const KANBAN_STAGES = ['new', 'pending', 'contacted', 'qualified'] as const;

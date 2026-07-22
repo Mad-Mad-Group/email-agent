@@ -5,6 +5,7 @@ import { lightTheme, darkTheme } from './styles/theme';
 import { GlobalStyles } from './styles/GlobalStyles';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ThemeModeProvider, useThemeMode } from './contexts/ThemeModeContext';
+import { BadgeProvider } from './contexts/BadgeContext';
 import AppLayout from './layouts/AppLayout';
 import Dashboard from './pages/Dashboard';
 import Calendar from './pages/Calendar';
@@ -20,6 +21,10 @@ import TasksPage from './pages/Tasks';
 import UsersPage from './pages/Users';
 import SettingsPage from './pages/Settings';
 import AgentPanel from './pages/AgentPanel';
+import VerifiedEmailsPage from './pages/VerifiedEmails';
+import UserInfoPage from './pages/UserInfo';
+import { Toaster } from 'react-hot-toast';
+import { DialogProvider } from './components';
 import './i18n';
 
 /** Redirect to /login when no token */
@@ -29,10 +34,17 @@ const ProtectedRoute: React.FC = () => {
   return token ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
+/** Admin-only route wrapper — redirects non-admin to /dashboard */
+const AdminRoute: React.FC = () => {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  return isAdmin ? <Outlet /> : <Navigate to="/cms-agents" replace />;
+};
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000,
+      staleTime: 30 * 1000,
       retry: 1,
     },
   },
@@ -44,7 +56,24 @@ const ThemedApp: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
     <ThemeProvider theme={mode === 'dark' ? darkTheme : lightTheme}>
       <GlobalStyles />
-      {children}
+      <Toaster
+        position="top-right"
+        toastOptions={{
+          duration: 3500,
+          style: {
+            borderRadius: '10px',
+            background: mode === 'dark' ? '#1e1e2e' : '#fff',
+            color: mode === 'dark' ? '#e0e0e0' : '#333',
+            fontSize: '13px',
+            boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+          },
+          success: { iconTheme: { primary: '#10b981', secondary: '#fff' } },
+          error: { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+        }}
+      />
+      <DialogProvider>
+        {children}
+      </DialogProvider>
     </ThemeProvider>
   );
 };
@@ -54,6 +83,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <ThemeModeProvider>
+        <BadgeProvider>
         <ThemedApp>
           <BrowserRouter>
             <Routes>
@@ -86,12 +116,14 @@ function App() {
                   <Route path="/bank-accounts" element={<Placeholder />} />
                   {/* CMS */}
                   <Route path="/cms-leads" element={<Leads />} />
-                  <Route path="/cms-search" element={<SearchPage />} />
+                  <Route path="/cms-search" element={<Navigate to="/cms-agents" replace />} />
                   <Route path="/cms-email-queue" element={<EmailQueue />} />
                   <Route path="/cms-tasks" element={<TasksPage />} />
                   <Route path="/cms-users" element={<UsersPage />} />
-                  <Route path="/cms-agents" element={<AgentPanel />} />
                   <Route path="/cms-settings" element={<SettingsPage />} />
+                  <Route path="/cms-agents" element={<AgentPanel />} />
+                  <Route path="/cms-verified-emails" element={<VerifiedEmailsPage />} />
+                  <Route path="/cms-user-info" element={<UserInfoPage />} />
                   {/* RESOURCES */}
                   <Route path="/auth-404" element={<Placeholder />} />
                   <Route path="/auth-403" element={<Placeholder />} />
@@ -106,10 +138,11 @@ function App() {
                   <Route path="/changelog" element={<Placeholder />} />
                 </Route>
               </Route>
-              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              <Route path="*" element={<Navigate to="/cms-agents" replace />} />
             </Routes>
           </BrowserRouter>
         </ThemedApp>
+        </BadgeProvider>
         </ThemeModeProvider>
       </AuthProvider>
     </QueryClientProvider>

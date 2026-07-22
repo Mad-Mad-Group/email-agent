@@ -10,8 +10,8 @@ interface ButtonProps {
 }
 
 const primaryStyles = css`
-  background: ${({ theme }) => theme.colors.blue};
-  color: #fff;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textInverted};
   &:hover:not(:disabled) {
     opacity: 0.9;
   }
@@ -32,11 +32,13 @@ const StyledButton = styled.button<{ $variant: string }>`
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.textPrimary};
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 160ms var(--ease-out), border-color 160ms var(--ease-out), opacity 160ms var(--ease-out), transform 160ms var(--ease-out);
 
-  &:hover:not(:disabled) {
-    border-color: ${({ theme }) => theme.colors.borderStrong};
-    background: ${({ theme }) => theme.colors.surfaceMuted};
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) {
+      border-color: ${({ theme }) => theme.colors.borderStrong};
+      background: ${({ theme }) => theme.colors.surfaceMuted};
+    }
   }
 
   &:disabled {

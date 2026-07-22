@@ -5,25 +5,9 @@ import { Reflector } from '@nestjs/core';
 export class PermissionsGuard implements CanActivate {
   constructor(private readonly reflector: Reflector) {}
 
-  canActivate(context: ExecutionContext): boolean {
-    const permissions = this.reflector.getAllAndOverride<string[]>(
-      'permissions',
-      [context.getHandler(), context.getClass()],
-    );
-
-    if (!permissions || permissions.length === 0) {
-      return true;
-    }
-
-    const request = context.switchToHttp().getRequest();
-    const user = request.user;
-
-    // super_admin 跳過權限檢查
-    if (user?.role === 'super_admin') return true;
-
-    const userPermissions: string[] = user?.permissions || [];
-    return permissions.every((permission) =>
-      userPermissions.includes(permission),
-    );
+  canActivate(_context: ExecutionContext): boolean {
+    // 目前所有登入用戶都可存取全部功能，暫時停用細粒度 permission 檢查。
+    // 日後如需啟用，還原原本邏輯即可。
+    return true;
   }
 }

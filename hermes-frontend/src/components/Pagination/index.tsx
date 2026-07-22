@@ -34,16 +34,18 @@ const PageBtn = styled.button<{ $active?: boolean }>`
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid ${({ theme, $active }) => ($active ? theme.colors.blue : theme.colors.border)};
+  border: 1px solid ${({ theme, $active }) => ($active ? theme.colors.accent : theme.colors.border)};
   border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ theme, $active }) => ($active ? theme.colors.blue : theme.colors.surface)};
+  background: ${({ theme, $active }) => ($active ? theme.colors.accent : theme.colors.surface)};
   color: ${({ theme, $active }) => ($active ? '#fff' : theme.colors.textPrimary)};
   font-size: 0.813rem;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 150ms var(--ease-out), color 150ms var(--ease-out), border-color 150ms var(--ease-out);
 
-  &:hover:not(:disabled) {
-    border-color: ${({ theme }) => theme.colors.borderStrong};
+  @media (hover: hover) and (pointer: fine) {
+    &:hover:not(:disabled) {
+      border-color: ${({ theme }) => theme.colors.borderStrong};
+    }
   }
 
   &:disabled {

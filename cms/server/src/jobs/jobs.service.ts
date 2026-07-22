@@ -1,8 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { TasksService } from '../tasks/tasks.service';
 import { SKILL } from '../tasks/dto/task-status.enum';
 import { SseEvent, SseService } from '../sse/sse.service';
+import { Lead, LeadDocument } from '../leads/schemas/lead.schema';
 
 /** 卡喺 running 超過幾耐先 requeue（分鐘）*/
 const STALLED_MINUTES = 15;
@@ -18,6 +21,7 @@ export class JobsService {
   private readonly logger = new Logger(JobsService.name);
 
   constructor(
+    @InjectModel(Lead.name) private readonly leadModel: Model<LeadDocument>,
     private readonly tasks: TasksService,
     private readonly sse: SseService,
   ) {}
@@ -38,6 +42,26 @@ export class JobsService {
       const n = await this.tasks.requeueOldPending(STALE_PENDING_MINUTES);
       return { refreshed: n };
     });
+  }
+
+  /* ── Demo Mode：10s 自動 check replies ── */
+  private _demoMode = false;
+  private _demoTimer: ReturnType<typeof setInterval> | null = null;
+
+  get demoMode() { return this._demoMode; }
+
+  toggleDemoMode(): { demoMode: boolean } {
+    this._demoMode = !this._demoMode;
+    if (this._demoMode) {
+      this.logger.log('[demo] 開啟 Demo 模式 — 每 10 秒 check replies');
+      this._demoTimer = setInterval(() => {
+        this.checkReplies().catch(() => {});
+      }, 10_000);
+    } else {
+      this.logger.log('[demo] 關閉 Demo 模式 — 恢復 30 分鐘 cron');
+      if (this._demoTimer) { clearInterval(this._demoTimer); this._demoTimer = null; }
+    }
+    return { demoMode: this._demoMode };
   }
 
   /** 每 30 分鐘：派一個 S4 reply-check task 俾 agent 查回覆 */
@@ -66,6 +90,84 @@ export class JobsService {
     });
   }
 
+  /**
+   * Gap Filler：每 15 分鐘掃描 leads，搵出 pipeline 缺口自動補缺。
+   * 邏輯：
+   *  - 有 lead 但冇 _website_researched → enqueue S2 (enrich/analyze)
+   *  - 有 _has_analysis 但冇 _has_email_draft → enqueue S3 (draft)
+   *  - 有 _has_email_draft 但冇 _email_sent → enqueue S4 (send)
+   * 每次最多處理 20 條，避免一次派太多 task。
+   */
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  async fillGaps(): Promise<{ enqueued: number }> {
+    return this.runJob('gap-filler', async () => {
+      let enqueued = 0;
+      const BATCH = 20;
+
+      // Gap 1: 有 lead 但未做 website research（enrich + analyze）
+      const needEnrich = await this.leadModel.find({
+        _deleted_at: null,
+        _website_researched: { $ne: true },
+        website: { $exists: true, $nin: [null, ''] },
+      }).select('_id user_id').limit(BATCH).lean().exec();
+
+      for (const lead of needEnrich) {
+        if (enqueued >= BATCH) break;
+        // 檢查係咪已經有 pending/running 嘅同類 task
+        const dup = await this.tasks.findActiveOrRecent(SKILL.ANALYZE, { lead_object_id: (lead as any)._id.toString() }, 300_000);
+        if (dup) continue;
+        await this.tasks.enqueue({
+          skill_id: SKILL.ANALYZE,
+          title: `[gap-filler] enrich+analyze lead`,
+          params: { lead_object_id: (lead as any)._id.toString(), user_id: (lead as any).user_id, gap_fill: true },
+        });
+        enqueued++;
+      }
+
+      // Gap 2: 有 analysis 但未起草 email
+      const needDraft = await this.leadModel.find({
+        _deleted_at: null,
+        _has_analysis: true,
+        _has_email_draft: { $ne: true },
+        email: { $exists: true, $nin: [null, ''] },
+      }).select('_id user_id').limit(BATCH - enqueued).lean().exec();
+
+      for (const lead of needDraft) {
+        if (enqueued >= BATCH) break;
+        const dup = await this.tasks.findActiveOrRecent(SKILL.EMAIL_DRAFT, { lead_object_id: (lead as any)._id.toString() }, 300_000);
+        if (dup) continue;
+        await this.tasks.enqueue({
+          skill_id: SKILL.EMAIL_DRAFT,
+          title: `[gap-filler] draft email`,
+          params: { lead_object_id: (lead as any)._id.toString(), user_id: (lead as any).user_id, gap_fill: true },
+        });
+        enqueued++;
+      }
+
+      // Gap 3: 有 email draft 但未發送
+      const needSend = await this.leadModel.find({
+        _deleted_at: null,
+        _has_email_draft: true,
+        _email_sent: { $ne: true },
+        email: { $exists: true, $nin: [null, ''] },
+      }).select('_id user_id').limit(BATCH - enqueued).lean().exec();
+
+      for (const lead of needSend) {
+        if (enqueued >= BATCH) break;
+        const dup = await this.tasks.findActiveOrRecent(SKILL.EMAIL_SEND, { lead_object_id: (lead as any)._id.toString() }, 300_000);
+        if (dup) continue;
+        await this.tasks.enqueue({
+          skill_id: SKILL.EMAIL_SEND,
+          title: `[gap-filler] send email`,
+          params: { lead_object_id: (lead as any)._id.toString(), user_id: (lead as any).user_id, gap_fill: true },
+        });
+        enqueued++;
+      }
+
+      return { enqueued };
+    });
+  }
+
   /** 手動觸發（JobsController 用）*/
   async run(name: string) {
     switch (name) {
@@ -77,6 +179,8 @@ export class JobsService {
         return this.checkReplies();
       case 'check-followups':
         return this.checkFollowups();
+      case 'gap-filler':
+        return this.fillGaps();
       default:
         throw new Error(`Unknown job: ${name}`);
     }

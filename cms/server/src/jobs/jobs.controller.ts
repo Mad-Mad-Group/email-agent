@@ -1,5 +1,6 @@
 import {
   Controller,
+  Get,
   HttpCode,
   Param,
   Post,
@@ -24,5 +25,18 @@ export class JobsController {
   @Permission('jobs.run')
   async run(@Param('name') name: string) {
     return this.jobs.run(name);
+  }
+
+  @Post('demo-mode')
+  @HttpCode(200)
+  @Permission('jobs.run')
+  toggleDemoMode() {
+    return this.jobs.toggleDemoMode();
+  }
+
+  @Get('demo-mode')
+  @Permission('jobs.run')
+  getDemoMode() {
+    return { demoMode: this.jobs.demoMode };
   }
 }

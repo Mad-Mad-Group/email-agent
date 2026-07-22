@@ -9,6 +9,7 @@ export interface UserItem {
   role: string;
   permissions?: string[];
   createdAt?: string;
+  created_at?: string;
 }
 
 export const usersApi = {
@@ -18,6 +19,20 @@ export const usersApi = {
   update: (id: string, data: Record<string, unknown>) =>
     client.patch(`/users/${id}`, data),
   remove: (id: string) => client.delete(`/users/${id}`),
+};
+
+/* ── Token Usage ── */
+
+export interface TokenUsageByUser {
+  user_id: string;
+  total_tokens: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  call_count: number;
+}
+
+export const tokenUsageApi = {
+  byUser: () => client.get<TokenUsageByUser[]>('/token-usage'),
 };
 
 /* ── Roles ── */
@@ -47,12 +62,27 @@ export const settingsApi = {
     client.patch('/settings', data),
 };
 
+/* ── Notification Preferences ── */
+
+export interface NotificationPrefs {
+  email_on_complete: boolean;
+  browser_on_complete: boolean;
+  notification_email?: string;
+}
+
+export const notificationPrefsApi = {
+  get: () => client.get<NotificationPrefs>('/users/me/notification-prefs'),
+  update: (prefs: Partial<NotificationPrefs>) =>
+    client.patch<NotificationPrefs>('/users/me/notification-prefs', prefs),
+};
+
 /* ── Search ── */
 
 export interface SearchPayload {
   keyword: string;
   location: string;
   targetCount: number;
+  mode?: 'normal' | 'old_website';
 }
 
 export const searchApi = {
@@ -73,8 +103,18 @@ export interface TaskItem {
   updatedAt?: string;
 }
 
+export interface AgentSkillStats {
+  _id: string; // skill_id: S1, S2, S3, S4
+  completed: number;
+  failed: number;
+  running: number;
+  pending: number;
+  last_run: string | null;
+}
+
 export const tasksApi = {
   list: () => client.get('/tasks'),
+  stats: () => client.get<AgentSkillStats[]>('/tasks/stats'),
   get: (id: string) => client.get(`/tasks/${id}`),
   enqueue: (data?: Record<string, unknown>) =>
     client.post('/tasks', data),
@@ -120,4 +160,31 @@ export const uploadsApi = {
 
 export const jobsApi = {
   run: (name: string) => client.post(`/jobs/${name}/run`),
+};
+
+/* ── Verified Emails ── */
+
+export interface VerifiedEmailItem {
+  _id: string;
+  email: string;
+  company_name: string;
+  domain: string;
+  source_user_id: string;
+  source_lead_id?: string;
+  verification_method: string;
+  reply_count: number;
+  match_count: number;
+  status: string;
+  notes?: string;
+  created_at?: string;
+}
+
+export const verifiedEmailsApi = {
+  list: (params?: { page?: number; limit?: number; search?: string; status?: string; verification_method?: string }) =>
+    client.get('/verified-emails', { params }),
+  stats: () => client.get('/verified-emails/stats'),
+  create: (data: { email: string; company_name: string; notes?: string }) =>
+    client.post('/verified-emails', data),
+  remove: (id: string) => client.delete(`/verified-emails/${id}`),
+  exportUrl: () => `${client.defaults.baseURL}/verified-emails/export`,
 };

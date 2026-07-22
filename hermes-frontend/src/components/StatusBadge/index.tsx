@@ -1,24 +1,23 @@
 import React from 'react';
-import styled from 'styled-components';
+import styled, { useTheme, keyframes, css } from 'styled-components';
 
-type Status = 'new' | 'pending' | 'contacted' | 'rejected' | 'qualified' | 'draft' | 'approved' | 'sent';
+type Status = 'new' | 'pending' | 'contacted' | 'rejected' | 'qualified' | 'draft' | 'approved' | 'sent' | 'running' | 'idle' | 'active';
 
 interface StatusBadgeProps {
   status: Status;
 }
 
-const statusColorMap: Record<string, string> = {
-  new: 'new',
-  pending: 'pending',
-  contacted: 'contacted',
-  rejected: 'rejected',
-  qualified: 'qualified',
-  draft: 'pending',
-  approved: 'contacted',
-  sent: 'new',
-};
+const spinDots = keyframes`
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+`;
 
-const Pill = styled.span<{ $statusKey: string }>`
+const ledPulse = keyframes`
+  0%, 100% { box-shadow: 0 0 3px 1px currentColor; }
+  50%      { box-shadow: 0 0 8px 3px currentColor; }
+`;
+
+const Pill = styled.span<{ $bg: string; $fg: string; $isRunning?: boolean }>`
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -27,22 +26,51 @@ const Pill = styled.span<{ $statusKey: string }>`
   font-size: 0.75rem;
   font-weight: 500;
   font-family: ${({ theme }) => theme.fonts.primary};
-  background: ${({ theme, $statusKey }) => theme.status[$statusKey as keyof typeof theme.status].bg};
-  color: ${({ theme, $statusKey }) => theme.status[$statusKey as keyof typeof theme.status].fg};
+  background: ${({ $bg }) => $bg};
+  color: ${({ $fg }) => $fg};
 `;
 
-const Dot = styled.span<{ $statusKey: string }>`
-  width: 6px;
-  height: 6px;
+const LedDot = styled.span<{ $fg: string; $active?: boolean }>`
+  display: inline-block;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
-  background: ${({ theme, $statusKey }) => theme.status[$statusKey as keyof typeof theme.status].fg};
+  background: ${({ $fg }) => $fg};
+  color: ${({ $fg }) => $fg};
+  box-shadow: 0 0 3px 1px currentColor;
+  animation: ${({ $active }) => $active ? css`${ledPulse} 2s ease-in-out infinite` : 'none'};
+  flex-shrink: 0;
 `;
+
+const SpinnerWrap = styled.span`
+  display: inline-flex;
+  width: 14px;
+  height: 14px;
+  animation: ${spinDots} 1s linear infinite;
+`;
+
+const SpinnerSvg = () => (
+  <SpinnerWrap>
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+      <circle cx="7"    cy="1"    r="2"   fill="currentColor" opacity="1" />
+      <circle cx="2.5"  cy="3"    r="1.7" fill="currentColor" opacity="0.7" />
+      <circle cx="1"    cy="7"    r="1.4" fill="currentColor" opacity="0.45" />
+      <circle cx="3"    cy="11"   r="1.1" fill="currentColor" opacity="0.25" />
+      <circle cx="7"    cy="13"   r="0.9" fill="currentColor" opacity="0.12" />
+    </svg>
+  </SpinnerWrap>
+);
 
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status }) => {
-  const key = statusColorMap[status] ?? 'new';
+  const theme = useTheme();
+  const statusColor = theme.status[status] || theme.status.new;
+  const fg = statusColor.fg;
+  const bg = statusColor.bg;
+  const isRunning = status === 'running';
+  const isActive = isRunning || status === 'active';
   return (
-    <Pill $statusKey={key}>
-      <Dot $statusKey={key} />
+    <Pill $fg={fg} $bg={bg} $isRunning={isRunning}>
+      {isRunning ? <SpinnerSvg /> : <LedDot $fg={fg} $active={isActive} />}
       {status}
     </Pill>
   );

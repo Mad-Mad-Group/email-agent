@@ -21,12 +21,12 @@ export class AiAnalysisService {
   ) {}
 
   /** 派一個分析 task（by lead _id） */
-  async analyzeLead(id: string) {
+  async analyzeLead(id: string, userId?: string) {
     const lead = await this.leads.findOne(id); // 驗證存在
     const task = await this.tasks.enqueue({
       skill_id: SKILL.ANALYZE, // S2 深度分析客戶
       title: `分析：${lead.company_name}`,
-      params: { lead_id: lead.lead_id, lead_object_id: id },
+      params: { lead_id: lead.lead_id, lead_object_id: id, user_id: userId },
     });
     return { task_id: task.task_id, status: task.status, lead_id: lead.lead_id };
   }

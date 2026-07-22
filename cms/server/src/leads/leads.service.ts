@@ -28,9 +28,10 @@ export class LeadsService {
     @Optional() private readonly sse?: SseService,
   ) {}
 
-  async create(dto: CreateLeadDto): Promise<LeadDocument> {
+  async create(dto: CreateLeadDto, userId?: string): Promise<LeadDocument> {
     const lead = await this.leadModel.create({
       ...dto,
+      ...(userId ? { user_id: userId } : {}),
       status: null, // null = NEW（同 Python 一致）
       _status: 'unverified',
     });
@@ -38,9 +39,13 @@ export class LeadsService {
     return lead;
   }
 
-  /** 分頁列表（排除 soft-deleted）。controller 再包成 {status,data,total,page} */
-  async findAll(q: ListLeadsQueryDto) {
+  /**
+   * 分頁列表（排除 soft-deleted）。controller 再包成 {status,data,total,page}
+   * @param userId 傳入時只回傳該用戶嘅 leads；undefined = 回傳全部（admin 用）
+   */
+  async findAll(q: ListLeadsQueryDto, userId?: string) {
     const filter: FilterQuery<LeadDocument> = { _deleted_at: null };
+    if (userId) filter.user_id = userId;
 
     if (q.status) {
       // NEW 喺 DB 係 null，要特別處理
@@ -71,17 +76,17 @@ export class LeadsService {
     return { items, total, page, limit };
   }
 
-  async findOne(id: string): Promise<LeadDocument> {
+  async findOne(id: string, userId?: string): Promise<LeadDocument> {
     this.assertObjectId(id);
-    const lead = await this.leadModel
-      .findOne({ _id: id, _deleted_at: null })
-      .exec();
+    const filter: FilterQuery<LeadDocument> = { _id: id, _deleted_at: null };
+    if (userId) filter.user_id = userId;
+    const lead = await this.leadModel.findOne(filter).exec();
     if (!lead) throw new NotFoundException('Lead not found');
     return lead;
   }
 
-  async update(id: string, dto: UpdateLeadDto): Promise<LeadDocument> {
-    const lead = await this.findOne(id);
+  async update(id: string, dto: UpdateLeadDto, userId?: string): Promise<LeadDocument> {
+    const lead = await this.findOne(id, userId);
     // 只 assign 有值嘅欄位，避免 undefined 覆寫現有資料
     const clean = Object.fromEntries(
       Object.entries(dto).filter(([, v]) => v !== undefined),
@@ -96,8 +101,9 @@ export class LeadsService {
   async changeStatus(
     id: string,
     dto: UpdateLeadStatusDto,
+    userId?: string,
   ): Promise<LeadDocument> {
-    const lead = await this.findOne(id);
+    const lead = await this.findOne(id, userId);
     const current = normalizeStatus(lead.status);
 
     if (!canTransition(current, dto.status)) {
@@ -122,13 +128,13 @@ export class LeadsService {
   }
 
   /** mark-interested：推入 pending */
-  markInterested(id: string) {
-    return this.changeStatus(id, { status: LeadStatus.PENDING });
+  markInterested(id: string, userId?: string) {
+    return this.changeStatus(id, { status: LeadStatus.PENDING }, userId);
   }
 
   /**
    * 由 Search/Scraper 寫入新 lead。
-   * 會自動生成 lead_id、去重（同 company_name + source 已存在就 skip 回 null）。
+   * 去重：同 website 或同 company_name 已存在就 skip 回 null。
    */
   async createFromSearch(data: {
     company_name: string;
@@ -140,8 +146,9 @@ export class LeadsService {
     google_maps_url?: string;
     category?: string;
   }): Promise<LeadDocument | null> {
-    const exists = await this.leadModel
-      .exists({ company_name: data.company_name, source: data.source });
+    const orConds: Record<string, unknown>[] = [{ company_name: data.company_name }];
+    if (data.website) orConds.push({ website: data.website });
+    const exists = await this.leadModel.exists({ $or: orConds, _deleted_at: null });
     if (exists) return null; // 去重
 
     const lead = await this.leadModel.create({
@@ -206,11 +213,24 @@ export class LeadsService {
   }
 
   /** soft delete（additive _deleted_at 標記，Python 會忽略）*/
-  async remove(id: string): Promise<void> {
-    const lead = await this.findOne(id);
+  async remove(id: string, userId?: string): Promise<void> {
+    const lead = await this.findOne(id, userId);
     lead._deleted_at = this.nowStamp();
     await lead.save();
     this.sse?.emit(SseEvent.LEAD_UPDATE, { id: lead.id, action: 'deleted' });
+  }
+
+  /**
+   * ponytail: hard-delete every lead. Used by the "一鍵清空" button on the
+   * Leads page. Backend-only — no soft-delete tombstone, no audit. Intentional:
+   * dev tool, NOT exposed to non-super_admin in the controller decorator.
+   */
+  async clearAll(): Promise<number> {
+    // ponytail: bulk deleteMany. SSE_LEAD_UPDATE payload type is strict on
+    // action+id only, so we skip per-row events and let the frontend refetch
+    // the (now-empty) list via React Query invalidation.
+    const res = await this.leadModel.deleteMany({}).exec();
+    return res.deletedCount ?? 0;
   }
 
   // ---- helpers ----

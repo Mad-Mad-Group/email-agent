@@ -1,7 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { leadsApi, LeadListParams } from './leads';
 import { emailQueueApi, EmailListParams } from './emailQueue';
-import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi } from './services';
+import { notificationsApi } from './notifications';
+import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi, AgentSkillStats, verifiedEmailsApi, notificationPrefsApi, tokenUsageApi } from './services';
 import { authApi } from './auth';
 
 /* ── Auth ── */
@@ -13,12 +14,30 @@ export const useMe = () =>
     retry: false,
   });
 
+export const useUpdateProfile = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { name?: string; email?: string; companyName?: string; companyDescription?: string; companyWebsite?: string }) =>
+      authApi.updateProfile(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['auth', 'me'] });
+    },
+  });
+};
+
+export const useChangePassword = () =>
+  useMutation({
+    mutationFn: ({ oldPassword, newPassword }: { oldPassword: string; newPassword: string }) =>
+      authApi.changePassword(oldPassword, newPassword),
+  });
+
 /* ── Leads ── */
 
 export const useLeads = (params?: LeadListParams) =>
   useQuery({
     queryKey: ['leads', params],
     queryFn: () => leadsApi.list(params).then(r => r.data),
+    refetchInterval: 120_000, // SSE 即時更新為主，polling 做 fallback
   });
 
 export const useLead = (id: string) =>
@@ -53,6 +72,16 @@ export const useDeleteLead = () => {
   });
 };
 
+// ponytail: bulk-clear hook. Returns deleted-count from server so the caller
+// can show "已清 N 筆" feedback.
+export const useClearAllLeads = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => leadsApi.clearAll().then(r => r.data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
+  });
+};
+
 export const useChangeLeadStatus = () => {
   const qc = useQueryClient();
   return useMutation({
@@ -65,12 +94,22 @@ export const useChangeLeadStatus = () => {
 export const useScrapeLead = () =>
   useMutation({ mutationFn: (id: string) => leadsApi.scrape(id) });
 
+export const useReprocessLead = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, stage }: { id: string; stage: string }) =>
+      leadsApi.reprocess(id, stage),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
+  });
+};
+
 /* ── Email Queue ── */
 
 export const useEmailQueue = (params?: EmailListParams) =>
   useQuery({
     queryKey: ['emailQueue', params],
     queryFn: () => emailQueueApi.list(params).then(r => r.data),
+    refetchInterval: 120_000, // SSE 即時更新為主，polling 做 fallback
   });
 
 export const useEmailItem = (id: string) =>
@@ -141,6 +180,14 @@ export const useTasks = () =>
   useQuery({
     queryKey: ['tasks'],
     queryFn: () => tasksApi.list().then(r => r.data),
+    refetchInterval: 120_000, // SSE 即時更新為主，polling 做 fallback
+  });
+
+export const useAgentStats = () =>
+  useQuery({
+    queryKey: ['tasks', 'stats'],
+    queryFn: () => tasksApi.stats().then(r => r.data as unknown as AgentSkillStats[]),
+    refetchInterval: 120_000,
   });
 
 /* ── Users ── */
@@ -149,6 +196,14 @@ export const useUsers = (params?: { page?: number; limit?: number }) =>
   useQuery({
     queryKey: ['users', params],
     queryFn: () => usersApi.list(params).then(r => r.data),
+  });
+
+/* ── Token Usage ── */
+
+export const useTokenUsage = () =>
+  useQuery({
+    queryKey: ['token-usage'],
+    queryFn: () => tokenUsageApi.byUser().then(r => r.data),
   });
 
 /* ── Settings ── */
@@ -185,6 +240,7 @@ export const useDashboardStats = () =>
         recentLeads: (leadsRes.data as any)?.data ?? [],
       };
     },
+    refetchInterval: 120_000, // SSE 即時更新為主，polling 做 fallback
   });
 
 export const useEmailDrafts = () => useEmailQueue();
@@ -263,3 +319,113 @@ export const useAgents = () =>
       ],
     }),
   });
+
+/* ── Notifications ── */
+
+export const useNotifications = (params?: { read?: boolean; limit?: number; page?: number }) =>
+  useQuery({
+    queryKey: ['notifications', params],
+    queryFn: () => notificationsApi.list(params).then(r => r.data),
+    refetchInterval: 120_000, // SSE 即時更新為主，polling 做 fallback // 30s polling
+  });
+
+export const useUnreadCount = () =>
+  useQuery({
+    queryKey: ['notifications', 'unread-count'],
+    queryFn: () => notificationsApi.unreadCount().then(r => (r.data as any)?.unread_count ?? 0),
+    refetchInterval: 120_000, // SSE 即時更新為主，polling 做 fallback
+  });
+
+export const useMarkNotificationRead = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => notificationsApi.markRead(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
+export const useMarkAllNotificationsRead = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => notificationsApi.markAllRead(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
+export const useDismissNotification = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => notificationsApi.dismiss(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
+export const useDismissAllNotifications = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => notificationsApi.dismissAll(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notifications'] });
+    },
+  });
+};
+
+/* ── Verified Emails ── */
+
+export const useVerifiedEmails = (params?: { page?: number; limit?: number; search?: string; status?: string; verification_method?: string }) =>
+  useQuery({
+    queryKey: ['verified-emails', params],
+    queryFn: () => verifiedEmailsApi.list(params).then(r => r.data),
+  });
+
+export const useVerifiedEmailStats = () =>
+  useQuery({
+    queryKey: ['verified-emails', 'stats'],
+    queryFn: () => verifiedEmailsApi.stats().then(r => r.data),
+  });
+
+export const useCreateVerifiedEmail = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { email: string; company_name: string; notes?: string }) =>
+      verifiedEmailsApi.create(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['verified-emails'] });
+    },
+  });
+};
+
+export const useDeleteVerifiedEmail = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => verifiedEmailsApi.remove(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['verified-emails'] });
+    },
+  });
+};
+
+/* ── Notification Preferences ── */
+
+export const useNotificationPrefs = () =>
+  useQuery({
+    queryKey: ['notification-prefs'],
+    queryFn: () => notificationPrefsApi.get().then(r => r.data),
+  });
+
+export const useUpdateNotificationPrefs = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (prefs: { email_on_complete?: boolean; browser_on_complete?: boolean }) =>
+      notificationPrefsApi.update(prefs),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['notification-prefs'] });
+    },
+  });
+};

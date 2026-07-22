@@ -34,6 +34,18 @@ export interface Lead {
   _reply_next_step?: string;
   _reply_via?: string;
   _reply_at?: string;
+  _pending_meeting?: boolean;
+  _followup_count?: number;
+  _has_email_draft?: boolean;
+
+  /* ── AI analysis fields (written by worker doAnalyze / doEnrich) ── */
+  _tech_score?: number;
+  _email_draft_score?: number;
+  _email_draft_score_reason?: string;
+  _collab_primary?: string;
+  _collab_pitch?: string;
+  _collab_reason?: string;
+  _collab_services?: string[];
 }
 
 export interface LeadListParams {
@@ -72,6 +84,11 @@ export const leadsApi = {
   remove: (id: string) =>
     client.delete(`/leads/${id}`),
 
+  // ponytail: bulk clear — DELETE /leads (no :id). Backend must register this
+  // route AFTER @Delete(':id') so the empty path resolves to the collection.
+  clearAll: () =>
+    client.delete<{ deleted: number }>('/leads'),
+
   changeStatus: (id: string, status: string, note?: string) =>
     client.patch(`/leads/${id}/status`, { status, note }),
 
@@ -80,4 +97,10 @@ export const leadsApi = {
 
   scrape: (id: string) =>
     client.post(`/leads/${id}/scrape`),
+
+  reprocess: (id: string, stage: string) =>
+    client.post(`/leads/${id}/reprocess?stage=${stage}`),
+
+  simulateNoReply: (id: string) =>
+    client.post<{ task_id: string; lead_id: string; followup_count: number }>(`/leads/${id}/simulate-no-reply`),
 };

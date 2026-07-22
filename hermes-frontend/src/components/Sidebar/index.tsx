@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import styled, { css } from 'styled-components';
-import { NavLink, useLocation } from 'react-router-dom';
+import styled, { css, keyframes } from 'styled-components';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { media } from '../../styles/media';
+import { glassSurface } from '../../styles/glassSurface';
+import { useAuth } from '../../contexts/AuthContext';
+import { useBadge } from '../../contexts/BadgeContext';
 
 /* ── LUNO SVG Icons ── */
 
@@ -114,7 +118,7 @@ const IconLeads = () => (
 );
 
 const IconSearch = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="currentColor" viewBox="0 0 16 16">
+  <svg xmlns="http://www.w3.org/2000/svg" width="22" fill="currentColor" viewBox="0 0 16 16">
     <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
   </svg>
 );
@@ -146,6 +150,13 @@ const IconSettings = () => (
   </svg>
 );
 
+const IconUserInfo = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
+    <path opacity="0.5" d="M2 13c0-2.21 2.686-4 6-4s6 1.79 6 4v1H2v-1z" />
+  </svg>
+);
+
 const IconAgent = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="currentColor" viewBox="0 0 16 16">
     <path d="M6 12.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5ZM3 8.062C3 6.76 4.235 5.765 5.53 5.886a26.58 26.58 0 0 0 4.94 0C11.765 5.765 13 6.76 13 8.062v1.157a.933.933 0 0 1-.765.935c-.845.147-2.34.346-4.235.346-1.895 0-3.39-.2-4.235-.346A.933.933 0 0 1 3 9.219V8.062Z" />
@@ -153,16 +164,19 @@ const IconAgent = () => (
   </svg>
 );
 
-const IconSignOut = () => (
+const IconVerifiedEmail = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="currentColor" viewBox="0 0 16 16">
-    <path d="M7.5 1v7h1V1h-1z" />
-    <path opacity="0.5" d="M3 8.812a4.999 4.999 0 0 1 2.578-4.375l-.485-.874A6 6 0 1 0 14 8a6 6 0 0 0-4.907-5.437l-.485.874A4.999 4.999 0 0 1 13 8.812 5 5 0 1 1 3 8.812z" />
+    <path d="M2.5 1A1.5 1.5 0 0 0 1 2.5v11A1.5 1.5 0 0 0 2.5 15h3.05a3.5 3.5 0 0 1-.713-1H2.5a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 .5.5V5h1V2.5A1.5 1.5 0 0 0 13.5 1h-11z" />
+    <path opacity="0.5" d="M16 8a3 3 0 1 1-6 0 3 3 0 0 1 6 0zm-3.97-1.03a.75.75 0 0 0-1.06 1.06l1 1a.75.75 0 0 0 1.06 0l2-2a.75.75 0 0 0-1.06-1.06L12.5 7.44l-.47-.47z" />
+    <path d="M4.5 4a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zm0 2a.5.5 0 0 0 0 1h3.5a.5.5 0 0 0 0-1H4.5z" />
   </svg>
 );
 
-const IconArrow = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="10" fill="currentColor" viewBox="0 0 16 16">
-    <path fillRule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z" />
+/* Door + arrow logout icon */
+const IconLogout = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M6 12.5a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-9a.5.5 0 0 0-.5-.5h-8a.5.5 0 0 0-.5.5v2a.5.5 0 0 1-1 0v-2A1.5 1.5 0 0 1 6.5 2h8A1.5 1.5 0 0 1 16 3.5v9a1.5 1.5 0 0 1-1.5 1.5h-8A1.5 1.5 0 0 1 5 12.5v-2a.5.5 0 0 1 1 0v2z" />
+    <path opacity="0.5" d="M.146 8.354a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L1.707 7.5H10.5a.5.5 0 0 1 0 1H1.707l2.147 2.146a.5.5 0 0 1-.708.708l-3-3z" />
   </svg>
 );
 
@@ -171,7 +185,11 @@ const IconArrow = () => (
 /* Hide text labels when sidebar is collapsed (tablet or manual collapse) */
 const collapsedHide = css`
   [data-collapsed="true"] & {
-    display: none;
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    overflow: hidden;
+    transition: opacity 0.15s;
   }
 `;
 
@@ -181,51 +199,37 @@ const ScrollArea = styled.div`
   overflow-y: auto;
   min-height: 0;
   padding: 0 0 8px 8px;
+
+  [data-collapsed="true"] & {
+    padding: 0 0 8px 0;
+  }
+
   /* webkit-only: Chrome 149 ignores ::-webkit-scrollbar when scrollbar-width is set */
   &::-webkit-scrollbar {
     width: 5px;
   }
   &::-webkit-scrollbar-track {
-    background: ${({ theme }) => theme.colors.canvas};
+    background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-    background: rgba(0,0,0,0.25);
+    background: rgba(255,255,255,0.15);
     border-radius: 3px;
   }
 
-  [data-collapsed="true"] & {
-    padding: 0 0 8px 4px;
-  }
 `;
 
 const Wrapper = styled.aside<{ $mobileOpen?: boolean; $collapsed?: boolean }>`
-  position: sticky;
-  top: 0;
   width: 100%;
-  background: ${({ theme }) => theme.colors.canvas};
+  height: 100%;
+  background: ${({ theme }) => theme.sidebar.bg};
   border: none;
+  border-radius: 20px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   padding: 0;
-  height: 100vh;
-
-  /* White overlay hides scrollbar thumb; stops before FooterLinks so gap is consistent */
-  &::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 5px;
-    bottom: 51px;
-    background: ${({ theme }) => theme.colors.canvas};
-    pointer-events: none;
-    transition: opacity 0.4s ease;
-    z-index: 2;
-  }
-  &:hover::after {
-    opacity: 0;
-  }
+  z-index: 1;
+  transition: width 0.3s ease;
 
   ${media.mobile} {
     position: fixed;
@@ -234,16 +238,14 @@ const Wrapper = styled.aside<{ $mobileOpen?: boolean; $collapsed?: boolean }>`
     z-index: 1000;
     width: 260px;
     height: 100vh;
+    border-radius: 0;
     transform: translateX(${({ $mobileOpen }) => ($mobileOpen ? '0' : '-100%')});
     transition: transform 0.25s ease;
     box-shadow: ${({ $mobileOpen }) => ($mobileOpen ? '4px 0 20px rgba(0,0,0,0.15)' : 'none')};
-    background: ${({ theme }) => theme.colors.canvas};
   }
 
   ${({ $collapsed }) => $collapsed && css`
-    padding: 0 4px 8px;
-    align-items: center;
-    background: ${({ theme }: any) => theme.colors.canvas};
+    padding: 0;
   `}
 `;
 
@@ -253,21 +255,25 @@ const TitleRow = styled.div`
   height: 64px;
   padding: 0 12px 0 8px;
   flex-shrink: 0;
+  overflow: hidden;
+  width: 200px;
+  min-width: 200px;
 
   [data-collapsed="true"] & {
-    display: none;
+    opacity: 0;
+    pointer-events: none;
+    transition: none;
   }
 `;
 
 const SidebarTitle = styled.h4`
   margin: 0;
   font-family: ${({ theme }) => theme.fonts.display};
-  font-size: 1.35rem;
+  font-size: 1.2rem;
   font-weight: 400;
-  letter-spacing: 1.5px;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  flex: 1;
-  ${collapsedHide}
+  letter-spacing: 1.8px;
+  color: ${({ theme }) => theme.sidebar.text};
+  white-space: nowrap;
 `;
 
 const ProjectSelect = styled.div`
@@ -282,12 +288,12 @@ const Select = styled.select`
   flex: 1;
   padding: 6px 12px;
   border-radius: 20px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid ${({ theme }) => theme.sidebar.border};
   font-size: 0.8125rem;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.sidebar.text};
+  background: ${({ theme }) => theme.sidebar.hoverBg};
   outline: none;
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const PlusBtn = styled.button`
@@ -295,61 +301,64 @@ const PlusBtn = styled.button`
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: var(--primary, #2563eb);
-  color: #fff;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textInverted};
   font-size: 1rem;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  &:hover { opacity: 0.9; }
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { opacity: 0.9; }
+  }
 `;
 
 const MenuList = styled.ul`
   list-style: none;
   margin: 4px 6px 4px 8px;
   padding: 0;
-  border: 1px dashed ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-
-  & > li + li {
-    border-top: 1px dashed ${({ theme }) => theme.colors.border};
-  }
 
   [data-collapsed="true"] & {
-    margin: 4px 2px;
-    border: none;
-
-    & > li + li {
-      border-top: none;
-    }
+    margin: 4px 0;
   }
+`;
+
+const MenuSpacer = styled.li`
+  height: 12px;
+`;
+
+const BottomMenuList = styled(MenuList)`
+  margin-top: auto;
 `;
 
 const Divider = styled.li`
   padding: 8px 10px 4px;
   line-height: 1.3;
-
-  [data-collapsed="true"] & {
-    padding: 8px 4px 4px;
-  }
 `;
 
 const DividerLabel = styled.span`
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.sidebar.textMuted};
   ${collapsedHide}
 `;
 
 const DividerSmall = styled.small`
   display: block;
   font-size: 0.625rem;
-  color: ${({ theme }) => theme.colors.textTertiary};
+  color: ${({ theme }) => theme.sidebar.textMuted};
   margin-top: 2px;
   ${collapsedHide}
+`;
+
+const iconFloat = keyframes`
+  0%   { transform: translateY(0)   rotate(0deg); }
+  25%  { transform: translateY(-3px) rotate(4deg); }
+  50%  { transform: translateY(-4px) rotate(0deg); }
+  75%  { transform: translateY(-3px) rotate(-4deg); }
+  100% { transform: translateY(0)   rotate(0deg); }
 `;
 
 const MLink = styled(NavLink)`
@@ -357,102 +366,68 @@ const MLink = styled(NavLink)`
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  border-radius: 14px;
+  font-size: 0.9375rem;
+  color: ${({ theme }) => theme.sidebar.text};
   text-decoration: none;
-  transition: all 0.15s ease;
+  transition: background 150ms var(--ease-out), color 150ms var(--ease-out);
 
-  &:hover {
-    color: ${({ theme }) => theme.colors.textPrimary};
-    background: ${({ theme }) => theme.colors.surfaceMuted};
+  svg { transition: transform 0.2s ease; }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: ${({ theme }) => theme.sidebar.text};
+      background: ${({ theme }) => theme.sidebar.hoverBg};
+      svg { animation: ${iconFloat} 0.6s ease-in-out; }
+    }
   }
 
   &.active {
-    color: var(--primary, #2563eb);
+    background: ${({ theme }) => theme.strong.mauve}22;
+    color: ${({ theme }) => theme.strong.mauve};
     font-weight: 600;
+    svg { color: ${({ theme }) => theme.strong.mauve}; }
   }
+
+  svg { flex-shrink: 0; }
+
+  span { white-space: nowrap; }
 
   [data-collapsed="true"] & {
+    padding: 8px 0;
     justify-content: center;
-    padding: 10px 4px;
-    span { display: none; }
+    gap: 0;
+    overflow: hidden;
+    span { opacity: 0; pointer-events: none; width: 0; height: 0; overflow: hidden; }
   }
 `;
 
-const MLinkButton = styled.button<{ $active?: boolean }>`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  color: ${({ theme, $active }) => $active ? 'var(--primary, #2563eb)' : theme.colors.textPrimary};
-  font-weight: ${({ $active }) => $active ? 600 : 400};
-  text-decoration: none;
-  transition: all 0.15s ease;
-  background: none;
-  border: none;
-  width: 100%;
-  cursor: pointer;
-  text-align: left;
-
-  &:hover {
-    background: ${({ theme }) => theme.colors.surfaceMuted};
-  }
+const SearchLink = styled(MLink)`
+  font-size: 1.0625rem;
+  font-weight: 600;
+  padding: 10px 12px;
+  gap: 10px;
 
   [data-collapsed="true"] & {
+    padding: 10px 0;
     justify-content: center;
-    padding: 10px 4px;
-    span { display: none; }
-  }
-`;
-
-const ArrowIcon = styled.span<{ $open: boolean }>`
-  margin-left: auto;
-  display: inline-flex;
-  transition: transform 0.2s ease;
-  transform: rotate(${({ $open }) => $open ? '90deg' : '0deg'});
-  color: ${({ theme }) => theme.colors.textTertiary};
-  ${collapsedHide}
-`;
-
-const SubMenu = styled.ul<{ $open: boolean }>`
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-  max-height: ${({ $open }) => $open ? '600px' : '0'};
-  transition: max-height 0.3s ease;
-  ${collapsedHide}
-`;
-
-const SubLink = styled(NavLink)`
-  display: block;
-  padding: 6px 12px 6px 38px;
-  font-size: 0.875rem;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  text-decoration: none;
-  transition: color 0.15s;
-
-  &:hover {
-    color: ${({ theme }) => theme.colors.textPrimary};
-  }
-
-  &.active {
-    color: var(--primary, #2563eb);
-    font-weight: 500;
+    gap: 0;
   }
 `;
 
 const Badge = styled.span`
-  font-size: 0.6875rem;
-  font-weight: 600;
-  background: var(--primary, #2563eb);
-  color: #fff;
-  padding: 1px 7px;
-  border-radius: 20px;
+  font-size: 0.625rem;
+  font-weight: 700;
+  background: ${({ theme }) => theme.strong.mauve};
+  color: ${({ theme }) => theme.colors.textInverted};
+  min-width: 18px;
+  height: 18px;
+  line-height: 18px;
+  text-align: center;
+  padding: 0 5px;
+  border-radius: 10px;
   margin-left: auto;
+  flex-shrink: 0;
   ${collapsedHide}
 `;
 
@@ -464,7 +439,7 @@ const FooterLinks = styled.ul`
   justify-content: center;
   gap: 4px;
   flex-shrink: 0;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  border-top: 1px solid ${({ theme }) => theme.sidebar.border};
   margin-top: auto;
 
   /* Collapsed sidebar → stack vertically */
@@ -497,15 +472,24 @@ const FooterBtn = styled.a`
   justify-content: center;
   width: 100%;
   padding: 8px;
-  color: ${({ theme }) => theme.colors.textTertiary};
+  color: ${({ theme }) => theme.sidebar.textMuted};
   text-decoration: none;
-  border-radius: 8px;
-  transition: all 0.15s;
+  border-radius: 14px;
+  transition: background 150ms var(--ease-out), color 150ms var(--ease-out);
   cursor: pointer;
 
-  &:hover {
-    color: ${({ theme }) => theme.colors.textPrimary};
-    background: ${({ theme }) => theme.colors.surfaceMuted};
+  svg { transition: transform 0.2s ease; }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      color: ${({ theme }) => theme.sidebar.text};
+      background: ${({ theme }) => theme.sidebar.hoverBg};
+      svg { animation: ${iconFloat} 0.6s ease-in-out; }
+    }
+  }
+
+  &.active {
+    color: ${({ theme }) => theme.sidebar.text};
   }
 
   ${media.mobile} {
@@ -521,6 +505,131 @@ const FooterBtn = styled.a`
   }
 `;
 
+/* ── Logout Confirmation Dialog ── */
+const logoutFadeIn = keyframes`
+  from { opacity: 0; }
+  to   { opacity: 1; }
+`;
+
+const LogoutOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: ${logoutFadeIn} 0.15s ease;
+`;
+
+const LogoutDialog = styled.div`
+  ${glassSurface};
+  border-radius: 16px;
+  padding: 28px 32px 24px;
+  width: min(360px, 90vw);
+  text-align: center;
+  animation: ${logoutFadeIn} 0.2s ease;
+`;
+
+const LogoutIconWrap = styled.div`
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.strong.mauve}12;
+  color: ${({ theme }) => theme.strong.mauve};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  svg { width: 24px; height: 24px; }
+`;
+
+const LogoutTitle = styled.h3`
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const LogoutDesc = styled.p`
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  line-height: 1.5;
+`;
+
+const LogoutActions = styled.div`
+  display: flex;
+  gap: 10px;
+`;
+
+const LogoutCancelBtn = styled.button`
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  }
+`;
+
+const LogoutConfirmBtn = styled.button`
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: none;
+  background: ${({ theme }) => theme.strong.mauve};
+  color: ${({ theme }) => theme.colors.textInverted};
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { opacity: 0.9; }
+  }
+`;
+
+/* ── Tooltip for footer buttons ── */
+const FooterTooltip = styled.div`
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ theme }) => theme.colors.canvas};
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+`;
+
+const FooterBtnWrap = styled.div`
+  position: relative;
+  flex: 1;
+  text-align: center;
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover ${FooterTooltip} {
+      opacity: 1;
+    }
+  }
+
+  [data-collapsed="true"] & {
+    flex: none;
+    width: 100%;
+  }
+`;
+
 /* ── Component ── */
 
 interface SidebarProps {
@@ -532,6 +641,22 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, collapsed = false }) => {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  const { counts, clearBadge } = useBadge();
+
+  /* Clear badge when user visits a route */
+  useEffect(() => {
+    const path = location.pathname;
+    if (counts[path]) clearBadge(path);
+  }, [location.pathname, counts, clearBadge]);
+
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const handleLogout = () => {
+    setShowLogoutDialog(false);
+    logout();
+    navigate('/login', { replace: true });
+  };
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
     applications: location.pathname.startsWith('/app-'),
     account: location.pathname.startsWith('/account'),
@@ -555,130 +680,24 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
       {/* Title */}
       <TitleRow>
         <SidebarTitle>
-          MAD MAD CMS
+          Client Radar AI
         </SidebarTitle>
       </TitleRow>
 
-      {/* MAIN section */}
       <MenuList>
-        <Divider>
-          <DividerLabel>{t('nav.main')}</DividerLabel>
-          <DividerSmall>{t('nav.uniqueDashboards')}</DividerSmall>
-        </Divider>
-        <li>
-          <MLink to="/dashboard"><IconHome /><span>{t('nav.myDashboard')}</span></MLink>
-        </li>
-        <li>
-          <MLinkButton $active={openMenus.applications || location.pathname.startsWith('/app-')} onClick={() => toggle('applications')}>
-            <IconApps /><span>{t('nav.applications')}</span>
-            <ArrowIcon $open={openMenus.applications}><IconArrow /></ArrowIcon>
-          </MLinkButton>
-          <SubMenu $open={openMenus.applications}>
-            <li><SubLink to="/app-calendar">{t('nav.calendar')}</SubLink></li>
-            <li><SubLink to="/app-calendar-tui">{t('nav.tuiCalendar')}</SubLink></li>
-            <li><SubLink to="/app-email">{t('nav.emailApp')}</SubLink></li>
-            <li><SubLink to="/app-chat">{t('nav.chatApp')}</SubLink></li>
-            <li><SubLink to="/app-campaigns">{t('nav.campaigns')}</SubLink></li>
-            <li><SubLink to="/app-social">{t('nav.socialApp')}</SubLink></li>
-            <li><SubLink to="/app-file-manager">{t('nav.fileManager')}</SubLink></li>
-            <li><SubLink to="/app-todo">{t('nav.todoApp')}</SubLink></li>
-            <li><SubLink to="/app-contacts">{t('nav.contacts')}</SubLink></li>
-            <li><SubLink to="/app-tasks">{t('nav.tasks')}</SubLink></li>
-            <li><SubLink to="/app-kanban">{t('nav.kanbanBoard')}</SubLink></li>
-            <li><SubLink to="/app-blog">{t('nav.blog')}</SubLink></li>
-          </SubMenu>
-        </li>
-        <li>
-          <MLinkButton $active={openMenus.account} onClick={() => toggle('account')}>
-            <IconAccount /><span>{t('nav.account')}</span>
-            <ArrowIcon $open={openMenus.account}><IconArrow /></ArrowIcon>
-          </MLinkButton>
-          <SubMenu $open={openMenus.account}>
-            <li><SubLink to="/account-settings">{t('nav.accountSettings')}</SubLink></li>
-            <li><SubLink to="/account-invoices">{t('nav.invoiceList')}</SubLink></li>
-            <li><SubLink to="/account-create-invoice">{t('nav.createInvoices')}</SubLink></li>
-            <li><SubLink to="/account-billing">{t('nav.billing')}</SubLink></li>
-          </SubMenu>
-        </li>
-        <li>
-          <MLink to="/transactions"><IconTransactions /><span>{t('nav.transactions')}</span></MLink>
-        </li>
-        <li>
-          <MLink to="/portfolio"><IconPortfolio /><span>{t('nav.portfolio')}</span></MLink>
-        </li>
-        <li>
-          <MLink to="/coin-details"><IconCoin /><span>{t('nav.coinDetails')}</span></MLink>
-        </li>
-        <li>
-          <MLink to="/market-capital"><IconMarket /><span>{t('nav.marketCapital')}</span></MLink>
-        </li>
-        <li>
-          <MLink to="/bank-accounts"><IconBankAccounts /><span>{t('nav.bankAccounts')}</span></MLink>
-        </li>
+        <li><MLink to="/dashboard"><IconHome /><span>{t('nav.myDashboard')}</span>{counts['/dashboard'] ? <Badge>{counts['/dashboard']}</Badge> : null}</MLink></li>
+        <li><MLink to="/cms-agents"><IconAgent /><span>{t('nav.agents')}</span>{counts['/cms-agents'] ? <Badge>{counts['/cms-agents']}</Badge> : null}</MLink></li>
+        <MenuSpacer />
+        <li><MLink to="/cms-leads"><IconLeads /><span>{t('nav.leadPool')}</span>{counts['/cms-leads'] ? <Badge>{counts['/cms-leads']}</Badge> : null}</MLink></li>
+        <li><MLink to="/cms-verified-emails"><IconVerifiedEmail /><span>{t('nav.verifiedEmails')}</span>{counts['/cms-verified-emails'] ? <Badge>{counts['/cms-verified-emails']}</Badge> : null}</MLink></li>
+        <li><MLink to="/app-calendar"><IconSchedule /><span>{t('nav.calendar')}</span></MLink></li>
       </MenuList>
-
-      {/* CMS section */}
-      <MenuList>
-        <Divider>
-          <DividerLabel>{t('nav.cms')}</DividerLabel>
-          <DividerSmall>{t('nav.cmsDesc')}</DividerSmall>
-        </Divider>
-        <li><MLink to="/cms-leads"><IconLeads /><span>{t('nav.leadPool')}</span></MLink></li>
-        <li><MLink to="/cms-search"><IconSearch /><span>{t('nav.leadSearch')}</span></MLink></li>
-        <li><MLink to="/cms-email-queue"><IconEmailQueue /><span>{t('nav.outbox')}</span></MLink></li>
-        <li><MLink to="/cms-tasks"><IconTasks /><span>{t('nav.workflows')}</span></MLink></li>
-        <li><MLink to="/cms-agents"><IconAgent /><span>{t('nav.agents')}</span></MLink></li>
+      <BottomMenuList>
         <li><MLink to="/cms-users"><IconUsers /><span>{t('nav.team')}</span></MLink></li>
-        <li><MLink to="/cms-settings"><IconSettings /><span>{t('nav.settings')}</span></MLink></li>
-      </MenuList>
-
-      {/* RESOURCES section */}
-      <MenuList>
-        <Divider>
-          <DividerLabel>{t('nav.resources')}</DividerLabel>
-          <DividerSmall>{t('nav.resourcesDesc')}</DividerSmall>
-        </Divider>
-        <li>
-          <MLinkButton $active={openMenus.auth} onClick={() => toggle('auth')}>
-            <IconShield /><span>{t('nav.authentication')}</span>
-            <ArrowIcon $open={openMenus.auth}><IconArrow /></ArrowIcon>
-          </MLinkButton>
-          <SubMenu $open={openMenus.auth}>
-            <li><SubLink to="/auth-404">{t('nav.auth404')}</SubLink></li>
-            <li><SubLink to="/auth-403">{t('nav.auth403')}</SubLink></li>
-            <li><SubLink to="/auth-500">{t('nav.auth500')}</SubLink></li>
-            <li><SubLink to="/auth-signin">{t('nav.signIn')}</SubLink></li>
-            <li><SubLink to="/auth-signup">{t('nav.signUp')}</SubLink></li>
-            <li><SubLink to="/auth-password-reset">{t('nav.passwordReset')}</SubLink></li>
-            <li><SubLink to="/auth-two-step">{t('nav.twoStepAuth')}</SubLink></li>
-            <li><SubLink to="/auth-lockscreen">{t('nav.lockscreen')}</SubLink></li>
-            <li><SubLink to="/auth-maintenance">{t('nav.maintenance')}</SubLink></li>
-          </SubMenu>
-        </li>
-        <li>
-          <MLink to="/docs"><IconDocs /><span>{t('nav.documentation')}</span></MLink>
-        </li>
-        <li>
-          <MLink to="/changelog">
-            <IconChangelog /><span>{t('nav.changelog')}</span>
-            <Badge>v1.2.7</Badge>
-          </MLink>
-        </li>
-      </MenuList>
+      </BottomMenuList>
       </ScrollArea>
 
-      {/* Footer icons */}
-      <FooterLinks>
-        <FooterItem>
-          <FooterBtn title={t('nav.mySchedule')}><IconSchedule /></FooterBtn>
-        </FooterItem>
-        <FooterItem>
-          <FooterBtn title={t('nav.myNotes')}><IconNotes /></FooterBtn>
-        </FooterItem>
-        <FooterItem>
-          <FooterBtn title={t('nav.signOut')}><IconSignOut /></FooterBtn>
-        </FooterItem>
-      </FooterLinks>
+      {/* Footer icons moved to Topbar avatar dropdown */}
     </Wrapper>
   );
 };

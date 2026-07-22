@@ -7,6 +7,9 @@ import { Observable, Subject } from 'rxjs';
  */
 export enum SseEvent {
   LEAD_UPDATE = 'lead_update', // lead 增/改/狀態變/刪
+  EMAIL_UPDATE = 'email_update', // email queue 增/改
+  NOTIFICATION = 'notification', // 新通知
+  TASK_UPDATE = 'task_update', // task 狀態變更
   HERMES_LOG = 'hermes_log', // Hermes pipeline 逐步 log
   PIPELINE_PROGRESS = 'pipeline_progress', // 進度條
 }
@@ -18,11 +21,26 @@ export interface SsePayloads {
     action: 'created' | 'updated' | 'status_changed' | 'deleted';
     status?: string;
   };
+  [SseEvent.EMAIL_UPDATE]: {
+    id: string;
+    action: 'created' | 'updated' | 'status_changed';
+    status?: string;
+  };
+  [SseEvent.NOTIFICATION]: {
+    title: string;
+    type?: string;
+  };
+  [SseEvent.TASK_UPDATE]: {
+    id: string;
+    action: 'created' | 'completed' | 'failed';
+  };
   [SseEvent.HERMES_LOG]: {
     runId: string;
     level: 'info' | 'warn' | 'error';
     stage: string;
     message: string;
+    msgKey?: string;
+    msgParams?: Record<string, unknown>;
   };
   [SseEvent.PIPELINE_PROGRESS]: {
     runId: string;

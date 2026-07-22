@@ -79,12 +79,17 @@ Unit G, 17/F, Reason Group Tower, 403-413 Castle Peak Road, Kwai Chung, NT, HK
 /**
  * Tone-of-voice anchor (給 LLM 跟嘅寫作風格)。
  * 唔好長氣，要 brand-consistent：warm-but-professional, action-oriented,
- * 港式英文夾雜繁體中文 OK (matches 之前嘅 sample email)。
+ * 正式英文 或 繁體中文書面語皆可（按 lead 揀）；若用中文必須書面語，避免粵語口語同 emoji。
  */
 exports.BRAND_TONE_GUIDE = `
-Tone: warm, professional, action-oriented. Mix English/繁體中文 (港式風格) is OK
-if the lead's context suggests it. Avoid generic SaaS marketing speak.
+Tone: warm, professional, action-oriented. Write in professional English OR
+formal written 繁體中文 (標準書面語) — pick whichever best fits the lead
+(English-medium / international leads → English is fine). If you write in Chinese
+it MUST be 書面語, avoid Cantonese colloquialisms
+(用「不 / 沒有 / 的 / 在 / 這 / 和」而非「唔 / 冇 / 嘅 / 喺 / 呢 / 同」).
+Avoid emoji and overly casual markers in the body.
+Avoid generic SaaS marketing speak.
 Reference style: 之前 sample 寫過「【升級 eClass 契機】為潮公打造結合 AI 選科分析 +
-跨境協作的校本延伸平台」、「為聖保羅男女中學舊生會注入 AI 驅動嘅數碼轉型方案」
-— concrete, lead-specific, 唔好 abstract。Subject line 用【】括 case-specific 主題。
+跨境協作的校本延伸平台」、「為聖保羅男女中學舊生會注入 AI 驅動的數碼轉型方案」
+— concrete, lead-specific, 不要 abstract。Subject line 用【】括 case-specific 主題。
 `;

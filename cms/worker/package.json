@@ -5,7 +5,9 @@
   "scripts": {
     "build": "tsc",
     "worker": "node --env-file=.env dist/agent.js",
-    "start": "npm run build && npm run worker"
+    "leader": "node --env-file=.env dist/leader.js",
+    "start": "npm run build && npm run leader",
+    "start:single": "npm run build && npm run worker"
   },
   "dependencies": {
     "imapflow": "^1.4.3",

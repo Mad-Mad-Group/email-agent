@@ -10,20 +10,20 @@ import { SearchService } from './search.service';
 import { SearchDto } from './dto/search.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
-import { PermissionsGuard } from '../common/guards/permissions.guard';
-import { Permission } from '../common/decorators/permission.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+
+interface JwtUser { userId: string; email: string; role: string; permissions: string[]; }
 
 @ApiTags('Search 搜尋')
 @ApiBearerAuth()
 @Controller('search')
-@UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class SearchController {
   constructor(private readonly search: SearchService) {}
 
   @Post()
   @HttpCode(200)
-  @Permission('search.run')
-  async run(@Body() dto: SearchDto) {
-    return this.search.run(dto);
+  async run(@Body() dto: SearchDto, @CurrentUser() user: JwtUser) {
+    return this.search.run(dto, user.userId);
   }
 }

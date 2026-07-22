@@ -1,68 +1,142 @@
 import { HermesTheme } from '../types/theme';
 
 const shared = {
-  radii: { card: 8, tile: 8, control: 6 },
+  radii: { card: 16, tile: 16, control: 8 },
   fonts: {
-    primary: "'Noto Sans TC', 'PingFang TC', 'PingFang SC', -apple-system, system-ui, 'Microsoft JhengHei', sans-serif",
-    display: "'Bebas Neue', sans-serif",
+    primary: "'Plus Jakarta Sans', 'Noto Sans TC', 'PingFang TC', 'PingFang SC', -apple-system, system-ui, 'Microsoft JhengHei', sans-serif",
+    display: "'Righteous', 'Plus Jakarta Sans', sans-serif",
     mono: "'JetBrains Mono', ui-monospace, monospace",
   },
   spacing: { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 },
   breakpoints: { mobile: 640, tablet: 1024, desktop: 1280 },
+  gradients: {
+    brand: 'linear-gradient(135deg, #0B080B, #6C97D1)',
+  },
+  motion: {
+    fast: '150ms ease',
+    normal: '200ms ease',
+    slow: '300ms ease',
+  },
+  /** Strong custom easing curves (Emil Kowalski design-eng philosophy) */
+  easing: {
+    /** Entering/exiting UI — starts fast, feels responsive */
+    out: 'cubic-bezier(0.23, 1, 0.32, 1)',
+    /** On-screen movement — natural accel/decel */
+    inOut: 'cubic-bezier(0.77, 0, 0.175, 1)',
+    /** Drawer/sheet feel */
+    drawer: 'cubic-bezier(0.32, 0.72, 0, 1)',
+  },
 };
 
+/* ═══════════════════════════════════════════
+   Light — 11-colour palette
+   Pastel fills · Strong accents · #0B080B ink
+   ═══════════════════════════════════════════ */
 export const lightTheme: HermesTheme = {
   ...shared,
+  mode: 'light',
   colors: {
-    canvas: '#f7f7f4',
-    surface: '#ffffff',
-    surfaceMuted: '#f0f0ec',
-    border: '#e5e5e0',
-    borderStrong: '#d4d4cf',
-    textPrimary: '#1e293b',
-    textSecondary: '#64748b',
-    textTertiary: '#94a3b8',
-    green: '#16a34a',
-    amber: '#d97706',
-    red: '#dc2626',
-    blue: '#2563eb',
-    accent: '#2563eb',
+    canvas: '#FAF8F5',
+    surface: '#FFFFFF',
+    surfaceMuted: '#DEDAD9',
+    surfaceInverted: '#0B080B',
+    border: '#DBD6D5',
+    borderStrong: '#0B080B',
+    textPrimary: '#0B080B',
+    textSecondary: '#6B7280',
+    textTertiary: '#9CA3AF',
+    textInverted: '#FFFFFF',
+    accent: '#D689BF',
+  },
+  pastel: {
+    mauve: '#E8A0CC',
+    gold: '#F5C518',
+    blue: '#9BB8E3',
+    olive: '#8CB030',
+  },
+  strong: {
+    mauve: '#D689BF',
+    gold: '#E5B920',
+    blue: '#6C97D1',
+    olive: '#6C7A24',
+  },
+  sidebar: {
+    bg: '#0B080B',
+    text: '#FFFFFF',
+    textMuted: 'rgba(255,255,255,0.45)',
+    active: 'linear-gradient(135deg, #D689BF, #6C97D1)',
+    hoverBg: 'rgba(255,255,255,0.08)',
+    border: 'rgba(255,255,255,0.06)',
   },
   status: {
-    new: { bg: '#dbeafe', fg: '#1d4ed8' },
-    pending: { bg: '#dbeafe', fg: '#1d4ed8' },
-    contacted: { bg: '#dcfce7', fg: '#16a34a' },
-    rejected: { bg: '#fee2e2', fg: '#dc2626' },
-    qualified: { bg: '#dbeafe', fg: '#1d4ed8' },
+    new: { bg: '#ACC0DE', fg: '#0B080B' },
+    pending: { bg: '#E5B920', fg: '#FFFFFF' },
+    contacted: { bg: '#E0ACD2', fg: '#0B080B' },
+    rejected: { bg: '#DBD6D5', fg: '#0B080B' },
+    qualified: { bg: '#6C97D1', fg: '#FFFFFF' },
+    draft: { bg: '#DEDAD9', fg: '#6B7280' },
+    approved: { bg: '#97A33B', fg: '#FFFFFF' },
+    sent: { bg: '#97A33B', fg: '#FFFFFF' },
+    running: { bg: '#6C97D1', fg: '#FFFFFF' },
+    idle: { bg: '#DEDAD9', fg: '#9CA3AF' },
+    active: { bg: '#97A33B', fg: '#FFFFFF' },
   },
-  shadows: { card: '0 0 10px rgba(0,0,0,0.04)' },
+  shadows: { card: '0 2px 12px rgba(0,0,0,0.04)' },
 };
 
+/* ═══════════════════════════════════════════
+   Dark — same palette, inverted neutrals
+   ═══════════════════════════════════════════ */
 export const darkTheme: HermesTheme = {
   ...shared,
+  mode: 'dark',
   colors: {
-    canvas: '#0f172a',
-    surface: '#1e293b',
-    surfaceMuted: '#1a2332',
-    border: '#334155',
-    borderStrong: '#475569',
-    textPrimary: '#f1f5f9',
-    textSecondary: '#94a3b8',
-    textTertiary: '#64748b',
-    green: '#22c55e',
-    amber: '#f59e0b',
-    red: '#ef4444',
-    blue: '#3b82f6',
-    accent: '#3b82f6',
+    canvas: '#0B080B',
+    surface: '#161316',
+    surfaceMuted: '#1E1B1E',
+    surfaceInverted: '#FAF8F5',
+    border: 'rgba(255,255,255,0.08)',
+    borderStrong: 'rgba(255,255,255,0.16)',
+    textPrimary: '#FAF8F5',
+    textSecondary: '#9CA3AF',
+    textTertiary: '#6B7280',
+    textInverted: '#0B080B',
+    accent: '#D689BF',
+  },
+  pastel: {
+    mauve: '#3D2636',
+    gold: '#3A3018',
+    blue: '#1E2A38',
+    olive: '#252A12',
+  },
+  strong: {
+    mauve: '#D689BF',
+    gold: '#E5B920',
+    blue: '#6C97D1',
+    olive: '#97A33B',
+  },
+  sidebar: {
+    bg: '#0B080B',
+    text: '#FFFFFF',
+    textMuted: 'rgba(255,255,255,0.45)',
+    active: 'linear-gradient(135deg, #D689BF, #6C97D1)',
+    hoverBg: 'rgba(255,255,255,0.08)',
+    border: 'rgba(255,255,255,0.06)',
   },
   status: {
-    new: { bg: '#1e3a5f', fg: '#93c5fd' },
-    pending: { bg: '#1e3a5f', fg: '#93c5fd' },
-    contacted: { bg: '#14532d', fg: '#86efac' },
-    rejected: { bg: '#450a0a', fg: '#fca5a5' },
-    qualified: { bg: '#1e3a5f', fg: '#93c5fd' },
+    new: { bg: '#1E2A38', fg: '#ACC0DE' },
+    pending: { bg: '#3A3018', fg: '#E9C551' },
+    contacted: { bg: '#3D2636', fg: '#E0ACD2' },
+    rejected: { bg: '#1E1B1E', fg: '#9CA3AF' },
+    qualified: { bg: '#1E2A38', fg: '#6C97D1' },
+    draft: { bg: '#1E1B1E', fg: '#6B7280' },
+    approved: { bg: '#252A12', fg: '#97A33B' },
+    sent: { bg: '#252A12', fg: '#97A33B' },
+    running: { bg: '#1E2A38', fg: '#6C97D1' },
+    idle: { bg: '#1E1B1E', fg: '#6B7280' },
+    active: { bg: '#252A12', fg: '#97A33B' },
   },
-  shadows: { card: '0 0 10px rgba(0,0,0,0.3)' },
+  shadows: { card: '0 2px 12px rgba(0,0,0,0.3)' },
 };
 
 /** @deprecated Use lightTheme / darkTheme */

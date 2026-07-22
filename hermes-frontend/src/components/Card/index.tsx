@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { glassSurface } from '../../styles/glassSurface';
 
 interface CardProps {
   title?: string;
@@ -7,9 +8,8 @@ interface CardProps {
 }
 
 const Wrapper = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
   overflow: hidden;
 `;
 
@@ -25,7 +25,7 @@ const DotIcon = styled.span`
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  border: 2px solid ${({ theme }) => theme.colors.blue};
+  border: 2px solid ${({ theme }) => theme.colors.accent};
 `;
 
 const Title = styled.h3`

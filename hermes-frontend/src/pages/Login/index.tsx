@@ -2,8 +2,15 @@ import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
+import { glassSurface } from '../../styles/glassSurface';
 import { Button, FormField } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
+
+const LANGUAGES = [
+  { code: 'en', label: 'EN' },
+  { code: 'zh-TW', label: '繁' },
+  { code: 'zh-CN', label: '简' },
+];
 
 const LoginContainer = styled.div`
   display: flex;
@@ -14,12 +21,11 @@ const LoginContainer = styled.div`
 `;
 
 const LoginCard = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface};
   border-radius: 12px;
   padding: 40px;
   width: 100%;
   max-width: 420px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 `;
 
 const Logo = styled.div`
@@ -27,7 +33,7 @@ const Logo = styled.div`
   margin-bottom: 8px;
   font-size: 32px;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
 `;
 
 const Title = styled.h1`
@@ -46,7 +52,7 @@ const Form = styled.form`
 
 const ForgotLink = styled(Link)`
   font-size: 13px;
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   text-decoration: none;
   text-align: right;
   display: block;
@@ -65,7 +71,7 @@ const Footer = styled.div`
 `;
 
 const FooterLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.blue};
+  color: ${({ theme }) => theme.colors.accent};
   text-decoration: none;
   font-weight: 500;
 
@@ -75,25 +81,56 @@ const FooterLink = styled(Link)`
 `;
 
 const ErrorMsg = styled.div`
-  color: ${({ theme }) => theme.colors.red};
+  color: ${({ theme }) => theme.strong.mauve};
   font-size: 0.8125rem;
   text-align: center;
 `;
 
+const LangBar = styled.div`
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  display: flex;
+  gap: 4px;
+`;
+
+const LangBtn = styled.button<{ $active?: boolean }>`
+  padding: 4px 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.textInverted : theme.colors.textSecondary};
+  transition: all 0.15s;
+  &:hover { opacity: 0.8; }
+`;
+
 const Login: React.FC = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const { login, loading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validate = () => {
+    const errs: Record<string, string> = {};
+    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) errs.email = 'login.emailRequired';
+    if (!password) errs.password = 'login.passwordRequired';
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (!validate()) return;
     try {
       await login({ email, password });
-      navigate('/dashboard');
+      navigate('/cms-agents');
     } catch (err: any) {
       setError(err.response?.data?.message || t('login.loginFailed'));
     }
@@ -101,8 +138,15 @@ const Login: React.FC = () => {
 
   return (
     <LoginContainer>
+      <LangBar>
+        {LANGUAGES.map((lang) => (
+          <LangBtn key={lang.code} $active={i18n.language === lang.code} onClick={() => i18n.changeLanguage(lang.code)}>
+            {lang.label}
+          </LangBtn>
+        ))}
+      </LangBar>
       <LoginCard>
-        <Logo>Hermes</Logo>
+        <Logo>ClientRadar AI</Logo>
         <Title>{t('login.title')}</Title>
         <Form onSubmit={handleSubmit}>
           <FormField
@@ -111,6 +155,7 @@ const Login: React.FC = () => {
             value={email}
             onChange={setEmail}
             placeholder={t('login.emailPlaceholder')}
+            error={fieldErrors.email ? t(fieldErrors.email) : undefined}
           />
           <FormField
             label={t('login.password')}
@@ -118,6 +163,7 @@ const Login: React.FC = () => {
             value={password}
             onChange={setPassword}
             placeholder={t('login.passwordPlaceholder')}
+            error={fieldErrors.password ? t(fieldErrors.password) : undefined}
           />
           <ForgotLink to="/forgot-password">
             {t('login.forgotPassword')}

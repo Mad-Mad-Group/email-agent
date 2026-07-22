@@ -17,7 +17,7 @@ const SearchBox = styled.div`
   align-items: flex-end;
   background: ${({ theme }) => theme.colors.surface};
   padding: 20px;
-  border-radius: 8px;
+  border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 `;
 
@@ -38,15 +38,17 @@ const FilterTags = styled.div`
 const Tag = styled.button<{ active?: boolean }>`
   padding: 6px 12px;
   border-radius: 16px;
-  border: 1px solid ${({ active, theme }) => active ? theme.colors.blue : theme.colors.border};
-  background: ${({ active, theme }) => active ? theme.colors.blue : 'transparent'};
-  color: ${({ active, theme }) => active ? '#fff' : theme.colors.textSecondary};
+  border: 1px solid ${({ active, theme }) => active ? theme.colors.accent : theme.colors.border};
+  background: ${({ active, theme }) => active ? theme.colors.accent : 'transparent'};
+  color: ${({ active, theme }) => active ? theme.colors.textInverted : theme.colors.textSecondary};
   font-size: 13px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: background 200ms var(--ease-out), color 200ms var(--ease-out), border-color 200ms var(--ease-out);
 
-  &:hover {
-    border-color: ${({ theme }) => theme.colors.blue};
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      border-color: ${({ theme }) => theme.colors.accent};
+    }
   }
 `;
 
@@ -58,7 +60,7 @@ const ResultsList = styled.div`
 
 const ResultCard = styled.div`
   background: ${({ theme }) => theme.colors.surface};
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
   transition: box-shadow 0.2s;

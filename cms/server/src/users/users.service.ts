@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import * as bcrypt from 'bcryptjs';
 import { User, UserDocument } from './schemas/user.schema';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -51,12 +52,12 @@ export class UsersService {
   }
 
   async update(id: string, updateUserDto: UpdateUserDto): Promise<User | null> {
+    const data: Record<string, any> = { ...updateUserDto, updated_at: new Date() };
+    if (data.password) {
+      data.password = await bcrypt.hash(data.password, 10);
+    }
     return this.userModel
-      .findByIdAndUpdate(
-        id,
-        { ...updateUserDto, updated_at: new Date() },
-        { new: true },
-      )
+      .findByIdAndUpdate(id, data, { new: true })
       .select('-password')
       .exec();
   }
@@ -94,5 +95,26 @@ export class UsersService {
       resetTokenExpiry: null,
       updated_at: new Date(),
     }).exec();
+  }
+
+  async getNotificationPrefs(id: string) {
+    const user = await this.userModel.findById(id).select('notification_prefs').lean().exec();
+    return user?.notification_prefs ?? { email_on_complete: false, browser_on_complete: false, notification_email: '' };
+  }
+
+  async updateNotificationPrefs(
+    id: string,
+    prefs: { email_on_complete?: boolean; browser_on_complete?: boolean; notification_email?: string },
+  ) {
+    const $set: Record<string, boolean | string> = {};
+    if (prefs.email_on_complete !== undefined)
+      $set['notification_prefs.email_on_complete'] = prefs.email_on_complete;
+    if (prefs.browser_on_complete !== undefined)
+      $set['notification_prefs.browser_on_complete'] = prefs.browser_on_complete;
+    if (prefs.notification_email !== undefined)
+      $set['notification_prefs.notification_email'] = prefs.notification_email;
+    if (Object.keys($set).length === 0) return this.getNotificationPrefs(id);
+    await this.userModel.findByIdAndUpdate(id, { $set, updated_at: new Date() }).exec();
+    return this.getNotificationPrefs(id);
   }
 }

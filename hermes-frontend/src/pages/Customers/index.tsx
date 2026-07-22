@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import styled, { keyframes, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import { glassSurface } from '../../styles/glassSurface';
 import { media } from '../../styles/media';
 
 /* ══════════════════════════════════════
@@ -16,6 +17,7 @@ const Breadcrumb = styled.ol`
   font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary};
   li + li::before { content: '/'; margin-right: ${({ theme }) => theme.spacing.sm}px; }
   a { color: ${({ theme }) => theme.colors.textSecondary}; text-decoration: none; }
+  ${media.mobile} { font-size: 0.75rem; gap: 4px; }
 `;
 
 const ToolbarRow = styled.div`
@@ -25,6 +27,7 @@ const ToolbarRow = styled.div`
 const PageTitle = styled.h1`
   font-size: 1.15rem; font-weight: 600; margin: 4px 0 0;
   color: ${({ theme }) => theme.colors.textPrimary};
+  ${media.mobile} { font-size: 1rem; }
 `;
 
 const PageSub = styled.small`
@@ -45,7 +48,7 @@ const StatValue = styled.div`font-size: 1rem; font-weight: 600; color: ${({ them
 
 const StatChange = styled.small<{ $up: boolean }>`
   font-size: 0.75rem; margin-left: 4px;
-  color: ${({ $up, theme }) => $up ? theme.colors.green : theme.colors.red};
+  color: ${({ $up, theme }) => $up ? theme.strong.olive : theme.strong.mauve};
 `;
 
 const StatLabel = styled.div`
@@ -54,9 +57,8 @@ const StatLabel = styled.div`
 `;
 
 const Card = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: ${({ theme }) => theme.shadows.card};
 `;
 
 const CardBody = styled.div`padding: ${({ theme }) => theme.spacing.md}px;`;
@@ -79,15 +81,17 @@ const SearchInput = styled.input`
   color: ${({ theme }) => theme.colors.textPrimary};
   background: ${({ theme }) => theme.colors.surface};
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
+  ${media.mobile} { min-width: 0; width: 100%; font-size: 0.8125rem; }
 `;
 
 const PrimaryBtn = styled.button`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border: none; border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ theme }) => theme.colors.blue}; color: #fff;
+  background: ${({ theme }) => theme.colors.accent}; color: ${({ theme }) => theme.colors.textInverted};
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
   &:hover { opacity: 0.85; }
+  ${media.mobile} { width: 100%; }
 `;
 
 /* ── Table ── */
@@ -106,6 +110,18 @@ const Table = styled.table`
     color: ${({ theme }) => theme.colors.textTertiary};
     border-bottom: 2px solid ${({ theme }) => theme.colors.border};
   }
+
+  ${media.tablet} {
+    min-width: 0;
+    font-size: 0.75rem;
+    th, td {
+      padding: 6px 8px;
+      white-space: normal;
+    }
+    th { font-size: 0.625rem; }
+    /* hide address column on tablet */
+    th:nth-child(6), td:nth-child(6) { display: none; }
+  }
 `;
 
 const TRow = styled.tr<{ $even?: boolean }>`
@@ -117,6 +133,7 @@ const TRow = styled.tr<{ $even?: boolean }>`
 const Avatar = styled.img`
   width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
   margin-right: ${({ theme }) => theme.spacing.sm}px; vertical-align: middle;
+  ${media.tablet} { width: 32px; height: 32px; }
 `;
 
 const NameCell = styled.div`
@@ -134,17 +151,36 @@ const ActionBtn = styled.button<{ $color: string }>`
 
 /* ── Modal ── */
 
-const Overlay = styled.div`
+const modalFadeIn = keyframes`
+  from { opacity: 0; }
+  to   { opacity: 1; }
+`;
+const modalFadeOut = keyframes`
+  from { opacity: 1; }
+  to   { opacity: 0; }
+`;
+const modalSlideIn = keyframes`
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+`;
+const modalSlideOut = keyframes`
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(8px) scale(0.97); }
+`;
+
+const Overlay = styled.div<{ $closing?: boolean }>`
   position: fixed; inset: 0; background: rgba(0,0,0,0.45);
   display: flex; align-items: center; justify-content: center;
   z-index: 1000;
+  animation: ${({ $closing }) => $closing ? modalFadeOut : modalFadeIn} 0.2s ease-out forwards;
 `;
 
-const Modal = styled.div`
-  background: ${({ theme }) => theme.colors.surface};
+const Modal = styled.div<{ $closing?: boolean }>`
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card}px;
   width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto;
   box-shadow: 0 8px 30px rgba(0,0,0,0.18);
+  animation: ${({ $closing }) => $closing ? modalSlideOut : modalSlideIn} 0.2s ease-out forwards;
   ${media.mobile} {
     width: 95%;
     margin: 20px auto;
@@ -160,9 +196,14 @@ const ModalHeader = styled.div`
 `;
 
 const CloseBtn = styled.button`
-  background: none; border: none; font-size: 1.25rem; cursor: pointer;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+  background: transparent; border: none; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  color: ${({ theme }) => theme.colors.accent};
+  flex-shrink: 0; transition: background 150ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: ${({ theme }) => `${theme.colors.accent}15`}; }
+  }
 `;
 
 const ModalBody = styled.div`
@@ -172,6 +213,7 @@ const ModalBody = styled.div`
 
 const FormRow = styled.div`
   display: grid; grid-template-columns: 1fr 1fr; gap: ${({ theme }) => theme.spacing.md}px;
+  ${media.mobile} { grid-template-columns: 1fr; }
 `;
 
 const FormGroup = styled.div`
@@ -189,7 +231,7 @@ const Input = styled.input`
   border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.8125rem; outline: none;
   color: ${({ theme }) => theme.colors.textPrimary};
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const Select = styled.select`
@@ -199,7 +241,7 @@ const Select = styled.select`
   font-size: 0.8125rem; outline: none;
   color: ${({ theme }) => theme.colors.textPrimary};
   background: ${({ theme }) => theme.colors.surface};
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const TextArea = styled.textarea`
@@ -208,7 +250,7 @@ const TextArea = styled.textarea`
   border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.8125rem; outline: none; resize: vertical; min-height: 60px;
   color: ${({ theme }) => theme.colors.textPrimary};
-  &:focus { border-color: ${({ theme }) => theme.colors.blue}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const ModalFooter = styled.div`
@@ -261,8 +303,18 @@ const CUSTOMERS: Customer[] = [
 
 const Customers: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
+  const [modalClosing, setModalClosing] = useState(false);
+  const modalTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const closeModal = useCallback(() => {
+    setModalClosing(true);
+    modalTimerRef.current = setTimeout(() => { setModalOpen(false); setModalClosing(false); }, 200);
+  }, []);
+
+  useEffect(() => () => { if (modalTimerRef.current) clearTimeout(modalTimerRef.current); }, []);
 
   const filtered = CUSTOMERS.filter((c) =>
     c.name.toLowerCase().includes(search.toLowerCase())
@@ -343,15 +395,15 @@ const Customers: React.FC = () => {
                     <td>{c.joinDate}</td>
                     <td>{c.address}</td>
                     <td>
-                      <ActionBtn $color="#c9a055" title={t('customers.favorite')}>&#9733;</ActionBtn>
-                      <ActionBtn $color="#6890c2" title={t('customers.settings')}>&#9881;</ActionBtn>
-                      <ActionBtn $color="#c78787" title={t('customers.delete')}>&#128465;</ActionBtn>
+                      <ActionBtn $color={theme.strong.gold} title={t('customers.favorite')}>&#9733;</ActionBtn>
+                      <ActionBtn $color={theme.colors.accent} title={t('customers.settings')}>&#9881;</ActionBtn>
+                      <ActionBtn $color={theme.strong.mauve} title={t('customers.delete')}>&#128465;</ActionBtn>
                     </td>
                   </TRow>
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} style={{ textAlign: 'center', padding: 24, color: '#94a3b8' }}>
+                    <td colSpan={7} style={{ textAlign: 'center', padding: 24, color: theme.colors.textTertiary }}>
                       {t('customers.noMatch')}
                     </td>
                   </tr>
@@ -364,11 +416,11 @@ const Customers: React.FC = () => {
 
       {/* Add Customer Modal */}
       {modalOpen && (
-        <Overlay onClick={() => setModalOpen(false)}>
-          <Modal onClick={(e) => e.stopPropagation()}>
+        <Overlay $closing={modalClosing} onClick={closeModal}>
+          <Modal $closing={modalClosing} onClick={(e) => e.stopPropagation()}>
             <ModalHeader>
               <h2>{t('customers.addCustomer')}</h2>
-              <CloseBtn onClick={() => setModalOpen(false)}>&times;</CloseBtn>
+              <CloseBtn onClick={closeModal}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
             </ModalHeader>
             <ModalBody>
               <FormRow>
@@ -414,8 +466,8 @@ const Customers: React.FC = () => {
               </FormGroup>
             </ModalBody>
             <ModalFooter>
-              <SecondaryBtn onClick={() => setModalOpen(false)}>{t('common.close')}</SecondaryBtn>
-              <PrimaryBtn onClick={() => setModalOpen(false)}>{t('common.submit')}</PrimaryBtn>
+              <SecondaryBtn onClick={closeModal}>{t('common.close')}</SecondaryBtn>
+              <PrimaryBtn onClick={closeModal}>{t('common.submit')}</PrimaryBtn>
             </ModalFooter>
           </Modal>
         </Overlay>
@@ -423,7 +475,7 @@ const Customers: React.FC = () => {
 
       {/* Footer */}
       <Footer>
-        <span>{t('footer.copyrightHermes', { year: 2024 })}</span>
+        <span>{t('footer.copyrightHermes', { year: 2026 })}</span>
         <div>
           <a href="#">{t('footer.documentation')}</a>
           <a href="#">{t('footer.support')}</a>

@@ -11,4 +11,8 @@ export class RunHermesDto {
   @Min(1)
   @Max(20)
   targetCount = 5;
+
+  @IsOptional()
+  @IsString()
+  mode?: 'normal' | 'old_website';
 }

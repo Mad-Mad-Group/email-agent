@@ -1,10 +1,13 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import styled, { keyframes } from 'styled-components';
+import styled, { keyframes, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import i18n from '../../i18n';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { media } from '../../styles/media';
-import { useUsers } from '../../api/hooks';
-import { UserItem } from '../../api/services';
+import { glassSurface } from '../../styles/glassSurface';
+import { useUsers, useMe, useTokenUsage } from '../../api/hooks';
+import { UserItem, usersApi } from '../../api/services';
 
 /* ══════════════════════════════════════
    CMS Users — LUNO Contacts-style UI
@@ -46,6 +49,15 @@ const TeamIcon = () => (
 
 const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
 
+const PageCard = styled.div`
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  padding: 24px;
+  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
+`;
+
 const Breadcrumb = styled.ol`
   list-style: none; margin: 0; padding: 0; display: flex; gap: ${({ theme }) => theme.spacing.sm}px;
   font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary};
@@ -57,14 +69,8 @@ const ToolbarRow = styled.div`
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
 `;
 
-const PageTitle = styled.h1`
-  font-size: 1.15rem; font-weight: 600; margin: 4px 0 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const PageSub = styled.small`
-  color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
-`;
+const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
+const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const StatsRow = styled.div`
   display: flex; gap: ${({ theme }) => theme.spacing.lg}px;
@@ -83,35 +89,59 @@ const StatLabel = styled.div`
 /* ── Card ── */
 
 const Card = styled.div`
-  background: #ffffff;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  ${glassSurface}
   border-radius: ${({ theme }) => theme.radii.card}px;
-  box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
 `;
 
 const CardBody = styled.div`padding: ${({ theme }) => theme.spacing.md}px;`;
 
 /* ── Profile Header Card ── */
 
-const ProfileHeader = styled.div`
-  display: flex; align-items: center; gap: ${({ theme }) => theme.spacing.md}px;
-  padding: ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.md}px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  ${media.mobile} { flex-direction: column; align-items: flex-start; }
+const StatsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: ${({ theme }) => theme.spacing.md}px;
+  ${media.mobile} { grid-template-columns: repeat(2, 1fr); }
 `;
 
-const ProfileIcon = styled.div`
-  width: 56px; height: 56px; border-radius: 50%;
-  background: #2563eb;
+const StatCard2 = styled.div<{ $color: string }>`
+  ${glassSurface}
+  border-radius: ${({ theme }) => theme.radii.card}px;
+  border-left: 4px solid ${({ $color }) => $color};
+  padding: 20px;
+  display: flex; align-items: center; gap: 14px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.18s, box-shadow 0.18s;
+  &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
+`;
+
+const StatCardIcon = styled.div<{ $color: string }>`
+  width: 42px; height: 42px;
+  border-radius: 10px;
+  background: ${({ $color }) => $color}12;
+  color: ${({ $color }) => $color};
   display: flex; align-items: center; justify-content: center;
-  color: #fff; flex-shrink: 0;
-  svg { width: 28px; height: 28px; }
+  flex-shrink: 0;
+  svg { width: 20px; height: 20px; }
 `;
 
-const ProfileInfo = styled.div`
+const StatCardInfo = styled.div`
   flex: 1;
-  h2 { margin: 0; font-size: 1.05rem; font-weight: 600; color: ${({ theme }) => theme.colors.textPrimary}; }
-  p { margin: 4px 0 0; font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; }
+`;
+
+const StatCardValue = styled.div<{ $color: string }>`
+  font-size: 2rem; font-weight: 800;
+  color: ${({ $color }) => $color};
+  line-height: 1;
+`;
+
+const StatCardLabel = styled.div`
+  font-size: 0.6875rem; font-weight: 700;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  margin-top: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 `;
 
 /* ── Tabs ── */
@@ -122,18 +152,18 @@ const TabBar = styled.div`
   ${media.mobile} { gap: 0; }
 `;
 
-const Tab = styled.button<{ $active?: boolean }>`
-  padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
+const Tab = styled.button<{ $active?: boolean; $color?: string }>`
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 10px 24px;
   border: none;
-  background: ${({ $active }) => $active
-    ? 'transparent'
-    : 'transparent'};
+  background: transparent;
   font-size: 0.8125rem; font-weight: 600; cursor: pointer;
-  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textTertiary};
-  border-bottom: 2px solid ${({ $active }) => $active ? '#2563eb' : 'transparent'};
+  color: ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) : theme.colors.textTertiary};
+  border-bottom: 2px solid ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) : 'transparent'};
   margin-bottom: -1px; white-space: nowrap;
   transition: color 0.15s, border-color 0.15s, background 0.15s;
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; background: rgba(0,0,0,0.02); }
+  svg { flex-shrink: 0; opacity: ${({ $active }) => $active ? 0.7 : 0.35}; }
 `;
 
 const TabCount = styled.span<{ $active?: boolean }>`
@@ -142,9 +172,9 @@ const TabCount = styled.span<{ $active?: boolean }>`
   border-radius: 9px; margin-left: 6px;
   font-size: 0.625rem; font-weight: 600;
   background: ${({ $active, theme }) => $active
-    ? '#2563eb'
+    ? theme.colors.accent
     : theme.colors.surfaceMuted};
-  color: ${({ $active, theme }) => $active ? '#fff' : theme.colors.textTertiary};
+  color: ${({ $active, theme }) => $active ? theme.colors.textInverted : theme.colors.textTertiary};
 `;
 
 /* ── Table ── */
@@ -152,8 +182,11 @@ const TabCount = styled.span<{ $active?: boolean }>`
 const TableWrap = styled.div`overflow-x: auto;`;
 
 const Table = styled.table`
-  width: 100%; border-collapse: collapse; font-size: 0.8125rem;
+  width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0;
+  font-family: ${({ theme }) => theme.fonts.primary}; font-size: 0.8125rem;
   min-width: 700px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 12px; overflow: hidden;
   th, td {
     padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
     text-align: left; white-space: nowrap;
@@ -161,8 +194,14 @@ const Table = styled.table`
   th {
     font-weight: 600; text-transform: uppercase; font-size: 0.6875rem;
     color: ${({ theme }) => theme.colors.textTertiary};
-    background: #f7f7f4;
+    background: ${({ theme }) => theme.colors.canvas};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  }
+  ${media.tablet} {
+    min-width: 0;
+    font-size: 0.75rem;
+    th, td { padding: 6px 8px; white-space: normal; }
+    th { font-size: 0.625rem; }
   }
   ${media.mobile} {
     min-width: 480px;
@@ -172,16 +211,12 @@ const Table = styled.table`
   }
 `;
 
-const TRow = styled.tr<{ $even?: boolean }>`
-  background: ${({ $even, theme }) => $even
-    ? '#f7f7f4'
-    : theme.colors.surface};
+const TRow = styled.tr`
   transition: background 0.15s;
-  &:hover {
-    background: #eff6ff;
-  }
-  td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
   cursor: pointer;
+  &:hover td { background: ${({ theme }) => theme.colors.canvas}; }
+  td { border-bottom: 1px solid ${({ theme }) => theme.colors.border}; }
+  &:last-child td { border-bottom: none; }
 `;
 
 const NameCell = styled.div`
@@ -192,7 +227,7 @@ const AvatarCircle = styled.div<{ $bg: string }>`
   width: 36px; height: 36px; border-radius: 50%;
   background: ${({ $bg }) => $bg};
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.8125rem; font-weight: 600; color: #334155;
+  font-size: 0.8125rem; font-weight: 600; color: ${({ theme }) => theme.colors.textPrimary};
   flex-shrink: 0;
   box-shadow: none;
 `;
@@ -203,11 +238,7 @@ const UserName = styled.span`
 
 /* ── Role badge ── */
 
-const ROLE_COLORS: Record<string, { bg: string; fg: string; avatar: string }> = {
-  admin:   { bg: '#1d4ed818', fg: '#1d4ed8', avatar: '#bfdbfe' },
-  manager: { bg: '#d9770618', fg: '#d97706', avatar: '#c4b5fd' },
-  user:    { bg: '#3b82f618', fg: '#3b82f6', avatar: '#a5f3fc' },
-};
+/* ROLE_COLORS is now built inside the component via useTheme() */
 
 const RoleBadge = styled.span<{ $bg: string; $fg: string }>`
   display: inline-block; padding: 2px 10px; border-radius: 99px;
@@ -240,6 +271,52 @@ const PermCount = styled.span`
 const EmptyCell = styled.td`
   text-align: center; padding: 40px ${({ theme }) => theme.spacing.md}px;
   color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.875rem;
+  & > div { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+`;
+
+const EmptyTeamIllustration = () => (
+  <svg width="120" height="90" viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="60" cy="30" r="16" fill="#EFEAE3" stroke="#9E9E9E" strokeWidth="1.5"/>
+    <circle cx="60" cy="26" r="6" fill="#9E9E9E" opacity="0.7"/>
+    <path d="M48 42c0-6.627 5.373-12 12-12s12 5.373 12 12" stroke="#9E9E9E" strokeWidth="1.5" fill="#EFEAE3"/>
+    <circle cx="32" cy="38" r="10" fill="#F5F2ED" stroke="#EFEAE3" strokeWidth="1"/>
+    <circle cx="32" cy="35" r="4" fill="#EFEAE3" opacity="0.6"/>
+    <path d="M24 46c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#EFEAE3" strokeWidth="1" fill="#F5F2ED"/>
+    <circle cx="88" cy="38" r="10" fill="#F5F2ED" stroke="#EFEAE3" strokeWidth="1"/>
+    <circle cx="88" cy="35" r="4" fill="#EFEAE3" opacity="0.6"/>
+    <path d="M80 46c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="#EFEAE3" strokeWidth="1" fill="#F5F2ED"/>
+    <text x="60" y="72" textAnchor="middle" fontFamily="sans-serif" fontSize="10" fill="#9E9E9E">Team</text>
+  </svg>
+);
+
+const EmptyHint = styled.p`
+  margin: 0; font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; opacity: 0.8;
+`;
+
+/* ── Usage Section ── */
+
+const UsageSection = styled.div`
+  margin-top: ${({ theme }) => theme.spacing.md}px;
+`;
+
+const SectionTitleRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: ${({ theme }) => theme.spacing.md}px ${({ theme }) => theme.spacing.md}px 0;
+`;
+
+const SectionTitle = styled.h2`
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const SectionHint = styled.p`
+  margin: 0;
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
 `;
 
 /* ── Footer ── */
@@ -268,6 +345,7 @@ const DpOverlay = styled.div`
 `;
 
 const DpPanel = styled.div`
+  ${glassSurface}
   position: fixed;
   top: 50%;
   left: 50%;
@@ -277,9 +355,7 @@ const DpPanel = styled.div`
   max-width: 95vw;
   max-height: 90vh;
   overflow-y: auto;
-  background: ${({ theme }) => theme.colors.surface};
   border-radius: 14px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
   animation: ${dpFadeIn} 0.2s ease-out;
   ${media.mobile} { width: 95%; }
 `;
@@ -307,14 +383,23 @@ const DpUserName = styled.h2`
 `;
 
 const DpCloseBtn = styled.button`
-  background: none;
+  background: transparent;
   border: none;
-  font-size: 1.4rem;
-  line-height: 1;
   cursor: pointer;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  padding: 4px;
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; }
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${({ theme }) => theme.colors.accent};
+  flex-shrink: 0;
+  transition: background 150ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: ${({ theme }) => `${theme.colors.accent}15`};
+    }
+  }
 `;
 
 const DpBody = styled.div`
@@ -360,42 +445,6 @@ const DpSectionTitle = styled.h3`
   letter-spacing: 0.03em;
 `;
 
-const DpActivityList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-  padding-left: 12px;
-  border-left: 2px solid ${({ theme }) => theme.colors.border};
-`;
-
-const DpActivityItem = styled.div`
-  position: relative;
-  padding: 8px 0 8px 16px;
-  font-size: 0.8125rem;
-  color: ${({ theme }) => theme.colors.textPrimary};
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  &::before {
-    content: '';
-    position: absolute;
-    left: -18px;
-    top: 14px;
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #3b82f6;
-    border: 2px solid ${({ theme }) => theme.colors.surface};
-  }
-`;
-
-const DpActivityTime = styled.span`
-  font-size: 0.6875rem;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  white-space: nowrap;
-  margin-left: 12px;
-`;
 
 const DpPermGrid = styled.div`
   display: flex;
@@ -409,9 +458,9 @@ const DpPermBadge = styled.span<{ $active?: boolean }>`
   border-radius: 99px;
   font-size: 0.75rem;
   font-weight: 500;
-  background: ${({ $active }) => $active ? '#2563eb18' : 'transparent'};
-  color: ${({ $active, theme }) => $active ? '#2563eb' : theme.colors.textTertiary};
-  border: 1px solid ${({ $active }) => $active ? '#2563eb40' : '#0f172a18'};
+  background: ${({ $active, theme }) => $active ? `${theme.colors.accent}18` : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.textTertiary};
+  border: 1px solid ${({ $active, theme }) => $active ? `${theme.colors.accent}40` : theme.colors.border};
 `;
 
 const DpFooter = styled.div`
@@ -438,59 +487,49 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   white-space: nowrap;
   transition: opacity 0.15s;
   background: ${({ $variant, theme }) =>
-    $variant === 'danger' ? '#dc2626' :
-    $variant === 'primary' ? '#2563eb' : theme.colors.surfaceMuted};
-  color: ${({ $variant }) =>
-    $variant === 'danger' ? '#fff' :
-    $variant === 'primary' ? '#fff' : 'inherit'};
+    $variant === 'danger' ? theme.strong.mauve :
+    $variant === 'primary' ? theme.colors.accent : theme.colors.surfaceMuted};
+  color: ${({ $variant, theme }) =>
+    $variant === 'danger' ? theme.colors.textInverted :
+    $variant === 'primary' ? theme.colors.textInverted : 'inherit'};
   &:hover { opacity: 0.85; }
 `;
 
-/* ── Mock activity log data ── */
+/* ── Edit form input ── */
 
-interface ActivityEntry {
-  action: string;
-  time: string;
-}
+const DpInput = styled.input`
+  padding: 6px 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ theme }) => theme.colors.canvas};
+  outline: none;
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
+`;
 
-const MOCK_ACTIVITY: Record<string, ActivityEntry[]> = {};
-
-function getActivityLog(userId: string): ActivityEntry[] {
-  if (MOCK_ACTIVITY[userId]) return MOCK_ACTIVITY[userId];
-  const actions = [
-    'Logged in', 'Updated settings', 'Exported leads', 'Changed password',
-    'Viewed dashboard', 'Added new lead', 'Updated profile', 'Generated report',
-    'Invited team member', 'Archived old contacts',
-  ];
-  const log: ActivityEntry[] = [];
-  for (let i = 0; i < 5; i++) {
-    const hrs = i * 4 + Math.floor(Math.random() * 4);
-    log.push({
-      action: actions[(userId.charCodeAt(0) + i) % actions.length],
-      time: `${hrs}h ago`,
-    });
-  }
-  MOCK_ACTIVITY[userId] = log;
-  return log;
-}
-
-/* ── All possible permissions for display ── */
-
-const ALL_PERMISSIONS = ['read', 'write', 'delete', 'export', 'manage_users', 'admin'];
+const DpSelect = styled.select`
+  padding: 6px 10px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ theme }) => theme.colors.canvas};
+  outline: none;
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
+`;
 
 /* ── Helpers ── */
 
 function formatDate(iso?: string): string {
   if (!iso) return '—';
   try {
-    return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+    const locale = ({ en: 'en-US', 'zh-TW': 'zh-HK', 'zh-CN': 'zh-CN' } as Record<string,string>)[i18n.language] || 'en-US';
+    return new Date(iso).toLocaleDateString(locale, { year: 'numeric', month: 'short', day: 'numeric' });
   } catch { return iso; }
 }
 
-function roleProps(role: string) {
-  const lower = role.toLowerCase();
-  return ROLE_COLORS[lower] ?? { bg: '#0f172a18', fg: '#0f172a', avatar: '#bbf7d0' };
-}
+/* roleProps is now built inside the component via useTheme() */
 
 function getInitials(name: string): string {
   return name
@@ -501,35 +540,117 @@ function getInitials(name: string): string {
     .slice(0, 2);
 }
 
+function formatNumber(n: number): string {
+  return n.toLocaleString('en-US');
+}
+
+/* ── Token cost estimate: MiniMax-M3 ≈ $0.005 / 1K tokens ── */
+const COST_PER_1K = 0.005;
+
+/* ── Tab Icons ── */
+
+const TabIconAll = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
+  </svg>
+);
+
+const TabIconAdmin = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+  </svg>
+);
+
+const TabIconManager = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+  </svg>
+);
+
+const TabIconUser = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
+  </svg>
+);
+
+const TabIconToken = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+  </svg>
+);
+
+const TAB_ICONS: Record<string, React.FC> = {
+  all: TabIconAll,
+  admin: TabIconAdmin,
+  manager: TabIconManager,
+  user: TabIconUser,
+  tokenUsage: TabIconToken,
+};
+
 /* ── Tab definitions ── */
 
-type RoleFilter = 'all' | 'admin' | 'manager' | 'user';
-
-const TABS: { key: RoleFilter; label: string }[] = [
-  { key: 'all', label: 'All Users' },
-  { key: 'admin', label: 'Admins' },
-  { key: 'manager', label: 'Managers' },
-  { key: 'user', label: 'Users' },
-];
+type RoleFilter = 'all' | 'admin' | 'manager' | 'user' | 'tokenUsage';
 
 /* ── Component ── */
 
 const Users: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useUsers();
-  const users: UserItem[] = (data as any)?.users ?? (Array.isArray(data) ? data : []);
+  const users: UserItem[] = (data as any)?.data ?? (Array.isArray(data) ? data : []);
+  const { data: me } = useMe();
+  const isAdmin = (me as any)?.role === 'admin' || (me as any)?.role === 'super_admin';
+  const { data: tokenUsageRaw } = useTokenUsage();
+  const tokenUsage: { user_id: string; total_tokens: number; call_count: number }[] =
+    (Array.isArray(tokenUsageRaw) ? tokenUsageRaw : (tokenUsageRaw as any)?.data ?? []) as any;
+
+  const ROLE_COLORS: Record<string, { bg: string; fg: string; avatar: string }> = {
+    admin:   { bg: `${theme.colors.accent}18`, fg: theme.colors.accent, avatar: theme.colors.surfaceMuted },
+    manager: { bg: `${theme.strong.gold}18`, fg: theme.strong.gold, avatar: theme.colors.surfaceMuted },
+    user:    { bg: `${theme.colors.accent}18`, fg: theme.colors.accent, avatar: theme.colors.surfaceMuted },
+  };
+
+  const roleProps = (role: string) => {
+    const lower = role.toLowerCase();
+    return ROLE_COLORS[lower] ?? { bg: `${theme.colors.textTertiary}18`, fg: theme.colors.textTertiary, avatar: theme.colors.surfaceMuted };
+  };
 
   const [activeTab, setActiveTab] = useState<RoleFilter>('all');
   const [selectedUser, setSelectedUser] = useState<UserItem | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [editForm, setEditForm] = useState({ name: '', email: '', role: '' });
 
-  const handleCloseDetail = useCallback(() => setSelectedUser(null), []);
+  const updateUser = useMutation({
+    mutationFn: ({ id, data: d }: { id: string; data: Record<string, unknown> }) => usersApi.update(id, d),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      setEditing(false);
+      setSelectedUser(null);
+    },
+  });
 
-  const translatedTabs = useMemo(() => [
-    { key: 'all' as RoleFilter, label: t('users.allUsers') },
-    { key: 'admin' as RoleFilter, label: t('users.admins') },
-    { key: 'manager' as RoleFilter, label: t('users.managers') },
-    { key: 'user' as RoleFilter, label: t('users.users') },
-  ], [t]);
+  const handleCloseDetail = useCallback(() => { setSelectedUser(null); setEditing(false); }, []);
+  const handleStartEdit = useCallback(() => {
+    if (!selectedUser) return;
+    setEditForm({ name: selectedUser.name, email: selectedUser.email, role: selectedUser.role });
+    setEditing(true);
+  }, [selectedUser]);
+  const handleSaveEdit = useCallback(() => {
+    if (!selectedUser) return;
+    updateUser.mutate({ id: selectedUser._id, data: editForm });
+  }, [selectedUser, editForm, updateUser]);
+
+  const translatedTabs = useMemo(() => {
+    const tabs: { key: RoleFilter; label: string; color: string }[] = [
+      { key: 'all', label: t('users.allUsers'), color: theme.colors.accent },
+      { key: 'admin', label: t('users.admins'), color: theme.colors.accent },
+      { key: 'manager', label: t('users.managers'), color: theme.strong.gold },
+      { key: 'user', label: t('users.users'), color: theme.strong.olive },
+    ];
+    if (isAdmin) tabs.push({ key: 'tokenUsage', label: t('users.tokenUsage'), color: theme.strong.blue });
+    return tabs;
+  }, [t, theme, isAdmin]);
 
   /* Filtered list based on active tab */
   const filtered = useMemo(() => {
@@ -543,19 +664,43 @@ const Users: React.FC = () => {
     admin: users.filter(u => u.role.toLowerCase() === 'admin').length,
     manager: users.filter(u => u.role.toLowerCase() === 'manager').length,
     user: users.filter(u => u.role.toLowerCase() === 'user').length,
-  }), [users]);
+    tokenUsage: tokenUsage.length,
+  }), [users, tokenUsage]);
 
   return (
     <Page>
-      {/* Profile Header Card (Luno Contacts style) */}
-      <Card>
-        <ProfileHeader>
-          <ProfileIcon><TeamIcon /></ProfileIcon>
-          <ProfileInfo>
-            <h2>{t('users.teamOverview')}</h2>
-            <p>{t('users.membersSummary', { count: users.length, admin: roleCounts.admin, manager: roleCounts.manager, user: roleCounts.user })}</p>
-          </ProfileInfo>
-        </ProfileHeader>
+      <PageCard>
+      <div><PageTitle>{t('users.title')}</PageTitle><PageSub>{t('users.subtitle')}</PageSub></div>
+      <StatsGrid>
+        <StatCard2 $color={theme.colors.accent}>
+          <StatCardIcon $color={theme.colors.accent}><TabIconAll /></StatCardIcon>
+          <StatCardInfo>
+            <StatCardValue $color={theme.colors.accent}>{roleCounts.all}</StatCardValue>
+            <StatCardLabel>{t('users.allUsers')}</StatCardLabel>
+          </StatCardInfo>
+        </StatCard2>
+        <StatCard2 $color={theme.colors.accent}>
+          <StatCardIcon $color={theme.colors.accent}><TabIconAdmin /></StatCardIcon>
+          <StatCardInfo>
+            <StatCardValue $color={theme.colors.accent}>{roleCounts.admin}</StatCardValue>
+            <StatCardLabel>{t('users.admins')}</StatCardLabel>
+          </StatCardInfo>
+        </StatCard2>
+        <StatCard2 $color={theme.strong.gold}>
+          <StatCardIcon $color={theme.strong.gold}><TabIconManager /></StatCardIcon>
+          <StatCardInfo>
+            <StatCardValue $color={theme.strong.gold}>{roleCounts.manager}</StatCardValue>
+            <StatCardLabel>{t('users.managers')}</StatCardLabel>
+          </StatCardInfo>
+        </StatCard2>
+        <StatCard2 $color={theme.strong.olive}>
+          <StatCardIcon $color={theme.strong.olive}><TabIconUser /></StatCardIcon>
+          <StatCardInfo>
+            <StatCardValue $color={theme.strong.olive}>{roleCounts.user}</StatCardValue>
+            <StatCardLabel>{t('users.users')}</StatCardLabel>
+          </StatCardInfo>
+        </StatCard2>
+      </StatsGrid>
 
         {/* Tabs */}
         <TabBar>
@@ -563,76 +708,117 @@ const Users: React.FC = () => {
             <Tab
               key={tab.key}
               $active={activeTab === tab.key}
+              $color={tab.color}
               onClick={() => setActiveTab(tab.key)}
             >
+              {(() => { const Icon = TAB_ICONS[tab.key]; return Icon ? <Icon /> : null; })()}
               {tab.label}
-              <TabCount>{roleCounts[tab.key]}</TabCount>
+              <TabCount $active={activeTab === tab.key}>{roleCounts[tab.key]}</TabCount>
             </Tab>
           ))}
         </TabBar>
 
-        {/* User Table */}
+        {/* Table content — switches between user list and token usage based on active tab */}
         <CardBody>
           <TableWrap>
-            <Table>
-              <thead>
-                <tr>
-                  <th>{t('users.name')}</th>
-                  <th>{t('users.email')}</th>
-                  <th>{t('users.role')}</th>
-                  <th>{t('users.permissions')}</th>
-                  <th>{t('users.created')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {isLoading ? (
-                  <tr><EmptyCell colSpan={5}>{t('users.loading')}</EmptyCell></tr>
-                ) : filtered.length === 0 ? (
-                  <tr><EmptyCell colSpan={5}>{t('users.noUsers')}</EmptyCell></tr>
-                ) : (
-                  filtered.map((u, i) => {
-                    const { bg, fg, avatar } = roleProps(u.role);
-                    const perms = u.permissions ?? [];
-                    return (
-                      <TRow key={u._id} $even={i % 2 === 1} onClick={() => setSelectedUser(u)}>
-                        <td>
-                          <NameCell>
-                            <AvatarCircle $bg={avatar}>
-                              {getInitials(u.name)}
-                            </AvatarCircle>
-                            <UserName>{u.name}</UserName>
-                          </NameCell>
-                        </td>
-                        <td>{u.email}</td>
-                        <td><RoleBadge $bg={bg} $fg={fg}>{u.role}</RoleBadge></td>
-                        <td>
-                          {perms.length === 0 ? (
-                            <PermCount>{t('users.noPermissions')}</PermCount>
-                          ) : (
-                            <PermList>
-                              {perms.slice(0, 2).map(p => (
-                                <PermTag key={p}>{p}</PermTag>
-                              ))}
-                              {perms.length > 2 && (
-                                <PermCount>{t('users.morePerms', { count: perms.length - 2 })}</PermCount>
-                              )}
-                            </PermList>
-                          )}
-                        </td>
-                        <td>{formatDate(u.createdAt)}</td>
-                      </TRow>
-                    );
-                  })
-                )}
-              </tbody>
-            </Table>
+            {activeTab === 'tokenUsage' ? (
+              /* ── Token Usage Table ── */
+              <Table>
+                <thead>
+                  <tr>
+                    <th>{t('users.userName')}</th>
+                    <th>{t('users.totalTokens')}</th>
+                    <th>{t('users.estimatedCost')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tokenUsage.length === 0 ? (
+                    <tr><EmptyCell colSpan={3}>{t('users.noUsageData')}</EmptyCell></tr>
+                  ) : (
+                    tokenUsage.map((u, i) => {
+                      const user = users.find(usr => usr._id === u.user_id);
+                      const name = user?.name || u.user_id || 'Unknown';
+                      const cost = (u.total_tokens / 1000) * COST_PER_1K;
+                      return (
+                        <TRow key={u.user_id || i}>
+                          <td>
+                            <NameCell>
+                              <AvatarCircle $bg={theme.colors.surfaceMuted}>
+                                {getInitials(name)}
+                              </AvatarCircle>
+                              <UserName>{name}</UserName>
+                            </NameCell>
+                          </td>
+                          <td>{formatNumber(u.total_tokens)}</td>
+                          <td>${cost.toFixed(2)}</td>
+                        </TRow>
+                      );
+                    })
+                  )}
+                </tbody>
+              </Table>
+            ) : (
+              /* ── User Table ── */
+              <Table>
+                <thead>
+                  <tr>
+                    <th>{t('users.name')}</th>
+                    <th>{t('users.email')}</th>
+                    <th>{t('users.role')}</th>
+                    <th>{t('users.permissions')}</th>
+                    <th>{t('users.created')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {isLoading ? (
+                    <tr><EmptyCell colSpan={5}>{t('users.loading')}</EmptyCell></tr>
+                  ) : filtered.length === 0 ? (
+                    <tr><EmptyCell colSpan={5}><div><EmptyTeamIllustration />{t('users.noUsers')}<EmptyHint>{t('users.inviteHint')}</EmptyHint></div></EmptyCell></tr>
+                  ) : (
+                    filtered.map((u, i) => {
+                      const { bg, fg, avatar } = roleProps(u.role);
+                      const perms = u.permissions ?? [];
+                      return (
+                        <TRow key={u._id} onClick={() => setSelectedUser(u)}>
+                          <td>
+                            <NameCell>
+                              <AvatarCircle $bg={avatar}>
+                                {getInitials(u.name)}
+                              </AvatarCircle>
+                              <UserName>{u.name}</UserName>
+                            </NameCell>
+                          </td>
+                          <td>{u.email}</td>
+                          <td><RoleBadge $bg={bg} $fg={fg}>{u.role}</RoleBadge></td>
+                          <td>
+                            {perms.length === 0 ? (
+                              <PermCount>{t('users.noPermissions')}</PermCount>
+                            ) : (
+                              <PermList>
+                                {perms.slice(0, 2).map(p => (
+                                  <PermTag key={p}>{p}</PermTag>
+                                ))}
+                                {perms.length > 2 && (
+                                  <PermCount>{t('users.morePerms', { count: perms.length - 2 })}</PermCount>
+                                )}
+                              </PermList>
+                            )}
+                          </td>
+                          <td>{formatDate(u.createdAt)}</td>
+                        </TRow>
+                      );
+                    })
+                  )}
+                </tbody>
+              </Table>
+            )}
           </TableWrap>
         </CardBody>
-      </Card>
+      </PageCard>
 
       {/* Footer */}
       <Footer>
-        <span>{t('footer.copyrightHermes', { year: 2024 })}</span>
+        <span>{t('footer.copyrightHermes', { year: 2026 })}</span>
         <div>
           <a href="#">{t('footer.documentation')}</a>
           <a href="#">{t('footer.support')}</a>
@@ -655,65 +841,77 @@ const Users: React.FC = () => {
                   {selectedUser.role}
                 </RoleBadge>
               </DpHeaderInfo>
-              <DpCloseBtn onClick={handleCloseDetail}>&times;</DpCloseBtn>
+              <DpCloseBtn onClick={handleCloseDetail}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></DpCloseBtn>
             </DpHeader>
 
             <DpBody>
-              {/* Info Section */}
-              <DpGrid>
-                <DpField>
-                  <DpFieldLabel>Email</DpFieldLabel>
-                  <DpFieldValue>{selectedUser.email}</DpFieldValue>
-                </DpField>
-                <DpField>
-                  <DpFieldLabel>Role</DpFieldLabel>
-                  <DpFieldValue style={{ textTransform: 'capitalize' }}>{selectedUser.role}</DpFieldValue>
-                </DpField>
-                <DpField>
-                  <DpFieldLabel>Status</DpFieldLabel>
-                  <DpFieldValue style={{ color: '#2563eb' }}>Active</DpFieldValue>
-                </DpField>
-                <DpField>
-                  <DpFieldLabel>Join Date</DpFieldLabel>
-                  <DpFieldValue>{formatDate(selectedUser.createdAt)}</DpFieldValue>
-                </DpField>
-                <DpField>
-                  <DpFieldLabel>Last Active</DpFieldLabel>
-                  <DpFieldValue>Today</DpFieldValue>
-                </DpField>
-              </DpGrid>
+              {editing ? (
+                /* ── Edit Mode ── */
+                <DpGrid>
+                  <DpField>
+                    <DpFieldLabel>{t('users.name')}</DpFieldLabel>
+                    <DpInput value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
+                  </DpField>
+                  <DpField>
+                    <DpFieldLabel>{t('users.email')}</DpFieldLabel>
+                    <DpInput value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} />
+                  </DpField>
+                  <DpField>
+                    <DpFieldLabel>{t('users.role')}</DpFieldLabel>
+                    <DpSelect value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}>
+                      <option value="staff">{t('users.roleStaff')}</option>
+                      <option value="admin">{t('users.roleAdmin')}</option>
+                      <option value="super_admin">{t('users.roleSuperAdmin')}</option>
+                    </DpSelect>
+                  </DpField>
+                </DpGrid>
+              ) : (
+                <>
+                  {/* ── View Mode ── */}
+                  <DpGrid>
+                    <DpField>
+                      <DpFieldLabel>{t('users.email')}</DpFieldLabel>
+                      <DpFieldValue>{selectedUser.email}</DpFieldValue>
+                    </DpField>
+                    <DpField>
+                      <DpFieldLabel>{t('users.role')}</DpFieldLabel>
+                      <DpFieldValue style={{ textTransform: 'capitalize' }}>{selectedUser.role}</DpFieldValue>
+                    </DpField>
+                    <DpField>
+                      <DpFieldLabel>{t('users.joinDate')}</DpFieldLabel>
+                      <DpFieldValue>{formatDate(selectedUser.createdAt)}</DpFieldValue>
+                    </DpField>
+                  </DpGrid>
 
-              {/* Activity Log Section */}
-              <div>
-                <DpSectionTitle>Activity Log</DpSectionTitle>
-                <DpActivityList style={{ marginTop: 10 }}>
-                  {getActivityLog(selectedUser._id).map((entry, idx) => (
-                    <DpActivityItem key={idx}>
-                      <span>{entry.action}</span>
-                      <DpActivityTime>{entry.time}</DpActivityTime>
-                    </DpActivityItem>
-                  ))}
-                </DpActivityList>
-              </div>
-
-              {/* Permissions Section */}
-              <div>
-                <DpSectionTitle>Permissions</DpSectionTitle>
-                <DpPermGrid style={{ marginTop: 10 }}>
-                  {ALL_PERMISSIONS.map(perm => (
-                    <DpPermBadge key={perm} $active={(selectedUser.permissions ?? []).includes(perm)}>
-                      {perm}
-                    </DpPermBadge>
-                  ))}
-                </DpPermGrid>
-              </div>
+                  {/* Permissions Section */}
+                  {(selectedUser.permissions ?? []).length > 0 && (
+                    <div>
+                      <DpSectionTitle>{t('users.permissions')}</DpSectionTitle>
+                      <DpPermGrid style={{ marginTop: 10 }}>
+                        {(selectedUser.permissions ?? []).map(perm => (
+                          <DpPermBadge key={perm} $active>{perm}</DpPermBadge>
+                        ))}
+                      </DpPermGrid>
+                    </div>
+                  )}
+                </>
+              )}
             </DpBody>
 
             <DpFooter>
               <DpFooterStatus>
-                Member since {formatDate(selectedUser.createdAt)}
+                {t('users.memberSince', { date: formatDate(selectedUser.createdAt) })}
               </DpFooterStatus>
-              <DpActionBtn $variant="primary">編輯</DpActionBtn>
+              {editing ? (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <DpActionBtn onClick={() => setEditing(false)}>{t('common.cancel')}</DpActionBtn>
+                  <DpActionBtn $variant="primary" onClick={handleSaveEdit} disabled={updateUser.isPending}>
+                    {updateUser.isPending ? t('users.saving') : t('common.save')}
+                  </DpActionBtn>
+                </div>
+              ) : (
+                <DpActionBtn $variant="primary" onClick={handleStartEdit}>{t('common.edit')}</DpActionBtn>
+              )}
             </DpFooter>
           </DpPanel>
         </>,

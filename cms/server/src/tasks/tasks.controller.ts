@@ -20,6 +20,18 @@ import {
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { PermissionsGuard } from '../common/guards/permissions.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+
+interface JwtUser {
+  userId: string;
+  email: string;
+  role: string;
+  permissions: string[];
+}
+
+function isAdmin(user: JwtUser): boolean {
+  return user.role === 'admin' || user.role === 'super_admin';
+}
 
 /**
  * Task queue = NestJS ↔ Hermes agent 契約。
@@ -33,8 +45,15 @@ export class TasksController {
   @Get()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
-  async list(@Query() q: ListTasksQueryDto) {
-    return this.tasks.findAll(q);
+  async list(@Query() q: ListTasksQueryDto, @CurrentUser() user: JwtUser) {
+    return this.tasks.findAll(q, isAdmin(user) ? undefined : user.userId);
+  }
+
+  @Get('stats')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard, PermissionsGuard)
+  async stats(@CurrentUser() user: JwtUser) {
+    return this.tasks.stats(isAdmin(user) ? undefined : user.userId);
   }
 
   @Get(':taskId')

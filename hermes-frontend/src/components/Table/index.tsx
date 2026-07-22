@@ -1,6 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { media } from '../../styles/media';
+import { glassSurface } from '../../styles/glassSurface';
 
 interface Column {
   key: string;
@@ -15,8 +16,8 @@ interface TableProps {
 }
 
 const Wrapper = styled.div`
+  ${glassSurface};
   overflow-x: auto;
-  border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.card}px;
 `;
 

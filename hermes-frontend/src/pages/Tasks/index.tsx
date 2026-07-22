@@ -1,10 +1,13 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
-import styled, { keyframes, css } from 'styled-components';
+import styled, { keyframes, css, useTheme, DefaultTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import { glassSurface } from '../../styles/glassSurface';
 import { useTasks } from '../../api/hooks';
 import { TaskItem } from '../../api/services';
 import { media } from '../../styles/media';
+import SpriteAvatar from '../../components/SpriteAvatar';
+import { AGENTS, FARMER } from '../../config/agents';
 
 /* ══════════════════════════════════════
    CMS Tasks — Luno jKanban Board style
@@ -36,7 +39,7 @@ function getStr(task: TaskItem, key: string): string {
   return '';
 }
 function getTitle(task: TaskItem): string {
-  return getStr(task, 'title') || getStr(task, 'type') || 'Untitled Task';
+  return getStr(task, 'title') || getStr(task, 'type') || 'tasks.untitledTask';
 }
 function getSkill(task: TaskItem): string {
   return getStr(task, 'skill_id') || getStr(task, 'type') || '';
@@ -59,64 +62,114 @@ function getErrorMessage(task: TaskItem): string {
   }
   return JSON.stringify(e);
 }
-function getResultSummary(task: TaskItem): string {
+/* i18n-aware helpers — accept t function */
+type TFunc = (key: string, opts?: Record<string, unknown>) => string;
+
+function getResultSummary(task: TaskItem, t: TFunc, theme: DefaultTheme): React.ReactNode | string {
   const r = task.result ?? getField(task, 'result');
   if (!r) return '';
   if (typeof r === 'string') return r;
   if (typeof r === 'object' && r !== null) {
     const keys = Object.keys(r);
-    return keys.slice(0, 2).map(k => `${k}: ${String((r as Record<string, unknown>)[k]).slice(0, 30)}`).join(', ');
+    const parts = keys.slice(0, 3).map((k, i) => {
+      const label = t(`tasks.results.${k}`, { defaultValue: k });
+      const v = (r as Record<string, unknown>)[k];
+      let valNode: React.ReactNode;
+      if (v === true) {
+        valNode = <span style={{ color: theme.strong.olive }}>✓</span>;
+      } else if (v === false) {
+        valNode = <span style={{ color: theme.colors.textTertiary }}>✗</span>;
+      } else if (typeof v === 'number') {
+        valNode = <span style={{ color: theme.colors.accent, fontWeight: 700 }}>{v}</span>;
+      } else {
+        valNode = <span>{String(v).slice(0, 25)}</span>;
+      }
+      return <span key={k}>{i > 0 && ' · '}{label}: {valNode}</span>;
+    });
+    return <>{parts}</>;
   }
   return '';
 }
-function getParamsSummary(task: TaskItem): string {
+
+function friendlyParamNode(key: string, val: unknown, t: TFunc, theme: DefaultTheme): React.ReactNode {
+  const label = t(`tasks.params.${key}`, { defaultValue: key });
+  if (typeof val === 'number') {
+    const unit = t('tasks.batchUnit');
+    return <>{label}: <span style={{ color: theme.colors.accent, fontWeight: 700 }}>{val}</span>{unit ? ` ${unit}` : ''}</>;
+  }
+  let s = typeof val === 'string' ? val : JSON.stringify(val);
+  const translated = t(`tasks.paramValues.${s}`, { defaultValue: '' });
+  if (translated) s = translated;
+  if (s.length > 30) s = s.slice(0, 30) + '…';
+  return <>{label}: {s}</>;
+}
+function getParamsSummary(task: TaskItem, t: TFunc, theme: DefaultTheme): React.ReactNode {
   const p = getField(task, 'params') ?? task.payload;
   if (!p || typeof p !== 'object') return '';
   const obj = p as Record<string, unknown>;
   const keys = Object.keys(obj);
   if (keys.length === 0) return '';
-  return keys.slice(0, 2).map(k => {
-    const v = obj[k];
-    const s = typeof v === 'string' ? v : JSON.stringify(v);
-    return `${k}: ${s && s.length > 25 ? s.slice(0, 25) + '…' : s}`;
-  }).join(', ');
+  return <>{keys.slice(0, 2).map((k, i) => <span key={k}>{i > 0 && ' · '}{friendlyParamNode(k, obj[k], t, theme)}</span>)}</>;
 }
 
 /* ── Column config ── */
 
 interface ColumnCfg { key: string; label: string; bg: string; }
 
-const COLUMNS: ColumnCfg[] = [
-  { key: 'pending',    label: 'Pending',    bg: '#3b82f6' },
-  { key: 'processing', label: 'Processing', bg: '#d97706' },
-  { key: 'completed',  label: 'Completed',  bg: '#16a34a' },
-  { key: 'failed',     label: 'Failed',     bg: '#dc2626' },
-];
+function getColumns(theme: DefaultTheme): ColumnCfg[] {
+  return [
+    { key: 'pending',    label: 'Pending',    bg: theme.colors.accent },
+    { key: 'processing', label: 'Processing', bg: theme.strong.gold },
+    { key: 'completed',  label: 'Completed',  bg: theme.strong.olive },
+    { key: 'failed',     label: 'Failed',     bg: theme.strong.mauve },
+  ];
+}
 
-/* ── Skill color palette ── */
+/* ── Human-readable labels ── */
 
-const SKILL_COLORS: Record<string, string> = {
-  S1: '#3b82f6', S2: '#d97706', S3: '#2563eb', S4: '#16a34a',
-  scrape: '#3b82f6', email: '#d97706', analyze: '#2563eb',
+/* ── Skill visual config (color + icon) ── */
+const SKILL_ICONS: Record<string, React.ReactNode> = {
+  S1: <><path d="M21 12a9 9 0 1 1-6.22-8.56" /><path d="M21 3v4h-4" /></>,
+  S2: <><path d="M12 2a4 4 0 0 0-4 4c0 2 2 3 2 6H8" /><path d="M16 12h-2c0-3 2-4 2-6a4 4 0 0 0-4-4" /><line x1="9" y1="18" x2="15" y2="18" /><line x1="10" y1="22" x2="14" y2="22" /></>,
+  S3: <><rect x="2" y="4" width="20" height="16" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></>,
+  S4: <><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" /><path d="M14 2v6h6" /><line x1="16" y1="13" x2="8" y2="13" /><line x1="16" y1="17" x2="8" y2="17" /></>,
+  S5: <><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="7 10 12 15 17 10" /><line x1="12" y1="15" x2="12" y2="3" /></>,
+  S6: <><path d="M4 12h8" /><path d="M4 18V6" /><path d="M12 18V6" /><path d="m15 15 3 3 3-3" /><path d="m15 9 3-3 3 3" /><path d="M18 6v12" /></>,
 };
-function skillColor(id: string): string {
-  if (SKILL_COLORS[id]) return SKILL_COLORS[id];
-  const p = ['#3b82f6', '#d97706', '#2563eb', '#1d4ed8', '#dc2626', '#94a3b8'];
-  let h = 0;
-  for (let i = 0; i < id.length; i++) h = id.charCodeAt(i) + ((h << 5) - h);
-  return p[Math.abs(h) % p.length];
+SKILL_ICONS.scrape = SKILL_ICONS.S1;
+SKILL_ICONS.email = SKILL_ICONS.S3;
+SKILL_ICONS.analyze = SKILL_ICONS.S2;
+
+function getSkillColors(theme: DefaultTheme): Record<string, string> {
+  return {
+    S1: theme.colors.accent,
+    S2: theme.colors.accent,
+    S3: theme.strong.gold,
+    S4: theme.colors.accent,
+    S5: theme.strong.olive,
+    S6: theme.colors.accent,
+    scrape: theme.colors.accent,
+    email: theme.strong.gold,
+    analyze: theme.colors.accent,
+  };
 }
 
-/* ── Avatar ── */
-
-const AV_PALETTE = ['#bfdbfe', '#c4b5fd', '#a5f3fc', '#bbf7d0'];
-function avColor(s: string): string {
-  let h = 0;
-  for (let i = 0; i < s.length; i++) h = s.charCodeAt(i) + ((h << 5) - h);
-  return AV_PALETTE[Math.abs(h) % AV_PALETTE.length];
+function skillColor(id: string, theme: DefaultTheme): string {
+  return getSkillColors(theme)[id] || theme.colors.textTertiary;
 }
-function initials(s: string): string {
-  return s.split(/[\s@_-]+/).filter(Boolean).slice(0, 2).map(w => w[0]).join('').toUpperCase() || '?';
+function skillIcon(id: string): React.ReactNode | null {
+  return SKILL_ICONS[id] || null;
+}
+
+/* ── Agent → animal mapping ── */
+const TASK_AGENT_MAP: Record<string, string> = {
+  'Worker-1': 'S1', 'Worker-2': 'S2', 'Worker-3': 'S3',
+  'Agent-A': 'S1', 'Agent-B': 'S3', 'Agent-C': 'S4',
+};
+function getTaskAgent(assignee: string) {
+  const key = TASK_AGENT_MAP[assignee];
+  if (key) return AGENTS[key];
+  return null;
 }
 
 /* ── Safely extract tasks array from API response ── */
@@ -146,25 +199,37 @@ const Breadcrumb = styled.ol`
 `;
 
 const Toolbar = styled.div`
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center;
   flex-wrap: wrap; gap: 12px;
 `;
 
 const TitleBlock = styled.div``;
 
-const PageTitle = styled.h1`
-  font-size: 1.15rem; font-weight: 600; margin: 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const PageSub = styled.small`
-  color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
-`;
+const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
+const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const SearchWrap = styled.div`
   position: relative; display: flex; align-items: center;
   color: ${({ theme }) => theme.colors.textTertiary};
   svg { position: absolute; left: 10px; pointer-events: none; }
+`;
+
+const SortSelect = styled.select`
+  padding: 8px 28px 8px 12px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  background: ${({ theme }) => theme.colors.surface};
+  font-size: 0.8125rem; font-family: ${({ theme }) => theme.fonts.primary};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  outline: none; cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  transition: border-color 0.15s;
+  &:hover { border-color: ${({ theme }) => theme.colors.borderStrong}; }
+  &:focus { border-color: ${({ theme }) => theme.colors.accent}; box-shadow: 0 0 0 3px rgba(37,99,235,0.12); }
 `;
 
 const SearchInput = styled.input`
@@ -180,7 +245,7 @@ const SearchInput = styled.input`
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
   &:hover:not(:focus) { border-color: ${({ theme }) => theme.colors.borderStrong}; }
   &:focus {
-    border-color: ${({ theme }) => theme.colors.blue};
+    border-color: ${({ theme }) => theme.colors.accent};
     box-shadow: 0 0 0 3px rgba(37,99,235,0.12), 0 1px 2px rgba(15,23,42,0.04);
   }
   ${media.mobile} { width: 100%; }
@@ -210,9 +275,9 @@ const Col = styled.div`
   min-width: 0;
   display: flex; flex-direction: column;
   border-radius: ${({ theme }) => theme.radii.card}px;
-  background: #f7f7f4;
+  background: ${({ theme }) => theme.colors.canvas};
   border: 1px solid ${({ theme }) => theme.colors.border};
-  box-shadow: 0 1px 3px rgba(15,23,42,0.06), 0 1px 2px rgba(15,23,42,0.04);
+  box-shadow: ${({ theme }) => theme.shadows.card};
   overflow: hidden;
   ${media.mobile} {
     border-radius: 0;
@@ -278,81 +343,118 @@ const ColBody = styled.div<{ $collapsed?: boolean }>`
 /* ── Card ── */
 
 const Card = styled.div`
-  background: #ffffff;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.tile}px;
   padding: 12px ${({ theme }) => theme.spacing.md}px;
-  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
   transition: box-shadow 0.15s, transform 0.12s, border-color 0.15s;
   cursor: default;
+  display: flex; flex-direction: column;
+  gap: 8px; position: relative;
   &:hover {
     box-shadow: 0 2px 8px rgba(15,23,42,0.07);
     transform: translateY(-1px);
   }
 `;
 
+/* Row 1: avatar + title ... priority dot */
+const CardTopRow = styled.div`
+  display: flex; align-items: flex-start; gap: 8px;
+  padding-right: 28px; /* room for priority dot */
+  padding-top: 2px;
+`;
+
+const AvatarWrap = styled.div`
+  display: flex; flex-direction: column; align-items: center;
+  flex-shrink: 0; position: relative; width: 40px;
+`;
+
+const AgentAvatar = styled.span<{ $bg: string }>`
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+  background: ${({ $bg }) => $bg};
+  overflow: hidden;
+  img { width: 100%; height: 100%; object-fit: cover; }
+`;
+
+const AvatarName = styled.span`
+  position: relative; margin-top: -10px; z-index: 1;
+  background: ${({ theme }) => theme.colors.surface}; border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 5px; padding: 1px 6px;
+  font-size: 0.625rem; font-weight: 700; color: ${({ theme }) => theme.colors.accent};
+  white-space: nowrap; max-width: 64px; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.5; text-align: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+`;
+
 const CardTitle = styled.div`
-  font-size: 0.8125rem; font-weight: 600;
+  font-size: 0.875rem; font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
-  margin-bottom: 2px;
+  line-height: 1.4; flex: 1; min-width: 0;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 `;
 
+const PriorityDot = styled.span<{ $c: string }>`
+  position: absolute; top: 12px; right: 12px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: ${({ $c }) => $c};
+  color: ${({ theme }) => theme.colors.textInverted}; font-size: 0.5rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+`;
+
+/* Row 2: description + skill tag */
+const CardDescRow = styled.div`
+  display: flex; align-items: flex-start; gap: 6px;
+  padding-left: 48px; /* aligned under title (avatar wrap 40 + gap 8) */
+`;
+
 const CardDesc = styled.p`
-  margin: 0 0 ${({ theme }) => theme.spacing.sm}px;
-  font-size: 0.75rem; color: ${({ theme }) => theme.colors.textSecondary};
-  line-height: 1.4;
+  margin: 0;
+  font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textSecondary};
+  line-height: 1.5; flex: 1; min-width: 0;
   display: -webkit-box; -webkit-line-clamp: 2;
   -webkit-box-orient: vertical; overflow: hidden;
 `;
 
+const SkillPill = styled.span<{ $c: string }>`
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 8px; border-radius: 99px; font-size: 0.625rem; font-weight: 600;
+  background: ${({ $c }) => $c}12;
+  color: ${({ $c }) => $c};
+  white-space: nowrap; flex-shrink: 0; margin-top: 2px;
+  svg { flex-shrink: 0; }
+`;
+
+/* Row 3: date */
 const CardFooter = styled.div`
   display: flex; align-items: center;
-  justify-content: space-between;
-  gap: 6px;
-`;
-
-const CardMeta = styled.div`
-  display: flex; align-items: center; gap: 6px;
-`;
-
-const Avatar = styled.span<{ $c: string }>`
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 22px; height: 22px; border-radius: 50%;
-  background: ${({ $c }) => $c};
-  color: #334155; font-size: 0.5625rem; font-weight: 700;
-  box-shadow: none;
-`;
-
-const Pill = styled.span<{ $c: string }>`
-  display: inline-block; padding: 1px 8px;
-  border-radius: 99px; font-size: 0.625rem; font-weight: 600;
-  background: ${({ $c }) => $c}0d;
-  color: ${({ $c }) => $c};
-  border: 1px solid ${({ $c }) => $c}33;
-`;
-
-const PriorityDot = styled.span<{ $c: string }>`
-  display: inline-block; width: 8px; height: 8px;
-  border-radius: 50%;
-  background: ${({ $c }) => $c};
-  box-shadow: none;
+  justify-content: flex-end;
+  padding-left: 48px;
 `;
 
 const CardDate = styled.span`
-  font-size: 0.6875rem; color: ${({ theme }) => theme.colors.textTertiary};
+  font-size: 0.75rem; color: ${({ theme }) => theme.colors.textTertiary};
 `;
 
 const ErrText = styled.span`
-  color: ${({ theme }) => theme.colors.red};
+  color: ${({ theme }) => theme.strong.mauve};
   font-size: 0.6875rem; font-style: italic;
 `;
 
 const EmptyCol = styled.div`
-  text-align: center;
+  text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;
   padding: ${({ theme }) => theme.spacing.lg}px ${({ theme }) => theme.spacing.sm}px;
   color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.8125rem;
 `;
+
+const EmptyTaskIllustration = () => (
+  <svg width="100" height="80" viewBox="0 0 100 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="15" y="10" width="70" height="55" rx="8" fill="#F5F2ED" stroke="#EFEAE3" strokeWidth="1.5"/>
+    <rect x="28" y="24" width="10" height="10" rx="2" stroke="#EFEAE3" strokeWidth="1.5" fill="none"/>
+    <rect x="28" y="40" width="10" height="10" rx="2" stroke="#EFEAE3" strokeWidth="1.5" fill="none"/>
+    <line x1="44" y1="29" x2="72" y2="29" stroke="#EFEAE3" strokeWidth="3" strokeLinecap="round"/>
+    <line x1="44" y1="45" x2="66" y2="45" stroke="#EFEAE3" strokeWidth="3" strokeLinecap="round"/>
+  </svg>
+);
 
 /* ── Footer ── */
 
@@ -371,15 +473,21 @@ const Footer = styled.footer`
 function fmtDate(iso: string): string {
   if (!iso) return '';
   const d = new Date(iso);
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const month = d.toLocaleString('en-US', { month: 'short' });
+  const day = d.getDate();
+  let h = d.getHours();
+  const min = d.getMinutes().toString().padStart(2, '0');
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return `${month} ${day}, ${h}:${min}${ampm}`;
 }
 
-function priorityColor(p: string): string {
+function priorityColor(p: string, theme: DefaultTheme): string {
   switch (p) {
-    case 'high': case 'urgent': return '#dc2626';
-    case 'normal': return '#d97706';
-    case 'low': return '#2563eb';
-    default: return '#94a3b8';
+    case 'high': case 'urgent': return theme.strong.mauve;
+    case 'normal': return theme.strong.gold;
+    case 'low': return theme.colors.accent;
+    default: return theme.colors.textTertiary;
   }
 }
 
@@ -387,26 +495,26 @@ function priorityColor(p: string): string {
 
 const MOCK_TASKS: TaskItem[] = [
   // ── Pending ──
-  { _id: 'mock-p1', title: '抓取 LinkedIn 資料', skill_id: 'S1', params: { keyword: 'CTO', location: 'San Francisco' }, priority: 'high', status: 'pending', _created_at: '2026-06-23T08:15:00Z', assigned_agent_id: 'Agent-A' } as unknown as TaskItem,
-  { _id: 'mock-p2', title: '批量寄送開發信', skill_id: 'S3', params: { template: 'intro_v2', batch_size: 50 }, priority: 'normal', status: 'pending', _created_at: '2026-06-23T09:30:00Z', assigned_agent_id: 'Agent-B' } as unknown as TaskItem,
-  { _id: 'mock-p3', title: '分析競品定價頁面', skill_id: 'S2', params: { url: 'https://competitor.io/pricing' }, priority: 'low', status: 'pending', _created_at: '2026-06-22T14:00:00Z' } as unknown as TaskItem,
-  { _id: 'mock-p4', title: '匯出本週 Leads 報表', skill_id: 'S5', params: { format: 'xlsx', range: 'this_week' }, priority: 'normal', status: 'pending', _created_at: '2026-06-24T06:00:00Z', assigned_agent_id: 'Agent-C' } as unknown as TaskItem,
+  { _id: 'mock-p1', title: 'tasks.mockTitles.scrapeLinkedin', skill_id: 'S1', params: { keyword: 'CTO', location: 'San Francisco' }, priority: 'high', status: 'pending', _created_at: '2026-06-23T08:15:00Z', assigned_agent_id: 'Agent-A' } as unknown as TaskItem,
+  { _id: 'mock-p2', title: 'tasks.mockTitles.batchSendColdEmails', skill_id: 'S3', params: { template: 'intro_v2', batch_size: 50 }, priority: 'normal', status: 'pending', _created_at: '2026-06-23T09:30:00Z', assigned_agent_id: 'Agent-B' } as unknown as TaskItem,
+  { _id: 'mock-p3', title: 'tasks.mockTitles.analyzeCompetitorPricing', skill_id: 'S2', params: { url: 'https://competitor.io/pricing' }, priority: 'low', status: 'pending', _created_at: '2026-06-22T14:00:00Z' } as unknown as TaskItem,
+  { _id: 'mock-p4', title: 'tasks.mockTitles.exportWeeklyLeads', skill_id: 'S5', params: { format: 'xlsx', range: 'this_week' }, priority: 'normal', status: 'pending', _created_at: '2026-06-24T06:00:00Z', assigned_agent_id: 'Agent-C' } as unknown as TaskItem,
 
   // ── Processing ──
-  { _id: 'mock-r1', title: '爬取 Crunchbase 資料', skill_id: 'S1', params: { target: 'Series A startups', pages: 20 }, priority: 'high', status: 'processing', _created_at: '2026-06-24T07:45:00Z', assigned_agent_id: 'Worker-1' } as unknown as TaskItem,
-  { _id: 'mock-r2', title: 'AI 分析潛在客戶匹配度', skill_id: 'S2', params: { model: 'lead-scorer-v3', batch: 120 }, priority: 'normal', status: 'processing', _created_at: '2026-06-24T08:10:00Z', assigned_agent_id: 'Worker-2' } as unknown as TaskItem,
-  { _id: 'mock-r3', title: '同步 CRM 聯絡人', skill_id: 'S6', params: { crm: 'HubSpot', direction: 'bidirectional' }, priority: 'normal', status: 'processing', _created_at: '2026-06-24T09:00:00Z', assigned_agent_id: 'Worker-1' } as unknown as TaskItem,
+  { _id: 'mock-r1', title: 'tasks.mockTitles.scrapeCrunchbase', skill_id: 'S1', params: { target: 'Series A startups', pages: 20 }, priority: 'high', status: 'processing', _created_at: '2026-06-24T07:45:00Z', assigned_agent_id: 'Worker-1' } as unknown as TaskItem,
+  { _id: 'mock-r2', title: 'tasks.mockTitles.aiAnalyzeLeadMatch', skill_id: 'S2', params: { model: 'lead-scorer-v3', batch: 120 }, priority: 'normal', status: 'processing', _created_at: '2026-06-24T08:10:00Z', assigned_agent_id: 'Worker-2' } as unknown as TaskItem,
+  { _id: 'mock-r3', title: 'tasks.mockTitles.syncCrmContacts', skill_id: 'S6', params: { crm: 'HubSpot', direction: 'bidirectional' }, priority: 'normal', status: 'processing', _created_at: '2026-06-24T09:00:00Z', assigned_agent_id: 'Worker-1' } as unknown as TaskItem,
 
   // ── Completed ──
-  { _id: 'mock-c1', title: '寄送 TechCorp 開發信', skill_id: 'S3', params: { to: 'ceo@techcorp.com' }, priority: 'normal', status: 'completed', result: { sent: true, opened: true, replied: false }, _created_at: '2026-06-21T10:00:00Z', assigned_agent_id: 'Agent-A' } as unknown as TaskItem,
-  { _id: 'mock-c2', title: '分析 Q2 轉換率數據', skill_id: 'S2', params: { quarter: 'Q2', metric: 'conversion' }, priority: 'low', status: 'completed', result: { analyzed: true, score: 87 }, _created_at: '2026-06-20T16:30:00Z', assigned_agent_id: 'Agent-B' } as unknown as TaskItem,
-  { _id: 'mock-c3', title: '生成每日潛客摘要', skill_id: 'S4', params: { mode: 'daily_digest' }, priority: 'normal', status: 'completed', result: { leads_found: 34, qualified: 12 }, _created_at: '2026-06-22T06:00:00Z' } as unknown as TaskItem,
-  { _id: 'mock-c4', title: '更新公司資料庫', skill_id: 'S5', params: { source: 'LinkedIn', records: 250 }, priority: 'normal', status: 'completed', result: { updated: 248, skipped: 2 }, _created_at: '2026-06-23T11:00:00Z', assigned_agent_id: 'Worker-2' } as unknown as TaskItem,
+  { _id: 'mock-c1', title: 'tasks.mockTitles.sendTechCorpEmail', skill_id: 'S3', params: { to: 'ceo@techcorp.com' }, priority: 'normal', status: 'completed', result: { sent: true, opened: true, replied: false }, _created_at: '2026-06-21T10:00:00Z', assigned_agent_id: 'Agent-A' } as unknown as TaskItem,
+  { _id: 'mock-c2', title: 'tasks.mockTitles.analyzeQ2Conversion', skill_id: 'S2', params: { quarter: 'Q2', metric: 'conversion' }, priority: 'low', status: 'completed', result: { analyzed: true, score: 87 }, _created_at: '2026-06-20T16:30:00Z', assigned_agent_id: 'Agent-B' } as unknown as TaskItem,
+  { _id: 'mock-c3', title: 'tasks.mockTitles.generateDailyLeadSummary', skill_id: 'S4', params: { mode: 'daily_digest' }, priority: 'normal', status: 'completed', result: { leads_found: 34, qualified: 12 }, _created_at: '2026-06-22T06:00:00Z' } as unknown as TaskItem,
+  { _id: 'mock-c4', title: 'tasks.mockTitles.updateCompanyDatabase', skill_id: 'S5', params: { source: 'LinkedIn', records: 250 }, priority: 'normal', status: 'completed', result: { updated: 248, skipped: 2 }, _created_at: '2026-06-23T11:00:00Z', assigned_agent_id: 'Worker-2' } as unknown as TaskItem,
 
   // ── Failed ──
-  { _id: 'mock-f1', title: '爬取 AngelList 頁面', skill_id: 'S1', params: { url: 'https://angel.co/companies' }, priority: 'high', status: 'failed', error: { message: 'Rate limit exceeded (429)' }, _created_at: '2026-06-23T13:00:00Z', assigned_agent_id: 'Worker-1' } as unknown as TaskItem,
-  { _id: 'mock-f2', title: '寄信給 GlobalTech CEO', skill_id: 'S3', params: { to: 'john@globaltech.com' }, priority: 'normal', status: 'failed', error: { message: 'SMTP connection timeout' }, _created_at: '2026-06-22T15:20:00Z', assigned_agent_id: 'Agent-A' } as unknown as TaskItem,
-  { _id: 'mock-f3', title: '同步 Salesforce 資料', skill_id: 'S6', params: { crm: 'Salesforce' }, priority: 'urgent', status: 'failed', error: { message: 'OAuth token expired, please re-authenticate' }, _created_at: '2026-06-24T04:30:00Z' } as unknown as TaskItem,
+  { _id: 'mock-f1', title: 'tasks.mockTitles.scrapeAngelList', skill_id: 'S1', params: { url: 'https://angel.co/companies' }, priority: 'high', status: 'failed', error: { message: 'Rate limit exceeded (429)' }, _created_at: '2026-06-23T13:00:00Z', assigned_agent_id: 'Worker-1' } as unknown as TaskItem,
+  { _id: 'mock-f2', title: 'tasks.mockTitles.sendGlobalTechEmail', skill_id: 'S3', params: { to: 'john@globaltech.com' }, priority: 'normal', status: 'failed', error: { message: 'SMTP connection timeout' }, _created_at: '2026-06-22T15:20:00Z', assigned_agent_id: 'Agent-A' } as unknown as TaskItem,
+  { _id: 'mock-f3', title: 'tasks.mockTitles.syncSalesforce', skill_id: 'S6', params: { crm: 'Salesforce' }, priority: 'urgent', status: 'failed', error: { message: 'OAuth token expired, please re-authenticate' }, _created_at: '2026-06-24T04:30:00Z' } as unknown as TaskItem,
 ];
 
 /* ═══════════ Workflow Steps (per task) ═══════════ */
@@ -420,91 +528,91 @@ interface WorkflowStep {
 
 const TASK_WORKFLOWS: Record<string, WorkflowStep[]> = {
   'mock-p1': [
-    { label: '任務已建立', status: 'done', time: '06/23 08:15' },
-    { label: '等待排程分配', status: 'active', time: '06/23 08:16' },
-    { label: '開始抓取 LinkedIn', status: 'pending' },
-    { label: '資料清洗 & 去重', status: 'pending' },
-    { label: '匯入潛客池', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/23 08:15' },
+    { label: 'tasks.wf.awaitingScheduleAssign', status: 'active', time: '06/23 08:16' },
+    { label: 'tasks.wf.startScrapeLinkedin', status: 'pending' },
+    { label: 'tasks.wf.dataCleanDedup', status: 'pending' },
+    { label: 'tasks.wf.importLeadPool', status: 'pending' },
   ],
   'mock-p2': [
-    { label: '任務已建立', status: 'done', time: '06/23 09:30' },
-    { label: '載入模板 intro_v2', status: 'active', time: '06/23 09:31', detail: '50 封信件待個性化生成' },
-    { label: 'AI 生成信件內容', status: 'pending' },
-    { label: '批量寄送', status: 'pending' },
-    { label: '追蹤開信率', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/23 09:30' },
+    { label: 'tasks.wf.loadTemplateIntroV2', status: 'active', time: '06/23 09:31', detail: 'tasks.wfDetail.emails50Pending' },
+    { label: 'tasks.wf.aiGenerateEmailContent', status: 'pending' },
+    { label: 'tasks.wf.batchSend', status: 'pending' },
+    { label: 'tasks.wf.trackOpenRate', status: 'pending' },
   ],
   'mock-p3': [
-    { label: '任務已建立', status: 'done', time: '06/22 14:00' },
-    { label: '排隊中', status: 'active' },
-    { label: '訪問定價頁面', status: 'pending' },
-    { label: '截圖 & 提取定價', status: 'pending' },
-    { label: '生成分析報告', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/22 14:00' },
+    { label: 'tasks.wf.queued', status: 'active' },
+    { label: 'tasks.wf.visitPricingPage', status: 'pending' },
+    { label: 'tasks.wf.screenshotExtractPricing', status: 'pending' },
+    { label: 'tasks.wf.generateAnalysisReport', status: 'pending' },
   ],
   'mock-p4': [
-    { label: '任務已建立', status: 'done', time: '06/24 06:00' },
-    { label: '查詢本週數據', status: 'active' },
-    { label: '生成 XLSX', status: 'pending' },
-    { label: '寄送至管理員', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/24 06:00' },
+    { label: 'tasks.wf.queryThisWeekData', status: 'active' },
+    { label: 'tasks.wf.generateXlsx', status: 'pending' },
+    { label: 'tasks.wf.sendToAdmin', status: 'pending' },
   ],
   'mock-r1': [
-    { label: '任務已建立', status: 'done', time: '06/24 07:45' },
-    { label: '分配給 Worker-1', status: 'done', time: '06/24 07:46' },
-    { label: '爬取 Crunchbase', status: 'active', time: '06/24 07:48', detail: '已抓取 12/20 頁，發現 87 家公司' },
-    { label: '資料標準化', status: 'pending' },
-    { label: '匯入管線', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/24 07:45' },
+    { label: 'tasks.wf.assignedToWorker1', status: 'done', time: '06/24 07:46' },
+    { label: 'tasks.wf.scrapeCrunchbase', status: 'active', time: '06/24 07:48', detail: 'tasks.wfDetail.scraped12of20' },
+    { label: 'tasks.wf.dataNormalization', status: 'pending' },
+    { label: 'tasks.wf.importPipeline', status: 'pending' },
   ],
   'mock-r2': [
-    { label: '任務已建立', status: 'done', time: '06/24 08:10' },
-    { label: '載入 lead-scorer-v3 模型', status: 'done', time: '06/24 08:12' },
-    { label: '批次評分中', status: 'active', time: '06/24 08:15', detail: '已評分 78/120 筆，平均分 0.68' },
-    { label: '生成報告', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/24 08:10' },
+    { label: 'tasks.wf.loadLeadScorerModel', status: 'done', time: '06/24 08:12' },
+    { label: 'tasks.wf.batchScoring', status: 'active', time: '06/24 08:15', detail: 'tasks.wfDetail.scored78of120' },
+    { label: 'tasks.wf.generateReport', status: 'pending' },
   ],
   'mock-r3': [
-    { label: '任務已建立', status: 'done', time: '06/24 09:00' },
-    { label: '連接 HubSpot API', status: 'done', time: '06/24 09:02' },
-    { label: '雙向同步中', status: 'active', time: '06/24 09:05', detail: '上傳 45 筆，下載 23 筆' },
-    { label: '衝突檢查', status: 'pending' },
-    { label: '同步完成確認', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/24 09:00' },
+    { label: 'tasks.wf.connectHubspotApi', status: 'done', time: '06/24 09:02' },
+    { label: 'tasks.wf.bidirectionalSync', status: 'active', time: '06/24 09:05', detail: 'tasks.wfDetail.upload45Download23' },
+    { label: 'tasks.wf.conflictCheck', status: 'pending' },
+    { label: 'tasks.wf.syncCompleteConfirm', status: 'pending' },
   ],
   'mock-c1': [
-    { label: '任務已建立', status: 'done', time: '06/21 10:00' },
-    { label: 'AI 生成個性化信件', status: 'done', time: '06/21 10:05', detail: '主旨：Collaboration opportunity with TechCorp' },
-    { label: '信件已寄出', status: 'done', time: '06/21 10:08' },
-    { label: '已開信', status: 'done', time: '06/21 14:22', detail: '收件人已開信 (首次)' },
-    { label: '等待回覆', status: 'done', time: '06/21 14:22', detail: '尚未回覆，3 天後自動跟進' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/21 10:00' },
+    { label: 'tasks.wf.aiGeneratePersonalizedEmail', status: 'done', time: '06/21 10:05', detail: 'tasks.wfDetail.subjectCollaboration' },
+    { label: 'tasks.wf.emailSent', status: 'done', time: '06/21 10:08' },
+    { label: 'tasks.wf.emailOpened', status: 'done', time: '06/21 14:22', detail: 'tasks.wfDetail.recipientOpened' },
+    { label: 'tasks.wf.awaitingReply', status: 'done', time: '06/21 14:22', detail: 'tasks.wfDetail.noReply3DayFollowup' },
   ],
   'mock-c2': [
-    { label: '任務已建立', status: 'done', time: '06/20 16:30' },
-    { label: '讀取 Q2 數據', status: 'done', time: '06/20 16:32' },
-    { label: 'AI 分析完成', status: 'done', time: '06/20 16:40', detail: '轉換率評分: 87/100' },
-    { label: '報告已生成', status: 'done', time: '06/20 16:42' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/20 16:30' },
+    { label: 'tasks.wf.readQ2Data', status: 'done', time: '06/20 16:32' },
+    { label: 'tasks.wf.aiAnalysisComplete', status: 'done', time: '06/20 16:40', detail: 'tasks.wfDetail.conversionScore87' },
+    { label: 'tasks.wf.reportGenerated', status: 'done', time: '06/20 16:42' },
   ],
   'mock-c3': [
-    { label: '任務已建立', status: 'done', time: '06/22 06:00' },
-    { label: '掃描所有來源', status: 'done', time: '06/22 06:05' },
-    { label: '找到 34 筆潛客', status: 'done', time: '06/22 06:18', detail: '合格: 12, 待確認: 22' },
-    { label: '摘要已寄出', status: 'done', time: '06/22 06:20' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/22 06:00' },
+    { label: 'tasks.wf.scanAllSources', status: 'done', time: '06/22 06:05' },
+    { label: 'tasks.wf.found34Leads', status: 'done', time: '06/22 06:18', detail: 'tasks.wfDetail.qualified12Pending22' },
+    { label: 'tasks.wf.summarySent', status: 'done', time: '06/22 06:20' },
   ],
   'mock-c4': [
-    { label: '任務已建立', status: 'done', time: '06/23 11:00' },
-    { label: '匯入 LinkedIn 數據', status: 'done', time: '06/23 11:05' },
-    { label: '更新 248 筆記錄', status: 'done', time: '06/23 11:30', detail: '跳過 2 筆 (重複)' },
-    { label: '完成', status: 'done', time: '06/23 11:31' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/23 11:00' },
+    { label: 'tasks.wf.importLinkedinData', status: 'done', time: '06/23 11:05' },
+    { label: 'tasks.wf.updated248Records', status: 'done', time: '06/23 11:30', detail: 'tasks.wfDetail.skipped2Duplicate' },
+    { label: 'tasks.wf.complete', status: 'done', time: '06/23 11:31' },
   ],
   'mock-f1': [
-    { label: '任務已建立', status: 'done', time: '06/23 13:00' },
-    { label: '分配給 Worker-1', status: 'done', time: '06/23 13:01' },
-    { label: '開始爬取 AngelList', status: 'done', time: '06/23 13:03' },
-    { label: '❌ 失敗: Rate limit exceeded (429)', status: 'done', time: '06/23 13:05', detail: '已重試 3 次，建議等待 1 小時後重試' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/23 13:00' },
+    { label: 'tasks.wf.assignedToWorker1', status: 'done', time: '06/23 13:01' },
+    { label: 'tasks.wf.startScrapeAngellist', status: 'done', time: '06/23 13:03' },
+    { label: 'tasks.wf.failedRateLimit', status: 'done', time: '06/23 13:05', detail: 'tasks.wfDetail.retried3Times' },
   ],
   'mock-f2': [
-    { label: '任務已建立', status: 'done', time: '06/22 15:20' },
-    { label: '生成信件內容', status: 'done', time: '06/22 15:22' },
-    { label: '❌ 寄送失敗: SMTP connection timeout', status: 'done', time: '06/22 15:25', detail: 'SMTP 伺服器無回應，請檢查網路設定' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/22 15:20' },
+    { label: 'tasks.wf.generateEmailContent', status: 'done', time: '06/22 15:22' },
+    { label: 'tasks.wf.failedSmtpTimeout', status: 'done', time: '06/22 15:25', detail: 'tasks.wfDetail.smtpNoResponse' },
   ],
   'mock-f3': [
-    { label: '任務已建立', status: 'done', time: '06/24 04:30' },
-    { label: '❌ 連接失敗: OAuth token expired', status: 'done', time: '06/24 04:32', detail: '請重新授權 Salesforce 帳戶' },
+    { label: 'tasks.wf.taskCreated', status: 'done', time: '06/24 04:30' },
+    { label: 'tasks.wf.failedOauthExpired', status: 'done', time: '06/24 04:32', detail: 'tasks.wfDetail.reauthSalesforce' },
   ],
 };
 
@@ -513,29 +621,29 @@ function getWorkflowSteps(taskId: string, status: string): WorkflowStep[] {
   // Fallback generic workflow
   if (status === 'completed') {
     return [
-      { label: '任務已建立', status: 'done' },
-      { label: '處理中', status: 'done' },
-      { label: '已完成', status: 'done' },
+      { label: 'tasks.wf.taskCreated', status: 'done' },
+      { label: 'tasks.wf.processing', status: 'done' },
+      { label: 'tasks.wf.completed', status: 'done' },
     ];
   }
   if (status === 'failed') {
     return [
-      { label: '任務已建立', status: 'done' },
-      { label: '❌ 執行失敗', status: 'done' },
+      { label: 'tasks.wf.taskCreated', status: 'done' },
+      { label: 'tasks.wf.executionFailed', status: 'done' },
     ];
   }
   if (status === 'processing') {
     return [
-      { label: '任務已建立', status: 'done' },
-      { label: '處理中', status: 'active' },
-      { label: '待完成', status: 'pending' },
+      { label: 'tasks.wf.taskCreated', status: 'done' },
+      { label: 'tasks.wf.processing', status: 'active' },
+      { label: 'tasks.wf.pendingCompletion', status: 'pending' },
     ];
   }
   return [
-    { label: '任務已建立', status: 'done' },
-    { label: '等待排程', status: 'active' },
-    { label: '開始執行', status: 'pending' },
-    { label: '完成', status: 'pending' },
+    { label: 'tasks.wf.taskCreated', status: 'done' },
+    { label: 'tasks.wf.awaitingSchedule', status: 'active' },
+    { label: 'tasks.wf.startExecution', status: 'pending' },
+    { label: 'tasks.wf.complete', status: 'pending' },
   ];
 }
 
@@ -556,10 +664,10 @@ const Overlay = styled.div`
 const FloatingPanel = styled.div`
   position: fixed; top: 50%; left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 1201; width: 460px; max-height: 80vh;
-  background: ${({ theme }) => theme.colors.surface};
+  z-index: 1201; width: 680px; max-height: 88vh;
+  ${glassSurface};
   border-radius: 14px;
-  box-shadow: 0 24px 80px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.1), 0 0 0 1px ${({ theme }) => theme.colors.border};
+  box-shadow: 0 24px 80px rgba(0,0,0,0.2), 0 8px 24px rgba(0,0,0,0.1);
   display: flex; flex-direction: column;
   animation: ${fadeIn} 0.2s ease;
   overflow: hidden;
@@ -588,12 +696,14 @@ const PanelSub = styled.span`
 `;
 
 const CloseBtn = styled.button`
-  background: none; border: none; cursor: pointer;
-  width: 28px; height: 28px; border-radius: 6px;
+  background: transparent; border: none; cursor: pointer;
+  width: 36px; height: 36px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  font-size: 18px; transition: background 0.15s;
-  &:hover { background: ${({ theme }) => theme.colors.canvas}; color: ${({ theme }) => theme.colors.textPrimary}; }
+  color: ${({ theme }) => theme.colors.accent};
+  flex-shrink: 0; transition: background 150ms var(--ease-out);
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: ${({ theme }) => `${theme.colors.accent}15`}; }
+  }
 `;
 
 const WfBody = styled.div`
@@ -602,13 +712,6 @@ const WfBody = styled.div`
 
 const WfList = styled.ul`
   list-style: none; margin: 0; padding: 0; position: relative;
-  /* Vertical connector line — centered on dot column (44px time + 12px gap + 6px half-dot = 62px) */
-  &::before {
-    content: ''; position: absolute; left: 61px;
-    top: 18px; bottom: 18px; width: 2px;
-    background: ${({ theme }) => theme.colors.blue};
-    border-radius: 1px;
-  }
 `;
 
 const pulseGlow = keyframes`
@@ -621,6 +724,26 @@ const WfItem = styled.li<{ $s: 'done'|'active'|'pending' }>`
   padding: 8px 0; position: relative;
   transition: opacity 0.2s;
   ${({ $s }) => $s === 'pending' && css`opacity: 0.45;`}
+
+  /* Per-item connecting line to next item */
+  &::after {
+    content: '';
+    position: absolute;
+    left: 62px;
+    top: 16px;
+    bottom: -8px;
+    width: 3px;
+    border-radius: 1.5px;
+    background: ${({ $s, theme }) =>
+      $s === 'done' ? theme.strong.olive :
+      $s === 'active' ? theme.colors.accent :
+      theme.colors.border};
+    ${({ $s, theme }) => ($s === 'done' || $s === 'active') && `
+      box-shadow: 0 0 6px ${$s === 'done' ? theme.strong.olive : theme.colors.accent}66,
+                  0 0 12px ${$s === 'done' ? theme.strong.olive : theme.colors.accent}33;
+    `}
+  }
+  &:last-child::after { display: none; }
 `;
 
 const WfTime = styled.span`
@@ -636,29 +759,28 @@ const WfDot = styled.div<{ $s: 'done'|'active'|'pending' }>`
   width: 14px; height: 14px; border-radius: 50%;
   flex-shrink: 0; margin-top: 1px; position: relative; z-index: 1;
   background: ${({ $s, theme }) =>
-    $s === 'done' ? theme.colors.green :
-    $s === 'active' ? theme.colors.blue :
+    $s === 'done' ? theme.strong.olive :
+    $s === 'active' ? theme.colors.accent :
     theme.colors.border};
-  border: 2px solid ${({ $s, theme }) =>
-    $s === 'done' ? theme.colors.green :
-    $s === 'active' ? theme.colors.blue :
-    theme.colors.border};
-  box-sizing: border-box;
+  ${({ $s, theme }) => ($s === 'done' || $s === 'active') && `
+    box-shadow: 0 0 8px ${$s === 'done' ? theme.strong.olive : theme.colors.accent}88,
+                0 0 16px ${$s === 'done' ? theme.strong.olive : theme.colors.accent}44;
+  `}
   ${({ $s }) => $s === 'active' && css`
     animation: ${pulseGlow} 2s ease-in-out infinite;
-    background: ${({ theme }: any) => theme.colors.blue};
   `}
   ${({ $s }) => $s === 'done' && css`
     &::after {
       content: ''; position: absolute; left: 3px; top: 1px;
       width: 4px; height: 7px;
-      border: solid #fff; border-width: 0 2px 2px 0;
+      border: solid ${({ theme }: any) => theme.colors.surface}; border-width: 0 2px 2px 0;
       transform: rotate(45deg);
     }
   `}
   ${({ $s }) => $s === 'pending' && css`
     background: ${({ theme }: any) => theme.colors.surface};
     border: 2px solid ${({ theme }: any) => theme.colors.border};
+    box-sizing: border-box;
   `}
 `;
 
@@ -674,7 +796,7 @@ const WfDetail = styled.div`
   font-size: 11px; color: ${({ theme }) => theme.colors.textSecondary};
   margin-top: 4px; line-height: 1.5; padding: 8px 10px;
   background: ${({ theme }) => theme.colors.canvas};
-  border-radius: 8px; border-left: 3px solid ${({ theme }) => theme.colors.blue};
+  border-radius: 8px; border-left: 3px solid ${({ theme }) => theme.colors.accent};
 `;
 
 const PanelFoot = styled.div`
@@ -699,20 +821,41 @@ const ProgTrack = styled.div`
 
 const ProgFill = styled.div<{ $pct: number }>`
   height: 100%; width: ${({ $pct }) => $pct}%;
-  background: ${({ theme }) => theme.colors.blue};
+  background: ${({ theme }) => theme.colors.accent};
   border-radius: 3px; transition: width 0.4s ease;
 `;
 
 const ProgPct = styled.span`
   font-size: 11px; font-weight: 600;
-  color: ${({ theme }) => theme.colors.green};
+  color: ${({ theme }) => theme.strong.olive};
 `;
 
 /* ═══════════ Component ═══════════ */
 
+type SortKey = 'priority' | 'newest' | 'oldest' | 'skill';
+const PRIORITY_WEIGHT: Record<string, number> = { urgent: 0, high: 1, normal: 2, low: 3 };
+
+function sortTasks(arr: TaskItem[], key: SortKey): TaskItem[] {
+  const sorted = [...arr];
+  switch (key) {
+    case 'priority':
+      return sorted.sort((a, b) => (PRIORITY_WEIGHT[getPriority(a)] ?? 9) - (PRIORITY_WEIGHT[getPriority(b)] ?? 9));
+    case 'newest':
+      return sorted.sort((a, b) => new Date(getCreatedAt(b)).getTime() - new Date(getCreatedAt(a)).getTime());
+    case 'oldest':
+      return sorted.sort((a, b) => new Date(getCreatedAt(a)).getTime() - new Date(getCreatedAt(b)).getTime());
+    case 'skill':
+      return sorted.sort((a, b) => getSkill(a).localeCompare(getSkill(b)));
+    default:
+      return sorted;
+  }
+}
+
 const Tasks: React.FC = () => {
   const { t } = useTranslation();
+  const theme = useTheme();
   const [search, setSearch] = useState('');
+  const [sortBy, setSortBy] = useState<SortKey>('priority');
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
   const [collapsedCols, setCollapsedCols] = useState<Set<string>>(() => {
     // On mobile, default collapse all except 'pending'
@@ -731,6 +874,8 @@ const Tasks: React.FC = () => {
   const apiTasks = extractTasks(data);
   const tasks = [...apiTasks, ...MOCK_TASKS];
 
+  const COLUMNS = useMemo(() => getColumns(theme), [theme]);
+
   const translatedColumns = useMemo(() => COLUMNS.map(col => ({
     ...col,
     label: t(`tasks.${col.key}`),
@@ -739,14 +884,15 @@ const Tasks: React.FC = () => {
   const filtered = useMemo(() => {
     if (!search.trim()) return tasks;
     const q = search.trim().toLowerCase();
-    return tasks.filter((t) => {
-      const title = getTitle(t).toLowerCase();
-      const skill = getSkill(t).toLowerCase();
-      const status = getStatus(t);
-      const id = t._id.toLowerCase();
+    return tasks.filter((task) => {
+      const rawTitle = getTitle(task);
+      const title = t(rawTitle, { defaultValue: rawTitle }).toLowerCase();
+      const skill = getSkill(task).toLowerCase();
+      const status = getStatus(task);
+      const id = task._id.toLowerCase();
       return title.includes(q) || skill.includes(q) || status.includes(q) || id.includes(q);
     });
-  }, [tasks, search]);
+  }, [tasks, search, t]);
 
   const grouped = useMemo(() => {
     const m: Record<string, TaskItem[]> = {};
@@ -756,11 +902,16 @@ const Tasks: React.FC = () => {
       if (m[s]) m[s].push(t);
       else m['pending'].push(t);
     }
+    // Apply sort to each column
+    for (const key of Object.keys(m)) {
+      m[key] = sortTasks(m[key], sortBy);
+    }
     return m;
-  }, [filtered]);
+  }, [filtered, sortBy]);
 
   return (
     <Page>
+      <div><PageTitle>{t('tasks.title')}</PageTitle><PageSub>{t('tasks.subtitle')}</PageSub></div>
       <Toolbar>
         <SearchWrap>
           <I size={14}>
@@ -774,6 +925,12 @@ const Tasks: React.FC = () => {
             onChange={(e) => setSearch(e.target.value)}
           />
         </SearchWrap>
+        <SortSelect value={sortBy} onChange={(e) => setSortBy(e.target.value as SortKey)}>
+          <option value="priority">{t('tasks.sortPriority')}</option>
+          <option value="newest">{t('tasks.sortNewest')}</option>
+          <option value="oldest">{t('tasks.sortOldest')}</option>
+          <option value="skill">{t('tasks.sortSkill')}</option>
+        </SortSelect>
       </Toolbar>
 
       <Board>
@@ -795,7 +952,7 @@ const Tasks: React.FC = () => {
                 {isLoading ? (
                   <EmptyCol>{t('tasks.loading')}</EmptyCol>
                 ) : items.length === 0 ? (
-                  <EmptyCol>{t('tasks.noTasks')}</EmptyCol>
+                  <EmptyCol><EmptyTaskIllustration />{t('tasks.noTasks')}</EmptyCol>
                 ) : (
                   items.map((task) => {
                     const title = getTitle(task);
@@ -804,12 +961,12 @@ const Tasks: React.FC = () => {
                     const priority = getPriority(task);
                     const created = getCreatedAt(task);
                     const errMsg = getErrorMessage(task);
-                    const paramStr = getParamsSummary(task);
-                    const resultStr = getResultSummary(task);
+                    const paramStr = getParamsSummary(task, t, theme);
+                    const resultStr = getResultSummary(task, t, theme);
                     const agentId = getStr(task, 'assigned_agent_id');
 
                     // Description: show error for failed, result for completed, params otherwise
-                    let desc = paramStr || t('tasks.noDetails');
+                    let desc: React.ReactNode = paramStr || t('tasks.noDetails');
                     if (status === 'failed' && errMsg) desc = errMsg;
                     else if (status === 'completed' && resultStr) desc = resultStr;
 
@@ -817,16 +974,37 @@ const Tasks: React.FC = () => {
 
                     return (
                       <Card key={task._id} onClick={() => setSelectedTask(task)} style={{ cursor: 'pointer' }}>
-                        <CardTitle>{title}</CardTitle>
-                        <CardDesc>
-                          {status === 'failed' ? <ErrText>{desc}</ErrText> : desc}
-                        </CardDesc>
+                        <PriorityDot $c={priorityColor(priority, theme)} title={t(`tasks.priority.${priority}`, { defaultValue: priority })}>
+                          {t(`tasks.priority.${priority}`, { defaultValue: priority })}
+                        </PriorityDot>
+                        <CardTopRow>
+                          <AvatarWrap>
+                            {(() => {
+                              const agent = getTaskAgent(assignee);
+                              return agent ? (
+                                <SpriteAvatar src={agent.sprite} frames={agent.frames} frameW={agent.frameW} frameH={agent.frameH} size={36} />
+                              ) : (
+                                <AgentAvatar $bg={theme.colors.surfaceMuted}>
+                                  <I size={18}><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></I>
+                                </AgentAvatar>
+                              );
+                            })()}
+                            <AvatarName>
+                              {(() => {
+                                const agent = getTaskAgent(assignee);
+                                return agent ? t(agent.nameKey) : assignee;
+                              })()}
+                            </AvatarName>
+                          </AvatarWrap>
+                          <CardTitle>{t(title, { defaultValue: title })}</CardTitle>
+                        </CardTopRow>
+                        <CardDescRow>
+                          <CardDesc>
+                            {status === 'failed' ? <ErrText>{desc}</ErrText> : desc}
+                          </CardDesc>
+                          {skill && <SkillPill $c={skillColor(skill, theme)}><I size={10}>{skillIcon(skill)}</I>{t(`tasks.skills.${skill}`, { defaultValue: skill })}</SkillPill>}
+                        </CardDescRow>
                         <CardFooter>
-                          <CardMeta>
-                            <Avatar $c={avColor(assignee)}>{initials(assignee)}</Avatar>
-                            {skill && <Pill $c={skillColor(skill)}>{skill}</Pill>}
-                            <PriorityDot $c={priorityColor(priority)} title={priority} />
-                          </CardMeta>
                           <CardDate>{fmtDate(created)}</CardDate>
                         </CardFooter>
                       </Card>
@@ -840,7 +1018,7 @@ const Tasks: React.FC = () => {
       </Board>
 
       <Footer>
-        <span>{t('footer.copyrightHermes', { year: 2024 })}</span>
+        <span>{t('footer.copyrightHermes', { year: 2026 })}</span>
         <div>
           <a href="#">{t('footer.documentation')}</a>
           <a href="#">{t('footer.support')}</a>
@@ -863,10 +1041,10 @@ const Tasks: React.FC = () => {
             <FloatingPanel>
               <PanelHead>
                 <PanelHeadLeft>
-                  <PanelTitle>{title}</PanelTitle>
-                  <PanelSub>{skill && `${skill} · `}{status}</PanelSub>
+                  <PanelTitle>{t(title, { defaultValue: title })}</PanelTitle>
+                  <PanelSub>{skill && `${t(`tasks.skills.${skill}`, { defaultValue: skill })} · `}{t(`tasks.${status}`, { defaultValue: status })}</PanelSub>
                 </PanelHeadLeft>
-                <CloseBtn onClick={handleClose} title="Close">×</CloseBtn>
+                <CloseBtn onClick={handleClose} title={t('common.close')}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></CloseBtn>
               </PanelHead>
 
               <WfBody>
@@ -876,8 +1054,8 @@ const Tasks: React.FC = () => {
                       <WfTime>{step.time || ''}</WfTime>
                       <WfDot $s={step.status} />
                       <WfContent>
-                        <WfLabel $s={step.status}>{step.label}</WfLabel>
-                        {step.detail && <WfDetail>{step.detail}</WfDetail>}
+                        <WfLabel $s={step.status}>{t(step.label, { defaultValue: step.label })}</WfLabel>
+                        {step.detail && <WfDetail>{t(step.detail, { defaultValue: step.detail })}</WfDetail>}
                       </WfContent>
                     </WfItem>
                   ))}
@@ -885,7 +1063,7 @@ const Tasks: React.FC = () => {
               </WfBody>
 
               <PanelFoot>
-                <FootStat>{doneCount} / {steps.length} steps</FootStat>
+                <FootStat>{doneCount} / {steps.length} {t('tasks.steps', { defaultValue: 'steps' })}</FootStat>
                 <ProgWrap>
                   <ProgTrack><ProgFill $pct={pct} /></ProgTrack>
                   <ProgPct>{pct}%</ProgPct>

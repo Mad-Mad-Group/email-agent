@@ -9,6 +9,8 @@ export interface RegisterPayload {
   email: string;
   password: string;
   name: string;
+  company_name?: string;
+  company_description?: string;
 }
 
 export interface User {
@@ -18,6 +20,9 @@ export interface User {
   role: string;
   permissions?: string[];
   createdAt?: string;
+  companyName?: string;
+  companyDescription?: string;
+  companyWebsite?: string;
 }
 
 export interface AuthResult {
@@ -44,7 +49,7 @@ export const authApi = {
   resetPassword: (token: string, newPassword: string) =>
     client.post('/auth/reset-password', { token, newPassword }),
 
-  updateProfile: (data: Partial<Pick<User, 'name' | 'email'>>) =>
+  updateProfile: (data: Partial<Pick<User, 'name' | 'email' | 'companyName' | 'companyDescription' | 'companyWebsite'>>) =>
     client.patch<User>('/auth/profile', data),
 };
 

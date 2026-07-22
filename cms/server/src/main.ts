@@ -17,12 +17,14 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor'
  */
 const STATIC_ALLOWED_ORIGINS = [
   'http://localhost:5173',
+  'https://localhost:5173',
   'http://localhost:4173',   // vite preview
+  'https://localhost:4173',
 ];
 
 const ALLOWED_ORIGIN_PATTERNS = [
-  /^http:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/,   // office LAN
-  /^http:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:5173$/, // Class A 私網
+  /^https?:\/\/192\.168\.\d{1,3}\.\d{1,3}:5173$/,   // office LAN
+  /^https?:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:5173$/, // Class A 私網
 ];
 
 function isOriginAllowed(origin: string | undefined, extra: string[]): boolean {
