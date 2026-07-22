@@ -116,7 +116,7 @@ function App() {
                   <Route path="/bank-accounts" element={<Placeholder />} />
                   {/* CMS */}
                   <Route path="/cms-leads" element={<Leads />} />
-                  <Route path="/cms-search" element={<Navigate to="/cms-agents" replace />} />
+                  <Route path="/cms-search" element={<SearchPage />} />
                   <Route path="/cms-email-queue" element={<EmailQueue />} />
                   <Route path="/cms-tasks" element={<TasksPage />} />
                   <Route path="/cms-users" element={<UsersPage />} />

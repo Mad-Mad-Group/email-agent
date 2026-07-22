@@ -685,6 +685,7 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
       </TitleRow>
 
       <MenuList>
+        <li><MLink to="/cms-search"><IconSearch /><span>{t('nav.leadSearch')}</span></MLink></li>
         <li><MLink to="/dashboard"><IconHome /><span>{t('nav.myDashboard')}</span>{counts['/dashboard'] ? <Badge>{counts['/dashboard']}</Badge> : null}</MLink></li>
         <li><MLink to="/cms-agents"><IconAgent /><span>{t('nav.agents')}</span>{counts['/cms-agents'] ? <Badge>{counts['/cms-agents']}</Badge> : null}</MLink></li>
         <MenuSpacer />

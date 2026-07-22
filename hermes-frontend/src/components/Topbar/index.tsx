@@ -87,21 +87,17 @@ const LeftGroup = styled.div`
 /* Hamburger moved to AppLayout — only mobile variant kept in Topbar */
 
 /* Brand logo */
-const BrandLink = styled.button`
+const BrandLink = styled.a`
   display: flex;
   align-items: center;
   gap: 6px;
-  background: none;
-  border: none;
-  padding: 0;
-  cursor: pointer;
+  text-decoration: none;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-family: ${({ theme }) => theme.fonts.display};
   font-weight: 400;
   font-size: 1.35rem;
   letter-spacing: 1.5px;
   white-space: nowrap;
-  &:hover { opacity: 0.8; }
 `;
 
 /* Phone icon from the MAD MAD logo */
@@ -740,18 +736,6 @@ const DropdownSettingsIcon = () => (
   </svg>
 );
 
-const DropdownDashboardIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" />
-  </svg>
-);
-
-const DropdownTeamIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-);
-
 const DropdownLogoutIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
@@ -1006,10 +990,35 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
 
   return (
     <Wrapper>
-      <BrandLink onClick={() => navigate('/cms-agents')}>
-        <PhoneIcon />
-        Client Radar AI
-      </BrandLink>
+      <SearchBar ref={searchRef}>
+        <span className="search-icon">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
+            <path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z"/>
+          </svg>
+        </span>
+        <input
+          type="text"
+          placeholder={t('topbar.searchPlaceholder')}
+          value={searchQuery}
+          onChange={(e) => handleQueryChange(e.target.value)}
+          onFocus={() => { if (searchQuery.trim()) setShowDropdown(true); }}
+        />
+        {showDropdown && searchQuery.trim() && (
+          <SearchDropdown>
+            {isSearching && !hasAnyResults && (
+              <SearchNoResult>...</SearchNoResult>
+            )}
+            {renderSection(CATEGORY_LABELS.nav, navResults, (sectionIdx++ > 0 && navResults.length > 0) ? false : false)}
+            {renderSection(CATEGORY_LABELS.lead, leadResults, navResults.length > 0 && leadResults.length > 0)}
+            {renderSection(CATEGORY_LABELS.email, emailResults, (navResults.length > 0 || leadResults.length > 0) && emailResults.length > 0)}
+            {renderSection(CATEGORY_LABELS.task, taskResults, (navResults.length > 0 || leadResults.length > 0 || emailResults.length > 0) && taskResults.length > 0)}
+            {!isSearching && !hasAnyResults && (
+              <SearchNoResult>{t('topbar.search.noResults')}</SearchNoResult>
+            )}
+          </SearchDropdown>
+        )}
+      </SearchBar>
+
       <RightGroup>
         <LangWrapper>
           <LangToggle title={t('topbar.language')}>
@@ -1081,13 +1090,6 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
         <AvatarWrap>
           <UserAvatar>{initials}</UserAvatar>
           <AvatarDropdown data-avatar-dropdown>
-            <DropdownItem onClick={() => navigate('/dashboard')}>
-              <DropdownDashboardIcon /> {t('nav.myDashboard')}
-            </DropdownItem>
-            <DropdownItem onClick={() => navigate('/cms-users')}>
-              <DropdownTeamIcon /> {t('nav.team')}
-            </DropdownItem>
-            <DropdownDivider />
             <DropdownItem onClick={() => navigate('/cms-user-info')}>
               <DropdownProfileIcon /> {t('nav.userInfo')}
             </DropdownItem>
