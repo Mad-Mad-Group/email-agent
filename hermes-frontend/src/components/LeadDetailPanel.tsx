@@ -176,7 +176,10 @@ const dpSlideDown = keyframes`
 const DpOverlay = styled.div<{ $closing?: boolean }>`
   position: fixed;
   inset: 0;
-  z-index: 1200;
+  /* Stack above any embedding popup (AgentPanel's pool popup uses
+     z-index 9999/10000). Bump to 11000 so the detail panel always
+     shows even when Leads is mounted inside the pool popup. */
+  z-index: 11000;
   background: rgba(0,0,0,0.45);
   animation: ${({ $closing }) => $closing ? dpFadeOut : dpFadeIn} 0.2s ease-out forwards;
 `;
@@ -215,9 +218,7 @@ const DpHeader = styled.div`
   gap: 6px;
   padding: 10px 20px;
   background: transparent;
-  cursor: grab;
   min-height: 24px;
-  &:active { cursor: grabbing; }
 `;
 
 const DpHeaderInfo = styled.div`
@@ -561,7 +562,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
   onReprocess,
   rightPanel,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const styledTheme = useTheme() as any;
 
   // Drag & resize state
@@ -644,6 +645,19 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
 
   const name = lead.company_name || t('common.unknown');
 
+  const STATUS_LABEL: Record<string, string> = {
+    new: t('leads.statusNew'),
+    pending: t('leads.statusPending'),
+    contacted: t('leads.statusContacted'),
+  };
+  const statusLabel = (s?: string | null) => STATUS_LABEL[s || 'new'] || s || 'new';
+
+  const dateLocale = ({ en: 'en-US', 'zh-TW': 'zh-HK', 'zh-CN': 'zh-CN' } as Record<string, string>)[i18n.language] || 'en-US';
+  const fmtTime = (iso?: string | null) => {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleString(dateLocale, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+  };
+
   return createPortal(
     <DpOverlay $closing={closing} onClick={onClose}>
       <DpPanel ref={dpRef} $closing={closing} onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ left: dpPos.x, top: dpPos.y, width: dpSize.w, height: dpSize.h }}>
@@ -656,14 +670,14 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
         <div onMouseDown={e => onDpResizeStart(e, 'ne')} style={{ position:'absolute', top:0, right:0, width:8, height:8, cursor:'ne-resize', zIndex:11 }} />
         <div onMouseDown={e => onDpResizeStart(e, 'sw')} style={{ position:'absolute', bottom:0, left:0, width:8, height:8, cursor:'sw-resize', zIndex:11 }} />
         <div onMouseDown={e => onDpResizeStart(e, 'se')} style={{ position:'absolute', bottom:0, right:0, width:8, height:8, cursor:'se-resize', zIndex:11 }} />
-        <DpHeader onMouseDown={onDpDragStart}>
+        <DpHeader>
           <Avatar $colorIndex={hashColorIndex(name)} style={{ width: 40, height: 40, fontSize: '0.8rem', borderRadius: 10 }} />
           <DpHeaderInfo>
             <DpCompanyName>
               {name}
                           </DpCompanyName>
             <DpHeaderMeta>
-              <DpStatusPill $status={lead.status ?? 'new'}>{lead.status ?? 'new'}</DpStatusPill>
+              <DpStatusPill $status={lead.status ?? 'new'}>{statusLabel(lead.status)}</DpStatusPill>
             </DpHeaderMeta>
           </DpHeaderInfo>
           <DpCloseBtn onClick={onClose}><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></DpCloseBtn>
@@ -696,7 +710,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
             </DpField>
             <DpField>
               <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2"/><path d="M8 5v3l2 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.status')}</DpFieldLabel>
-              <DpFieldValue><DpStatusPill $status={lead.status ?? 'new'}>{lead.status ?? 'new'}</DpStatusPill></DpFieldValue>
+              <DpFieldValue><DpStatusPill $status={lead.status ?? 'new'}>{statusLabel(lead.status)}</DpStatusPill></DpFieldValue>
             </DpField>
             <DpField>
               <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M2 13h12M4 9l4-6 4 6M6 9v4M10 9v4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.source')}</DpFieldLabel>
@@ -713,14 +727,14 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
                 <DpTimelineDotWrap><DpTimelineDot $active /><DpTimelineLine /></DpTimelineDotWrap>
                 <DpTimelineContent>
                   <DpTimelineText $active>{t('leads.discoveredVia', { source: getSourceDisplay(lead.source || 'unknown') })}</DpTimelineText>
-                  <DpTimelineTime>{(() => { const ts = lead.createdAt || (lead as any)._imported_at || (lead as any).created_at; return ts ? new Date(ts).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'; })()}</DpTimelineTime>
+                  <DpTimelineTime>{(() => { const ts = lead.createdAt || (lead as any)._imported_at || (lead as any).created_at; return ts ? fmtTime(ts) : '—'; })()}</DpTimelineTime>
                 </DpTimelineContent>
               </DpTimelineItem>
               <DpTimelineItem>
                 <DpTimelineDotWrap><DpTimelineDot $active /><DpTimelineLine /></DpTimelineDotWrap>
                 <DpTimelineContent>
                   <DpTimelineText $active>{t('leads.addedToPool')}</DpTimelineText>
-                  <DpTimelineTime>{(() => { const ts = lead.createdAt || (lead as any)._imported_at || (lead as any).created_at; return ts ? new Date(ts).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : '—'; })()}</DpTimelineTime>
+                  <DpTimelineTime>{(() => { const ts = lead.createdAt || (lead as any)._imported_at || (lead as any).created_at; return ts ? fmtTime(ts) : '—'; })()}</DpTimelineTime>
                 </DpTimelineContent>
               </DpTimelineItem>
               <DpTimelineItem>
@@ -730,7 +744,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
                 </DpTimelineDotWrap>
                 <DpTimelineContent>
                   <DpTimelineText $active={lead.status === 'pending' || lead.status === 'contacted'}>{lead.status === 'new' ? t('leads.awaitingReview') : t('leads.markedAsPending')}</DpTimelineText>
-                  {lead.status !== 'new' && lead.updatedAt && <DpTimelineTime>{new Date(lead.updatedAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</DpTimelineTime>}
+                  {lead.status !== 'new' && lead.updatedAt && <DpTimelineTime>{fmtTime(lead.updatedAt)}</DpTimelineTime>}
                 </DpTimelineContent>
               </DpTimelineItem>
               {lead.status === 'contacted' && (
@@ -741,7 +755,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
                   </DpTimelineDotWrap>
                   <DpTimelineContent>
                     <DpTimelineText $active>{t('leads.contactedStep')}</DpTimelineText>
-                    {lead.updatedAt && <DpTimelineTime>{new Date(lead.updatedAt).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</DpTimelineTime>}
+                    {lead.updatedAt && <DpTimelineTime>{fmtTime(lead.updatedAt)}</DpTimelineTime>}
                   </DpTimelineContent>
                 </DpTimelineItem>
               )}
@@ -750,7 +764,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
                   <DpTimelineDotWrap><DpTimelineDot $active /></DpTimelineDotWrap>
                   <DpTimelineContent>
                     <DpTimelineText $active>{t('leads.receivedReply', { text: getReplyBadge(lead, t, styledTheme)?.text || t('leads.replied') })}</DpTimelineText>
-                    {lead._reply_at && <DpTimelineTime>{new Date(lead._reply_at).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true })}</DpTimelineTime>}
+                    {lead._reply_at && <DpTimelineTime>{fmtTime(lead._reply_at)}</DpTimelineTime>}
                   </DpTimelineContent>
                 </DpTimelineItem>
               )}
@@ -860,7 +874,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
                   </DpField>
                   <DpField>
                     <DpFieldLabel>{t('leads.replyTime')}</DpFieldLabel>
-                    <DpFieldValue>{lead._reply_at ? new Date(lead._reply_at).toLocaleString() : '—'}</DpFieldValue>
+                    <DpFieldValue>{fmtTime(lead._reply_at)}</DpFieldValue>
                   </DpField>
                   </DpSectionContent>
                 </>

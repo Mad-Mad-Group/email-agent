@@ -13,14 +13,14 @@ import { settingsApi } from '../../api/services';
 
 /* ── Layout ── */
 
-const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
+const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.lg}px; animation: fadeSlideUp 0.5s var(--ease-out) both;`;
 
 const PageCard = styled.div`
   background: transparent;
   border: none;
   box-shadow: none;
   border-radius: ${({ theme }) => theme.radii.card}px;
-  padding: 24px;
+  padding: 28px;
   display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.lg}px;
 `;
 
@@ -46,99 +46,85 @@ const HeroAvatar = styled.div`
 const HeroInfo = styled.div`flex: 1;`;
 
 const HeroName = styled.h2`
-  margin: 0; font-size: 1.25rem; font-weight: 600;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  margin: 0; font-size: clamp(1.25rem, 2.2vw, 1.5rem); font-weight: 700;
+  background: ${({ theme }) => theme.gradients.brand};
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  ${({ theme }) => theme.mode === 'dark' && `
+    background: linear-gradient(135deg, #E0ACD2, #ACC0DE);
+    -webkit-background-clip: text; background-clip: text;
+  `}
 `;
 
 const HeroSub = styled.div`
   font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin-top: 2px;
 `;
 
-/* ── Settings Layout (LUNO: left tabs + right content) ── */
+/* ── Settings Layout (segmented control + centered content) ── */
 
 const SettingsLayout = styled.div`
-  display: grid;
-  grid-template-columns: 220px minmax(0, 1fr);
-  gap: 0;
-  ${media.mobile} { grid-template-columns: 1fr; }
+  display: flex;
+  gap: ${({ theme }) => theme.spacing.lg}px;
+  ${media.mobile} { flex-direction: column; }
 `;
 
 const TabNav = styled.div`
+  display: flex;
+  flex-direction: column;
+  padding: 4px;
   border-radius: ${({ theme }) => theme.radii.card}px;
-  overflow: hidden;
-  align-self: start;
+  background: ${({ theme }) => theme.colors.surfaceMuted}40;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  ${media.mobile} {
-    display: flex; flex-direction: row;
-    border-radius: ${({ theme }) => theme.radii.card}px;
-    margin-bottom: ${({ theme }) => theme.spacing.md}px;
-  }
+  gap: 2px;
+  min-width: 200px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  ${media.mobile} { flex-direction: row; flex-wrap: wrap; min-width: unset; width: 100%; }
 `;
 
 const TabItem = styled.button<{ $active?: boolean }>`
-  display: flex; align-items: center; gap: 10px;
-  width: 100%;
-  padding: 14px 20px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 18px;
   border: none;
-  background: transparent;
+  border-radius: ${({ theme }) => theme.radii.card}px;
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  color: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.textSecondary};
-  transition: color 0.15s, background 0.15s;
+  white-space: nowrap;
   text-align: left;
-  position: relative;
+  transition: color 0.2s var(--ease-out), background 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out);
 
-  ${({ $active, theme }) => $active && css`
-    background: ${theme.colors.accent}12;
+  ${({ $active, theme }) => $active ? css`
+    background: ${theme.colors.surface};
+    color: ${theme.colors.accent};
     font-weight: 600;
-    &::before {
-      content: '';
-      position: absolute;
-      left: 0; top: 8px; bottom: 8px;
-      width: 3px;
-      border-radius: 0 3px 3px 0;
-      background: ${theme.colors.accent};
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  ` : css`
+    background: transparent;
+    color: ${theme.colors.textSecondary};
+    &:hover {
+      color: ${theme.colors.accent};
+      background: ${theme.colors.surface}80;
     }
   `}
 
-  &:hover {
-    color: ${({ theme }) => theme.colors.accent};
-    background: ${({ theme }) => `${theme.colors.accent}0a`};
-  }
-
-  & + & {
-    border-top: 1px solid ${({ theme }) => theme.colors.border};
-  }
-
   ${media.mobile} {
     flex: 1;
-    text-align: center;
     justify-content: center;
-    padding: 12px 10px;
-    & + & { border-top: none; border-left: 1px solid ${({ theme }) => theme.colors.border}; }
-    ${({ $active }) => $active && css`
-      &::before {
-        left: 8px; right: 8px; top: auto; bottom: 0;
-        width: auto; height: 3px;
-        border-radius: 3px 3px 0 0;
-      }
-    `}
+    padding: 10px 12px;
   }
 `;
 
 const TabIcon = styled.span`
   display: flex; align-items: center; justify-content: center;
-  width: 20px; height: 20px; flex-shrink: 0;
-  ${media.mobile} { display: none; }
+  width: 18px; height: 18px; flex-shrink: 0;
 `;
 
 const ContentPanel = styled.div`
-  margin-left: ${({ theme }) => theme.spacing.md}px;
+  flex: 1;
   min-width: 0;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  ${glassSurface};
   border-radius: ${({ theme }) => theme.radii.card}px;
-  ${media.mobile} { margin-left: 0; }
 `;
 
 const ContentHeader = styled.div`
@@ -150,7 +136,6 @@ const ContentHeader = styled.div`
 const ContentBody = styled.div`
   padding: ${({ theme }) => theme.spacing.lg}px;
   display: flex; flex-direction: column; gap: 20px;
-  max-width: 640px;
   ${media.mobile} { padding: ${({ theme }) => theme.spacing.md}px; }
 `;
 

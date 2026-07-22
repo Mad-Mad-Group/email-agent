@@ -104,9 +104,22 @@ const REPLY_CATEGORY_I18N_KEY: Record<string, string> = {
 const Page = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${({ theme }) => theme.spacing.md}px;
+  gap: ${({ theme }) => theme.spacing.lg}px;
+  padding: 36px 32px 44px;
+  animation: fadeSlideUp 0.5s var(--ease-out) both;
+  ${media.tablet} { padding: 24px 18px 32px; }
+  ${media.mobile} { padding: 20px 16px 32px; }
 `;
-const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
+const PageTitle = styled.h1`
+  font-size: clamp(1.25rem, 2.2vw, 1.5rem); font-weight: 700; margin: 0;
+  background: ${({ theme }) => theme.gradients.brand};
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  ${({ theme }) => theme.mode === 'dark' && `
+    background: linear-gradient(135deg, #E0ACD2, #ACC0DE);
+    -webkit-background-clip: text; background-clip: text;
+  `}
+`;
 const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const PageTabs = styled.div`

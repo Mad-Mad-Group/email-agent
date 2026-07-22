@@ -49,10 +49,10 @@ export const lightTheme: HermesTheme = {
     accent: '#D689BF',
   },
   pastel: {
-    mauve: '#E0ACD2',
-    gold: '#E9C551',
-    blue: '#ACC0DE',
-    olive: '#97A33B',
+    mauve: '#E8A0CC',
+    gold: '#F5C518',
+    blue: '#9BB8E3',
+    olive: '#8CB030',
   },
   strong: {
     mauve: '#D689BF',

@@ -59,8 +59,11 @@ const slideDown = keyframes`
 const Overlay = styled.div<{ $closing?: boolean }>`
   position: fixed;
   inset: 0;
+  /* Stack above any embedding popup (AgentPanel pool popup uses
+     9999/10000) so confirm dialogs and prompts are still reachable
+     even when the trigger lives inside a nested popup. */
+  z-index: 10500;
   background: rgba(0, 0, 0, 0.35);
-  z-index: 9999;
   animation: ${({ $closing }) => $closing ? fadeOut : fadeIn} ${({ $closing }) => $closing ? '0.2s' : '0.15s'} ease-out forwards;
 `;
 
@@ -69,7 +72,7 @@ const Panel = styled.div<{ $closing?: boolean }>`
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 10000;
+  z-index: 10600;
   ${glassSurface};
   border-radius: 14px;
   width: 340px;

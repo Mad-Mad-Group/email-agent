@@ -11,9 +11,13 @@ import client from '../../api/client';
 
 /* ── Layout ── */
 
-const Page = styled.div`display: flex; flex-direction: column; gap: 16px;`;
-const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
-const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
+const Page = styled.div`
+  display: flex; flex-direction: column; gap: 20px;
+  padding: 36px 32px 44px;
+  animation: fadeSlideUp 0.5s var(--ease-out) both;
+  ${media.tablet} { padding: 24px 18px 32px; }
+  ${media.mobile} { padding: 20px 16px 32px; }
+`;
 
 const CalLayout = styled.div`
   display: flex;
@@ -91,10 +95,12 @@ const CalTitle = styled.h2`font-size: 1.1rem; font-weight: 600; margin: 0;`;
 
 const CalNav = styled.div`display: flex; gap: 4px; align-items: center;`;
 const CalBtn = styled.button<{ $primary?: boolean; $disabled?: boolean }>`
-  padding: 6px 14px; border-radius: 8px; border: none; font-size: 0.8125rem; cursor: pointer;
-  background: ${({ $primary, theme }) => $primary ? theme.colors.accent : theme.colors.surfaceMuted};
+  padding: 6px 14px; border-radius: 999px; border: 1px solid ${({ $primary, theme }) => $primary ? 'transparent' : theme.colors.border};
+  font-size: 0.8125rem; cursor: pointer;
+  background: ${({ $primary, theme }) => $primary ? theme.colors.accent : 'transparent'};
   color: ${({ $primary, $disabled, theme }) => $disabled ? theme.colors.textTertiary : $primary ? theme.colors.textInverted : theme.colors.textPrimary};
   opacity: ${({ $disabled }) => $disabled ? 0.6 : 1};
+  transition: background 0.15s, opacity 0.15s;
   &:hover { opacity: 0.85; }
 `;
 
@@ -126,7 +132,8 @@ const PillBtn = styled.button<{ $active: boolean }>`
 const CalGrid = styled.div`
   display: grid; grid-template-columns: repeat(7, 1fr);
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
+  border-radius: 14px;
+  overflow: hidden;
 `;
 
 const CalDayHeader = styled.div`
@@ -163,9 +170,10 @@ const CellDay = styled.div<{ $today?: boolean }>`
 `;
 
 const EventBlock = styled.div<{ $color?: string; $past?: boolean }>`
-  padding: 2px 6px; margin: 1px 0; border-radius: 3px; font-size: 0.65rem;
-  background: ${({ $past, $color, theme }) => $past ? theme.colors.textTertiary : ($color || theme.colors.accent)};
-  color: ${({ $past, theme }) => $past ? theme.colors.textTertiary : theme.colors.textInverted};
+  padding: 2px 6px; margin: 1px 0; border-radius: 6px; font-size: 0.65rem;
+  background: ${({ $past, $color, theme }) => $past ? `${theme.colors.textTertiary}20` : `${$color || theme.colors.accent}18`};
+  color: ${({ $past, $color, theme }) => $past ? theme.colors.textTertiary : ($color || theme.colors.accent)};
+  font-weight: 500;
   text-decoration: ${({ $past }) => $past ? 'line-through' : 'none'};
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   cursor: pointer;
@@ -190,7 +198,7 @@ const WeekGrid = styled.div`
   display: grid;
   grid-template-columns: 56px repeat(7, 1fr);
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
+  border-radius: 14px;
   overflow: hidden;
 `;
 
@@ -881,7 +889,6 @@ const Calendar: React.FC = () => {
 
   return (
     <Page>
-      <div><PageTitle>{t('calendar.title')}</PageTitle><PageSub>{t('calendar.subtitle')}</PageSub></div>
       <CalLayout>
         {/* ── Main Calendar Area ── */}
         <MainArea>

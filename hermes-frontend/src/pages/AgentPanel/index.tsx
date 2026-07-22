@@ -9,8 +9,12 @@ import { hermesApi } from '../../api/services';
 import type { NotificationItem } from '../../api/notifications';
 import { sseClient, SSEEvent } from '../../api/sse';
 import { media } from '../../styles/media';
+import client from '../../api/client';
 import toast from 'react-hot-toast';
-import IsometricWorld from './IsometricWorld';
+import IsometricWorld, { FountainWrap, FountainSVG } from './IsometricWorld';
+import CalendarPage from '../Calendar';
+import LeadsPage from '../Leads';
+import VerifiedPoolPage from '../VerifiedEmails';
 
 /* ── Skill → i18n key mapping ── */
 const SKILL_I18N: Record<string, { nameKey: string; typeKey: string }> = {
@@ -394,6 +398,16 @@ const VILLAGE_QUOTE_KEYS: string[] = [
   'agentPanel.quote5',
 ];
 
+/* ── Calendar month-short keys (already defined in i18n for the Calendar page).
+   Reused here to format the date strip on the notice board. ── */
+const MONTH_SHORT_KEYS = [
+  'janShort', 'febShort', 'marShort', 'aprShort', 'mayShort', 'junShort',
+  'julShort', 'augShort', 'sepShort', 'octShort', 'novShort', 'decShort',
+];
+
+
+
+
 const AgentLabelWrap = styled.div<{ $top: string; $left: string; $stagger?: number }>`
   position: absolute;
   top: ${({ $top }) => $top};
@@ -454,15 +468,13 @@ const SpeechBubble = styled.div`
   transform: translateX(-50%);
   background: rgba(255, 255, 255, 0.95);
   color: #333;
-  padding: 4px 10px;
-  border-radius: 8px;
+  padding: 6px 12px;
+  border-radius: 10px;
   font-size: 11px;
   font-weight: 600;
-  white-space: normal;
-  max-width: 180px;
+  white-space: nowrap;
   text-align: center;
-  word-break: break-word;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   animation: ${labelAppear} 0.3s ease backwards;
   margin-bottom: 4px;
   z-index: 10;
@@ -793,6 +805,280 @@ const ActivityEmpty = styled.div`
   font-size: 13px;
 `;
 
+/* ── Notice Board (static, in-world background prop) ── */
+
+const NoticeBoardWrap = styled.button`
+  position: absolute;
+  top: 58%;
+  right: 8%;
+  z-index: 1;
+  opacity: 1;
+  width: 100px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transform-origin: 50% 100%;
+  /* Pixel-art crispness: disable anti-aliasing throughout the wrapping
+     element so the SVG and its children render with hard pixel edges. */
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  /* Punch up saturation a hair so the SVG edges read with the same
+     crispness as the pre-baked sprite PNGs next to it. */
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.3)) contrast(1.05) saturate(1.05);
+  transition: filter 0.2s var(--ease-out);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { filter: drop-shadow(0 5px 6px rgba(0, 0, 0, 0.4)) contrast(1.05) saturate(1.05); }
+    &:hover .board-hint { opacity: 1; }
+  }
+  &:focus-visible { outline: 2px dashed #fde047; outline-offset: 4px; }
+
+  ${media.mobile} {
+    top: 54%;
+    right: 3%;
+    width: 75px;
+  }
+`;
+
+/* Hint shown at the top of the board — hidden by default, visible on hover */
+const BoardTopHint = styled.div`
+  position: absolute;
+  top: -16%;
+  left: 0;
+  right: 0;
+  height: 16%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: #fde047;
+  text-shadow: 1px 1px 0 #000;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 2;
+  border-radius: 2px;
+  margin: 0 8%;
+`;
+
+/* Schedule text — centered inside the white SVG rect area */
+const BoardScheduleText = styled.div`
+  position: absolute;
+  top: 19%;
+  bottom: 38%;
+  left: 12%;
+  right: 12%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 0;
+  background: transparent;
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  text-align: center;
+  pointer-events: none;
+  overflow: hidden;
+`;
+
+const BoardScheduleCount = styled.div`
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1;
+  color: #3b2412;
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  letter-spacing: 0.5px;
+`;
+
+const BoardScheduleLabel = styled.div`
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #6b4a2a;
+`;
+
+const BoardScheduleMuted = styled.div`
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: #8b7355;
+  font-style: italic;
+  padding: 2px 4px;
+`;
+
+const BoardLoading = styled.div`
+  font-size: 5px;
+  font-weight: 600;
+  color: #b59b7a;
+  font-family: 'Press Start 2P', monospace;
+  letter-spacing: 0.5px;
+`;
+
+/* ── Calendar full-screen popup (rendered via portal) ── */
+const CalendarOverlay = styled.div`
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  /* Inline keyframes (later-declared file-level \`fadeIn\` would confuse TS). */
+  animation: ${keyframes`from{opacity:0}to{opacity:1}`} 0.18s ease-out;
+`;
+
+const CalendarModal = styled.div`
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 10000;
+  width: 95vw;
+  height: 92vh;
+  max-width: 1400px;
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: 14px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* Inline keyframes for the modal so this stays independent of the
+     later-declared fadeIn / modalEnter helpers. */
+  animation: ${keyframes`from{opacity:0;transform:translate(-50%,-46%) scale(.96)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}`} 0.22s ease-out;
+`;
+
+const CalendarModalHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  flex-shrink: 0;
+`;
+
+const CalendarModalTitle = styled.div`
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  display: flex; flex-direction: column; gap: 2px;
+  & > small {
+    font-size: 0.75rem; font-weight: 500; color: ${({ theme }) => theme.colors.textTertiary};
+  }
+`;
+
+const CalendarCloseBtn = styled.button`
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.surface};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s var(--ease-out), transform 0.12s var(--ease-out);
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  &:active { transform: scale(0.95); }
+`;
+
+const CalendarModalBody = styled.div`
+  flex: 1;
+  overflow: auto;
+  /* Calendar page padding intentionally left as its own. Leads /
+     Verified Emails pages have their own internal layout. */
+  & > div:first-child { padding: 0; }
+`;
+
+/* ── Pool popup (Client pool + Verified pool, tabbed view) ── */
+
+const PoolTab = styled.button<{ $active: boolean }>`
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid ${({ $active, theme }) => $active ? 'transparent' : theme.colors.border};
+  background: ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.textInverted : theme.colors.textSecondary};
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s var(--ease-out);
+  &:hover { opacity: 0.85; }
+`;
+
+const PoolPane = styled.div`
+  /* Both Client Pool and Verified Pool pages have their own internal
+     <Page> wrapper. Set a moderate inset so content sits comfortably
+     below the popup header + tabs without the wider 24/32 default. */
+  & > div:first-child { padding: 0 16px 16px; }
+`;
+
+/* ── Fountain (static background prop in the village) ── */
+
+/* Position wrapper around IsometricWorld's exported FountainWrap, so the
+   fountain sits in the village right-foreground and becomes a click
+   target for the pool popup (the underlying FountainWrap has its own
+   absolute positioning which we override). */
+const FountainAnchor = styled.button`
+  position: absolute;
+  bottom: 6%;
+  right: 2%;
+  z-index: 6;
+  background: transparent;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  /* Pixel-art crispness: disable anti-aliasing on SVG inside. */
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.35));
+  transition: filter 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.5)); transform: translateY(-2px); }
+  }
+  &:focus-visible { outline: 2px dashed #fde047; outline-offset: 4px; }
+
+  ${media.mobile} {
+    bottom: 8%;
+    right: 1%;
+  }
+`;
+
+/* Hover hint shown on top of the fountain (mirrors the Notice Board's
+   BoardTopHint). Hidden by default; reveals when the user hovers the
+   FountainAnchor. Positioned at the top of the fountain's spray area
+   so it reads as a label pinned to the fountain. */
+const FountainTopHint = styled.div`
+  position: absolute;
+  top: -28px;
+  left: -12px;
+  right: -12px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Press Start 2P', 'Courier New', monospace;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: #fde047;
+  text-shadow: 1px 1px 0 #000;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity 0.2s var(--ease-out), transform 0.2s var(--ease-out);
+  border: 1px solid rgba(253, 224, 71, 0.3);
+  border-radius: 3px;
+  padding: 0 6px;
+  white-space: nowrap;
+  z-index: 8;
+  ${FountainAnchor}:hover &,
+  ${FountainAnchor}:focus-visible & {
+    opacity: 1;
+    transform: translateY(0);
+  }
+`;
+
 /* ── Stats bar overlay — bottom-center ── */
 const StatsBar = styled.div`
   position: absolute;
@@ -1002,16 +1288,10 @@ const FarmerWrap = styled.div<{ $freeze?: boolean }>`
   display: flex;
   flex-direction: column;
   align-items: center;
-  cursor: pointer;
   user-select: none;
+  pointer-events: none;  /* wrapper itself doesn't capture clicks */
   animation: ${({ $freeze }) => $freeze ? 'none' : css`${farmerWalk} 14s ease-in-out infinite`};
   ${({ $freeze }) => $freeze && 'transform: scaleX(1);'}
-
-  @media (hover: hover) and (pointer: fine) {
-    &:hover {
-      filter: brightness(1.15);
-    }
-  }
 `;
 
 const FarmerBubble = styled.div`
@@ -1045,14 +1325,16 @@ const FarmerBubble = styled.div`
 `;
 
 const FarmerLabel = styled.div`
-  margin-top: 2px;
-  padding: 2px 8px;
+  margin-top: -4px;
+  padding: 2px 6px;
   background: rgba(0,0,0,0.6);
   border-radius: 3px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 9px;
   font-weight: 700;
   color: #fbbf24;
+  width: fit-content;
+  align-self: center;
 `;
 
 /* ── Search Dialog (triggered by farmer click) ── */
@@ -1651,8 +1933,24 @@ const AgentPanel: React.FC = () => {
   const logBodyRef = useRef<HTMLDivElement>(null);
   const [pipelineProgress, setPipelineProgress] = useState<{stage: string; current: number; total: number; percent: number} | null>(null);
   const [resultCount, setResultCount] = useState<number | null>(null);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [showPool, setShowPool] = useState(false);
+  const [poolTab, setPoolTab] = useState<'leads' | 'verified'>('leads');
   const search = useSearch();
   const isPipelineRunning = !!campaignId && !pipelineComplete;
+
+  // Esc closes either popup
+  useEffect(() => {
+    if (!showCalendar && !showPool) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowCalendar(false);
+        setShowPool(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showCalendar, showPool]);
 
   /* ── SSE connect on mount ── */
   useEffect(() => {
@@ -1795,6 +2093,55 @@ const AgentPanel: React.FC = () => {
     return pipelineLogs[pipelineLogs.length - 1].message;
   }, [pipelineLogs]);
 
+  /* Notice board date strip — formatted per active language.
+     Format heuristic: if the resolved month string contains CJK chars,
+     build "3月14日"; otherwise "Mar 14". Captured as a memo so it doesn't
+     recompute on unrelated re-renders. */
+  const boardDateLabel = useMemo(() => {
+    const now = new Date();
+    const monthStr = t(`calendar.${MONTH_SHORT_KEYS[now.getMonth()]}`);
+    const day = String(now.getDate()).padStart(2, '0');
+    return /[一-鿿]/.test(monthStr) ? `${monthStr}${day}日` : `${monthStr} ${day}`;
+  }, [t]);
+
+  /* Count of events scheduled for today on the calendar. Refreshes each
+     minute so a date rollover triggers a re-fetch.
+     ponytail ceiling: pure count, not the events themselves — keeps the
+     background prop cheap. */
+  const [today, setToday] = useState(() => new Date());
+  const [todayCount, setTodayCount] = useState<number | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const fetchCount = (now: Date) => {
+      client.get('/calendar', { params: { month: now.getMonth() + 1, year: now.getFullYear() } })
+        .then((res) => {
+          if (cancelled) return;
+          const items = (res.data as any)?.data ?? res.data ?? [];
+          const list = Array.isArray(items) ? items : [];
+          const n = list.filter((e: any) => {
+            if (!e?.start) return false;
+            const d = new Date(e.start);
+            return d.getFullYear() === now.getFullYear()
+              && d.getMonth() === now.getMonth()
+              && d.getDate() === now.getDate();
+          }).length;
+          setTodayCount(n);
+        })
+        .catch(() => { if (!cancelled) setTodayCount(0); });
+    };
+    fetchCount(today);
+    const tick = setInterval(() => {
+      const next = new Date();
+      setToday(next);
+      fetchCount(next);
+    }, 60_000);
+    return () => { cancelled = true; clearInterval(tick); };
+  // Only re-fetch when the calendar session/user changes; the 60s ticker
+  // handles "today" drift on its own. Re-run on mount on lang change won't
+  // matter — count is locale-agnostic.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* ── Deco click dialogue state ── */
   const [activeQuote, setActiveQuote] = useState<{ idx: number; text: string } | null>(null);
   const quoteTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1872,6 +2219,92 @@ const AgentPanel: React.FC = () => {
       {/* ── Background: IsometricWorld fills entire scene ── */}
       <WorldBackground>
         <IsometricWorld bgUrl={scene.bgUrl} hideAtmosphere={scene.hideAtmosphere} />
+        {/* Notice Board sits inside the world-background layer so foreground
+           sprites (z=5+) can overlap it. */}
+        <NoticeBoardWrap
+          onClick={() => setShowCalendar(true)}
+          aria-label={t('agentPanel.noticeBoardHint')}
+        >
+          <svg
+            viewBox="0 0 156 260"
+            width="100%"
+            xmlns="http://www.w3.org/2000/svg"
+            shape-rendering="crispEdges"
+          >
+            {/* ── Two wooden stand posts (legs) ── */}
+            <rect x="28" y="170" width="10" height="86" fill="#6b3f1a" stroke="#3b2412" strokeWidth="1.5" shape-rendering="crispEdges" />
+            <rect x="118" y="170" width="10" height="86" fill="#6b3f1a" stroke="#3b2412" strokeWidth="1.5" shape-rendering="crispEdges" />
+            {/* Small cross-brace between legs for stability look */}
+            <rect x="32" y="210" width="92" height="6" fill="#5a3416" stroke="#3b2412" strokeWidth="1" shape-rendering="crispEdges" />
+            {/* Ground shadow / base — pixel-art stepped rect */}
+            <rect x="26" y="254" width="104" height="4" fill="rgba(0,0,0,0.15)" />
+            <rect x="30" y="252" width="96" height="2" fill="rgba(0,0,0,0.1)" />
+
+            {/* ── Main board panel ── */}
+            <rect x="4" y="4" width="148" height="170" fill="#8b5a2b" stroke="#3b2412" strokeWidth="3" shape-rendering="crispEdges" />
+            <rect x="10" y="10" width="136" height="158" fill="#a87044" shape-rendering="crispEdges" />
+            {/* Wood grain lines (subtle) */}
+            <line x1="14" y1="80" x2="142" y2="80" stroke="#8b5a2b" strokeWidth="1" opacity="0.4" shape-rendering="crispEdges" />
+            <line x1="14" y1="115" x2="142" y2="115" stroke="#8b5a2b" strokeWidth="1" opacity="0.4" shape-rendering="crispEdges" />
+            <line x1="14" y1="150" x2="142" y2="150" stroke="#8b5a2b" strokeWidth="1" opacity="0.4" shape-rendering="crispEdges" />
+            {/* Date strip — top of board */}
+            <rect x="14" y="14" width="128" height="28" fill="#3b2412" shape-rendering="crispEdges" />
+            <text
+              x="78" y="34"
+              fontFamily="'Press Start 2P', 'Courier New', monospace"
+              fontSize="11"
+              fontWeight="700"
+              fill="#fde047"
+              textAnchor="middle"
+              letterSpacing="2"
+              textRendering="geometricPrecision"
+              shape-rendering="crispEdges"
+              style={{ textShadow: '1px 1px 0 #000' }}
+            >
+              {boardDateLabel}
+            </text>
+            {/* White content panel — integrated into SVG so it doesn't look detached */}
+            <rect x="16" y="48" width="124" height="114" fill="#fffaf0" shape-rendering="crispEdges" />
+          </svg>
+          <BoardTopHint className="board-hint">▶ {t('agentPanel.noticeBoardHint')}</BoardTopHint>
+          <BoardScheduleText>
+            {todayCount === null ? (
+              <BoardLoading>...</BoardLoading>
+            ) : todayCount > 0 ? (
+              <>
+                <BoardScheduleCount>{todayCount}</BoardScheduleCount>
+                <BoardScheduleLabel>{t('agentPanel.noticeSchedulesToday')}</BoardScheduleLabel>
+              </>
+            ) : (
+              <BoardScheduleMuted>{t('agentPanel.noticeNoUpcoming')}</BoardScheduleMuted>
+            )}
+          </BoardScheduleText>
+        </NoticeBoardWrap>
+
+      {/* ── Fountain — shared IsometricWorld asset, made clickable by
+         wrapping in a position anchor (AgentPanel opens the pool popup
+         on click). Inner FountainWrap / FountainSVG come from
+         IsometricWorld so the visual styling stays single-sourced. ── */}
+      <FountainAnchor
+        onClick={() => setShowPool(true)}
+        title={t('agentPanel.fountainHint')}
+        aria-label={t('agentPanel.fountainHint')}
+      >
+        <FountainTopHint>▶ {t('agentPanel.fountainHint')}</FountainTopHint>
+        <FountainWrap
+          style={{
+            position: 'static',
+            bottom: 'auto',
+            right: 'auto',
+            width: 160,
+            zIndex: 'auto',
+            pointerEvents: 'none',
+            opacity: 0.95,
+          }}
+        >
+          <FountainSVG />
+        </FountainWrap>
+      </FountainAnchor>
       </WorldBackground>
 
       {/* ── Title bar overlay — top-left ── */}
@@ -1955,10 +2388,10 @@ const AgentPanel: React.FC = () => {
       })}
 
       {/* ── Farmer NPC — bottom-left corner ── */}
-      <FarmerWrap $freeze={showSearch || isPipelineRunning || pipelineComplete} style={{ bottom: scene.farmerPos.bottom, left: scene.farmerPos.left }} onClick={handleFarmerClick}>
+      <FarmerWrap $freeze={showSearch || isPipelineRunning || pipelineComplete} style={{ bottom: scene.farmerPos.bottom, left: scene.farmerPos.left }}>
         {/* Search dialog */}
         {showSearch && !isPipelineRunning && (
-          <SearchDialogWrap onClick={(e) => e.stopPropagation()}>
+          <SearchDialogWrap style={{ pointerEvents: 'auto' }} onClick={(e) => e.stopPropagation()}>
             <SearchDialogCard>
               <SearchDialogTitle>
                 <span>🔍 {t('agentPanel.searchTitle', 'Client Search')}</span>
@@ -2028,14 +2461,16 @@ const AgentPanel: React.FC = () => {
             {t('agentPanel.farmerBubble')}
           </FarmerBubble>
         )}
-        <SpriteAnimator
-          src={scene.farmerSprite ?? '/assets/pixel-world/sprites/farmer-idle.png'}
-          frameCount={4}
-          frameSize={80}
-          scale={4.5}
-          fps={isPipelineRunning ? 6 : 3}
-        />
-        <FarmerLabel>{isPipelineRunning ? t('agentPanel.farmerWorking', '⚡ Working') : t('agentPanel.farmerLabel')}</FarmerLabel>
+        <div style={{ pointerEvents: 'auto', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center' }} onClick={handleFarmerClick}>
+          <SpriteAnimator
+            src={scene.farmerSprite ?? '/assets/pixel-world/sprites/farmer-idle.png'}
+            frameCount={4}
+            frameSize={80}
+            scale={4.5}
+            fps={isPipelineRunning ? 6 : 3}
+          />
+          <FarmerLabel>{isPipelineRunning ? t('agentPanel.farmerWorking', '⚡ Working') : t('agentPanel.farmerLabel')}</FarmerLabel>
+        </div>
       </FarmerWrap>
 
       {/* ── Pipeline log dialog (chat-style) ── */}
@@ -2197,6 +2632,90 @@ const AgentPanel: React.FC = () => {
               </ProgressMini>
             </PanelFooter>
           </FloatingPanel>
+        </>,
+        document.body
+      )}
+
+      {/* ── Calendar full-screen popup (portal) — click the notice board ── */}
+      {showCalendar && createPortal(
+        <>
+          <CalendarOverlay onClick={() => setShowCalendar(false)} />
+          <CalendarModal role="dialog" aria-modal="true" aria-label={t('agentPanel.calendarPopupTitle')}>
+            <CalendarModalHeader>
+              <CalendarModalTitle>
+                {t('agentPanel.calendarPopupTitle')}
+                <small>{t('agentPanel.calendarPopupSubtitle')}</small>
+              </CalendarModalTitle>
+              <CalendarCloseBtn
+                onClick={() => setShowCalendar(false)}
+                title={t('agentPanel.calendarPopupClose')}
+                aria-label={t('agentPanel.calendarPopupClose')}
+              >
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                  <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </CalendarCloseBtn>
+            </CalendarModalHeader>
+            <CalendarModalBody onClick={(e) => e.stopPropagation()}>
+              <CalendarPage />
+            </CalendarModalBody>
+          </CalendarModal>
+        </>,
+        document.body
+      )}
+
+      {/* ── Pool full-screen popup (portal) — click the fountain ── */}
+      {showPool && createPortal(
+        <>
+          <CalendarOverlay onClick={() => setShowPool(false)} />
+          <CalendarModal
+            role="dialog"
+            aria-modal="true"
+            aria-label={t('agentPanel.poolPopupTitle')}
+          >
+            <CalendarModalHeader>
+              <CalendarModalTitle>
+                {t('agentPanel.poolPopupTitle')}
+                <small>{t('agentPanel.poolPopupSubtitle')}</small>
+              </CalendarModalTitle>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <PoolTab
+                  $active={poolTab === 'leads'}
+                  onClick={() => setPoolTab('leads')}
+                  aria-pressed={poolTab === 'leads'}
+                >
+                  {t('agentPanel.poolTabLeads')}
+                </PoolTab>
+                <PoolTab
+                  $active={poolTab === 'verified'}
+                  onClick={() => setPoolTab('verified')}
+                  aria-pressed={poolTab === 'verified'}
+                >
+                  {t('agentPanel.poolTabVerified')}
+                </PoolTab>
+                <CalendarCloseBtn
+                  onClick={() => setShowPool(false)}
+                  title={t('agentPanel.calendarPopupClose')}
+                  aria-label={t('agentPanel.calendarPopupClose')}
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+                    <path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                </CalendarCloseBtn>
+              </div>
+            </CalendarModalHeader>
+            {/* Both pages stay mounted in the React tree. CSS hides the
+               inactive pane so switching tabs is instant and data is
+               not refetched. */}
+            <CalendarModalBody onClick={(e) => e.stopPropagation()}>
+              <PoolPane style={{ display: poolTab === 'leads' ? 'block' : 'none' }}>
+                <LeadsPage />
+              </PoolPane>
+              <PoolPane style={{ display: poolTab === 'verified' ? 'block' : 'none' }}>
+                <VerifiedPoolPage />
+              </PoolPane>
+            </CalendarModalBody>
+          </CalendarModal>
         </>,
         document.body
       )}
