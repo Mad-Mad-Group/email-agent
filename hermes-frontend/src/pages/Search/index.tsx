@@ -440,13 +440,13 @@ const ModePickerWrap = styled.div`
   flex-shrink: 0;
 `;
 
-const ModePickerTrigger = styled.button`
+const ModePickerTrigger = styled.button<{ $color?: string }>`
   display: flex; align-items: center; gap: 6px;
   padding: 6px 10px;
   border: none;
   border-radius: 10px;
   background: transparent;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ $color, theme }) => $color || theme.colors.textPrimary};
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: 0.875rem; font-weight: 400;
   cursor: pointer; white-space: nowrap;
@@ -482,29 +482,29 @@ const ModePickerDropdown = styled.div`
   }
 `;
 
-const ModePickerItem = styled.button<{ $active: boolean }>`
+const ModePickerItem = styled.button<{ $active: boolean; $color?: string }>`
   display: flex; align-items: flex-start; gap: 10px;
   width: 100%;
   padding: 10px 12px;
   border: none;
   border-radius: 10px;
-  background: ${({ $active, theme }) => $active ? theme.colors.accent + '12' : 'transparent'};
+  background: ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) + '12' : 'transparent'};
   cursor: pointer;
   text-align: left;
   transition: background 0.12s;
-  &:hover { background: ${({ $active, theme }) => $active ? theme.colors.accent + '1a' : theme.colors.surfaceMuted}; }
+  &:hover { background: ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) + '1a' : theme.colors.surfaceMuted}; }
 `;
 
-const ModeItemCheck = styled.span<{ $active: boolean }>`
+const ModeItemCheck = styled.span<{ $active: boolean; $color?: string }>`
   display: flex; align-items: center; justify-content: center;
   width: 18px; height: 18px;
   border-radius: 50%;
-  border: 1.5px solid ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.border};
-  background: ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
+  border: 1.5px solid ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) : theme.colors.border};
+  background: ${({ $active, $color, theme }) => $active ? ($color || theme.colors.accent) : 'transparent'};
   flex-shrink: 0;
   margin-top: 1px;
   transition: all 0.15s;
-  color: ${({ theme }) => theme.colors.textInverted};
+  color: #fff;
   font-size: 10px;
 `;
 
@@ -512,10 +512,10 @@ const ModeItemText = styled.div`
   display: flex; flex-direction: column; gap: 2px; min-width: 0;
 `;
 
-const ModeItemLabel = styled.span`
+const ModeItemLabel = styled.span<{ $color?: string }>`
   font-family: ${({ theme }) => theme.fonts.display};
   font-size: 0.8125rem; font-weight: 400;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  color: ${({ $color, theme }) => $color || theme.colors.textPrimary};
 `;
 
 const ModeItemDesc = styled.span`
@@ -526,16 +526,61 @@ const ModeItemDesc = styled.span`
 
 interface ModeConfig {
   key: string;
-  label: string;
+  label?: string;
+  labelKey?: string;
   desc: string;
   apiMode: 'normal' | 'old_website';
+  color?: string;
 }
 
+/* Google logo letter colors */
+const GOOGLE_COLORS = ['#4285F4','#EA4335','#FBBC05','#4285F4','#34A853','#EA4335'];
+const GoogleText: React.FC<{ suffix: string; icon?: React.ReactNode }> = ({ suffix, icon }) => (
+  <span>
+    {'Google'.split('').map((ch, i) => (
+      <span key={i} style={{ color: GOOGLE_COLORS[i] }}>{ch}</span>
+    ))}
+    <span>{suffix}</span>
+    {icon}
+  </span>
+);
+
+/* LinkedIn brand text: "Linked" + "in" box */
+const LinkedInText: React.FC = () => (
+  <span style={{ color: '#0A66C2' }}>
+    Linked<span style={{
+      background: '#0A66C2', color: '#fff',
+      borderRadius: 3, padding: '0 2px', marginLeft: 0.5,
+    }}>in</span>
+  </span>
+);
+
+/* Inline SVG icons for mode labels */
+const SearchIcon: React.FC<{ color?: string }> = ({ color }) => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke={color || 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, verticalAlign: '-2px', marginLeft: 3 }}>
+    <circle cx="7" cy="7" r="5" /><path d="M11 11L14.5 14.5" />
+  </svg>
+);
+
+const MapIcon: React.FC<{ color?: string }> = ({ color }) => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke={color || 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, verticalAlign: '-2px', marginLeft: 3 }}>
+    <path d="M1 3.5L5.5 1.5L10.5 3.5L15 1.5V12.5L10.5 14.5L5.5 12.5L1 14.5Z" />
+    <path d="M5.5 1.5V12.5" /><path d="M10.5 3.5V14.5" />
+  </svg>
+);
+
+const WebsiteIcon: React.FC<{ color?: string }> = ({ color }) => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke={color || 'currentColor'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, verticalAlign: '-2px', marginLeft: 3 }}>
+    <circle cx="8" cy="8" r="7" />
+    <path d="M1 8h14" /><path d="M8 1c-2.5 2.5-2.5 5 0 7s2.5 5 0 7" /><path d="M8 1c2.5 2.5 2.5 5 0 7s-2.5 5 0 7" />
+  </svg>
+);
+
 const MODE_CONFIGS: ModeConfig[] = [
-  { key: 'normal',        label: 'Google Maps',  desc: '在 Google Maps 搜索商家資訊',         apiMode: 'normal' },
-  { key: 'old_website',   label: '舊網站',        desc: '搜索全網技術棧比較老舊的網站',          apiMode: 'old_website' },
-  { key: 'google_search', label: 'Google Search', desc: '用 Google 搜索引擎找結果',            apiMode: 'normal' },
-  { key: 'linkedin',      label: 'LinkedIn',      desc: '在領英找聯繫人',                      apiMode: 'normal' },
+  { key: 'normal',        label: 'Google Maps',  desc: '在 Google Maps 搜索商家資訊',         apiMode: 'normal',      color: '#4285F4' },
+  { key: 'old_website',   labelKey: 'search.modeOldSite', desc: '搜索全網技術棧比較老舊的網站', apiMode: 'old_website', color: '#A0784C' },
+  { key: 'google_search', label: 'Google Search', desc: '用 Google 搜索引擎找結果',            apiMode: 'normal',      color: '#4285F4' },
+  { key: 'linkedin',      label: 'LinkedIn',      desc: '在領英找聯繫人',                      apiMode: 'normal',      color: '#0A66C2' },
 ];
 
 const HK_DISTRICT_KEYS = [
@@ -2125,7 +2170,7 @@ const SearchPage: React.FC = () => {
         {DOT_CONFIG.map((d, i) => (
           <Dot key={i} $x={d.x} $y={d.y} $size={d.size} $delay={d.delay} $dur={d.dur} />
         ))}
-        <UnifiedBar as="form" onSubmit={handleSubmit} ref={locRef} $morphing={search.isPending || isPipelineRunning} $glow={activeMode.apiMode === 'old_website'}>
+        <UnifiedBar as="form" onSubmit={handleSubmit} ref={locRef} $morphing={search.isPending || isPipelineRunning} $glow={false}>
             <BarInput
               type="text"
               placeholder={t('search.keywordPlaceholder')}
@@ -2136,8 +2181,11 @@ const SearchPage: React.FC = () => {
             />
             <BarToolRow>
               <ModePickerWrap>
-                <ModePickerTrigger type="button" onClick={() => setShowModePicker(p => !p)}>
-                  {activeMode.label}
+                <ModePickerTrigger type="button" $color={activeMode.color} onClick={() => setShowModePicker(p => !p)}>
+                  {activeMode.key === 'normal' ? <GoogleText suffix=" Maps" icon={<MapIcon color="#34A853" />} />
+                    : activeMode.key === 'google_search' ? <GoogleText suffix=" Search" icon={<SearchIcon color="#4285F4" />} />
+                    : activeMode.key === 'linkedin' ? <LinkedInText />
+                    : <>{activeMode.labelKey ? t(activeMode.labelKey) : activeMode.label}<WebsiteIcon color={activeMode.color} /></>}
                 </ModePickerTrigger>
                 {showModePicker && (
                   <ModePickerDropdown>
@@ -2146,13 +2194,19 @@ const SearchPage: React.FC = () => {
                         key={m.key}
                         type="button"
                         $active={searchMode === m.key}
+                        $color={m.color}
                         onClick={() => { setSearchMode(m.key); setShowModePicker(false); }}
                       >
-                        <ModeItemCheck $active={searchMode === m.key}>
+                        <ModeItemCheck $active={searchMode === m.key} $color={m.color}>
                           {searchMode === m.key && '✓'}
                         </ModeItemCheck>
                         <ModeItemText>
-                          <ModeItemLabel>{m.label}</ModeItemLabel>
+                          <ModeItemLabel $color={m.color}>
+                            {m.key === 'normal' ? <GoogleText suffix=" Maps" icon={<MapIcon color="#34A853" />} />
+                              : m.key === 'google_search' ? <GoogleText suffix=" Search" icon={<SearchIcon color="#4285F4" />} />
+                              : m.key === 'linkedin' ? <LinkedInText />
+                              : <>{m.labelKey ? t(m.labelKey) : m.label}<WebsiteIcon color={m.color} /></>}
+                          </ModeItemLabel>
                           <ModeItemDesc>{m.desc}</ModeItemDesc>
                         </ModeItemText>
                       </ModePickerItem>

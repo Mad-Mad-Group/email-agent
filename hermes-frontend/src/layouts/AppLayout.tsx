@@ -89,15 +89,14 @@ const JunctionLines = styled.span<{ $collapsed?: boolean }>`
     display: block;
     width: 18px;
     height: 2px;
-    background: ${({ theme }) => theme.colors.surfaceInverted};
     border-radius: 2px;
     transition: all 0.3s ease;
     position: absolute;
     left: 0;
 
-    &:nth-child(1) { top: 0; }
-    &:nth-child(2) { top: 6px; }
-    &:nth-child(3) { top: 12px; }
+    &:nth-child(1) { top: 0; background: #FF5DA0; }
+    &:nth-child(2) { top: 6px; background: #2ECC71; }
+    &:nth-child(3) { top: 12px; background: #F1C40F; }
   }
 
   ${JunctionHamburger}:hover & {
