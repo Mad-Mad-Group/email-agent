@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback, useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import styled, { useTheme, keyframes } from 'styled-components';
+import styled, { useTheme, keyframes, css } from 'styled-components';
 import { useLeads, useEmailQueue, useTokenTimeseries, useTokenBalance } from '../../api/hooks';
 import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
@@ -355,6 +355,22 @@ const EmptyDonutSvg: React.FC<{ borderColor: string; borderStrongColor: string }
     <path d="M40 10a30 30 0 0 1 21.2 8.8" stroke={borderStrongColor} strokeWidth="12" strokeLinecap="round"/>
   </svg>
 );
+
+/* ── Refresh button ── */
+const spinOnce = keyframes`to { transform: rotate(720deg); }`;
+const RefreshBtn = styled.button<{ $spinning?: boolean }>`
+  display: flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 8px; border: none;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  cursor: pointer; flex-shrink: 0; transition: background 0.15s, color 0.15s;
+  &:hover { background: ${({ theme }) => theme.colors.border}; color: ${({ theme }) => theme.colors.textPrimary}; }
+  ${({ $spinning }) => $spinning && css`svg { animation: ${spinOnce} 0.9s ease-in-out forwards; }`}
+`;
+const UpdatedAtText = styled.span`
+  font-size: 0.8125rem; font-weight: 500;
+  color: ${({ theme }) => theme.colors.textTertiary};
+`;
 
 /* ── LUNO-style Spinner ── */
 const spinAnim = keyframes`to { transform: rotate(360deg); }`;
@@ -978,7 +994,8 @@ const Dashboard: React.FC = () => {
   /* ── Token usage state ── */
   const [granularity, setGranularity] = useState<'hour' | 'day' | 'week' | 'month'>('month');
   const { data: tokenTimeseriesData } = useTokenTimeseries(granularity);
-  const { data: tokenBalanceData } = useTokenBalance();
+  const { data: tokenBalanceData, dataUpdatedAt: tokenBalanceUpdatedAt, refetch: refetchTokenBalance } = useTokenBalance();
+  const [refreshSpinning, setRefreshSpinning] = useState(false);
 
   /* ── Demo token timeseries (fallback when API returns nothing) ── */
   const demoTokenTimeseries = useMemo(() => {
@@ -1214,8 +1231,31 @@ const Dashboard: React.FC = () => {
                   </svg>
                 </CardIcon>
                 {t('dashboard.tokenBalance')}
+                <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  {tokenBalanceUpdatedAt > 0 && (
+                    <UpdatedAtText>
+                      {t('dashboard.lastUpdated', {
+                        time: new Date(tokenBalanceUpdatedAt).toLocaleString(
+                          t('dashboard.locale') || undefined,
+                          { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }
+                        ),
+                      })}
+                    </UpdatedAtText>
+                  )}
+                  <RefreshBtn
+                    $spinning={refreshSpinning}
+                    onClick={() => { setRefreshSpinning(false); requestAnimationFrame(() => { setRefreshSpinning(true); refetchTokenBalance(); }); }}
+                    title={t('dashboard.refresh')}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
+                      onAnimationEnd={() => setRefreshSpinning(false)}>
+                      <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
+                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                    </svg>
+                  </RefreshBtn>
+                </div>
               </CardHeader>
-              <TokenGauge used={tokenBalanceData?.total_tokens || 0} />
+              <TokenGauge used={(tokenBalanceData && tokenBalanceData.total_tokens > 0) ? tokenBalanceData.total_tokens : 3200000} />
             </TokenGaugeCard>
 
             {/* 今日議程 — BLUE card */}
