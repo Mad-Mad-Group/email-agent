@@ -809,6 +809,57 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
     return t('topbar.timeDaysAgo', { count: days });
   };
 
+  // Backend may persist i18n keys as literal `title` / `message` strings instead of
+  // the structured `title_key` / `message_key` fields. Detect dotted keys (e.g.
+  // "topbar.notifFoo") and translate them via t(); fall back to the raw string.
+  const looksLikeI18nKey = (s?: string | null) =>
+    typeof s === 'string' && /^[a-zA-Z][a-zA-Z0-9_]*\.[a-zA-Z][a-zA-Z0-9_]*(\.[a-zA-Z][a-zA-Z0-9_]*)*$/.test(s);
+
+  // ponytail: backend emits notifications with i18n keys under a `notification.*`
+  // namespace that does not exist in the frontend catalog. The real keys live
+  // under `dashboard.*` and `search.*`. Map them so frontend i18n can resolve.
+  // Remove once backend emits the correct namespace + key path.
+  const NOTIF_I18N_ALIAS: Record<string, string> = {
+    'notification.newDraft': 'dashboard.newDraft',
+    'notification.searchComplete': 'search.searchComplete',
+  };
+
+  // ponytail: backend passes params under keys (e.g. `company`) that don't match
+  // the i18n placeholder names (e.g. `target`). Remap so i18n substitution works.
+  const NOTIF_I18N_PARAM_ALIAS: Record<string, Record<string, string>> = {
+    'dashboard.newDraft': { company: 'target' },
+    'search.searchComplete': { count: 'count' }, // no remap needed; placeholder already matches
+  };
+
+  const resolveNotifText = (n: NotificationItem, field: 'title' | 'message'): string => {
+    const keyField = field === 'title' ? 'title_key' : 'message_key';
+    const paramsField = field === 'title' ? 'title_params' : 'message_params';
+    const raw = (n as any)[field] as string | undefined;
+    const key = (n as any)[keyField] as string | undefined;
+    const translate = (k: string, p: Record<string, any>) => {
+      // ponytail: backend used a non-existent `notification.*` namespace for a
+      // couple of keys that actually live under `search.*`. Until backend emits
+      // the correct namespace, alias these specific keys to their real path.
+      const aliased = NOTIF_I18N_ALIAS[k] ?? k;
+      // ponytail: backend emits params under names that don't match the i18n
+      // placeholders. Remap so substitution lands on the right slot.
+      const remap = NOTIF_I18N_PARAM_ALIAS[aliased];
+      const params = remap
+        ? Object.fromEntries(Object.entries(p || {}).map(([pk, pv]) => [remap[pk] ?? pk, pv]))
+        : (p || {});
+      const out = t(aliased, params) as string;
+      // If i18n returns the key unchanged (missing), show the raw literal so we
+      // at least see the human-readable fallback instead of a dotted key.
+      if (out === aliased) return raw || '';
+      // Strip unfilled {{placeholder}} tokens — backend never sends title_params
+      // so unresolved placeholders leak through. Use a literal label instead.
+      return out.replace(/\{\{\s*[a-zA-Z0-9_]+\s*\}\}/g, '—');
+    };
+    if (key) return translate(key, (n as any)[paramsField] || {});
+    if (looksLikeI18nKey(raw)) return translate(raw as string, (n as any)[paramsField] || {});
+    return raw || '';
+  };
+
   /* ── Language ── */
   const currentIdx = LANGUAGES.findIndex((l) => l.code === i18n.language);
   const currentLang = LANGUAGES[currentIdx >= 0 ? currentIdx : 0].label;
@@ -1072,9 +1123,9 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
                 >
                   <NotifDot $type={n.type} />
                   <NotifContent>
-                    <NotifTitle>{n.title_key ? t(n.title_key, n.title_params || {}) : n.title}</NotifTitle>
+                    <NotifTitle>{resolveNotifText(n, 'title')}</NotifTitle>
                     {(n.message_key || n.message) && (
-                      <NotifMsg>{n.message_key ? t(n.message_key, n.message_params || {}) : n.message}</NotifMsg>
+                      <NotifMsg>{resolveNotifText(n, 'message')}</NotifMsg>
                     )}
                     <NotifTime>{formatTimeAgo(n.created_at)}</NotifTime>
                   </NotifContent>
