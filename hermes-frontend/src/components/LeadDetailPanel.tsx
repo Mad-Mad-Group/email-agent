@@ -244,20 +244,19 @@ const SOURCE_DISPLAY_NAMES: Record<string, string> = {
 };
 const getSourceDisplay = (source: string): string => SOURCE_DISPLAY_NAMES[source] || source;
 
-const STATUS_PILL_COLORS: Record<string, { bg: string; fg: string }> = {
+export const STATUS_PILL_COLORS: Record<string, { bg: string; fg: string }> = {
   new:       { bg: '#e8f5e9', fg: '#2e7d32' },
   pending:   { bg: '#fff3e0', fg: '#e65100' },
   contacted: { bg: '#e3f2fd', fg: '#1565c0' },
   approved:  { bg: '#e8f5e9', fg: '#2e7d32' },
   rejected:  { bg: '#fce4ec', fg: '#c62828' },
 };
-const DpStatusPill = styled.span<{ $status?: string }>`
+export const DpStatusPill = styled.span<{ $status?: string }>`
   display: inline-block;
   font-size: 0.75rem;
   font-weight: 500;
   padding: 2px 8px;
   border-radius: 99px;
-  text-transform: lowercase;
   background: ${({ $status }) => STATUS_PILL_COLORS[$status || '']?.bg || '#f0f0f0'};
   color: ${({ $status }) => STATUS_PILL_COLORS[$status || '']?.fg || '#888'};
 `;
@@ -346,10 +345,11 @@ const DpDivider = styled.div`
   margin: 6px 0;
 `;
 
-export const DpField = styled.div`
+export const DpField = styled.div<{ $stacked?: boolean }>`
   display: flex;
-  align-items: flex-start;
-  gap: 6px;
+  align-items: ${({ $stacked }) => $stacked ? 'stretch' : 'flex-start'};
+  flex-direction: ${({ $stacked }) => $stacked ? 'column' : 'row'};
+  gap: ${({ $stacked }) => $stacked ? '4px' : '6px'};
   padding: 3px 0;
 `;
 

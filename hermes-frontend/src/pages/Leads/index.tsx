@@ -14,7 +14,7 @@ import { glassSurface } from '../../styles/glassSurface';
 import { useDialog } from '../../components';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER, SOURCE_AGENT } from '../../config/agents';
-import LeadDetailPanel, { hashColorIndex, AvatarIcon, Avatar, ReplyBadge, DpSectionTitle, DpActionBtn, DpField, DpFieldLabel, DpFieldValue, DpFieldIcon, getReplyBadge, NEXT_STATUS, REPLY_ICONS } from '../../components/LeadDetailPanel';
+import LeadDetailPanel, { hashColorIndex, AvatarIcon, Avatar, ReplyBadge, DpSectionTitle, DpActionBtn, DpField, DpFieldLabel, DpFieldValue, DpFieldIcon, getReplyBadge, NEXT_STATUS, REPLY_ICONS, DpStatusPill } from '../../components/LeadDetailPanel';
 import LeadEmails from '../../components/LeadEmails';
 
 /* ══════════════════════════════════════
@@ -1505,28 +1505,19 @@ const Leads: React.FC = () => {
                   (() => {
                     return leads.map((lead, i) => {
                       const name = lead.company_name || t('common.unknown');
-                      const colorIdx = hashColorIndex(name);
+                      const statusKey = lead.status ?? 'new';
+                      const statusText = t(STATUS_I18N_KEY[statusKey] || 'leads.statusNew');
                       return (
                         <React.Fragment key={lead._id}>
                           <TRow $even={i % 2 === 1} style={{ cursor: 'pointer' }} onClick={() => setSelectedLead(lead)}>
                         <td style={{ color: styledTheme.colors.textTertiary, fontSize: '0.75rem', textAlign: 'center' }}>{(page - 1) * LIMIT + i + 1}</td>
                         <td>
                           <NameCell>
-                            <StatusIcon $status={lead.status ?? 'new'} title={t(STATUS_I18N_KEY[lead.status ?? 'new'] || 'leads.statusNew')} />
-                            <Avatar $colorIndex={colorIdx}><AvatarIcon name={name} /></Avatar>
+                            <DpStatusPill $status={statusKey}>{statusText}</DpStatusPill>
                             <NameText>
                               <strong>{name}</strong>
                               {lead.website && <small>{lead.website}</small>}
                             </NameText>
-
-                            {(() => {
-                              const src = lead.source || '';
-                              const agentKey = SOURCE_AGENT[src];
-                              if (!agentKey) return null;
-                              if (agentKey === 'farmer') return <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} size={28} />;
-                              const agent = AGENTS[agentKey];
-                              return agent ? <SpriteAvatar src={agent.sprite} frames={agent.frames} frameW={agent.frameW} frameH={agent.frameH} size={28} /> : null;
-                            })()}
                           </NameCell>
                         </td>
                         <td>
