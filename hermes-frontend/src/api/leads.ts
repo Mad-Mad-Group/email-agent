@@ -36,6 +36,11 @@ export interface Lead {
   _reply_at?: string;
   _pending_meeting?: boolean;
   _followup_count?: number;
+  _last_followup_at?: string;
+  _no_reply?: boolean;
+  _last_sent_at?: string;
+  _reoutreach_done?: boolean;
+  _reoutreach_at?: string;
   _has_email_draft?: boolean;
 
   /* ── AI analysis fields (written by worker doAnalyze / doEnrich) ── */
