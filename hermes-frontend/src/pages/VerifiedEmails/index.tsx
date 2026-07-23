@@ -65,10 +65,7 @@ const PageCard = styled.div`
 
 const Breadcrumb = styled.ol`
   list-style: none; margin: 0; padding: 0; display: flex; gap: ${({ theme }) => theme.spacing.sm}px;
-  background: ${({ theme }) => theme.colors.surface};
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-    font-size: 0.78rem; color: ${({ theme }) => theme.colors.textSecondary};
-    background: ${({ theme }) => theme.colors.canvas};
+  font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary};
   li + li::before { content: '/'; margin-right: ${({ theme }) => theme.spacing.sm}px; }
   a { color: ${({ theme }) => theme.colors.textSecondary}; text-decoration: none; &:hover { text-decoration: underline; } }
 `;
@@ -82,10 +79,7 @@ const PageTitle = styled.h1`
     -webkit-background-clip: text; background-clip: text;
   `}
 `;
-const PageSub = styled.p`background: ${({ theme }) => theme.colors.surface};
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-    font-size: 0.78rem; color: ${({ theme }) => theme.colors.textSecondary};
-    background: ${({ theme }) => theme.colors.canvas}; margin: 2px 0 0;`;
+const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const ToolbarRow = styled.div`
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
@@ -95,26 +89,40 @@ const SearchInput = styled.input`
   padding: 6px 12px; border-radius: ${({ theme }) => theme.radii.control}px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.surface}; color: ${({ theme }) => theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.surface};
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-    font-size: 0.78rem; width: 220px; outline: none; transition: border-color 0.15s;
-  &::placeholder { color: ${({ theme }) => theme.colors.textSecondary};
-    background: ${({ theme }) => theme.colors.canvas}; }
+  font-size: 0.8125rem; width: 220px; outline: none; transition: border-color 0.15s;
+  &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
   &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'ghost' }>`
   display: inline-flex; align-items: center; gap: 6px;
   padding: 6px 14px; border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ theme }) => theme.colors.surface};
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-    font-size: 0.78rem; font-weight: 500;
+  font-size: 0.8125rem; font-weight: 500;
   cursor: pointer; border: 1px solid transparent; transition: background 150ms var(--ease-out), color 150ms var(--ease-out), border-color 150ms var(--ease-out), opacity 150ms var(--ease-out);
   ${({ $variant, theme }) => {
     if ($variant === 'primary') return `background: ${theme.colors.accent}; color: ${theme.colors.textInverted}; &:hover { opacity: 0.9; }`;
     if ($variant === 'danger') return `background: transparent; color: ${theme.colors.accent}; border-color: ${theme.colors.accent}; &:hover { background: ${theme.colors.accent}; color: ${theme.colors.textInverted}; }`;
     return `background: ${theme.colors.surface}; color: ${theme.colors.textSecondary}; border-color: ${theme.colors.border}; &:hover { background: ${theme.colors.surfaceMuted}; }`;
   }}
+`;
+
+/* ── Delete icon button (matching Leads style) ── */
+
+const DeleteIconBtn = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  padding: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.15s, transform 0.15s;
+  &:hover {
+    color: ${({ theme }) => theme.strong.mauve};
+    transform: translateY(-1px);
+  }
 `;
 
 /* ── Stats Cards (LUNO style — aligned with Leads) ── */
@@ -146,14 +154,14 @@ const StatWatermark = styled.span<{ $color: string }>`
 `;
 
 const StatLabel = styled.span`
+  font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.06em; opacity: 0.55;
   color: ${({ theme }) => theme.colors.textPrimary}; margin-bottom: 6px; display: block;
 `;
 
 const StatValueRow = styled.div`display: flex; align-items: baseline; gap: 6px;`;
 const StatNumber = styled.span<{ $color: string }>`font-size: 2rem; font-weight: 700; color: ${({ $color }) => $color}; line-height: 1; font-variant-numeric: tabular-nums;`;
-const StatUnit = styled.span`font-size: 0.875rem; color: ${({ theme }) => theme.colors.textSecondary};
-    background: ${({ theme }) => theme.colors.canvas};`;
+const StatUnit = styled.span`font-size: 0.875rem; color: ${({ theme }) => theme.colors.textTertiary};`;
 
 /* watermark icons (stroke style, matching Leads) */
 const WmShield = () => (
@@ -205,7 +213,7 @@ const Table = styled.table`
   th:nth-child(8) { width: 11%; }
   th:nth-child(9) { width: 6%; }
   th, td {
-    padding: 7px 12px;
+    padding: 10px 14px;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
@@ -214,6 +222,8 @@ const Table = styled.table`
   th {
     font-weight: 600;
     font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     color: ${({ theme }) => theme.colors.textSecondary};
     background: ${({ theme }) => theme.colors.canvas};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
@@ -221,36 +231,36 @@ const Table = styled.table`
     cursor: default;
   }
   td {
+    font-size: 0.78rem;
+    line-height: 1.4;
     background: ${({ theme }) => theme.colors.surface};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-    font-size: 0.78rem;
-    line-height: 1.3;
+  }
+  tbody tr:last-child td {
+    border-bottom: none;
   }
   ${media.mobile} {
     min-width: 640px;
     font-size: 0.75rem;
-    th, td { padding: 5px 8px; }
-    th { font-size: 0.625rem; }
+    th, td { padding: 6px 10px; }
+    th { font-size: 0.5625rem; }
   }
 `;
 
 const TRow = styled.tr`
   transition: background 0.15s;
   cursor: pointer;
-  &:hover td {
-    background: ${({ theme }) => theme.colors.canvas};
-  }
+  &:hover td { background: ${({ theme }) => `${theme.colors.accent}08`}; }
 `;
 
 const Badge = styled.span<{ $color?: string }>`
-  display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.78rem; font-weight: 600;
+  display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.6875rem; font-weight: 600;
   background: ${({ $color, theme }) => $color ? `${$color}20` : `${theme.colors.accent}20`};
   color: ${({ $color, theme }) => $color || theme.colors.accent};
 `;
 
 const NoData = styled.div`
-  padding: 60px 40px; text-align: center; color: ${({ theme }) => theme.colors.textSecondary};
-    background: ${({ theme }) => theme.colors.canvas}; font-size: 0.875rem;
+  padding: 60px 40px; text-align: center; color: ${({ theme }) => theme.colors.textTertiary}; font-size: 0.875rem;
   display: flex; flex-direction: column; align-items: center; gap: 16px;
 `;
 
@@ -266,18 +276,14 @@ const EmptyIllustration = () => (
 );
 
 const EmptyHint = styled.p`
-  margin: 0; background: ${({ theme }) => theme.colors.surface};
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-    font-size: 0.78rem; color: ${({ theme }) => theme.colors.textSecondary};
-    background: ${({ theme }) => theme.colors.canvas}; opacity: 0.8;
+  margin: 0; font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; opacity: 0.8;
 `;
 
 /* ── Pagination ── */
 
 const PaginationRow = styled.div`
-  display: flex; align-items: center; justify-content: space-between; padding: 7px 12px;
-  font-size: 0.75rem; color: ${({ theme }) => theme.colors.textSecondary};
-    background: ${({ theme }) => theme.colors.canvas};
+  display: flex; align-items: center; justify-content: space-between; padding: 10px 14px;
+  font-size: 0.75rem; color: ${({ theme }) => theme.colors.textTertiary};
 `;
 
 const PageBtn = styled.button<{ $active?: boolean }>`
@@ -311,17 +317,13 @@ const ModalTitle = styled.h6`margin: 0 0 16px; font-size: 1rem; font-weight: 600
 const Field = styled.div`margin-bottom: 12px;`;
 const Label = styled.label`display: block; font-size: 0.75rem; font-weight: 500; color: ${({ theme }) => theme.colors.textSecondary}; margin-bottom: 4px;`;
 const Input = styled.input`
-  width: 100%; padding: 8px 10px; border-radius: ${({ theme }) => theme.radii.control}px; background: ${({ theme }) => theme.colors.surface};
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-    font-size: 0.78rem;
+  width: 100%; padding: 8px 10px; border-radius: ${({ theme }) => theme.radii.control}px; font-size: 0.8125rem;
   border: 1px solid ${({ theme }) => theme.colors.border}; background: ${({ theme }) => theme.colors.canvas};
   color: ${({ theme }) => theme.colors.textPrimary}; outline: none; transition: border-color 0.15s;
   &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 const Textarea = styled.textarea`
-  width: 100%; padding: 8px 10px; border-radius: ${({ theme }) => theme.radii.control}px; background: ${({ theme }) => theme.colors.surface};
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-    font-size: 0.78rem; min-height: 60px; resize: vertical;
+  width: 100%; padding: 8px 10px; border-radius: ${({ theme }) => theme.radii.control}px; font-size: 0.8125rem; min-height: 60px; resize: vertical;
   border: 1px solid ${({ theme }) => theme.colors.border}; background: ${({ theme }) => theme.colors.canvas};
   color: ${({ theme }) => theme.colors.textPrimary}; outline: none; transition: border-color 0.15s;
   &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
@@ -482,9 +484,12 @@ const VerifiedEmailsPage: React.FC = () => {
                         {item.created_at ? new Date(item.created_at).toLocaleDateString() : '—'}
                       </td>
                       <td>
-                        <Btn $variant="danger" onClick={() => handleDelete(item._id)} style={{ padding: '4px 8px' }}>
-                          <TrashIcon />
-                        </Btn>
+                        <DeleteIconBtn onClick={() => handleDelete(item._id)}>
+                          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M5.5 5.5A.5.5 0 016 6v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm2.5 0a.5.5 0 01.5.5v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm3 .5a.5.5 0 00-1 0v6a.5.5 0 001 0V6z" fill="currentColor"/>
+                            <path d="M14.5 3a1 1 0 01-1 1H13v9a2 2 0 01-2 2H5a2 2 0 01-2-2V4h-.5a1 1 0 010-2H6a1 1 0 011-1h2a1 1 0 011 1h3.5a1 1 0 011 1zM4.118 4L4 4.059V13a1 1 0 001 1h6a1 1 0 001-1V4.059L11.882 4H4.118z" fill="currentColor"/>
+                          </svg>
+                        </DeleteIconBtn>
                       </td>
                     </TRow>
                   ))}
