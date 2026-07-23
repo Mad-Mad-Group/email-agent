@@ -535,7 +535,7 @@ const GRAN_OPTIONS = [
 
 /* ── Token Bar Chart (blue gradient bars) ── */
 const TokenBarChartWrap = styled.div`
-  position: relative; padding: 12px 16px 8px; min-width: 0; min-height: 280px;
+  position: relative; padding: 12px 16px 8px; min-width: 0; min-height: 180px; max-height: 220px;
 `;
 
 const TokenBarTooltip = styled.div<{ $x: number; $y: number; $visible: boolean }>`
