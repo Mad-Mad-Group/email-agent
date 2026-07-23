@@ -874,16 +874,16 @@ const Users: React.FC = () => {
               {editing ? (
                 /* ── Edit Mode ── */
                 <DpGrid>
-                  <DpField>
-                    <DpFieldLabel>{t('users.name')}</DpFieldLabel>
+                  <DpField $stacked>
+                    <DpFieldLabel $stacked>{t('users.name')}</DpFieldLabel>
                     <DpInput value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
                   </DpField>
-                  <DpField>
-                    <DpFieldLabel>{t('users.email')}</DpFieldLabel>
+                  <DpField $stacked>
+                    <DpFieldLabel $stacked>{t('users.email')}</DpFieldLabel>
                     <DpInput value={editForm.email} onChange={e => setEditForm(f => ({ ...f, email: e.target.value }))} />
                   </DpField>
-                  <DpField>
-                    <DpFieldLabel>{t('users.role')}</DpFieldLabel>
+                  <DpField $stacked>
+                    <DpFieldLabel $stacked>{t('users.role')}</DpFieldLabel>
                     <DpSelect value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}>
                       <option value="staff">{t('users.roleStaff')}</option>
                       <option value="admin">{t('users.roleAdmin')}</option>

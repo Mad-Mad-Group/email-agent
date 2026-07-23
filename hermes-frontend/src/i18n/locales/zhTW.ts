@@ -590,6 +590,12 @@ const zhTW = {
     replyNextStepLabel: '建議下一步',
     queueTab: '寄件匣',
     templatesTab: '郵件樣板',
+    edit: '編輯',
+    editEmail: '編輯郵件',
+    editSuccess: '郵件更新成功',
+    editFailed: '郵件更新失敗：',
+    subject: '主旨',
+    body: '內容',
   },
   emailTemplate: {
     varRecipientName: '收件人姓名',

@@ -588,6 +588,12 @@ const zhCN = {
     replyNextStepLabel: '建议下一步',
     queueTab: '发件箱',
     templatesTab: '邮件模板',
+    edit: '编辑',
+    editEmail: '编辑邮件',
+    editSuccess: '邮件更新成功',
+    editFailed: '邮件更新失败：',
+    subject: '主题',
+    body: '正文',
   },
   emailTemplate: {
     varRecipientName: '收件人姓名',

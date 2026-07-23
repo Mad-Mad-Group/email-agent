@@ -353,16 +353,16 @@ export const DpField = styled.div<{ $stacked?: boolean }>`
   padding: 3px 0;
 `;
 
-export const DpFieldLabel = styled.span`
+export const DpFieldLabel = styled.span<{ $stacked?: boolean }>`
   display: inline-flex;
   align-items: center;
   gap: 4px;
   font-size: 0.6875rem;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textTertiary};
-  min-width: 52px;
+  min-width: ${({ $stacked }) => $stacked ? '0' : '52px'};
   flex-shrink: 0;
-  padding-top: 1px;
+  padding-top: ${({ $stacked }) => $stacked ? '0' : '1px'};
 `;
 
 export const DpFieldValue = styled.span`

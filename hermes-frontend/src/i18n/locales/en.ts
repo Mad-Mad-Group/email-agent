@@ -592,6 +592,12 @@ const en = {
     replyNextStepLabel: 'Suggested Next Step',
     queueTab: 'Outbox',
     templatesTab: 'Email Templates',
+    edit: 'Edit',
+    editEmail: 'Edit Email',
+    editSuccess: 'Email updated successfully',
+    editFailed: 'Failed to update email: ',
+    subject: 'Subject',
+    body: 'Body',
   },
   emailTemplate: {
     varRecipientName: 'Recipient Name',
