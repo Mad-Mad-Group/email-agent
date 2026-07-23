@@ -1355,8 +1355,8 @@ const SearchDialogWrap = styled.div`
 `;
 
 const SearchDialogCard = styled.div`
-  background: rgba(10, 10, 20, 0.92);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.10);
   border-radius: 10px;
   padding: 14px 16px;
   min-width: 320px;
@@ -1365,11 +1365,11 @@ const SearchDialogCard = styled.div`
   overflow-y: auto;
   font-family: 'JetBrains Mono', monospace;
   image-rendering: pixelated;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
 
   &::-webkit-scrollbar { width: 4px; }
   &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 2px; }
+  &::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.12); border-radius: 2px; }
 
   &::after {
     content: '';
@@ -1378,7 +1378,7 @@ const SearchDialogCard = styled.div`
     left: 50%;
     transform: translateX(-50%);
     border: 7px solid transparent;
-    border-top-color: rgba(10, 10, 20, 0.92);
+    border-top-color: #fff;
   }
 
   ${media.mobile} {
@@ -1392,7 +1392,7 @@ const SearchDialogCard = styled.div`
 const SearchDialogTitle = styled.div`
   font-size: 11px;
   font-weight: 700;
-  color: #fbbf24;
+  color: #1a1a2e;
   margin-bottom: 10px;
   display: flex;
   align-items: center;
@@ -1406,7 +1406,7 @@ const SearchField = styled.div`
 const SearchLabel = styled.label`
   font-size: 9px;
   font-weight: 600;
-  color: rgba(255,255,255,0.5);
+  color: rgba(0,0,0,0.45);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   display: block;
@@ -1416,16 +1416,16 @@ const SearchLabel = styled.label`
 const SearchInput = styled.input`
   width: 100%;
   padding: 7px 10px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.10);
   border-radius: 5px;
-  color: #fff;
+  color: #1a1a2e;
   font-size: 12px;
   font-family: inherit;
   outline: none;
   box-sizing: border-box;
-  &::placeholder { color: rgba(255,255,255,0.3); }
-  &:focus { border-color: #fbbf24; }
+  &::placeholder { color: rgba(0,0,0,0.3); }
+  &:focus { border-color: #4285F4; }
 `;
 
 const SearchRow = styled.div`
@@ -1442,28 +1442,28 @@ const SearchCountWrap = styled.div`
 
 const SearchCountBtn = styled.button`
   width: 22px; height: 22px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.10);
   border-radius: 4px;
-  color: #fff;
+  color: #1a1a2e;
   font-size: 12px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   @media (hover: hover) and (pointer: fine) {
-    &:hover { background: rgba(255,255,255,0.15); }
+    &:hover { background: rgba(0,0,0,0.08); }
   }
 `;
 
 const SearchCountVal = styled.input`
   font-size: 13px;
   font-weight: 700;
-  color: #fff;
+  color: #1a1a2e;
   width: 40px;
   text-align: center;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.10);
   border-radius: 4px;
   padding: 2px 0;
   outline: none;
@@ -1471,7 +1471,7 @@ const SearchCountVal = styled.input`
   -moz-appearance: textfield;
   &::-webkit-outer-spin-button,
   &::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-  &:focus { border-color: rgba(255,255,255,0.3); }
+  &:focus { border-color: #4285F4; }
 `;
 
 const SearchGoBtn = styled.button`
@@ -1496,15 +1496,69 @@ const SearchGoBtn = styled.button`
 const SearchCloseBtn = styled.button`
   background: none;
   border: none;
-  color: rgba(255,255,255,0.4);
+  color: rgba(0,0,0,0.3);
   cursor: pointer;
   font-size: 14px;
   padding: 0;
   line-height: 1;
   @media (hover: hover) and (pointer: fine) {
-    &:hover { color: #fff; }
+    &:hover { color: rgba(0,0,0,0.7); }
   }
 `;
+
+const SdModeRow = styled.div`
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+`;
+
+const SdModeIconBtn = styled.button<{ $active?: boolean; $color?: string }>`
+  flex: 1 1 calc(50% - 2px);
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  padding: 5px 6px;
+  border-radius: 5px;
+  border: 1px solid ${({ $active, $color }) => $active ? ($color || '#fbbf24') : 'rgba(0,0,0,0.08)'};
+  background: ${({ $active, $color }) => $active ? `${$color || '#fbbf24'}12` : '#fff'};
+  color: ${({ $active, $color }) => $active ? ($color || '#fbbf24') : 'rgba(0,0,0,0.55)'};
+  font-size: 9px; font-weight: 600; font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 120ms ease;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover { background: ${({ $active, $color }) => $active ? `${$color || '#fbbf24'}18` : 'rgba(0,0,0,0.03)'}; border-color: rgba(0,0,0,0.15); }
+  }
+`;
+
+/* Inline SVG icons for mode buttons (same as Search page) */
+const SdMapIcon: React.FC = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#34A853" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M1 3.5L5.5 1.5L10.5 3.5L15 1.5V12.5L10.5 14.5L5.5 12.5L1 14.5Z" />
+    <path d="M5.5 1.5V12.5" /><path d="M10.5 3.5V14.5" />
+  </svg>
+);
+const SdWebIcon: React.FC = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#A0784C" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="8" cy="8" r="7" />
+    <path d="M1 8h14" /><path d="M8 1c-2.5 2.5-2.5 5 0 7s2.5 5 0 7" /><path d="M8 1c2.5 2.5 2.5 5 0 7s-2.5 5 0 7" />
+  </svg>
+);
+const SdSearchIcon: React.FC = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#4285F4" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="7" cy="7" r="5" /><path d="M11 11L14.5 14.5" />
+  </svg>
+);
+const SdLinkedInIcon: React.FC = () => (
+  <span style={{ fontSize: 10, fontWeight: 700, color: '#0A66C2', lineHeight: 1 }}>
+    in
+  </span>
+);
+
+const AGENT_MODE_CONFIGS = [
+  { key: 'normal' as const,        label: 'Google Maps',   descKey: 'search.modeGoogleMapsDesc',  apiMode: 'normal' as const,      color: '#4285F4' },
+  { key: 'old_website' as const,   label: 'Old Website',   descKey: 'search.modeOldSiteDesc',     apiMode: 'old_website' as const,  color: '#A0784C' },
+  { key: 'google_search' as const, label: 'Google Search',  descKey: 'search.modeGoogleSearchDesc', apiMode: 'normal' as const,      color: '#4285F4' },
+  { key: 'linkedin' as const,      label: 'LinkedIn',       descKey: 'search.modeLinkedInDesc',     apiMode: 'normal' as const,      color: '#0A66C2' },
+];
 
 /* ── Pipeline log dialog (chat-style) ── */
 
@@ -1927,6 +1981,7 @@ const AgentPanel: React.FC = () => {
   const [searchLocation, setSearchLocation] = useState('Hong Kong');
   const [searchCount, setSearchCount] = useState(20);
   const [searchCountStr, setSearchCountStr] = useState('20');
+  const [searchMode, setSearchMode] = useState<'normal' | 'old_website' | 'google_search' | 'linkedin'>('normal');
   const [campaignId, setCampaignId] = useState<string | null>(null);
   const [pipelineLogs, setPipelineLogs] = useState<Array<{stage: string; message: string}>>([]);
   const [pipelineComplete, setPipelineComplete] = useState(false);
@@ -2056,10 +2111,12 @@ const AgentPanel: React.FC = () => {
   /* ── Submit search ── */
   const handleSearchSubmit = useCallback(() => {
     if (search.isPending || !searchKeyword.trim()) return;
+    const activeModeCfg = AGENT_MODE_CONFIGS.find(m => m.key === searchMode) || AGENT_MODE_CONFIGS[0];
     const payload: SearchPayload = {
       keyword: searchKeyword.trim(),
       location: searchLocation.trim(),
       targetCount: searchCount,
+      mode: activeModeCfg.apiMode,
     };
     setCampaignId(null);
     setPipelineLogs([]);
@@ -2074,7 +2131,7 @@ const AgentPanel: React.FC = () => {
         if (data?.campaign_id) setCampaignId(data.campaign_id);
       },
     });
-  }, [search, searchKeyword, searchLocation, searchCount]);
+  }, [search, searchKeyword, searchLocation, searchCount, searchMode]);
 
   /* ── Map pipeline stage to agent skill ── */
   const stageToSkill: Record<string, string> = useMemo(() => ({
@@ -2410,6 +2467,23 @@ const AgentPanel: React.FC = () => {
                   onKeyDown={e => e.key === 'Enter' && handleSearchSubmit()}
                   autoFocus
                 />
+              </SearchField>
+              <SearchField>
+                <SearchLabel>{t('agentPanel.searchMode', 'Mode')}</SearchLabel>
+                <SdModeRow>
+                  <SdModeIconBtn type="button" $active={searchMode === 'normal'} $color="#4285F4" onClick={() => setSearchMode('normal')}>
+                    <SdMapIcon /> Google Map
+                  </SdModeIconBtn>
+                  <SdModeIconBtn type="button" $active={searchMode === 'old_website'} $color="#A0784C" onClick={() => setSearchMode('old_website')}>
+                    <SdWebIcon /> Old Site
+                  </SdModeIconBtn>
+                  <SdModeIconBtn type="button" $active={searchMode === 'google_search'} $color="#4285F4" onClick={() => setSearchMode('google_search')}>
+                    <SdSearchIcon /> Google Search
+                  </SdModeIconBtn>
+                  <SdModeIconBtn type="button" $active={searchMode === 'linkedin'} $color="#0A66C2" onClick={() => setSearchMode('linkedin')}>
+                    <SdLinkedInIcon /> LinkedIn
+                  </SdModeIconBtn>
+                </SdModeRow>
               </SearchField>
               <SearchRow>
                 <SearchField style={{ flex: 1 }}>
