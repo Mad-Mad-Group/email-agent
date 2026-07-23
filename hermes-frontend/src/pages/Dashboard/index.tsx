@@ -984,16 +984,41 @@ const Dashboard: React.FC = () => {
   const demoTokenTimeseries = useMemo(() => {
     const now = new Date();
     const points: { period: string; total_tokens: number }[] = [];
-    for (let i = 11; i >= 0; i--) {
-      const d = new Date(now);
-      d.setMonth(d.getMonth() - i);
-      points.push({
-        period: d.toISOString().slice(0, 7),
-        total_tokens: Math.round(8000 + Math.random() * 24000),
-      });
+    const rng = (min: number, max: number) => Math.round(min + Math.abs(Math.sin(points.length * 9301 + 49297) % 1) * (max - min));
+
+    if (granularity === 'month') {
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now);
+        d.setMonth(d.getMonth() - i);
+        points.push({ period: d.toISOString().slice(0, 7), total_tokens: rng(8000, 32000) });
+      }
+    } else if (granularity === 'week') {
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i * 7);
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        points.push({ period: `${mm}-${dd}`, total_tokens: rng(2000, 8000) });
+      }
+    } else if (granularity === 'day') {
+      for (let i = 29; i >= 0; i--) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - i);
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        points.push({ period: `${mm}-${dd}`, total_tokens: rng(300, 1200) });
+      }
+    } else {
+      // hour
+      for (let i = 23; i >= 0; i--) {
+        const d = new Date(now);
+        d.setHours(d.getHours() - i);
+        const hh = String(d.getHours()).padStart(2, '0');
+        points.push({ period: `${hh}:00`, total_tokens: rng(20, 200) });
+      }
     }
     return points;
-  }, []);
+  }, [granularity]);
 
   /* ── Demo mode ── */
   const demoLeads = useMemo(() => generateDemoLeads(), []);
