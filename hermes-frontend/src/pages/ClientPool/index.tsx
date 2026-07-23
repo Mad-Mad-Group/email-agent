@@ -11,12 +11,16 @@ const Page = styled.div`
 `;
 
 const Header = styled.div`
-  padding: 24px 24px 0;
+  padding: 16px 24px 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
 `;
 
 const Title = styled.h1`
-  margin: 0 0 14px;
-  font-size: 1.5rem;
+  margin: 0;
+  font-size: 1.25rem;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
@@ -42,7 +46,7 @@ const Tab = styled.button<{ $active: boolean }>`
 `;
 
 const Pane = styled.div`
-  & > div:first-child { padding-top: 16px; }
+  & > div:first-child { padding-top: 8px; }
 `;
 
 const ClientPool: React.FC = () => {
