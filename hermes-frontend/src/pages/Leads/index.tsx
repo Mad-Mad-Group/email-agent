@@ -1427,7 +1427,7 @@ const Leads: React.FC = () => {
           </SearchWrap>
 
           <CircleActionBtn title={t('leads.simulateNoReply')} onClick={handleSimulateNoReply} disabled={simulating} $spinning={simulating}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l14 14M4 4a5 5 0 007 7M3 8a5 5 0 010-5M13 8a5 5 0 010 5"/></svg>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M1 3h10v7H1z"/><path d="M1 3l5 4 5-4"/><path d="M12 7l3 3-3 3"/><path d="M15 10H9"/></svg>
           </CircleActionBtn>
 
           <CircleActionBtn title={t('leads.filterOldWebsiteOn')} onClick={() => { setOldWebsiteOnly(v => !v); setPage(1); }} style={oldWebsiteOnly ? { background: styledTheme.colors.accent, color: '#fff', borderColor: 'transparent' } : undefined}>
