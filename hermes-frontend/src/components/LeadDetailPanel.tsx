@@ -626,6 +626,7 @@ export interface LeadDetailPanelProps {
   onStatusChange?: (id: string, nextStatus: string) => void;
   onDelete?: (id: string) => void;
   onReprocess?: (id: string, stage: string) => void;
+  onSimulateReoutreach?: (id: string) => void;
   rightPanel?: React.ReactNode;
 }
 
@@ -638,6 +639,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
   onStatusChange,
   onDelete,
   onReprocess,
+  onSimulateReoutreach,
   rightPanel,
 }) => {
   const { t, i18n } = useTranslation();
@@ -830,11 +832,35 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
                 <DpTimelineItem>
                   <DpTimelineDotWrap>
                     <DpTimelineDot $active />
-                    {lead._replied && <DpTimelineLine />}
+                    {(lead._replied || (lead as any)._followup_count > 0 || (lead as any)._reoutreach_done) && <DpTimelineLine />}
                   </DpTimelineDotWrap>
                   <DpTimelineContent>
                     <DpTimelineText $active>{t('leads.contactedStep')}</DpTimelineText>
                     {lead.updatedAt && <DpTimelineTime>{fmtTime(lead.updatedAt)}</DpTimelineTime>}
+                  </DpTimelineContent>
+                </DpTimelineItem>
+              )}
+              {(lead as any)._followup_count > 0 && (
+                <DpTimelineItem>
+                  <DpTimelineDotWrap>
+                    <DpTimelineDot $active />
+                    {(lead._replied || (lead as any)._reoutreach_done) && <DpTimelineLine />}
+                  </DpTimelineDotWrap>
+                  <DpTimelineContent>
+                    <DpTimelineText $active>{t('leads.followupStep', { count: (lead as any)._followup_count })}</DpTimelineText>
+                    {(lead as any)._last_followup_at && <DpTimelineTime>{fmtTime((lead as any)._last_followup_at)}</DpTimelineTime>}
+                  </DpTimelineContent>
+                </DpTimelineItem>
+              )}
+              {(lead as any)._reoutreach_done && (
+                <DpTimelineItem>
+                  <DpTimelineDotWrap>
+                    <DpTimelineDot $active />
+                    {lead._replied && <DpTimelineLine />}
+                  </DpTimelineDotWrap>
+                  <DpTimelineContent>
+                    <DpTimelineText $active>{t('leads.reoutreachStep')}</DpTimelineText>
+                    {(lead as any)._reoutreach_at && <DpTimelineTime>{fmtTime((lead as any)._reoutreach_at)}</DpTimelineTime>}
                   </DpTimelineContent>
                 </DpTimelineItem>
               )}
@@ -848,6 +874,16 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
                 </DpTimelineItem>
               )}
             </DpTimeline>
+            {onSimulateReoutreach && lead.status === 'contacted' && !lead._replied && ((lead as any)._followup_count || 0) < 3 && (
+              <DpActionBtn
+                $variant="primary"
+                style={{ marginTop: 8, width: '100%', fontSize: '0.75rem', padding: '6px 12px' }}
+                onClick={() => onSimulateReoutreach(lead._id)}
+              >
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M13.5 8a5.5 5.5 0 0 1-9.72 3.5M2.5 8a5.5 5.5 0 0 1 9.72-3.5" /><path d="M13.5 3v3.5H10M2.5 13v-3.5H6" /></svg>
+                {' '}{t('leads.triggerReoutreach')}
+              </DpActionBtn>
+            )}
             </DpSectionContent>
 
             <DpDivider />

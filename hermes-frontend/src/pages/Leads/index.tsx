@@ -1212,12 +1212,12 @@ const Leads: React.FC = () => {
   const allLeads: Lead[] = [...MOCK_LEADS, ...apiLeads];
 
   const handleSimulateNoReply = async () => {
+    const MAX_FOLLOWUPS = 3;
     const candidates = allLeads.filter(lead =>
       !lead._id.startsWith('mock-') &&
       lead.status === 'contacted' &&
       !lead._replied &&
-      !(lead as any)._no_reply &&
-      !((lead as any)._followup_count > 0),
+      ((lead as any)._followup_count || 0) < MAX_FOLLOWUPS,
     );
     if (candidates.length === 0) {
       toast(t('leads.noLeadsToSimulate'));
@@ -1525,6 +1525,16 @@ const Leads: React.FC = () => {
                             const badge = getReplyBadge(lead, t, styledTheme);
                             return <ReplyBadge $bg={badge.bg} $fg={badge.fg}>{badge.icon && REPLY_ICONS[badge.icon] && <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d={REPLY_ICONS[badge.icon]} /></svg>}{badge.text}</ReplyBadge>;
                           })()}
+                          {(lead as any)._followup_count > 0 && (
+                            <ReplyBadge $bg={styledTheme.pastel.gold} $fg={styledTheme.colors.textPrimary} style={{ marginLeft: 4 }}>
+                              {t('leads.followupBadge', { count: (lead as any)._followup_count })}
+                            </ReplyBadge>
+                          )}
+                          {(lead as any)._reoutreach_done && (
+                            <ReplyBadge $bg={styledTheme.pastel.blue} $fg={styledTheme.colors.textPrimary} style={{ marginLeft: 4 }}>
+                              {t('leads.reoutreachBadge')}
+                            </ReplyBadge>
+                          )}
                         </td>
                         {isAdmin && (
                           <td style={{ fontSize: '0.75rem', color: styledTheme.colors.textSecondary }}>
@@ -1707,6 +1717,16 @@ const Leads: React.FC = () => {
           onStatusChange={(id, status) => handleStatusChange(id, status)}
           onDelete={(id) => handleDelete(id)}
           onReprocess={(id, stage) => reprocessLead.mutate({ id, stage })}
+          onSimulateReoutreach={async (id) => {
+            try {
+              const res = await leadsApi.simulateNoReply(id);
+              toast.success(t('leads.simulateDone', { count: 1 }));
+              refetch();
+              queryClient.invalidateQueries({ queryKey: ['emailQueue'] });
+            } catch (err: any) {
+              toast.error(t('leads.simulateFailed', { count: 1 }) + (err?.message || ''));
+            }
+          }}
           rightPanel={
             selectedLead.company_name ? (
               <LeadEmails companyName={selectedLead.company_name} leadId={selectedLead._id} />
