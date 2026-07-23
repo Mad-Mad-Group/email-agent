@@ -311,7 +311,7 @@ const zhTW = {
     action: '操作',
     setPending: '設為待處理',
     setContacted: '設為已聯繫',
-    statusNew: '新線索',
+    statusNew: '新',
     statusPending: '待處理',
     statusContacted: '已聯繫',
     statusConfirmed: '已確認',
@@ -725,6 +725,8 @@ const zhTW = {
     dist_shaTin: '沙田',
     dist_saiKung: '西貢',
     dist_islands: '離島',
+    dist_custom: '自訂',
+    customLocationPlaceholder: '輸入地區或城市...',
     // 管線階段簡稱
     pipelineSearch: '搜尋',
     pipelineEnrich: '充實',

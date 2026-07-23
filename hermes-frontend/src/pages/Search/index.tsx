@@ -361,29 +361,28 @@ const BarToolRow = styled.div`
   }
 `;
 
-const LocBadge = styled.button`
+const LocInputWrap = styled.div`
   display: flex; align-items: center; gap: 5px;
-  padding: 6px 10px; margin-left: auto;
-  border: none; border-radius: 999px;
-  background: transparent;
+  margin-left: auto; flex-shrink: 0;
+  padding: 4px 10px;
+  border-radius: 999px;
   color: ${({ theme }) => theme.colors.textSecondary};
+  transition: background 0.15s;
+  &:focus-within {
+    background: rgba(0,0,0,0.03);
+    color: ${({ theme }) => theme.colors.textPrimary};
+  }
+  ${media.mobile} { margin: 0; padding: 3px 6px; }
+`;
+
+const LocInput = styled.input`
+  border: none; outline: none;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 0.8125rem; font-weight: 600;
-  cursor: pointer; white-space: nowrap; flex-shrink: 0;
-  transition: color 0.15s, background 0.15s;
-  position: relative;
-  &:hover { color: ${({ theme }) => theme.colors.textPrimary}; background: rgba(0,0,0,0.03); }
-  ${media.mobile} {
-    padding: 3px 6px; margin: 0; font-size: 0.6875rem;
-    max-width: 100px; overflow: hidden; text-overflow: ellipsis;
-  }
-  &::after {
-    content: ''; display: inline-block;
-    width: 4px; height: 4px; margin-left: 1px;
-    border-right: 1.5px solid currentColor;
-    border-bottom: 1.5px solid currentColor;
-    transform: translateY(-1px) rotate(45deg);
-    opacity: 0.35;
-  }
+  width: 120px;
+  &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; font-weight: 400; }
+  ${media.mobile} { width: 80px; font-size: 0.6875rem; }
 `;
 
 const MapPinIcon = () => (
@@ -405,28 +404,6 @@ const BarSearchBtn = styled.button`
   ${media.mobile} { width: 34px; height: 34px; }
 `;
 
-/* Location picker dropdown */
-const LocDropdown = styled.div`
-  position: absolute; top: calc(100% + 6px); right: 0;
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 14px;
-  box-shadow: 0 8px 32px rgba(15,23,42,0.12);
-  padding: 8px; z-index: 100;
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px;
-  min-width: 280px;
-  ${media.mobile} { grid-template-columns: repeat(2, 1fr); min-width: 220px; right: 0; }
-`;
-
-const LocOption = styled.button<{ $active?: boolean }>`
-  padding: 6px 10px; border: none;
-  border-radius: 8px; font-size: 0.75rem; font-weight: 500;
-  cursor: pointer; white-space: nowrap;
-  background: ${({ $active, theme }) => $active ? (theme.status?.new?.bg || theme.colors.accent + '1a') : 'transparent'};
-  color: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.textSecondary};
-  transition: background 0.12s;
-  &:hover { background: ${({ $active, theme }) => $active ? (theme.status?.new?.bg || theme.colors.accent + '1a') : theme.colors.surfaceMuted}; }
-`;
 
 const haloHue = keyframes`
   from { filter: hue-rotate(0deg); }
@@ -583,19 +560,6 @@ const MODE_CONFIGS: ModeConfig[] = [
   { key: 'linkedin',      label: 'LinkedIn',      descKey: 'search.modeLinkedInDesc',     apiMode: 'normal',      color: '#0A66C2' },
 ];
 
-const HK_DISTRICT_KEYS = [
-  'all', 'centralWestern', 'wanChai', 'eastern', 'southern',
-  'yauTsimMong', 'shamShuiPo', 'kowloonCity', 'wongTaiSin', 'kwunTong',
-  'kwaiTsing', 'tsuenWan', 'tuenMun', 'yuenLong', 'north', 'taiPo', 'shaTin', 'saiKung', 'islands',
-];
-
-/* API always sends Traditional Chinese district names regardless of UI locale */
-const DISTRICT_API_VALUES: Record<string, string> = {
-  all: '全區', centralWestern: '中西區', wanChai: '灣仔', eastern: '東區', southern: '南區',
-  yauTsimMong: '油尖旺', shamShuiPo: '深水埗', kowloonCity: '九龍城', wongTaiSin: '黃大仙', kwunTong: '觀塘',
-  kwaiTsing: '葵青', tsuenWan: '荃灣', tuenMun: '屯門', yuenLong: '元朗', north: '北區',
-  taiPo: '大埔', shaTin: '沙田', saiKung: '西貢', islands: '離島',
-};
 
 /* ── Glow animation ── */
 const glowPulse = keyframes`
@@ -1770,8 +1734,6 @@ const SearchPage: React.FC = () => {
       if (raw) {
         const j = JSON.parse(raw);
         if (typeof j.kw === 'string') {
-          // Migrate old Chinese district values to keys
-          if (j.dist && !HK_DISTRICT_KEYS.includes(j.dist)) j.dist = 'all';
           return j;
         }
       }
@@ -1781,8 +1743,6 @@ const SearchPage: React.FC = () => {
   const saved = readSavedForm();
   const [keyword, setKeyword] = useState(saved.kw);
   const [location, setLocation] = useState(saved.loc);
-  const [district, setDistrict] = useState(saved.dist);
-  const [showLocPicker, setShowLocPicker] = useState(false);
   const [targetCount, setTargetCount] = useState<number | string>(saved.tc);
   const [searchMode, setSearchMode] = useState('normal');
   const [showModePicker, setShowModePicker] = useState(false);
@@ -2003,7 +1963,6 @@ const SearchPage: React.FC = () => {
     if (pipelineComplete) {
       setKeyword('');
       setLocation(t('search.defaultLocation'));
-      setDistrict('all');
       setTargetCount(20);
       try { localStorage.removeItem('search-form'); } catch {}
     }
@@ -2047,11 +2006,9 @@ const SearchPage: React.FC = () => {
     if (search.isPending || !keyword.trim()) return;
     // 喺 user gesture 內請求通知權限，確保瀏覽器唔會靜靜忽略
     void ensureNotificationPermission();
-    const districtApiName = DISTRICT_API_VALUES[district] || '';
-    const fullLocation = district === 'all' ? location : `${location} ${districtApiName}`;
     const payload: SearchPayload = {
       keyword: keyword.trim(),
-      location: fullLocation.trim(),
+      location: location.trim(),
       targetCount: Number(targetCount) || 1,
       mode: activeMode.apiMode,
     };
@@ -2060,7 +2017,6 @@ const SearchPage: React.FC = () => {
       localStorage.setItem('search-form', JSON.stringify({
         kw: payload.keyword,
         loc: location,
-        dist: district,
         tc: Number(targetCount) || 1,
       }));
     } catch { /* ignore quota / disabled storage */ }
@@ -2214,10 +2170,15 @@ const SearchPage: React.FC = () => {
                   </ModePickerDropdown>
                 )}
               </ModePickerWrap>
-              <LocBadge type="button" onClick={() => setShowLocPicker(p => !p)}>
+              <LocInputWrap>
                 <MapPinIcon />
-                {t(`search.dist_${district}`)}
-              </LocBadge>
+                <LocInput
+                  type="text"
+                  value={location}
+                  onChange={e => setLocation(e.target.value)}
+                  placeholder={t('search.customLocationPlaceholder')}
+                />
+              </LocInputWrap>
               <NumberWrap>
                 <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(200, (Number(c) || 1) + 5))}><ChevronUp /></NumArrowBtn>
                 <NumberInput
@@ -2242,15 +2203,6 @@ const SearchPage: React.FC = () => {
                 {search.isPending ? <Spinner /> : <SearchBtnIcon />}
               </BarSearchBtn>
             </BarToolRow>
-            {showLocPicker && (
-              <LocDropdown>
-                {HK_DISTRICT_KEYS.map(dk => (
-                  <LocOption key={dk} $active={district === dk} onClick={() => { setDistrict(dk); setShowLocPicker(false); }}>
-                    {t(`search.dist_${dk}`)}
-                  </LocOption>
-                ))}
-              </LocDropdown>
-            )}
             {/* Progress ring overlay */}
             {(search.isPending || isPipelineRunning) && (
               <SearchRingWrap>

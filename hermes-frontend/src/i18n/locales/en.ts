@@ -727,6 +727,8 @@ const en = {
     dist_shaTin: 'Sha Tin',
     dist_saiKung: 'Sai Kung',
     dist_islands: 'Islands',
+    dist_custom: 'Custom',
+    customLocationPlaceholder: 'Enter region or city...',
     // Pipeline stage short labels
     pipelineSearch: 'Search',
     pipelineEnrich: 'Enrich',

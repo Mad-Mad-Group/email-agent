@@ -310,7 +310,7 @@ const zhCN = {
     action: '操作',
     setPending: '设为待处理',
     setContacted: '设为已联系',
-    statusNew: '新线索',
+    statusNew: '新',
     statusPending: '待处理',
     statusContacted: '已联系',
     statusConfirmed: '已确认',
@@ -723,6 +723,8 @@ const zhCN = {
     dist_shaTin: '沙田',
     dist_saiKung: '西贡',
     dist_islands: '离岛',
+    dist_custom: '自定义',
+    customLocationPlaceholder: '输入地区或城市...',
     // 管线阶段简称
     pipelineSearch: '搜索',
     pipelineEnrich: '充实',
