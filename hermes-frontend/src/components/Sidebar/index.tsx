@@ -660,6 +660,11 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
   useEffect(() => {
     const path = location.pathname;
     if (counts[path]) clearBadge(path);
+    // /client-pool contains both /cms-leads and /cms-verified-emails
+    if (path === '/client-pool') {
+      if (counts['/cms-leads']) clearBadge('/cms-leads');
+      if (counts['/cms-verified-emails']) clearBadge('/cms-verified-emails');
+    }
   }, [location.pathname, counts, clearBadge]);
 
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
