@@ -51,11 +51,7 @@ const PlusIcon = () => (
 /* ── Layout ── */
 
 const Page = styled.div`
-  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.lg}px;
-  padding: 36px 32px 44px;
-  animation: fadeSlideUp 0.5s var(--ease-out) both;
-  ${media.tablet} { padding: 24px 18px 32px; }
-  ${media.mobile} { padding: 20px 16px 32px; }
+  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
 `;
 
 const PageCard = styled.div`
@@ -227,9 +223,10 @@ const Table = styled.table`
 const TRow = styled.tr`
   transition: background 0.15s;
   cursor: pointer;
-  animation: fadeInRow 0.35s var(--ease-out) both;
-  &:nth-child(even) td { background: ${({ theme }) => theme.colors.surfaceMuted}40; }
-  &:hover td { background: ${({ theme }) => `${theme.colors.accent}08`}; }
+  &:hover td {
+    background: ${({ theme }) => theme.colors.canvas};
+  }
+  &:last-child td { border-bottom: none; }
 `;
 
 const Badge = styled.span<{ $color?: string }>`

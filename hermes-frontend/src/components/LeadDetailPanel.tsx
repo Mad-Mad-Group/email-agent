@@ -199,16 +199,18 @@ const DpPanel = styled.div<{ $closing?: boolean }>`
 
 const DpHeader = styled.div`
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 20px 20px 10px 28px;
   background: transparent;
   min-height: 24px;
+  position: relative;
 `;
 
 const DpHeaderInfo = styled.div`
   flex: 1;
   min-width: 0;
+  max-width: 220px;
 `;
 
 const DpCompanyName = styled.h2`
@@ -216,9 +218,7 @@ const DpCompanyName = styled.h2`
   font-size: 1.125rem;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: break-word;
 `;
 
 const DpHeaderMeta = styled.div`
@@ -262,6 +262,9 @@ export const DpStatusPill = styled.span<{ $status?: string }>`
 `;
 
 const DpCloseBtn = styled.button`
+  position: absolute;
+  top: 12px;
+  right: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -273,6 +276,7 @@ const DpCloseBtn = styled.button`
   color: ${({ theme }) => theme.colors.textTertiary};
   cursor: pointer;
   flex-shrink: 0;
+  z-index: 5;
   transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out);
   font-size: 18px;
   @media (hover: hover) and (pointer: fine) {
@@ -296,7 +300,7 @@ const DpBody = styled.div`
 `;
 
 const DpColLeft = styled.div`
-  padding: 4px 20px 10px 28px;
+  padding: 16px 20px 10px 28px;
   overflow-y: auto;
   min-height: 0;
   display: flex;
@@ -360,7 +364,7 @@ export const DpFieldLabel = styled.span<{ $stacked?: boolean }>`
   font-size: 0.6875rem;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textTertiary};
-  min-width: ${({ $stacked }) => $stacked ? '0' : '52px'};
+  min-width: ${({ $stacked }) => $stacked ? '0' : '72px'};
   flex-shrink: 0;
   padding-top: ${({ $stacked }) => $stacked ? '0' : '1px'};
 `;
@@ -750,7 +754,6 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
         <div onMouseDown={e => onDpResizeStart(e, 'sw')} style={{ position:'absolute', bottom:0, left:0, width:8, height:8, cursor:'sw-resize', zIndex:11 }} />
         <div onMouseDown={e => onDpResizeStart(e, 'se')} style={{ position:'absolute', bottom:0, right:0, width:8, height:8, cursor:'se-resize', zIndex:11 }} />
         <DpHeader>
-          <Avatar $colorIndex={hashColorIndex(name)} style={{ width: 40, height: 40, fontSize: '0.8rem', borderRadius: 10 }} />
           <DpHeaderInfo>
             <DpCompanyName>
               {name}

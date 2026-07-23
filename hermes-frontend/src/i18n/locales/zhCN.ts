@@ -89,7 +89,7 @@ const zhCN = {
     bankAccounts: '银行账户',
     menu: '菜单',
     leadPool: '潜在客户池',
-    clientPool: 'Client Pool',
+    clientPool: '客户池',
     leadSearch: '潜在客户搜索',
     outbox: '发件箱',
     workflows: '工作流',
@@ -1340,7 +1340,7 @@ const zhCN = {
     notifTaskFailed: '任务失败',
   },
   clientPool: {
-    title: 'Client Pool',
+    title: '客户池',
     clientsTab: '客户',
     verifiedTab: '已验证邮箱',
   },
