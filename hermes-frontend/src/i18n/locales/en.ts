@@ -267,7 +267,7 @@ const en = {
     tokenBalance: 'Token Balance',
     tokenUsed: 'Used',
     tokenUsedLabel: 'Used',
-    tokenQuota: 'Quota',
+    tokenQuota: 'Total Quota',
     noTokenData: 'No token data yet',
     granMonth: 'Month',
     granWeek: 'Week',

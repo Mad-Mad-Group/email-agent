@@ -267,7 +267,7 @@ const zhTW = {
     tokenBalance: 'Token 餘額',
     tokenUsed: '已使用',
     tokenUsedLabel: '已使用',
-    tokenQuota: '配額',
+    tokenQuota: '總額度',
     noTokenData: '尚無 Token 資料',
     granMonth: '月',
     granWeek: '週',

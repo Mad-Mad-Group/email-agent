@@ -535,7 +535,7 @@ const GRAN_OPTIONS = [
 
 /* ── Token Bar Chart (blue gradient bars) ── */
 const TokenBarChartWrap = styled.div`
-  position: relative; padding: 12px 16px 8px; min-width: 0; min-height: 180px; max-height: 220px;
+  position: relative; padding: 8px 16px 4px; min-width: 0;
 `;
 
 const TokenBarTooltip = styled.div<{ $x: number; $y: number; $visible: boolean }>`
@@ -561,11 +561,11 @@ const TokenBarChart: React.FC<{ data: { period: string; total_tokens: number }[]
 
   const items = data.length > 0 ? data : [];
   const maxVal = Math.max(...items.map(d => d.total_tokens), 1);
-  const w = 560, h = 260, pl = 60, pr = 12, pt = 16, pb = 40;
+  const w = 700, h = 120, pl = 50, pr = 10, pt = 10, pb = 24;
   const chartW = w - pl - pr, chartH = h - pt - pb;
   const barCount = items.length || 1;
   const gap = Math.min(chartW / barCount, 64);
-  const barW = gap * 0.55;
+  const barW = gap * 0.35;
 
   const formatNum = (n: number) => {
     if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -601,14 +601,6 @@ const TokenBarChart: React.FC<{ data: { period: string; total_tokens: number }[]
       )}
       <svg ref={svgRef} width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }}>
         <defs>
-          <linearGradient id="tokenBarGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={theme.colors.accent} stopOpacity="1" />
-            <stop offset="100%" stopColor={theme.colors.accent} stopOpacity="0.4" />
-          </linearGradient>
-          <linearGradient id="tokenBarGradHover" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor={theme.colors.accent} stopOpacity="1" />
-            <stop offset="100%" stopColor={theme.colors.accent} stopOpacity="0.7" />
-          </linearGradient>
         </defs>
         {/* Y-axis grid lines */}
         {ticks.map((tick, i) => {
@@ -616,7 +608,7 @@ const TokenBarChart: React.FC<{ data: { period: string; total_tokens: number }[]
           return (
             <g key={`tick${i}`}>
               <line x1={pl} y1={y} x2={pl + chartW} y2={y} stroke={theme.colors.border} strokeWidth="0.5" strokeDasharray={i === 0 ? undefined : '3,3'} />
-              <text x={pl - 8} y={y} textAnchor="end" fill={theme.colors.textTertiary} fontSize="9" fontWeight="400" dominantBaseline="central">{formatNum(tick)}</text>
+              <text x={pl - 8} y={y} textAnchor="end" fill={theme.colors.textTertiary} fontSize="7" fontWeight="400" dominantBaseline="central">{formatNum(tick)}</text>
             </g>
           );
         })}
@@ -634,19 +626,19 @@ const TokenBarChart: React.FC<{ data: { period: string; total_tokens: number }[]
                onMouseLeave={() => setHover(null)}>
               <rect x={pl + i * gap} y={pt} width={gap} height={chartH} fill="transparent" />
               <rect x={x} y={y} width={barW} height={barH} rx={4} ry={4}
-                fill={isHovered ? 'url(#tokenBarGradHover)' : 'url(#tokenBarGrad)'}
+                fill={theme.colors.accent} opacity={isHovered ? 1 : 0.3 + 0.7 * (d.total_tokens / maxVal)}
                 style={{ transition: 'all 0.15s ease' }} />
               {/* Highlight effect on hover */}
               {isHovered && d.total_tokens > 0 && (
                 <>
                   <circle cx={x + barW / 2} cy={y} r={4} fill={theme.colors.accent} />
                   <text x={x + barW / 2} y={y - 10} textAnchor="middle" fill={theme.colors.accent}
-                    fontSize="9" fontWeight="700">{formatNum(d.total_tokens)}</text>
+                    fontSize="7" fontWeight="700">{formatNum(d.total_tokens)}</text>
                 </>
               )}
               <text x={pl + i * gap + gap / 2} y={pt + chartH + 16}
                 textAnchor="middle" fill={theme.colors.textTertiary}
-                fontSize="8" fontWeight="400">{label}</text>
+                fontSize="7" fontWeight="400">{label}</text>
             </g>
           );
         })}
@@ -658,7 +650,7 @@ const TokenBarChart: React.FC<{ data: { period: string; total_tokens: number }[]
 /* ── Token Gauge (half-circle) ── */
 const GaugeWrap = styled.div`
   display: flex; flex-direction: column; align-items: center;
-  justify-content: center; padding: 24px 16px 16px; flex: 1;
+  justify-content: center; padding: 8px 16px 16px; flex: 1;
 `;
 const GaugeLabel = styled.div`
   font-size: 0.75rem; font-weight: 500;
@@ -689,12 +681,6 @@ const TokenGauge: React.FC<{ used: number; quota?: number }> = ({ used, quota = 
   const { t } = useTranslation();
   const theme = useTheme();
   const pct = quota > 0 ? (used / quota) * 100 : 0;
-  const remaining = Math.max(quota - used, 0);
-  const cx = 120, cy = 110, r = 90;
-  const strokeW = 18;
-  // Half circle: pi * r
-  const halfC = Math.PI * r;
-  const fillLen = (pct / 100) * halfC;
 
   const formatNum = (n: number) => {
     if (n >= 1000000) return `${(n / 1000000).toFixed(2)}M`;
@@ -702,64 +688,76 @@ const TokenGauge: React.FC<{ used: number; quota?: number }> = ({ used, quota = 
     return String(n);
   };
 
-  // Generate arc segments for the gauge
-  const segCount = 12;
-  const segGap = 3;
-  const segAngle = 180 / segCount;
+  const segCount = 14;
+  const svgW = 340, svgH = 200;
+  const cx = svgW / 2, cy = svgH * 0.76;
+  const rInner = 90, rOuter = 140;
+  const totalAngle = 180;
+  const segGapDeg = 2.5;
+  const segAngle = (totalAngle - segGapDeg * (segCount - 1)) / segCount;
+
+  const polarToXY = (angle: number, radius: number) => {
+    const rad = (angle * Math.PI) / 180;
+    return { x: cx + radius * Math.cos(rad), y: cy + radius * Math.sin(rad) };
+  };
+
+  /* progress bar width = gauge outer diameter */
+  const barWidth = rOuter * 2;
 
   return (
     <GaugeWrap>
-      <svg width="240" height="140" viewBox="0 0 240 140" style={{ display: 'block', maxWidth: '100%', height: 'auto' }}>
-        <defs>
-          <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor={theme.colors.accent} stopOpacity="0.35" />
-            <stop offset="100%" stopColor={theme.colors.accent} stopOpacity="1" />
-          </linearGradient>
-        </defs>
-        {/* Background segments */}
+      <svg width={svgW} height={svgH} viewBox={`0 0 ${svgW} ${svgH}`} style={{ display: 'block', maxWidth: '100%', height: 'auto' }}>
         {Array.from({ length: segCount }).map((_, i) => {
-          const startAngle = 180 + i * segAngle + segGap / 2;
-          const endAngle = 180 + (i + 1) * segAngle - segGap / 2;
-          const x1 = cx + r * Math.cos((startAngle * Math.PI) / 180);
-          const y1 = cy + r * Math.sin((startAngle * Math.PI) / 180);
-          const x2 = cx + r * Math.cos((endAngle * Math.PI) / 180);
-          const y2 = cy + r * Math.sin((endAngle * Math.PI) / 180);
+          const startDeg = 180 + i * (segAngle + segGapDeg);
+          const endDeg = startDeg + segAngle;
+          const p1 = polarToXY(startDeg, rInner);
+          const p2 = polarToXY(startDeg, rOuter);
+          const p3 = polarToXY(endDeg, rOuter);
+          const p4 = polarToXY(endDeg, rInner);
           const filled = (i + 1) / segCount <= pct / 100;
           const partial = i / segCount < pct / 100 && (i + 1) / segCount > pct / 100;
+          const opacity = filled || partial
+            ? 0.25 + 0.75 * ((i + 1) / segCount)
+            : 0.12;
           return (
             <path key={i}
-              d={`M ${x1} ${y1} A ${r} ${r} 0 0 1 ${x2} ${y2}`}
-              fill="none"
-              stroke={filled ? theme.colors.accent : partial ? `${theme.colors.accent}80` : `${theme.colors.border}`}
-              strokeWidth={strokeW}
-              strokeLinecap="round"
-              opacity={filled ? 0.35 + 0.65 * ((i + 1) / segCount) : partial ? 0.5 : 0.3}
+              d={[
+                'M', p1.x, p1.y,
+                'L', p2.x, p2.y,
+                'A', rOuter, rOuter, 0, 0, 1, p3.x, p3.y,
+                'L', p4.x, p4.y,
+                'A', rInner, rInner, 0, 0, 0, p1.x, p1.y,
+                'Z'
+              ].join(' ')}
+              fill={filled || partial ? theme.colors.accent : theme.colors.border}
+              opacity={opacity}
             />
           );
         })}
-        {/* Center percentage */}
-        <text x={cx} y={cy - 10} textAnchor="middle" dominantBaseline="central"
-          style={{ fontSize: '2rem', fontWeight: 800, fill: theme.colors.textPrimary }}>
+        <text x={cx} y={cy - 18} textAnchor="middle" dominantBaseline="central"
+          style={{ fontSize: '2.6rem', fontWeight: 800, fill: theme.colors.textPrimary }}>
           {pct.toFixed(1)}%
         </text>
-        <text x={cx} y={cy + 14} textAnchor="middle" dominantBaseline="central"
-          style={{ fontSize: '0.7rem', fontWeight: 500, fill: theme.colors.textSecondary }}>
+        <text x={cx} y={cy + 10} textAnchor="middle" dominantBaseline="central"
+          style={{ fontSize: '0.85rem', fontWeight: 500, fill: theme.colors.textSecondary }}>
           {t('dashboard.tokenUsed')}
         </text>
       </svg>
-      <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', maxWidth: 220, marginTop: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', width: barWidth, maxWidth: '100%', marginTop: 8 }}>
         <div>
-          <div style={{ fontSize: '0.7rem', color: theme.colors.textTertiary }}>{t('dashboard.tokenUsedLabel')}</div>
-          <div style={{ fontSize: '1rem', fontWeight: 700, color: theme.colors.textPrimary }}>{formatNum(used)}</div>
+          <div style={{ fontSize: '0.75rem', color: theme.colors.textTertiary }}>{t('dashboard.tokenUsedLabel')}</div>
+          <div style={{ fontSize: '1.15rem', fontWeight: 700, color: theme.colors.textPrimary }}>{formatNum(used)}</div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: '0.7rem', color: theme.colors.textTertiary }}>{t('dashboard.tokenQuota')}</div>
-          <div style={{ fontSize: '1rem', fontWeight: 700, color: theme.colors.textPrimary }}>{formatNum(quota)}</div>
+          <div style={{ fontSize: '0.75rem', color: theme.colors.textTertiary }}>{t('dashboard.tokenQuota')}</div>
+          <div style={{ fontSize: '1.15rem', fontWeight: 700, color: theme.colors.textPrimary }}>{formatNum(quota)}</div>
         </div>
       </div>
-      <GaugeBar>
-        <GaugeBarFill $pct={pct} />
-      </GaugeBar>
+      <div style={{ width: barWidth, maxWidth: '100%', marginTop: 10 }}>
+        <GaugeBar>
+          <GaugeBarFill $pct={pct} />
+        </GaugeBar>
+      </div>
     </GaugeWrap>
   );
 };
@@ -982,6 +980,21 @@ const Dashboard: React.FC = () => {
   const { data: tokenTimeseriesData } = useTokenTimeseries(granularity);
   const { data: tokenBalanceData } = useTokenBalance();
 
+  /* ── Demo token timeseries (fallback when API returns nothing) ── */
+  const demoTokenTimeseries = useMemo(() => {
+    const now = new Date();
+    const points: { period: string; total_tokens: number }[] = [];
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now);
+      d.setMonth(d.getMonth() - i);
+      points.push({
+        period: d.toISOString().slice(0, 7),
+        total_tokens: Math.round(8000 + Math.random() * 24000),
+      });
+    }
+    return points;
+  }, []);
+
   /* ── Demo mode ── */
   const demoLeads = useMemo(() => generateDemoLeads(), []);
   const demoEmails = useMemo(() => generateDemoEmails(), []);
@@ -1162,7 +1175,7 @@ const Dashboard: React.FC = () => {
                 </GranPillBar>
               </div>
             </CardHeader>
-            <TokenBarChart data={tokenTimeseriesData || []} />
+            <TokenBarChart data={(tokenTimeseriesData && tokenTimeseriesData.length > 0) ? tokenTimeseriesData : demoTokenTimeseries} />
           </TokenChartCard>
 
           {/* ═══ Row 2: Token 儀表盤 + 今日議程 + 審核 ═══ */}

@@ -266,7 +266,7 @@ const zhCN = {
     tokenBalance: 'Token 余额',
     tokenUsed: '已使用',
     tokenUsedLabel: '已使用',
-    tokenQuota: '配额',
+    tokenQuota: '总额度',
     noTokenData: '暂无 Token 数据',
     granMonth: '月',
     granWeek: '周',
