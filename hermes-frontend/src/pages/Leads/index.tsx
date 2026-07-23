@@ -76,11 +76,17 @@ const PageCard = styled.div`
 `;
 
 const PageTitle = styled.h1`
-  font-size: 1.25rem;
+  font-size: clamp(1.35rem, 2.5vw, 1.85rem);
   font-weight: 700;
   margin: 0;
-  color: ${({ theme }) => theme.colors.textPrimary};
+  background: ${({ theme }) => theme.gradients.brand};
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  ${({ theme }) => theme.mode === 'dark' && `
+    background: linear-gradient(135deg, #E0ACD2, #ACC0DE);
+    -webkit-background-clip: text; background-clip: text;
+  `}
 `;
+const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const FloatingToast = styled.div<{ $error?: boolean }>`
   position: fixed;
@@ -1363,7 +1369,10 @@ const Leads: React.FC = () => {
   return (
     <Page>
         <PageCard>
-        <div><PageTitle>{t('leads.title')}</PageTitle></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <SpriteAvatar src={AGENTS.S1.sprite} frames={AGENTS.S1.frames} frameW={AGENTS.S1.frameW} frameH={AGENTS.S1.frameH} size={48} />
+          <div><PageTitle>{t('leads.title')}</PageTitle><PageSub>{t('leads.subtitle')}</PageSub></div>
+        </div>
 
         {/* ── Orbital-style View Tabs ── */}
         <TabsRow ref={tabsRowRef}>
