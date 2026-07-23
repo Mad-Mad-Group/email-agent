@@ -366,6 +366,7 @@ const LocInputWrap = styled.div`
   margin-left: auto; flex-shrink: 0;
   padding: 4px 10px;
   border-radius: 999px;
+  border: 1.5px solid ${({ theme }) => theme.colors.accent};
   color: ${({ theme }) => theme.colors.textSecondary};
   transition: background 0.15s;
   &:focus-within {
