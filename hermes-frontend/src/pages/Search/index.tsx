@@ -366,7 +366,7 @@ const LocInputWrap = styled.div`
   margin-left: auto; flex-shrink: 0;
   padding: 4px 10px;
   border-radius: 999px;
-  border: 1.5px solid ${({ theme }) => theme.colors.accent};
+  border: 1.5px solid ${({ theme }) => theme.colors.border};
   color: ${({ theme }) => theme.colors.textSecondary};
   transition: background 0.15s;
   &:focus-within {
@@ -381,9 +381,9 @@ const LocInput = styled.input`
   background: transparent;
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 0.8125rem; font-weight: 600;
-  width: 120px;
+  width: 80px;
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; font-weight: 400; }
-  ${media.mobile} { width: 80px; font-size: 0.6875rem; }
+  ${media.mobile} { width: 60px; font-size: 0.6875rem; }
 `;
 
 const MapPinIcon = () => (
