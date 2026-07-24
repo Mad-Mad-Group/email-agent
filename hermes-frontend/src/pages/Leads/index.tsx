@@ -88,6 +88,52 @@ const PageTitle = styled.h1`
 `;
 const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
+const BulkBar = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-radius: 10px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  font-size: 0.8125rem;
+  animation: bulkSlide 0.15s ease-out;
+  @keyframes bulkSlide {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+`;
+
+const BulkCount = styled.span`
+  font-weight: 700;
+  color: ${({ theme }) => theme.colors.accent};
+  white-space: nowrap;
+`;
+
+const BulkBtn = styled.button<{ $danger?: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border: 1px solid ${({ $danger, theme }) => $danger ? '#ef4444' : theme.colors.border};
+  border-radius: 6px;
+  background: ${({ $danger }) => $danger ? '#fef2f2' : 'transparent'};
+  color: ${({ $danger, theme }) => $danger ? '#ef4444' : theme.colors.textPrimary};
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s;
+  &:hover { background: ${({ $danger }) => $danger ? '#fee2e2' : 'rgba(0,0,0,0.04)'}; }
+`;
+
+const BulkSep = styled.div`
+  width: 1px;
+  height: 20px;
+  background: ${({ theme }) => theme.colors.border};
+`;
+
 const FloatingToast = styled.div<{ $error?: boolean }>`
   position: fixed;
   top: 24px;
@@ -411,7 +457,7 @@ const Table = styled.table`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 12px;
   overflow: hidden;
-  th:nth-child(1) { width: 4%; }    /* # / checkbox */
+  th:nth-child(1) { width: 4%; }    /* checkbox */
   th:nth-child(2) { width: 34%; }   /* name */
   th:nth-child(3) { width: 16%; }   /* reply */
   th:nth-child(4) { width: 14%; }   /* source user / tech */
@@ -1064,6 +1110,7 @@ const Leads: React.FC = () => {
   const [replyChecking, setReplyChecking] = useState(false);
   const [replyCheckMsg, setReplyCheckMsg] = useState('');
   const [followupCheckMsg, setFollowupCheckMsg] = useState('');
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const closeAddModal = useCallback(() => {
     setAddClosing(true);
@@ -1282,6 +1329,51 @@ const Leads: React.FC = () => {
 
 
 
+  // ── Multi-select helpers ──
+  const toggleSelect = useCallback((id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const toggleSelectAll = useCallback(() => {
+    const pageIds = leads.map(l => l._id);
+    setSelectedIds(prev => {
+      const allSelected = pageIds.every(id => prev.has(id));
+      if (allSelected) {
+        const next = new Set(prev);
+        pageIds.forEach(id => next.delete(id));
+        return next;
+      }
+      return new Set([...prev, ...pageIds]);
+    });
+  }, [leads]);
+
+  // Clear selection on tab/page change
+  useEffect(() => { setSelectedIds(new Set()); }, [activeTab, page]);
+
+  const handleBulkDelete = async () => {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    const ok = await showConfirm(t('leads.confirmBulkDelete', { count: ids.length }));
+    if (!ok) return;
+    for (const id of ids) {
+      deleteLead.mutate(id);
+    }
+    setSelectedIds(new Set());
+  };
+
+  const handleBulkStatus = async (newStatus: string) => {
+    const ids = [...selectedIds];
+    if (!ids.length) return;
+    for (const id of ids) {
+      changeStatus.mutate({ id, status: newStatus });
+    }
+    setSelectedIds(new Set());
+  };
+
   const handleCloseDetail = useCallback(() => {
     setDetailClosing(true);
     detailTimerRef.current = setTimeout(() => { setSelectedLead(null); setDetailClosing(false); }, 200);
@@ -1356,11 +1448,35 @@ const Leads: React.FC = () => {
           document.body
         )}
           <div style={{ marginTop: 16 }}><ToolbarSep /></div>
+          {selectedIds.size > 0 && (
+            <BulkBar>
+              <BulkCount>{t('leads.bulkSelected', { count: selectedIds.size })}</BulkCount>
+              <BulkSep />
+              <BulkBtn onClick={() => handleBulkStatus('pending')}>
+                <IconArrowRight /> {t('leads.bulkToPending')}
+              </BulkBtn>
+              <BulkBtn onClick={() => handleBulkStatus('contacted')}>
+                <IconArrowRight /> {t('leads.bulkToContacted')}
+              </BulkBtn>
+              <BulkSep />
+              <BulkBtn $danger onClick={handleBulkDelete}>
+                <IconTrash /> {t('leads.bulkDelete')}
+              </BulkBtn>
+              <BulkBtn onClick={() => setSelectedIds(new Set())}>
+                {t('leads.bulkClear')}
+              </BulkBtn>
+            </BulkBar>
+          )}
           <TableWrap>
             <Table>
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'center' }}><RowCheckbox readOnly /></th>
+                  <th style={{ textAlign: 'center' }}>
+                    <RowCheckbox
+                      checked={leads.length > 0 && leads.every(l => selectedIds.has(l._id))}
+                      onChange={toggleSelectAll}
+                    />
+                  </th>
                   <th>{t('leads.name')} <IconSortArrow /></th>
                   <th>{t('leads.reply')}</th>
                   {isAdmin && <th>{t('leads.sourceUser')}</th>}
@@ -1411,7 +1527,12 @@ const Leads: React.FC = () => {
                       return (
                         <React.Fragment key={lead._id}>
                           <TRow $even={i % 2 === 1} style={{ cursor: 'pointer' }} onClick={() => setSelectedLead(lead)}>
-                        <td style={{ color: styledTheme.colors.textTertiary, fontSize: '0.75rem', textAlign: 'center' }}>{(page - 1) * LIMIT + i + 1}</td>
+                        <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                          <RowCheckbox
+                            checked={selectedIds.has(lead._id)}
+                            onChange={() => toggleSelect(lead._id)}
+                          />
+                        </td>
                         <td>
                           <NameCell>
                             <DpStatusPill $status={statusKey}>{statusText}</DpStatusPill>
