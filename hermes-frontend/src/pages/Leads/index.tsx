@@ -237,7 +237,11 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
   font-size: 0.875rem;
   font-weight: ${({ $active }) => $active ? 600 : 500};
   transition: color 0.2s;
-  svg { flex-shrink: 0; color: ${({ theme }) => theme.strong.blue}; }
+  svg { flex-shrink: 0; color: ${({ $color, theme }) =>
+    $color === 'amber' ? theme.strong.gold :
+    $color === 'green' ? theme.strong.olive :
+    $color === 'purple' ? theme.strong.mauve :
+    theme.strong.blue}; }
   &:hover {
     background: ${({ $active }) => $active ? 'transparent' : 'rgba(0,0,0,0.04)'};
   }
@@ -948,38 +952,20 @@ const MOCK_LEADS: Lead[] = [
 
 /* ── Tabs config (labels moved inside component for i18n) ── */
 
-interface SubTab {
-  key: string;
-  label: string;
-  icon: string;
-  step?: string;
-}
 interface TabDef {
   key: string;
   label: string;
   color: string;
   icon: string;
-  stepRange: string;
-  subs: SubTab[];
-  filter: (l: Lead, sub: string) => boolean;
+  filter: (l: Lead) => boolean;
 }
 
-/* ── Tab / Sub-pill icon SVG paths (16×16 viewBox) ── */
+/* ── Tab icon SVG paths (16×16 viewBox) ── */
 const TAB_ICONS: Record<string, string> = {
-  processing: 'M8 1a7 7 0 100 14A7 7 0 008 1zM8 4v4M6 10h4',                        // AI brain/gear
+  processing: 'M8 1a7 7 0 100 14A7 7 0 008 1zM8 4v4M6 10h4',                        // hourglass/gear
   review:     'M4 2h8a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1zm1 3h6M5 7h6M5 9h4', // document
   sent:       'M1 3h14v10H1V3zm0 0l7 5 7-5',                                          // envelope
-};
-const SUB_ICONS: Record<string, string> = {
-  '':             'M2 2h12v12H2V2zm2 3h8M4 7h8M4 9h5',                                // list
-  to_enrich:      'M8 1l2 3h3l-1 3 2 2-3 1-1 3-2-2-2 2-1-3-3-1 2-2-1-3h3z',          // sparkle (reuse)
-  to_analyze:     'M8 1l2 3h3l-1 3 2 2-3 1-1 3-2-2-2 2-1-3-3-1 2-2-1-3h3z',          // sparkle
-  draft_ready:    'M12.146 1.146a.5.5 0 01.708 0l2 2a.5.5 0 010 .708l-9.5 9.5a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168l9.5-9.5z', // pen
-  email_draft:    'M1 3h14v10H1V3zm0 0l7 5 7-5',                                      // mail
-  wa_draft:       'M8 1a7 7 0 100 14A7 7 0 008 1zM5 6h6M5 8.5h4',                     // chat bubble
-  awaiting_reply: 'M8 1a7 7 0 100 14A7 7 0 008 1zm0 3v4l2.5 1.5',                     // clock
-  followed_up:    'M8 1a7 7 0 100 14A7 7 0 008 1zm-2 4l2 2 4-4',                      // check
-  no_reply:       'M8 1a7 7 0 100 14A7 7 0 008 1zM5.5 5.5l5 5M10.5 5.5l-5 5',         // X
+  replied:    'M1 3h14v10H1V3zm0 0l7 5 7-5M10 9l4 4M14 9l-4 4',                       // envelope with reply
 };
 
 /* ══════════════════════════════════════
@@ -1000,61 +986,31 @@ const Leads: React.FC = () => {
   const TABS: TabDef[] = [
     {
       key: 'processing',
-      label: t('leads.tabProcessing'),
-      color: 'blue',
+      label: t('leads.tabProcessing', '待處理'),
+      color: 'amber',
       icon: 'processing',
-      stepRange: '1-3',
-      subs: [
-        { key: '', label: t('leads.subAll'), icon: '' },
-        { key: 'to_enrich', label: t('leads.subToEnrich'), icon: 'to_enrich', step: '1' },
-        { key: 'to_analyze', label: t('leads.subToAnalyze'), icon: 'to_analyze', step: '2' },
-        { key: 'draft_ready', label: t('leads.subDraftReady'), icon: 'draft_ready', step: '3' },
-      ],
-      filter: (l, sub) => {
-        if (!isNew(l)) return false;
-        if (sub === 'to_enrich') return !(l as any)._website_researched;
-        if (sub === 'to_analyze') return !!(l as any)._website_researched && !(l as any)._has_analysis;
-        if (sub === 'draft_ready') return !!(l as any)._has_email_draft;
-        return true;
-      },
+      filter: (l) => isNew(l) && !(l as any)._has_email_draft,
     },
     {
       key: 'review',
-      label: t('leads.tabReview'),
-      color: 'amber',
+      label: t('leads.tabReview', '待審核'),
+      color: 'blue',
       icon: 'review',
-      stepRange: '4',
-      subs: [
-        { key: '', label: t('leads.subAll'), icon: '' },
-        { key: 'email_draft', label: t('leads.subEmailDraft'), icon: 'email_draft', step: '4' },
-        { key: 'wa_draft', label: t('leads.subWaDraft'), icon: 'wa_draft', step: '4' },
-      ],
-      filter: (l, sub) => {
-        if (l.status !== 'pending') return false;
-        if (sub === 'email_draft') return !!(l as any)._has_email_draft;
-        if (sub === 'wa_draft') return !!(l as any)._has_wa_message;
-        return true;
-      },
+      filter: (l) => (isNew(l) && !!(l as any)._has_email_draft) || l.status === 'pending',
     },
     {
       key: 'sent',
-      label: t('leads.tabSent'),
+      label: t('leads.tabSent', '已發送'),
       color: 'green',
       icon: 'sent',
-      stepRange: '5-9',
-      subs: [
-        { key: '', label: t('leads.subAll'), icon: '' },
-        { key: 'awaiting_reply', label: t('leads.subAwaitingReply'), icon: 'awaiting_reply', step: '6' },
-        { key: 'followed_up', label: t('leads.subFollowedUp'), icon: 'followed_up', step: '7' },
-        { key: 'no_reply', label: t('leads.subNoReply'), icon: 'no_reply', step: '9' },
-      ],
-      filter: (l, sub) => {
-        if (l.status !== 'contacted') return false;
-        if (sub === 'awaiting_reply') return !(l as any)._no_reply && !((l as any)._followup_count > 0);
-        if (sub === 'followed_up') return ((l as any)._followup_count || 0) > 0;
-        if (sub === 'no_reply') return !!(l as any)._no_reply;
-        return true;
-      },
+      filter: (l) => l.status === 'contacted' && !(l as any)._replied,
+    },
+    {
+      key: 'replied',
+      label: t('leads.tabReplied', '已回覆'),
+      color: 'purple',
+      icon: 'replied',
+      filter: (l) => l.status === 'contacted' && !!(l as any)._replied,
     },
   ];
 
@@ -1067,14 +1023,11 @@ const Leads: React.FC = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('processing');
-  const [activeSub, setActiveSub] = useState('');
   const styledTheme = useTheme() as any;
 
   /* ── Sliding indicator refs & state ── */
   const tabsRowRef = useRef<HTMLDivElement>(null);
-  const subTrackRef = useRef<HTMLDivElement>(null);
   const [tabSlider, setTabSlider] = useState({ left: 0, width: 0 });
-  const [subSlider, setSubSlider] = useState({ left: 0, width: 0 });
 
   const updateTabSlider = useCallback(() => {
     const container = tabsRowRef.current;
@@ -1085,21 +1038,7 @@ const Leads: React.FC = () => {
     }
   }, [activeTab]);
 
-  const updateSubSlider = useCallback(() => {
-    const container = subTrackRef.current;
-    if (!container) return;
-    const btn = container.querySelector(`[data-sub-key="${activeSub}"]`) as HTMLElement | null;
-    if (btn) {
-      setSubSlider({ left: btn.offsetLeft, width: btn.offsetWidth });
-    }
-  }, [activeSub, activeTab]);
-
   useLayoutEffect(() => { updateTabSlider(); }, [updateTabSlider]);
-  useLayoutEffect(() => {
-    // Small RAF delay so new sub pills are rendered before measuring
-    const id = requestAnimationFrame(updateSubSlider);
-    return () => cancelAnimationFrame(id);
-  }, [updateSubSlider]);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAdd, setShowAdd] = useState(false);
@@ -1277,7 +1216,7 @@ const Leads: React.FC = () => {
       })
     : allLeads;
   const curTab = TABS.find(t => t.key === activeTab) || TABS[0];
-  const tabFiltered = searchFiltered.filter(l => curTab.filter(l, activeSub));
+  const tabFiltered = searchFiltered.filter(l => curTab.filter(l));
 
   // 舊網站 filter + tech_score 排序
   const techFiltered = oldWebsiteOnly
@@ -1296,22 +1235,10 @@ const Leads: React.FC = () => {
   const tabCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const tab of TABS) {
-      counts[tab.key] = allLeads.filter(l => tab.filter(l, '')).length;
+      counts[tab.key] = allLeads.filter(l => tab.filter(l)).length;
     }
     return counts;
   }, [allLeads]);
-
-  // Sub-tab counts（受主 tab 影響）
-  const subCounts = useMemo(() => {
-    const mainFiltered = allLeads.filter(l => curTab.filter(l, ''));
-    const counts: Record<string, number> = {};
-    for (const sub of curTab.subs) {
-      counts[sub.key] = sub.key === ''
-        ? mainFiltered.length
-        : mainFiltered.filter(l => curTab.filter(l, sub.key)).length;
-    }
-    return counts;
-  }, [allLeads, curTab]);
 
   // 保留 stats.total 畀 KPI header
   const stats = useMemo(() => ({ total: allLeads.length }), [allLeads]);
@@ -1333,12 +1260,6 @@ const Leads: React.FC = () => {
 
   const handleTabClick = (key: string) => {
     setActiveTab(key);
-    setActiveSub('');
-    setPage(1);
-  };
-
-  const handleSubClick = (key: string) => {
-    setActiveSub(key);
     setPage(1);
   };
 
@@ -1394,29 +1315,9 @@ const Leads: React.FC = () => {
           ))}
         </TabsRow>
 
-        {/* ── Sub-status pills in track bar + right-side actions ── */}
+        {/* ── Action bar ── */}
         <SubPillRow>
-          <SubPillTrack ref={subTrackRef}>
-            {curTab.subs.length > 1 && <>
-              <SubSlider $left={subSlider.left} $width={subSlider.width} />
-              {curTab.subs.map(sub => (
-                <SubPill
-                  key={sub.key}
-                  data-sub-key={sub.key}
-                  $active={activeSub === sub.key}
-                  $color={SUB_COLOR_KEYS[sub.key] || 'blue'}
-                  onClick={() => handleSubClick(sub.key)}
-                >
-                  {SUB_ICONS[sub.key] && (
-                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
-                      <path d={SUB_ICONS[sub.key]} />
-                    </svg>
-                  )}
-                  {sub.label} {subCounts[sub.key] ?? 0}
-                </SubPill>
-              ))}
-            </>}
-          </SubPillTrack>
+          <SubPillTrack />
           <SearchWrap>
             <SearchIcon><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></SearchIcon>
             <SearchInput
