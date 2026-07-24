@@ -1169,6 +1169,8 @@ const zhCN = {
     noAccount: '还没有账户？',
     register: '注册',
     loginFailed: '登录失败',
+    emailInvalid: '请输入有效的邮箱地址',
+    passwordTooShort: '密码至少需要 6 个字符',
     slogan1: 'AI 驱动的客户智能平台',
     slogan2: '将对话转化为商机',
     slogan3: '您的 AI 销售团队，全天候运作',

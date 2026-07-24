@@ -273,6 +273,15 @@ const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const validate = () => {
+    const errs: Record<string, string> = {};
+    if (!email.trim() || !/\S+@\S+\.\S+/.test(email)) errs.email = 'login.emailInvalid';
+    if (!password || password.length < 6) errs.password = 'login.passwordTooShort';
+    setFieldErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
   const slogan = useMemo(() => {
     const slogans = [
@@ -288,6 +297,7 @@ const Login: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    if (!validate()) return;
     try {
       await login({ email, password });
       navigate('/cms-search');
@@ -322,6 +332,7 @@ const Login: React.FC = () => {
               value={email}
               onChange={setEmail}
               placeholder={t('login.emailPlaceholder')}
+              error={fieldErrors.email ? t(fieldErrors.email) : undefined}
             />
             <FormField
               label={t('login.password')}
@@ -329,6 +340,7 @@ const Login: React.FC = () => {
               value={password}
               onChange={setPassword}
               placeholder={t('login.passwordPlaceholder')}
+              error={fieldErrors.password ? t(fieldErrors.password) : undefined}
             />
             <ForgotLink to="/forgot-password">
               {t('login.forgotPassword')}

@@ -1172,6 +1172,8 @@ const zhTW = {
     noAccount: '還沒有帳戶？',
     register: '註冊',
     loginFailed: '登入失敗',
+    emailInvalid: '請輸入有效的電郵地址',
+    passwordTooShort: '密碼至少需要 6 個字元',
     slogan1: 'AI 驅動的客戶智慧平台',
     slogan2: '將對話轉化為商機',
     slogan3: '您的 AI 銷售團隊，全天候運作',

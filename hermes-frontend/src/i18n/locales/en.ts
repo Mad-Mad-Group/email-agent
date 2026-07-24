@@ -1121,6 +1121,8 @@ const en = {
     noAccount: "Don't have an account?",
     register: 'Sign Up',
     loginFailed: 'Login failed',
+    emailInvalid: 'Please enter a valid email',
+    passwordTooShort: 'Password must be at least 6 characters',
     slogan1: 'AI-Powered Client Intelligence',
     slogan2: 'Turn Conversations Into Conversions',
     slogan3: 'Your AI Sales Team, Always On',
