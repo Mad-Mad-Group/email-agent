@@ -331,7 +331,7 @@ const en = {
     loading: 'Loading...',
     noLeads: 'No clients found.',
     showingOf: 'Showing {{count}} of {{total}} clients',
-    confirmDelete: 'Are you sure you want to delete this client?',
+    confirmDelete: 'Delete "{{name}}" and all associated emails/analyses? This cannot be undone.',
     confirmClearAll: 'Clear all clients?\n\nThis will <em>permanently delete</em> {{count}} clients. This action cannot be undone.',
     rejectReason: 'Rejection reason (optional)',
     companyName: 'Company Name *',

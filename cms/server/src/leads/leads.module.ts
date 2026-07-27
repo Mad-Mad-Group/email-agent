@@ -5,10 +5,18 @@ import { LeadsService } from './leads.service';
 import { LeadsController } from './leads.controller';
 import { SseModule } from '../sse/sse.module';
 import { TasksModule } from '../tasks/tasks.module';
+import { EmailQueueItem, EmailQueueSchema } from '../email-queue/schemas/email-queue.schema';
+import { Analysis, AnalysisSchema } from '../ai/schemas/analysis.schema';
+import { CalendarEvent, CalendarEventSchema } from '../calendar/schemas/calendar-event.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: Lead.name, schema: LeadSchema }]),
+    MongooseModule.forFeature([
+      { name: Lead.name, schema: LeadSchema },
+      { name: EmailQueueItem.name, schema: EmailQueueSchema },
+      { name: Analysis.name, schema: AnalysisSchema },
+      { name: CalendarEvent.name, schema: CalendarEventSchema },
+    ]),
     SseModule,
     TasksModule,
   ],

@@ -329,7 +329,7 @@ const zhTW = {
     loading: '載入中...',
     noLeads: '未找到潛在客戶。',
     showingOf: '顯示 {{count}} / {{total}} 位潛在客戶',
-    confirmDelete: '確定要刪除此潛在客戶嗎？',
+    confirmDelete: '刪除「{{name}}」及其所有郵件/分析記錄？此操作無法撤銷。',
     confirmClearAll: '確定清空全部 Leads 嗎？\n\n將會<em>永久刪除</em> {{count}} 筆客戶資料，此操作無法復原。',
     rejectReason: '拒絕原因（可空）',
     companyName: '公司名稱 *',

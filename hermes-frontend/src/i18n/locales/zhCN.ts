@@ -328,7 +328,7 @@ const zhCN = {
     loading: '加载中...',
     noLeads: '未找到潜在客户。',
     showingOf: '显示 {{count}} / {{total}} 位潜在客户',
-    confirmDelete: '确定要删除此潜在客户吗？',
+    confirmDelete: '删除「{{name}}」及其所有邮件/分析记录？此操作无法撤销。',
     confirmClearAll: '确定清空全部 Leads 吗？\n\n将会<em>永久删除</em> {{count}} 笔客户资料，此操作无法恢复。',
     rejectReason: '拒绝原因（可空）',
     companyName: '公司名称 *',

@@ -1077,6 +1077,7 @@ function extractMetaDescription(html) {
 async function scrapeWebsite(url) {
     const emails = [];
     const phones = [];
+    let whatsapp = '';
     const pageTexts = [];
     let description = '';
     const services = [];
@@ -1137,13 +1138,29 @@ async function scrapeWebsite(url) {
                     emails.push(lower);
                 }
             }
-            // ── 抽電話 ──
+            // ── 抽電話（用 text 而非 raw HTML，避免抓到 script/style 裡的 timestamp / ID） ──
             const phonePattern = /(?:\+?\d{1,4}[\s\-.]?)?\(?\d{2,4}\)?[\s\-.]?\d{3,4}[\s\-.]?\d{3,4}/g;
-            const pagePhones = html.match(phonePattern) || [];
+            const pagePhones = text.match(phonePattern) || [];
             for (const ph of pagePhones) {
                 const digits = ph.replace(/\D/g, '');
                 if (digits.length >= 8 && digits.length <= 15)
                     phones.push(ph.trim());
+            }
+            // ── 抽 WhatsApp 號碼（從 wa.me / api.whatsapp.com 連結） ──
+            if (!whatsapp) {
+                const waPatterns = [
+                    /https?:\/\/wa\.me\/(\d{7,15})/gi,
+                    /https?:\/\/api\.whatsapp\.com\/send\?phone=(\d{7,15})/gi,
+                    /https?:\/\/web\.whatsapp\.com\/send\?phone=(\d{7,15})/gi,
+                    /https?:\/\/chat\.whatsapp\.com\/send\?phone=(\d{7,15})/gi,
+                ];
+                for (const pat of waPatterns) {
+                    const waMatch = pat.exec(html);
+                    if (waMatch) {
+                        whatsapp = '+' + waMatch[1];
+                        break;
+                    }
+                }
             }
             // ── 抽公司簡介（首頁 / about 頁嘅 meta description 或首段文字） ──
             if (!description && (type === 'home' || type === 'about')) {
@@ -1170,6 +1187,7 @@ async function scrapeWebsite(url) {
     return {
         emails: [...new Set(emails)],
         phones: [...new Set(phones)],
+        whatsapp,
         description,
         services: [...new Set(services)].slice(0, 10),
         pageTexts,
@@ -1251,7 +1269,7 @@ async function doEnrich(p, db) {
             foundPhone = scraped.phones[0];
         if (foundEmail)
             via = 'scraper';
-        log(`  爬蟲結果: emails=${scraped.emails.length}, phones=${scraped.phones.length}, desc=${scraped.description.length > 0}, services=${scraped.services.length}`);
+        log(`  爬蟲結果: emails=${scraped.emails.length}, phones=${scraped.phones.length}, wa=${scraped.whatsapp || '—'}, desc=${scraped.description.length > 0}, services=${scraped.services.length}`);
     }
     // ── 第二層：Hermes stealth browser（如果爬蟲搵唔到 email） ──
     if (!foundEmail) {
@@ -1312,6 +1330,8 @@ Output ONLY JSON, empty string if not found:
             set.extra_emails = scraped.emails.slice(1, 5);
         if (scraped.phones.length > 1)
             set.extra_phones = scraped.phones.slice(1, 5);
+        if (scraped.whatsapp && !lead.whatsapp)
+            set.whatsapp = scraped.whatsapp;
         // 儲存頁面文字摘要（截斷至 5000 字）供 AI 分析
         if (scraped.pageTexts.length > 0) {
             set._scraped_text = scraped.pageTexts.join('\n\n').slice(0, 5000);

@@ -73,6 +73,7 @@ const PageCard = styled.div`
   border-radius: ${({ theme }) => theme.radii.card}px;
   padding: 24px;
   display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
+  ${media.mobile} { padding: 12px 10px; gap: 10px; }
 `;
 
 const PageTitle = styled.h1`
@@ -85,8 +86,12 @@ const PageTitle = styled.h1`
     background: linear-gradient(135deg, #E0ACD2, #ACC0DE);
     -webkit-background-clip: text; background-clip: text;
   `}
+  ${media.mobile} { font-size: 1.15rem; }
 `;
-const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
+const PageSub = styled.p`
+  font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;
+  ${media.mobile} { display: none; }
+`;
 
 const BulkBar = styled.div`
   display: flex;
@@ -218,6 +223,13 @@ const CircleActionBtn = styled.button<{ $color?: string; $spinning?: boolean }>`
   &:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
   svg { width: 14px; height: 14px; }
 
+  ${media.mobile} {
+    width: 28px;
+    height: 28px;
+    svg { width: 12px; height: 12px; }
+    &::after { display: none; }
+  }
+
   ${({ $spinning }) => $spinning && css`
     animation: ${circleSpinGlow} 0.8s ease-in-out;
     border-color: #6C7A24;
@@ -249,6 +261,16 @@ const IconRefresh = ({ spinning }: { spinning?: boolean }) => (
     </svg>
   </RefreshIconWrap>
 );
+
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  ${media.mobile} {
+    gap: 8px;
+    & > div:first-child { transform: scale(0.75); transform-origin: left center; margin-right: -12px; }
+  }
+`;
 
 /* ── Tabs Row ── */
 
@@ -292,6 +314,7 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
     background: ${({ $active }) => $active ? 'transparent' : 'rgba(0,0,0,0.04)'};
   }
   ${media.tabletDown} { padding: 8px 16px; }
+  ${media.mobile} { padding: 6px 12px; font-size: 0.78rem; gap: 5px; svg { width: 12px; height: 12px; } }
 `;
 
 const TabSlider = styled.div<{ $left: number; $width: number }>`
@@ -311,6 +334,7 @@ const TabNumber = styled.span`
   font-size: 1.25rem;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
+  ${media.mobile} { font-size: 1rem; }
 `;
 
 const ToolbarSep = styled.div`
@@ -326,6 +350,7 @@ const SubPillRow = styled.div`
   padding: 0;
   position: relative;
   ${media.tabletDown} { padding: 2px 12px; gap: 6px; flex-wrap: wrap; }
+  ${media.mobile} { padding: 0; gap: 6px; }
 `;
 
 const SubPillTrack = styled.div`
@@ -486,10 +511,15 @@ const Table = styled.table`
     line-height: 1.3;
   }
   ${media.mobile} {
-    min-width: 640px;
+    min-width: 420px;
     font-size: 0.75rem;
-    th, td { padding: 5px 8px; }
+    th, td { padding: 5px 6px; }
     th { font-size: 0.625rem; }
+    th:nth-child(4), td:nth-child(4),
+    th:nth-child(5), td:nth-child(5) { display: none; }
+    th:nth-child(2) { width: 44%; }
+    th:nth-child(3) { width: 30%; }
+    th:nth-child(6) { width: 18%; }
   }
 `;
 
@@ -1292,7 +1322,9 @@ const Leads: React.FC = () => {
 
 
   const handleDelete = async (id: string) => {
-    const ok = await showConfirm(t('leads.confirmDelete'));
+    const lead = allLeads.find(l => l._id === id);
+    const name = lead?.company_name || id;
+    const ok = await showConfirm(t('leads.confirmDelete', { name }));
     if (ok) {
       deleteLead.mutate(id, {
         onSuccess: () => console.info('Lead 已刪除'),
@@ -1382,10 +1414,10 @@ const Leads: React.FC = () => {
   return (
     <Page>
         <PageCard>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <HeaderRow>
           <SpriteAvatar src={AGENTS.S1.sprite} frames={AGENTS.S1.frames} frameW={AGENTS.S1.frameW} frameH={AGENTS.S1.frameH} size={48} />
           <div><PageTitle>{t('leads.title')}</PageTitle><PageSub>{t('leads.subtitle')}</PageSub></div>
-        </div>
+        </HeaderRow>
 
         {/* ── Orbital-style View Tabs ── */}
         <TabsRow ref={tabsRowRef}>

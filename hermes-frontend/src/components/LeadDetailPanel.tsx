@@ -192,8 +192,11 @@ const DpPanel = styled.div<{ $closing?: boolean }>`
     &::after { display: none; }
   }
   ${media.mobile} {
-    width: 95vw;
-    height: 92vh;
+    width: 100vw !important;
+    height: 100vh !important;
+    top: 0 !important;
+    left: 0 !important;
+    border-radius: 0;
   }
 `;
 
@@ -205,12 +208,14 @@ const DpHeader = styled.div`
   background: transparent;
   min-height: 24px;
   position: relative;
+  ${media.mobile} { padding: 16px 16px 8px 16px; }
 `;
 
 const DpHeaderInfo = styled.div`
   flex: 1;
   min-width: 0;
   max-width: 220px;
+  ${media.mobile} { max-width: none; }
 `;
 
 const DpCompanyName = styled.h2`
@@ -261,6 +266,32 @@ export const DpStatusPill = styled.span<{ $status?: string }>`
   color: ${({ $status }) => STATUS_PILL_COLORS[$status || '']?.fg || '#888'};
 `;
 
+const DpDeleteBtn = styled.button`
+  position: absolute;
+  top: 12px;
+  right: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  cursor: pointer;
+  flex-shrink: 0;
+  z-index: 5;
+  transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out);
+  font-size: 18px;
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      background: rgba(229, 115, 115, 0.15);
+      color: #e57373;
+    }
+  }
+`;
+
 const DpCloseBtn = styled.button`
   position: absolute;
   top: 12px;
@@ -285,6 +316,10 @@ const DpCloseBtn = styled.button`
       color: ${({ theme }) => theme.colors.textPrimary};
     }
   }
+`;
+
+const DpResizeHandles = styled.div`
+  ${media.mobile} { display: none; }
 `;
 
 const DpBody = styled.div`
@@ -312,6 +347,7 @@ const DpColLeft = styled.div`
   &::-webkit-scrollbar-thumb { background: #6C97D199; border-radius: 99px; }
   &::-webkit-scrollbar-thumb:hover { background: #6C97D1CC; }
   ${media.tabletDown} { overflow-y: visible; padding: 10px 16px; }
+  ${media.mobile} { padding: 8px 12px; }
 `;
 
 const DpColCenter = styled.div`
@@ -327,6 +363,7 @@ const DpColCenter = styled.div`
   &::-webkit-scrollbar-thumb { background: #6C97D199; border-radius: 99px; }
   &::-webkit-scrollbar-thumb:hover { background: #6C97D1CC; }
   ${media.tabletDown} { overflow-y: visible; padding: 12px 16px; }
+  ${media.mobile} { padding: 8px 12px; }
 `;
 
 export const DpSectionTitle = styled.h3`
@@ -746,15 +783,17 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
   return createPortal(
     <DpOverlay $closing={closing} onClick={onClose}>
       <DpPanel ref={dpRef} $closing={closing} onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ left: dpPos.x, top: dpPos.y, width: dpSize.w, height: dpSize.h }}>
-        {/* Resize handles */}
-        <div onMouseDown={e => onDpResizeStart(e, 'n')} style={{ position:'absolute', top:0, left:8, right:8, height:4, cursor:'n-resize', zIndex:10 }} />
-        <div onMouseDown={e => onDpResizeStart(e, 's')} style={{ position:'absolute', bottom:0, left:8, right:8, height:4, cursor:'s-resize', zIndex:10 }} />
-        <div onMouseDown={e => onDpResizeStart(e, 'w')} style={{ position:'absolute', top:8, bottom:8, left:0, width:4, cursor:'w-resize', zIndex:10 }} />
-        <div onMouseDown={e => onDpResizeStart(e, 'e')} style={{ position:'absolute', top:8, bottom:8, right:0, width:4, cursor:'e-resize', zIndex:10 }} />
-        <div onMouseDown={e => onDpResizeStart(e, 'nw')} style={{ position:'absolute', top:0, left:0, width:8, height:8, cursor:'nw-resize', zIndex:11 }} />
-        <div onMouseDown={e => onDpResizeStart(e, 'ne')} style={{ position:'absolute', top:0, right:0, width:8, height:8, cursor:'ne-resize', zIndex:11 }} />
-        <div onMouseDown={e => onDpResizeStart(e, 'sw')} style={{ position:'absolute', bottom:0, left:0, width:8, height:8, cursor:'sw-resize', zIndex:11 }} />
-        <div onMouseDown={e => onDpResizeStart(e, 'se')} style={{ position:'absolute', bottom:0, right:0, width:8, height:8, cursor:'se-resize', zIndex:11 }} />
+        {/* Resize handles — hidden on mobile (fullscreen) */}
+        <DpResizeHandles>
+          <div onMouseDown={e => onDpResizeStart(e, 'n')} style={{ position:'absolute', top:0, left:8, right:8, height:4, cursor:'n-resize', zIndex:10 }} />
+          <div onMouseDown={e => onDpResizeStart(e, 's')} style={{ position:'absolute', bottom:0, left:8, right:8, height:4, cursor:'s-resize', zIndex:10 }} />
+          <div onMouseDown={e => onDpResizeStart(e, 'w')} style={{ position:'absolute', top:8, bottom:8, left:0, width:4, cursor:'w-resize', zIndex:10 }} />
+          <div onMouseDown={e => onDpResizeStart(e, 'e')} style={{ position:'absolute', top:8, bottom:8, right:0, width:4, cursor:'e-resize', zIndex:10 }} />
+          <div onMouseDown={e => onDpResizeStart(e, 'nw')} style={{ position:'absolute', top:0, left:0, width:8, height:8, cursor:'nw-resize', zIndex:11 }} />
+          <div onMouseDown={e => onDpResizeStart(e, 'ne')} style={{ position:'absolute', top:0, right:0, width:8, height:8, cursor:'ne-resize', zIndex:11 }} />
+          <div onMouseDown={e => onDpResizeStart(e, 'sw')} style={{ position:'absolute', bottom:0, left:0, width:8, height:8, cursor:'sw-resize', zIndex:11 }} />
+          <div onMouseDown={e => onDpResizeStart(e, 'se')} style={{ position:'absolute', bottom:0, right:0, width:8, height:8, cursor:'se-resize', zIndex:11 }} />
+        </DpResizeHandles>
         <DpHeader>
           <DpHeaderInfo>
             <DpCompanyName>
@@ -764,6 +803,14 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
               <DpStatusPill $status={lead.status ?? 'new'}>{statusLabel(lead.status)}</DpStatusPill>
             </DpHeaderMeta>
           </DpHeaderInfo>
+          {onDelete && (
+            <DpDeleteBtn title={t('leads.delete')} onClick={() => {
+              onDelete(lead._id);
+              onClose();
+            }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M6.67 7.33v4M9.33 7.33v4M3.33 4h9.34l-.67 9.33a1.33 1.33 0 01-1.33 1.34H5.33A1.33 1.33 0 014 13.33L3.33 4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </DpDeleteBtn>
+          )}
           <DpCloseBtn onClick={onClose}><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></DpCloseBtn>
         </DpHeader>
 
@@ -778,8 +825,21 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
             </DpField>
             <DpField>
               <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M10 1.5a3.5 3.5 0 013.5 3.5c0 3-5 8.5-5 8.5s-5-5.5-5-8.5A3.5 3.5 0 017 1.79" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.phone')}</DpFieldLabel>
-              <DpFieldValue>{lead.phone || '—'}</DpFieldValue>
+              <DpFieldValue>
+                {lead.phone ? (
+                  <span style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span>{lead.phone}</span>
+                    {lead.extra_phones?.map((p, i) => <span key={i} style={{ opacity: 0.75 }}>{p}</span>)}
+                  </span>
+                ) : '—'}
+              </DpFieldValue>
             </DpField>
+            {lead.whatsapp && (
+            <DpField>
+              <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M8 1C4.13 1 1 4.13 1 8c0 1.23.32 2.39.88 3.4L1 15l3.7-.87A6.96 6.96 0 008 15c3.87 0 7-3.13 7-7s-3.13-7-7-7zm3.44 9.76c-.15.42-.87.8-1.2.85-.3.05-.68.07-1.1-.07a10 10 0 01-1.58-.58c-1.78-.84-2.94-2.65-3.03-2.77-.09-.12-.72-.96-.72-1.83s.45-1.3.62-1.47c.16-.18.35-.22.47-.22h.34c.11 0 .26-.04.4.31.15.35.52 1.27.56 1.36.05.09.08.19.02.31-.37.73-.77.7-.57 1.05.74 1.27 1.47 1.7 2.58 2.22.18.09.28.07.39-.05s.45-.52.57-.7c.12-.18.24-.15.4-.09.17.06 1.05.5 1.23.59.18.09.3.14.34.21.05.08.05.46-.1.88z" fill="currentColor"/></svg></DpFieldIcon>WhatsApp</DpFieldLabel>
+              <DpFieldValue><a href={`https://wa.me/${lead.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">{lead.whatsapp}</a></DpFieldValue>
+            </DpField>
+            )}
             <DpField>
               <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zM1 8h14M8 1c1.7 2 2.7 4 2.7 7s-1 5-2.7 7c-1.7-2-2.7-4-2.7-7s1-5 2.7-7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.website')}</DpFieldLabel>
               <DpFieldValue>{lead.website ? <a href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener noreferrer">{lead.website}</a> : '—'}</DpFieldValue>

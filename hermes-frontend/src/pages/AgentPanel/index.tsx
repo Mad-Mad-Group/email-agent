@@ -158,6 +158,12 @@ const SceneContainer = styled.div`
   height: calc(100vh - 80px);
   overflow: hidden;
   border-radius: 12px;
+
+  ${media.mobile} {
+    min-height: 0;
+    height: calc(100vh - 56px);
+    border-radius: 0;
+  }
 `;
 
 /* ── IsometricWorld fills entire background ── */
@@ -182,6 +188,13 @@ const TitleBar = styled.div`
   border: 1px dashed rgba(255, 255, 255, 0.2);
   border-radius: 6px;
   user-select: none;
+
+  ${media.mobile} {
+    top: 8px;
+    left: 8px;
+    padding: 5px 10px;
+    gap: 6px;
+  }
 
   ${media.mobile} {
     padding: 6px 10px;
@@ -601,8 +614,12 @@ const StatusPanel = styled.div`
   border: 1px solid rgba(255, 255, 255, 0.08);
 
   ${media.mobile} {
-    top: 48px;
-    padding: 6px 8px;
+    top: 40px;
+    left: 8px;
+    right: 8px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    padding: 4px 6px;
     gap: 2px;
   }
 `;
@@ -643,6 +660,7 @@ const StatusName = styled.span`
   font-weight: 600;
   color: #fff;
   min-width: 48px;
+  ${media.mobile} { font-size: 9px; min-width: 0; }
 `;
 
 const StatusBadge = styled.span<{ $running: boolean }>`
@@ -677,7 +695,10 @@ const ActivityPanel = styled.div<{ $open: boolean }>`
   transition: transform 280ms var(--ease-out), opacity 200ms var(--ease-out);
 
   ${media.mobile} {
-    width: 240px;
+    width: 100%;
+    top: 0;
+    height: 100%;
+    border-radius: 0;
   }
 `;
 
@@ -815,6 +836,7 @@ const NoticeBoardWrap = styled.button`
   z-index: 1;
   opacity: 1;
   width: 100px;
+  ${media.mobile} { width: 70px; right: 4%; }
   padding: 0;
   background: transparent;
   border: none;
@@ -940,6 +962,12 @@ const CalendarModal = styled.div`
   max-width: 1400px;
   background: ${({ theme }) => theme.colors.surface};
   border-radius: 14px;
+
+  ${media.mobile} {
+    width: 100vw;
+    height: 100vh;
+    border-radius: 0;
+  }
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45), 0 4px 12px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
@@ -1352,6 +1380,15 @@ const SearchDialogWrap = styled.div`
   transform: translateX(-50%);
   z-index: 20;
   animation: ${searchSlideUp} 0.2s var(--ease-out);
+
+  ${media.mobile} {
+    position: fixed;
+    bottom: auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: calc(100vw - 24px);
+  }
 `;
 
 const SearchDialogCard = styled.div`
@@ -1362,6 +1399,7 @@ const SearchDialogCard = styled.div`
   min-width: 320px;
   max-width: 380px;
   max-height: 60vh;
+  ${media.mobile} { min-width: 0; max-width: none; width: 100%; }
   overflow-y: auto;
   font-family: 'JetBrains Mono', monospace;
   image-rendering: pixelated;

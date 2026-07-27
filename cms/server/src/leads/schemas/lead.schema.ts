@@ -39,6 +39,7 @@ export class Lead {
   @Prop({ type: [String], default: undefined }) extra_emails?: string[];
   @Prop() phone?: string;
   @Prop({ type: [String], default: undefined }) extra_phones?: string[];
+  @Prop() whatsapp?: string;
   @Prop() website?: string;
   @Prop() address?: string;
   @Prop({ type: Object }) social_media?: Record<string, string>;

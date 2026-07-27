@@ -11,6 +11,7 @@ export interface Lead {
   extra_emails?: string[];
   phone?: string;
   extra_phones?: string[];
+  whatsapp?: string;
   website?: string;
   address?: string;
   social_media?: Record<string, string>;

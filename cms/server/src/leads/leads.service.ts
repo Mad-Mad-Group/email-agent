@@ -8,6 +8,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { randomBytes } from 'crypto';
 import { Lead, LeadDocument } from './schemas/lead.schema';
+import { EmailQueueItem, EmailQueueDocument } from '../email-queue/schemas/email-queue.schema';
+import { Analysis, AnalysisDocument } from '../ai/schemas/analysis.schema';
+import { CalendarEvent, CalendarEventDocument } from '../calendar/schemas/calendar-event.schema';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { ListLeadsQueryDto } from './dto/list-leads-query.dto';
@@ -24,6 +27,9 @@ import { SseEvent, SseService } from '../sse/sse.service';
 export class LeadsService {
   constructor(
     @InjectModel(Lead.name) private readonly leadModel: Model<LeadDocument>,
+    @InjectModel(EmailQueueItem.name) private readonly emailQueueModel: Model<EmailQueueDocument>,
+    @InjectModel(Analysis.name) private readonly analysisModel: Model<AnalysisDocument>,
+    @InjectModel(CalendarEvent.name) private readonly calendarEventModel: Model<CalendarEventDocument>,
     // @Optional() 令單元測試/無 SSE 時都唔會炸
     @Optional() private readonly sse?: SseService,
   ) {}
@@ -212,11 +218,23 @@ export class LeadsService {
     });
   }
 
-  /** soft delete（additive _deleted_at 標記，Python 會忽略）*/
+  /** hard delete lead + 清理所有關聯資料（email_queue / analyses / calendar_events） */
   async remove(id: string, userId?: string): Promise<void> {
     const lead = await this.findOne(id, userId);
-    lead._deleted_at = this.nowStamp();
-    await lead.save();
+    const leadId = lead.lead_id; // string key used by related collections
+
+    // 並行刪除關聯資料
+    await Promise.all([
+      lead.deleteOne(),
+      ...(leadId
+        ? [
+            this.emailQueueModel.deleteMany({ lead_id: leadId }).exec(),
+            this.analysisModel.deleteMany({ lead_id: leadId }).exec(),
+            this.calendarEventModel.deleteMany({ lead_id: leadId }).exec(),
+          ]
+        : []),
+    ]);
+
     this.sse?.emit(SseEvent.LEAD_UPDATE, { id: lead.id, action: 'deleted' });
   }
 
