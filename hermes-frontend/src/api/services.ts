@@ -94,6 +94,24 @@ export const notificationPrefsApi = {
     client.patch<NotificationPrefs>('/users/me/notification-prefs', prefs),
 };
 
+/* ── Email Settings (per-user SMTP/IMAP) ── */
+
+export interface EmailSettings {
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  smtpPass: string;
+  smtpFrom: string;
+  imapHost: string;
+  imapPort: number;
+}
+
+export const emailSettingsApi = {
+  get: () => client.get<EmailSettings>('/users/me/email-settings'),
+  update: (data: Partial<EmailSettings>) =>
+    client.patch<EmailSettings>('/users/me/email-settings', data),
+};
+
 /* ── Search ── */
 
 export interface SearchPayload {

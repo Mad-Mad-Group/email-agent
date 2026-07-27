@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { media } from '../../styles/media';
 import { glassSurface } from '../../styles/glassSurface';
-import { useSettings, useNotificationPrefs, useUpdateNotificationPrefs } from '../../api/hooks';
+import { useSettings, useNotificationPrefs, useUpdateNotificationPrefs, useEmailSettings, useUpdateEmailSettings } from '../../api/hooks';
 import { settingsApi } from '../../api/services';
 
 /* ══════════════════════════════════════
@@ -319,6 +319,21 @@ const ZapIcon = () => (
   </svg>
 );
 
+const MailIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+    <polyline points="22,6 12,13 2,6" />
+  </svg>
+);
+
+const SectionTitle = styled.div`
+  font-size: 0.875rem; font-weight: 600;
+  color: ${({ theme }) => theme.colors.accent};
+  padding-bottom: 4px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.border}40;
+  margin-top: 4px;
+`;
+
 const SlidersIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <line x1="4" y1="21" x2="4" y2="14" /><line x1="4" y1="10" x2="4" y2="3" />
@@ -476,7 +491,7 @@ function toDisplayEntries(data: unknown): [string, unknown][] {
 
 /* ── Tabs config ── */
 
-type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'other';
+type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'email' | 'other';
 
 /* ── Component ── */
 
@@ -561,6 +576,40 @@ const Settings: React.FC = () => {
   const entries = toDisplayEntries(data);
   const hasOther = entries.length > 0;
 
+  // Email SMTP/IMAP settings (per-user)
+  const { data: emailCfg, isLoading: emailLoading } = useEmailSettings();
+  const updateEmail = useUpdateEmailSettings();
+  const [emailForm, setEmailForm] = useState({
+    smtpHost: '', smtpPort: 587, smtpUser: '', smtpPass: '', smtpFrom: '',
+    imapHost: '', imapPort: 993,
+  });
+  const [emailFormInit, setEmailFormInit] = useState(false);
+  const [emailFeedback, setEmailFeedback] = useState<string | null>(null);
+  useEffect(() => {
+    if (emailCfg && !emailFormInit) {
+      setEmailForm({
+        smtpHost: emailCfg.smtpHost || '',
+        smtpPort: emailCfg.smtpPort ?? 587,
+        smtpUser: emailCfg.smtpUser || '',
+        smtpPass: emailCfg.smtpPass || '',
+        smtpFrom: emailCfg.smtpFrom || '',
+        imapHost: emailCfg.imapHost || '',
+        imapPort: emailCfg.imapPort ?? 993,
+      });
+      setEmailFormInit(true);
+    }
+  }, [emailCfg, emailFormInit]);
+
+  const handleSaveEmail = async () => {
+    try {
+      await updateEmail.mutateAsync(emailForm);
+      setEmailFeedback(t('settings.emailSaved'));
+    } catch {
+      setEmailFeedback(t('settings.emailSaveFailed'));
+    }
+    setTimeout(() => setEmailFeedback(null), 3000);
+  };
+
   // Notification preferences (per-user)
   const { data: notifPrefs, isLoading: notifLoading } = useNotificationPrefs();
   const updateNotif = useUpdateNotificationPrefs();
@@ -626,6 +675,7 @@ const Settings: React.FC = () => {
   tabs.push({ key: 'follow-up', label: t('settings.followUpSettings'), icon: <RepeatIcon /> });
   tabs.push({ key: 'auto-send', label: t('settings.autoSendRules'), icon: <ZapIcon /> });
   tabs.push({ key: 'email-scoring', label: t('settings.emailScoringRules'), icon: <StarIcon /> });
+  tabs.push({ key: 'email', label: t('settings.emailTab'), icon: <MailIcon /> });
   if (hasOther) {
     tabs.push({ key: 'other', label: t('settings.currentConfig'), icon: <SlidersIcon /> });
   }
@@ -1000,6 +1050,95 @@ const Settings: React.FC = () => {
                     {scoringBusy ? t('settings.updating') : t('settings.save')}
                   </SaveBtn>
                 </BtnRow>
+              </ContentBody>
+            </>
+          )}
+
+          {/* ── Email SMTP/IMAP ── */}
+          {tab === 'email' && (
+            <>
+              <ContentHeader><h2>{t('settings.emailSettingsTitle')}</h2></ContentHeader>
+              <ContentBody>
+                {emailLoading ? (
+                  <EmptyText>{t('settings.loadingSettings')}</EmptyText>
+                ) : (
+                  <>
+                    <DefaultBanner>{t('settings.emailSettingsDesc')}</DefaultBanner>
+
+                    <SectionTitle>{t('settings.smtpSection')}</SectionTitle>
+                    <FormGroup>
+                      <Label>{t('settings.smtpHost')}</Label>
+                      <Input
+                        value={emailForm.smtpHost}
+                        onChange={e => setEmailForm(f => ({ ...f, smtpHost: e.target.value }))}
+                        placeholder={t('settings.smtpHostPlaceholder')}
+                      />
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>{t('settings.smtpPort')}</Label>
+                      <Input
+                        type="number"
+                        value={emailForm.smtpPort}
+                        onChange={e => setEmailForm(f => ({ ...f, smtpPort: Number(e.target.value) }))}
+                      />
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>{t('settings.smtpUser')}</Label>
+                      <Input
+                        value={emailForm.smtpUser}
+                        onChange={e => setEmailForm(f => ({ ...f, smtpUser: e.target.value }))}
+                        placeholder={t('settings.smtpUserPlaceholder')}
+                      />
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>{t('settings.smtpPass')}</Label>
+                      <Input
+                        type="password"
+                        value={emailForm.smtpPass}
+                        onChange={e => setEmailForm(f => ({ ...f, smtpPass: e.target.value }))}
+                        placeholder={t('settings.smtpPassPlaceholder')}
+                      />
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>{t('settings.smtpFrom')}</Label>
+                      <Input
+                        value={emailForm.smtpFrom}
+                        onChange={e => setEmailForm(f => ({ ...f, smtpFrom: e.target.value }))}
+                        placeholder={t('settings.smtpFromPlaceholder')}
+                      />
+                    </FormGroup>
+
+                    <SectionTitle>{t('settings.imapSection')}</SectionTitle>
+                    <FormGroup>
+                      <Label>{t('settings.imapHost')}</Label>
+                      <Input
+                        value={emailForm.imapHost}
+                        onChange={e => setEmailForm(f => ({ ...f, imapHost: e.target.value }))}
+                        placeholder={t('settings.imapHostPlaceholder')}
+                      />
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>{t('settings.imapPort')}</Label>
+                      <Input
+                        type="number"
+                        value={emailForm.imapPort}
+                        onChange={e => setEmailForm(f => ({ ...f, imapPort: Number(e.target.value) }))}
+                      />
+                    </FormGroup>
+
+                    {emailFeedback && (
+                      <FormHint style={{ color: emailFeedback === t('settings.emailSaved') ? theme.strong.olive : theme.strong.mauve }}>
+                        {emailFeedback}
+                      </FormHint>
+                    )}
+
+                    <BtnRow>
+                      <SaveBtn onClick={handleSaveEmail} disabled={updateEmail.isPending}>
+                        {updateEmail.isPending ? t('settings.updating') : t('settings.save')}
+                      </SaveBtn>
+                    </BtnRow>
+                  </>
+                )}
               </ContentBody>
             </>
           )}

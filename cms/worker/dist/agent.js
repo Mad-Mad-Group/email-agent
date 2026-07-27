@@ -265,7 +265,7 @@ const SKILL = process.env.AGENT_SKILL || ''; // 空 = 任何 skill
 const SKILL_EXCLUDE = process.env.AGENT_SKILL_EXCLUDE || ''; // 逗號分隔，排除某啲 skill
 const POLL_MS = Number(process.env.POLL_MS || 2000);
 const MAX_IDLE = Number(process.env.WORKER_MAX_IDLE || 0); // 0 = 永遠
-const CONCURRENCY = Math.max(1, Number(process.env.CONCURRENCY || 1)); // 每個 worker 同時處理幾多個 task
+const CONCURRENCY = Math.max(1, Number(process.env.CONCURRENCY || 3)); // 每個 worker 同時處理幾多個 task
 let token = '';
 const log = (...a) => console.log(`[agent ${AGENT_ID}]`, ...a);
 const nowIso = () => new Date().toISOString();
@@ -1928,8 +1928,22 @@ async function main() {
         }
         idle = 0;
         inFlight++;
+        log(`✅ 接咗 task ${task.task_id} (${task.skill_id}) — 並行中: ${inFlight}/${CONCURRENCY}`);
+        // 通知前端：worker 已接手，附帶並行資訊
+        const campId = task.params?.campaign_id;
+        if (campId) {
+            sseNotify('hermes_log', {
+                runId: campId,
+                level: 'info',
+                stage: 'claim',
+                message: `${AGENT_ID} 接手處理（並行 ${inFlight}/${CONCURRENCY}）`,
+            });
+        }
         // 唔 await — fire and forget，令 loop 可以立即 claim 下一個
-        handleTask(task, db).finally(() => { inFlight--; });
+        handleTask(task, db).finally(() => {
+            inFlight--;
+            log(`🏁 完成 task ${task.task_id} — 並行中: ${inFlight}/${CONCURRENCY}`);
+        });
     }
     // 等所有進行中嘅 task 完成
     while (inFlight > 0) {

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { leadsApi, LeadListParams } from './leads';
 import { emailQueueApi, EmailListParams } from './emailQueue';
 import { notificationsApi } from './notifications';
-import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi, AgentSkillStats, verifiedEmailsApi, notificationPrefsApi, tokenUsageApi } from './services';
+import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi, AgentSkillStats, verifiedEmailsApi, notificationPrefsApi, tokenUsageApi, emailSettingsApi, EmailSettings } from './services';
 import { authApi } from './auth';
 
 /* ── Auth ── */
@@ -438,6 +438,25 @@ export const useUpdateNotificationPrefs = () => {
       notificationPrefsApi.update(prefs),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['notification-prefs'] });
+    },
+  });
+};
+
+/* ── Email Settings (SMTP/IMAP) ── */
+
+export const useEmailSettings = () =>
+  useQuery({
+    queryKey: ['email-settings'],
+    queryFn: () => emailSettingsApi.get().then(r => r.data),
+  });
+
+export const useUpdateEmailSettings = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<EmailSettings>) =>
+      emailSettingsApi.update(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['email-settings'] });
     },
   });
 };

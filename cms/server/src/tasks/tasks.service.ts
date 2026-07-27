@@ -93,6 +93,14 @@ export class TasksService {
     return this.model.findOne(filter).sort({ _created_at: -1 }).exec();
   }
 
+  /** 計算指定 skill 排隊中（pending + running）的 task 數量 */
+  async countActive(skillId: string): Promise<number> {
+    return this.model.countDocuments({
+      skill_id: skillId,
+      status: { $in: [TaskStatus.PENDING, TaskStatus.RUNNING] },
+    }).exec();
+  }
+
   /** Hermes agent 攞下一個 pending task（原子 claim）*/
   async claimNext(dto: ClaimTaskDto): Promise<TaskDocument | null> {
     const filter: FilterQuery<TaskDocument> = { status: TaskStatus.PENDING };

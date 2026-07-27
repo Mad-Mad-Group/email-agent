@@ -117,4 +117,52 @@ export class UsersService {
     await this.userModel.findByIdAndUpdate(id, { $set, updated_at: new Date() }).exec();
     return this.getNotificationPrefs(id);
   }
+
+  /* ── Email SMTP / IMAP settings ── */
+
+  private readonly emailFields = [
+    'smtpHost', 'smtpPort', 'smtpUser', 'smtpPass', 'smtpFrom',
+    'imapHost', 'imapPort',
+  ] as const;
+
+  async getEmailSettings(id: string) {
+    const user = await this.userModel
+      .findById(id)
+      .select(this.emailFields.join(' '))
+      .lean()
+      .exec();
+    if (!user) return null;
+    return {
+      smtpHost: (user as any).smtpHost ?? '',
+      smtpPort: (user as any).smtpPort ?? 587,
+      smtpUser: (user as any).smtpUser ?? '',
+      smtpPass: (user as any).smtpPass ? '****' : '',
+      smtpFrom: (user as any).smtpFrom ?? '',
+      imapHost: (user as any).imapHost ?? '',
+      imapPort: (user as any).imapPort ?? 993,
+    };
+  }
+
+  async updateEmailSettings(
+    id: string,
+    data: {
+      smtpHost?: string; smtpPort?: number; smtpUser?: string;
+      smtpPass?: string; smtpFrom?: string;
+      imapHost?: string; imapPort?: number;
+    },
+  ) {
+    const $set: Record<string, string | number> = {};
+    for (const key of this.emailFields) {
+      if ((data as any)[key] !== undefined) {
+        // skip password if it's the masked placeholder
+        if (key === 'smtpPass' && (data as any)[key] === '****') continue;
+        $set[key] = (data as any)[key];
+      }
+    }
+    if (Object.keys($set).length > 0) {
+      $set['updated_at' as any] = new Date() as any;
+      await this.userModel.findByIdAndUpdate(id, { $set }).exec();
+    }
+    return this.getEmailSettings(id);
+  }
 }

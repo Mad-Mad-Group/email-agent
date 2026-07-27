@@ -55,6 +55,29 @@ export class User {
 
   @Prop({ default: '' })
   companyWebsite: string;
+
+  /* ── Email SMTP/IMAP settings (per-user) ── */
+
+  @Prop({ default: '' })
+  smtpHost: string;
+
+  @Prop({ default: 587 })
+  smtpPort: number;
+
+  @Prop({ default: '' })
+  smtpUser: string;
+
+  @Prop({ default: '' })
+  smtpPass: string;
+
+  @Prop({ default: '' })
+  smtpFrom: string;
+
+  @Prop({ default: '' })
+  imapHost: string;
+
+  @Prop({ default: 993 })
+  imapPort: number;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

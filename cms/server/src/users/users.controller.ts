@@ -41,6 +41,27 @@ export class UserPrefsController {
   ) {
     return this.usersService.updateNotificationPrefs(user.userId, body);
   }
+
+  /* ── Email SMTP / IMAP settings ── */
+
+  @Get('email-settings')
+  async getEmailSettings(@CurrentUser() user: JwtUser) {
+    const u = await this.usersService.findById(user.userId);
+    if (!u) throw new NotFoundException('User not found');
+    return this.usersService.getEmailSettings(user.userId);
+  }
+
+  @Patch('email-settings')
+  async updateEmailSettings(
+    @CurrentUser() user: JwtUser,
+    @Body() body: {
+      smtpHost?: string; smtpPort?: number; smtpUser?: string;
+      smtpPass?: string; smtpFrom?: string;
+      imapHost?: string; imapPort?: number;
+    },
+  ) {
+    return this.usersService.updateEmailSettings(user.userId, body);
+  }
 }
 
 @ApiTags('Users 用戶管理')

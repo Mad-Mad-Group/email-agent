@@ -1994,6 +1994,7 @@ const AgentPanel: React.FC = () => {
   const [poolTab, setPoolTab] = useState<'leads' | 'verified'>('leads');
   const [showOnboarding, setShowOnboarding] = useState(() => !isOnboardingCompleted());
   const search = useSearch();
+  const [queueAhead, setQueueAhead] = useState(0);
   const isPipelineRunning = !!campaignId && !pipelineComplete;
 
   // Esc closes either popup
@@ -2041,6 +2042,7 @@ const AgentPanel: React.FC = () => {
       const data = event.data as { runId?: string; stage?: string; message?: string };
       if (data.runId !== campaignId) return;
       setPipelineLogs(prev => [...prev, { stage: data.stage || '', message: data.message || '' }]);
+      if (queueAhead > 0) setQueueAhead(0); // task 已開始處理，清除排隊提示
       if (data.message) {
         toast(data.message, { icon: '🔧', duration: 3000, id: `log-${data.stage}-${Date.now()}` });
       }
@@ -2125,10 +2127,15 @@ const AgentPanel: React.FC = () => {
     setResultCount(null);
     setShowSearch(false);
 
+    setQueueAhead(0);
     search.mutate(payload, {
       onSuccess: (response) => {
-        const data = response?.data as { campaign_id?: string } | undefined;
+        const data = response?.data as { campaign_id?: string; queue_ahead?: number } | undefined;
         if (data?.campaign_id) setCampaignId(data.campaign_id);
+        if (data?.queue_ahead && data.queue_ahead > 0) {
+          setQueueAhead(data.queue_ahead);
+          toast(t('agentPanel.searchQueued', { count: data.queue_ahead }), { icon: '⏳', duration: 5000 });
+        }
       },
     });
   }, [search, searchKeyword, searchLocation, searchCount, searchMode]);
@@ -2524,7 +2531,9 @@ const AgentPanel: React.FC = () => {
         {/* Pipeline running bubble */}
         {isPipelineRunning && (
           <FarmerBubble key="running">
-            {latestMessage || t('agentPanel.searchWorking', 'Working...')}
+            {queueAhead > 0 && !latestMessage
+              ? t('agentPanel.searchQueued', { count: queueAhead, defaultValue: `Queued — {{count}} search(es) ahead` })
+              : (latestMessage || t('agentPanel.searchWorking', 'Working...'))}
           </FarmerBubble>
         )}
         {/* Result bubble */}

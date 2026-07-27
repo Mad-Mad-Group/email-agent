@@ -99,15 +99,19 @@ export class HermesService implements OnModuleInit {
       user_id: userId,
     });
 
+    // 計算前方排隊中的 S1 task 數量（不含剛建立的自己）
+    const activeCount = await this.tasks.countActive(SKILL.SEARCH);
+    const queueAhead = Math.max(0, activeCount - 1);
+
     this.sse.emit(SseEvent.HERMES_LOG, {
       runId: campaignId,
       level: 'info',
       stage: 'search',
-      message: `Pipeline 開始：${dto.keyword} ${dto.location}`,
+      message: `Pipeline 開始：${dto.keyword} ${dto.location}${queueAhead > 0 ? `（前方 ${queueAhead} 個搜尋排隊中）` : ''}`,
       msgKey: 'search.logPipelineStart',
       msgParams: { keyword: dto.keyword, location: dto.location },
     });
-    return { campaign_id: campaignId, first_task: task.task_id };
+    return { campaign_id: campaignId, first_task: task.task_id, queue_ahead: queueAhead };
   }
 
   /** 核心：一個 task 完成 → 決定 + 派下一 stage */

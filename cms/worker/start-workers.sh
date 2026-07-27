@@ -78,7 +78,8 @@ for i in $(seq 1 "$NUM_WORKERS"); do
     LABEL="(通用)"
   fi
 
-  AGENT_ID="$WORKER_ID" AGENT_SKILL="$WORKER_SKILL" AGENT_SKILL_EXCLUDE="$WORKER_EXCLUDE" node --env-file=.env dist/agent.js > "$LOG_FILE" 2>&1 &
+  WORKER_CONCURRENCY="${CONCURRENCY:-3}"
+  AGENT_ID="$WORKER_ID" AGENT_SKILL="$WORKER_SKILL" AGENT_SKILL_EXCLUDE="$WORKER_EXCLUDE" CONCURRENCY="$WORKER_CONCURRENCY" node --env-file=.env dist/agent.js > "$LOG_FILE" 2>&1 &
   PID=$!
   echo "$PID" > "$PID_DIR/$WORKER_ID.pid"
   echo "  ✔ $WORKER_ID $LABEL started (PID $PID) → logs/$WORKER_ID.log"
