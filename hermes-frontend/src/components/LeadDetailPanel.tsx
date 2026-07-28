@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { Lead } from '../api/leads';
+import { useMe, useWhatsappTemplates } from '../api/hooks';
 import { media } from '../styles/media';
 import { glassSurface } from '../styles/glassSurface';
 
@@ -257,13 +258,94 @@ export const STATUS_PILL_COLORS: Record<string, { bg: string; fg: string }> = {
   rejected:  { bg: '#fce4ec', fg: '#c62828' },
 };
 export const DpStatusPill = styled.span<{ $status?: string }>`
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-size: 0.75rem;
   font-weight: 500;
   padding: 2px 8px;
+  /* ponytail: min-width keeps status pills visually aligned in /client-pool
+     rows regardless of i18n label length ("新" = 1 char vs "待处理" = 3 chars). */
+  min-width: 4em;
   border-radius: 99px;
   background: ${({ $status }) => STATUS_PILL_COLORS[$status || '']?.bg || '#f0f0f0'};
   color: ${({ $status }) => STATUS_PILL_COLORS[$status || '']?.fg || '#888'};
+`;
+
+/* ── WhatsApp send popup ── */
+
+const WaSendBtn = styled.button`
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 4px;
+  background: transparent;
+  color: #25D366;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 600;
+  margin-left: 6px;
+  transition: background 0.15s, border-color 0.15s;
+  &:hover { background: rgba(37, 211, 102, 0.1); border-color: #25D366; }
+`;
+
+const WaPopupOverlay = styled.div`
+  position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex; align-items: center; justify-content: center;
+`;
+
+const WaPopupCard = styled.div`
+  ${glassSurface};
+  width: 420px; max-width: calc(100vw - 32px);
+  border-radius: 12px; padding: 20px;
+  display: flex; flex-direction: column; gap: 14px;
+  max-height: 80vh; overflow-y: auto;
+`;
+
+const WaPopupTitle = styled.h3`
+  margin: 0; font-size: 1rem; font-weight: 700;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const WaSelect = styled.select`
+  padding: 8px 10px; border-radius: 6px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: ${({ theme }) => theme.colors.cardBg};
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 0.85rem; width: 100%;
+`;
+
+const WaPreview = styled.div`
+  padding: 12px; border-radius: 8px;
+  background: ${({ theme }) => theme.colors.cardBg};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  font-size: 0.85rem; white-space: pre-wrap; line-height: 1.5;
+  min-height: 60px;
+  color: ${({ theme }) => theme.colors.text};
+`;
+
+const WaBtnRow = styled.div`
+  display: flex; gap: 8px; justify-content: flex-end;
+`;
+
+const WaOpenBtn = styled.button`
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 8px 16px; border: none; border-radius: 6px;
+  background: #25D366; color: #fff; font-weight: 600;
+  font-size: 0.85rem; cursor: pointer;
+  &:hover { background: #1ebe5d; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+`;
+
+const WaCancelBtn = styled.button`
+  padding: 8px 16px; border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 6px; background: transparent;
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 0.85rem; cursor: pointer;
+  &:hover { background: ${({ theme }) => theme.colors.cardBg}; }
 `;
 
 const DpDeleteBtn = styled.button`
@@ -687,6 +769,27 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
   const styledTheme = useTheme() as any;
   const [aiTab, setAiTab] = useState<'scores' | 'collab'>('scores');
 
+  // WhatsApp send popup
+  const [waOpen, setWaOpen] = useState(false);
+  const [waSelectedId, setWaSelectedId] = useState('');
+  const { data: waTemplates } = useWhatsappTemplates();
+  const { data: meData } = useMe();
+  const me = meData as any;
+
+  const waResolve = useCallback((body: string) => {
+    return body
+      .replace(/\{\{company_name\}\}/gi, lead.company_name || '')
+      .replace(/\{\{contact_name\}\}/gi, (lead as any).contact_name || '')
+      .replace(/\{\{my_company\}\}/gi, me?.companyName || '')
+      .replace(/\{\{my_name\}\}/gi, me?.name || '')
+      .replace(/\{\{phone\}\}/gi, lead.phone || lead.whatsapp || '')
+      .replace(/\{\{website\}\}/gi, lead.website || '');
+  }, [lead, me]);
+
+  const waSelected = (waTemplates as any[])?.find((t: any) => t.id === waSelectedId);
+  const waPreviewText = waSelected ? waResolve(waSelected.body) : '';
+  const waPhone = (lead.whatsapp || lead.phone || '').replace(/\D/g, '');
+
   // Drag & resize state
   const dpRef = useRef<HTMLDivElement>(null);
   const [dpPos, setDpPos] = useState({ x: 0, y: 0 });
@@ -780,7 +883,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
     return new Date(iso).toLocaleString(dateLocale, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
-  return createPortal(
+  const mainPortal = createPortal(
     <DpOverlay $closing={closing} onClick={onClose}>
       <DpPanel ref={dpRef} $closing={closing} onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ left: dpPos.x, top: dpPos.y, width: dpSize.w, height: dpSize.h }}>
         {/* Resize handles — hidden on mobile (fullscreen) */}
@@ -837,7 +940,15 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
             {lead.whatsapp && (
             <DpField>
               <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M8 1C4.13 1 1 4.13 1 8c0 1.23.32 2.39.88 3.4L1 15l3.7-.87A6.96 6.96 0 008 15c3.87 0 7-3.13 7-7s-3.13-7-7-7zm3.44 9.76c-.15.42-.87.8-1.2.85-.3.05-.68.07-1.1-.07a10 10 0 01-1.58-.58c-1.78-.84-2.94-2.65-3.03-2.77-.09-.12-.72-.96-.72-1.83s.45-1.3.62-1.47c.16-.18.35-.22.47-.22h.34c.11 0 .26-.04.4.31.15.35.52 1.27.56 1.36.05.09.08.19.02.31-.37.73-.77.7-.57 1.05.74 1.27 1.47 1.7 2.58 2.22.18.09.28.07.39-.05s.45-.52.57-.7c.12-.18.24-.15.4-.09.17.06 1.05.5 1.23.59.18.09.3.14.34.21.05.08.05.46-.1.88z" fill="currentColor"/></svg></DpFieldIcon>WhatsApp</DpFieldLabel>
-              <DpFieldValue><a href={`https://wa.me/${lead.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">{lead.whatsapp}</a></DpFieldValue>
+              <DpFieldValue>
+                <a href={`https://wa.me/${lead.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">{lead.whatsapp}</a>
+                {(waTemplates as any[])?.length > 0 && (
+                  <WaSendBtn onClick={() => { setWaOpen(true); setWaSelectedId((waTemplates as any[])[0]?.id || ''); }}>
+                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M15 1L7.5 8.5M15 1l-4.5 14-3-6.5L1 5.5 15 1z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    {t('settings.whatsappOpenChat')}
+                  </WaSendBtn>
+                )}
+              </DpFieldValue>
             </DpField>
             )}
             <DpField>
@@ -1099,6 +1210,57 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
     </DpOverlay>,
     document.body
   );
+
+  const waPopup = waOpen ? createPortal(
+    <WaPopupOverlay onClick={() => setWaOpen(false)}>
+      <WaPopupCard onClick={e => e.stopPropagation()}>
+        <WaPopupTitle>{t('settings.whatsappSendTitle')}</WaPopupTitle>
+
+        {!waPhone ? (
+          <WaPreview style={{ opacity: 0.6 }}>{t('settings.whatsappNoPhone')}</WaPreview>
+        ) : (waTemplates as any[])?.length === 0 ? (
+          <WaPreview style={{ opacity: 0.6 }}>{t('settings.whatsappNoTemplates')}</WaPreview>
+        ) : (
+          <>
+            <div>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.6, display: 'block', marginBottom: 4 }}>
+                {t('settings.whatsappSelectTemplate')}
+              </label>
+              <WaSelect value={waSelectedId} onChange={e => setWaSelectedId(e.target.value)}>
+                {(waTemplates as any[])?.map((tpl: any) => (
+                  <option key={tpl.id} value={tpl.id}>{tpl.name || '(unnamed)'}</option>
+                ))}
+              </WaSelect>
+            </div>
+
+            <div>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.6, display: 'block', marginBottom: 4 }}>
+                {t('settings.whatsappPreview')}
+              </label>
+              <WaPreview>{waPreviewText || '—'}</WaPreview>
+            </div>
+          </>
+        )}
+
+        <WaBtnRow>
+          <WaCancelBtn onClick={() => setWaOpen(false)}>{t('common.cancel')}</WaCancelBtn>
+          <WaOpenBtn
+            disabled={!waPhone || !waPreviewText}
+            onClick={() => {
+              window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(waPreviewText)}`, '_blank');
+              setWaOpen(false);
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1C4.13 1 1 4.13 1 8c0 1.23.32 2.39.88 3.4L1 15l3.7-.87A6.96 6.96 0 008 15c3.87 0 7-3.13 7-7s-3.13-7-7-7z" stroke="#fff" strokeWidth="1.2"/></svg>
+            {t('settings.whatsappOpenChat')}
+          </WaOpenBtn>
+        </WaBtnRow>
+      </WaPopupCard>
+    </WaPopupOverlay>,
+    document.body
+  ) : null;
+
+  return <>{mainPortal}{waPopup}</>
 };
 
 export default LeadDetailPanel;
