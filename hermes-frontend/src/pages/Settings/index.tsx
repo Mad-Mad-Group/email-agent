@@ -4,9 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { media } from '../../styles/media';
 import { glassSurface } from '../../styles/glassSurface';
-import { useSettings, useNotificationPrefs, useUpdateNotificationPrefs, useEmailSettings, useUpdateEmailSettings, useWhatsappTemplates, useUpdateWhatsappTemplates } from '../../api/hooks';
+import { useSettings, useNotificationPrefs, useUpdateNotificationPrefs, useWhatsappTemplates, useUpdateWhatsappTemplates } from '../../api/hooks';
 import { settingsApi } from '../../api/services';
-import { EmailConnectionSection } from './EmailConnectionSection';
 import { useAuth } from '../../contexts/AuthContext';
 
 /* ══════════════════════════════════════
@@ -500,7 +499,7 @@ function toDisplayEntries(data: unknown): [string, unknown][] {
 
 /* ── Tabs config ── */
 
-type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'email' | 'whatsapp' | 'other';
+type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'whatsapp' | 'other';
 
 /* ── Component ── */
 
@@ -508,7 +507,12 @@ const Settings: React.FC = () => {
   const { t } = useTranslation();
   const theme = useTheme();
   const { user } = useAuth();
+  // isAdmin reserved for the future when we add an admin-only settings page.
+  // Email setup (per-user OAuth + .env shared fallback) is now handled
+  // outside Settings — see EmailConnectionSection.tsx re-exports.
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  // ^ referenced by future admin gate; suppress unused-var lint by reading once.
+  void isAdmin;
   const queryClient = useQueryClient();
   const { data, isLoading } = useSettings();
   const [busy, setBusy] = useState(false);
@@ -587,39 +591,13 @@ const Settings: React.FC = () => {
   const entries = toDisplayEntries(data);
   const hasOther = entries.length > 0;
 
-  // Email SMTP/IMAP settings (per-user)
-  const { data: emailCfg, isLoading: emailLoading } = useEmailSettings();
-  const updateEmail = useUpdateEmailSettings();
-  const [emailForm, setEmailForm] = useState({
-    smtpHost: '', smtpPort: 587, smtpUser: '', smtpPass: '', smtpFrom: '',
-    imapHost: '', imapPort: 993,
-  });
-  const [emailFormInit, setEmailFormInit] = useState(false);
-  const [emailFeedback, setEmailFeedback] = useState<string | null>(null);
-  useEffect(() => {
-    if (emailCfg && !emailFormInit) {
-      setEmailForm({
-        smtpHost: emailCfg.smtpHost || '',
-        smtpPort: emailCfg.smtpPort ?? 587,
-        smtpUser: emailCfg.smtpUser || '',
-        smtpPass: emailCfg.smtpPass || '',
-        smtpFrom: emailCfg.smtpFrom || '',
-        imapHost: emailCfg.imapHost || '',
-        imapPort: emailCfg.imapPort ?? 993,
-      });
-      setEmailFormInit(true);
-    }
-  }, [emailCfg, emailFormInit]);
-
-  const handleSaveEmail = async () => {
-    try {
-      await updateEmail.mutateAsync(emailForm);
-      setEmailFeedback(t('settings.emailSaved'));
-    } catch {
-      setEmailFeedback(t('settings.emailSaveFailed'));
-    }
-    setTimeout(() => setEmailFeedback(null), 3000);
-  };
+  // Email SMTP/IMAP settings: removed from Settings page in favour of
+  // (a) per-user Gmail OAuth via <EmailConnectionSection/> (re-exported for use
+  //     in any prompt / chip / modal that surfaces the connect flow), and
+  // (b) the .env shared SMTP fallback that backend reads at boot. Admins
+  // who need to change SMTP/IMAP for system-wide emails edit .env and
+  // restart the backend — no UI surface needed for a once-per-deploy
+  // config.
 
   // WhatsApp templates (per-user)
   const { data: waTemplates, isLoading: waLoading } = useWhatsappTemplates();
@@ -718,7 +696,6 @@ const Settings: React.FC = () => {
   tabs.push({ key: 'follow-up', label: t('settings.followUpSettings'), icon: <RepeatIcon /> });
   tabs.push({ key: 'auto-send', label: t('settings.autoSendRules'), icon: <ZapIcon /> });
   tabs.push({ key: 'email-scoring', label: t('settings.emailScoringRules'), icon: <StarIcon /> });
-  tabs.push({ key: 'email', label: t('settings.emailTab'), icon: <MailIcon /> });
   tabs.push({ key: 'whatsapp', label: t('settings.whatsappTab'), icon: <WhatsAppIcon /> });
   if (hasOther) {
     tabs.push({ key: 'other', label: t('settings.currentConfig'), icon: <SlidersIcon /> });
@@ -1098,103 +1075,11 @@ const Settings: React.FC = () => {
             </>
           )}
 
-          {/* ── Email ── Unified tab: per-user connection + (admin only) org-wide SMTP defaults ── */}
-          {tab === 'email' && (
-            <>
-              <ContentHeader><h2>{t('settings.emailSettingsTitle')}</h2></ContentHeader>
-              <ContentBody>
-                <SectionTitle>{t('settings.emailYourConnectionTitle')}</SectionTitle>
-                <DefaultBanner>{t('settings.emailYourConnectionDesc')}</DefaultBanner>
-                <EmailConnectionSection />
-
-                {isAdmin && (
-                  <>
-                    <div style={{ height: 24 }} />
-                    <SectionTitle>{t('settings.emailAdminSectionTitle')}</SectionTitle>
-                    <DefaultBanner>{t('settings.emailAdminSectionDesc')}</DefaultBanner>
-                    {emailLoading ? (
-                      <EmptyText>{t('settings.loadingSettings')}</EmptyText>
-                    ) : (
-                      <>
-                        <SectionTitle>{t('settings.smtpSection')}</SectionTitle>
-                        <FormGroup>
-                          <Label>{t('settings.smtpHost')}</Label>
-                          <Input
-                            value={emailForm.smtpHost}
-                            onChange={e => setEmailForm(f => ({ ...f, smtpHost: e.target.value }))}
-                            placeholder={t('settings.smtpHostPlaceholder')}
-                          />
-                        </FormGroup>
-                        <FormGroup>
-                          <Label>{t('settings.smtpPort')}</Label>
-                          <Input
-                            type="number"
-                            value={emailForm.smtpPort}
-                            onChange={e => setEmailForm(f => ({ ...f, smtpPort: Number(e.target.value) }))}
-                          />
-                        </FormGroup>
-                        <FormGroup>
-                          <Label>{t('settings.smtpUser')}</Label>
-                          <Input
-                            value={emailForm.smtpUser}
-                            onChange={e => setEmailForm(f => ({ ...f, smtpUser: e.target.value }))}
-                            placeholder={t('settings.smtpUserPlaceholder')}
-                          />
-                        </FormGroup>
-                        <FormGroup>
-                          <Label>{t('settings.smtpPass')}</Label>
-                          <Input
-                            type="password"
-                            value={emailForm.smtpPass}
-                            onChange={e => setEmailForm(f => ({ ...f, smtpPass: e.target.value }))}
-                            placeholder={t('settings.smtpPassPlaceholder')}
-                          />
-                        </FormGroup>
-                        <FormGroup>
-                          <Label>{t('settings.smtpFrom')}</Label>
-                          <Input
-                            value={emailForm.smtpFrom}
-                            onChange={e => setEmailForm(f => ({ ...f, smtpFrom: e.target.value }))}
-                            placeholder={t('settings.smtpFromPlaceholder')}
-                          />
-                        </FormGroup>
-
-                        <SectionTitle>{t('settings.imapSection')}</SectionTitle>
-                        <FormGroup>
-                          <Label>{t('settings.imapHost')}</Label>
-                          <Input
-                            value={emailForm.imapHost}
-                            onChange={e => setEmailForm(f => ({ ...f, imapHost: e.target.value }))}
-                            placeholder={t('settings.imapHostPlaceholder')}
-                          />
-                        </FormGroup>
-                        <FormGroup>
-                          <Label>{t('settings.imapPort')}</Label>
-                          <Input
-                            type="number"
-                            value={emailForm.imapPort}
-                            onChange={e => setEmailForm(f => ({ ...f, imapPort: Number(e.target.value) }))}
-                          />
-                        </FormGroup>
-
-                        {emailFeedback && (
-                          <FormHint style={{ color: emailFeedback === t('settings.emailSaved') ? theme.strong.olive : theme.strong.mauve }}>
-                            {emailFeedback}
-                          </FormHint>
-                        )}
-
-                        <BtnRow>
-                          <SaveBtn onClick={handleSaveEmail} disabled={updateEmail.isPending}>
-                            {updateEmail.isPending ? t('settings.updating') : t('settings.save')}
-                          </SaveBtn>
-                        </BtnRow>
-                      </>
-                    )}
-                  </>
-                )}
-              </ContentBody>
-            </>
-          )}
+          {/* ── Email: see /docs/uat-deployment-runbook.md. Per-user Gmail OAuth
+              is handled by <EmailConnectionSection/> (re-exported for use in
+              prompts/chips/modals — see EmailConnectionSection.tsx). The
+              shared .env SMTP fallback is configured at backend boot,
+              not in the UI. ── */}
 
           {/* ── WhatsApp Templates ── */}
           {tab === 'whatsapp' && (
