@@ -7,6 +7,7 @@ import { glassSurface } from '../../styles/glassSurface';
 import { useSettings, useNotificationPrefs, useUpdateNotificationPrefs, useWhatsappTemplates, useUpdateWhatsappTemplates } from '../../api/hooks';
 import { settingsApi } from '../../api/services';
 import { useAuth } from '../../contexts/AuthContext';
+import { EmailConnectionSection } from './EmailConnectionSection';
 
 /* ══════════════════════════════════════
    CMS Settings — LUNO-style UI
@@ -499,7 +500,7 @@ function toDisplayEntries(data: unknown): [string, unknown][] {
 
 /* ── Tabs config ── */
 
-type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'whatsapp' | 'other';
+type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'email' | 'whatsapp' | 'other';
 
 /* ── Component ── */
 
@@ -696,6 +697,7 @@ const Settings: React.FC = () => {
   tabs.push({ key: 'follow-up', label: t('settings.followUpSettings'), icon: <RepeatIcon /> });
   tabs.push({ key: 'auto-send', label: t('settings.autoSendRules'), icon: <ZapIcon /> });
   tabs.push({ key: 'email-scoring', label: t('settings.emailScoringRules'), icon: <StarIcon /> });
+  tabs.push({ key: 'email', label: t('settings.emailTab'), icon: <MailIcon /> });
   tabs.push({ key: 'whatsapp', label: t('settings.whatsappTab'), icon: <WhatsAppIcon /> });
   if (hasOther) {
     tabs.push({ key: 'other', label: t('settings.currentConfig'), icon: <SlidersIcon /> });
@@ -1075,11 +1077,15 @@ const Settings: React.FC = () => {
             </>
           )}
 
-          {/* ── Email: see /docs/uat-deployment-runbook.md. Per-user Gmail OAuth
-              is handled by <EmailConnectionSection/> (re-exported for use in
-              prompts/chips/modals — see EmailConnectionSection.tsx). The
-              shared .env SMTP fallback is configured at backend boot,
-              not in the UI. ── */}
+          {/* ── Email (per-user Gmail OAuth connection) ── */}
+          {tab === 'email' && (
+            <>
+              <ContentHeader><h2>{t('settings.emailSettingsTitle')}</h2></ContentHeader>
+              <ContentBody>
+                <EmailConnectionSection />
+              </ContentBody>
+            </>
+          )}
 
           {/* ── WhatsApp Templates ── */}
           {tab === 'whatsapp' && (
