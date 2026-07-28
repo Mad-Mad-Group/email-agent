@@ -13,45 +13,37 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { ConfigService } from '@nestjs/config';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { StartDto } from './dto/start.dto';
 import { CallbackDto } from './dto/callback.dto';
-import { ConnectPasswordDto } from './dto/connect-password.dto';
 import { TestEmailDto } from './dto/test-email.dto';
 import { SUPPORTED_PROVIDERS, SupportedProvider } from './schemas/user-credential.schema';
 import { UserCredentialsService } from './user-credentials.service';
 
 /**
- * Unified email connection endpoints.
+ * Unified per-user email-connection endpoints (simplified).
  *
- * Routes are parameterised by provider so the OAuth callback URL is
- * distinct per provider (Google requires the redirect_uri to match a
- * pre-registered value exactly).
+ *   POST  /auth/email/:provider/start          (auth required)
+ *   GET   /auth/email/:provider/callback       (no auth; called by provider redirect)
+ *   GET   /auth/email/status                   (auth required)
+ *   POST  /auth/email/test-email               (auth required)
+ *   POST  /auth/email/revoke                   (auth required)
+ *   GET   /auth/email/providers                (auth required; returns provider catalogue)
  *
- *   POST  /api/auth/email/:provider/start        (auth required)
- *   GET   /api/auth/email/:provider/callback     (no auth, public; called by provider redirect)
- *   POST  /api/auth/email/connect-password       (auth required; app-password fallback path)
- *   GET   /api/auth/email/status                 (auth required)
- *   POST  /api/auth/email/test-email             (auth required)
- *   POST  /api/auth/email/revoke                 (auth required)
- *   GET   /api/auth/email/providers              (auth required; returns provider catalogue)
+ * Only OAuth2 is supported — no username / app-password / SMTP password
+ * ever enters the system. SMTP/IMAP hosts are constants derived per
+ * provider in the service; the user only clicks "Connect" on the
+ * frontend, consents with Google/Microsoft, and is linked.
  */
 @ApiTags('User Email Connection')
 @ApiBearerAuth('jwt')
 @Controller('auth/email')
 export class UserCredentialsController {
-  constructor(
-    private readonly svc: UserCredentialsService,
-    private readonly cfg: ConfigService,
-  ) {}
+  constructor(private readonly svc: UserCredentialsService) {}
 
   @Post(':provider/start')
-  @ApiOperation({
-    summary: '產生 OAuth 同意畫面 URL (Gmail / Outlook)',
-    description: 'Provider path segment. Currently supports gmail + outlook.',
-  })
+  @ApiOperation({ summary: '產生 OAuth 同意畫面 URL (Gmail / Outlook)' })
   @ApiResponse({ status: 200, description: 'consent URL + state nonce' })
   async start(
     @Param('provider') provider: string,
@@ -64,9 +56,7 @@ export class UserCredentialsController {
   }
 
   @Get(':provider/callback')
-  @ApiOperation({
-    summary: 'Provider OAuth callback (called by Google/Microsoft redirect)',
-  })
+  @ApiOperation({ summary: 'Provider OAuth callback' })
   @ApiResponse({ status: 200, description: 'Connected; returns user email + redirect path' })
   async callback(@Param('provider') provider: string, @Query() q: CallbackDto) {
     if (q.error) throw new Error(`provider returned error: ${q.error}`);
@@ -75,27 +65,14 @@ export class UserCredentialsController {
     return { status: 'success', data: result };
   }
 
-  @Post('connect-password')
-  @ApiOperation({
-    summary: '非 OAuth 提供者連接 — 用戶 name + app password',
-    description: 'Used for Yahoo, Office365 (basic auth), or custom SMTP server.',
-  })
-  @ApiResponse({ status: 200, description: 'credential saved' })
-  async connectPassword(@CurrentUser() u: any, @Body() dto: ConnectPasswordDto) {
-    const result = await this.svc.connectPassword(u.user_id, dto);
-    return { status: 'success', data: result };
-  }
-
   @Get('status')
-  @ApiOperation({ summary: '查當前 user Email 連接狀態 (provider / auth_mode / email / smtp / imap / scopes)' })
+  @ApiOperation({ summary: '查當前 user Email 連接狀態' })
   async status(@CurrentUser() u: any) {
     return { status: 'success', data: await this.svc.getStatus(u.user_id) };
   }
 
   @Post('test-email')
-  @ApiOperation({
-    summary: '以當前 user 身份寄 1 封 test email (用嚟試 SMTP 真 work)',
-  })
+  @ApiOperation({ summary: '以當前 user 身份寄 1 封 test email' })
   async testEmail(@CurrentUser() u: any, @Body() dto: TestEmailDto) {
     const info = await this.svc.sendMailAsUser(u.user_id, {
       to: dto.to,
@@ -106,19 +83,18 @@ export class UserCredentialsController {
   }
 
   @Post('revoke')
-  @ApiOperation({ summary: '主動斷開 Email 連接 (clear encrypted credential + mark revoked)' })
+  @ApiOperation({ summary: '主動斷開 Email 連接' })
   async revoke(@CurrentUser() u: any) {
     await this.svc.revoke(u.user_id);
     return { status: 'success', data: { revoked: true } };
   }
 
   @Get('providers')
-  @ApiOperation({ summary: '列出支援嘅 provider (含 OAuth 同 default SMTP/IMAP)' })
+  @ApiOperation({ summary: '列出支援嘅 provider (含 enabled 與否)' })
   providers() {
     return { status: 'success', data: this.svc.listProviders() };
   }
 
-  /** Shared provider assertion. */
   private assertProvider(p: string): SupportedProvider {
     if (!(SUPPORTED_PROVIDERS as readonly string[]).includes(p)) {
       throw new Error(`unsupported provider: ${p}; supported: ${SUPPORTED_PROVIDERS.join(', ')}`);
