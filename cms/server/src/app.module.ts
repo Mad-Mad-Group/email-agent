@@ -8,6 +8,7 @@ import { RolesModule } from './roles/roles.module';
 import { SettingsModule } from './settings/settings.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { EmailModule } from './email/email.module';
+import { UserCredentialsModule } from './user-credentials/user-credentials.module';
 import { SseModule } from './sse/sse.module';
 import { LeadsModule } from './leads/leads.module';
 import { TasksModule } from './tasks/tasks.module';
@@ -41,6 +42,7 @@ import { AppController } from './app.controller';
     SettingsModule,
     UploadsModule,
     EmailModule,
+    UserCredentialsModule,
 
     // Business modules (Person C)
     SseModule,
