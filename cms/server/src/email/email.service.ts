@@ -87,6 +87,6 @@ export class EmailService implements OnModuleInit {
    * Per-user IMAP client。doReplyCheck 用呢個嚟 scan user 自己個 inbox。
    */
   async getImapClientForUser(user_id: string) {
-    return this.userCredentials.getImapClient(user_id);
+    return this.userCredentials.imapClientForUser(user_id);
   }
 }
