@@ -13,6 +13,7 @@ import { emailQueueApi, EmailItem } from '../../api/emailQueue';
 import { tasksApi, TaskItem } from '../../api/services';
 import { useNotifications, useUnreadCount, useMarkNotificationRead, useMarkAllNotificationsRead, useDismissNotification, useDismissAllNotifications } from '../../api/hooks';
 import { NotificationItem } from '../../api/notifications';
+import DiceBearAvatar from '../DiceBearAvatar';
 
 interface TopbarProps {
   title: string;
@@ -579,19 +580,8 @@ const AvatarWrap = styled.div`
   &:hover > div[data-avatar-dropdown] { opacity: 1; pointer-events: auto; transform: translateY(0); }
 `;
 
-const UserAvatar = styled.div`
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: ${({ theme }) => theme.colors.accent};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: ${({ theme }) => theme.colors.textInverted};
-  font-size: 0.75rem;
-  font-weight: 700;
-  cursor: pointer;
-`;
+// ponytail: <UserAvatar/> styled-component (initial-letter blue chip) removed.
+// <DiceBearAvatar/> now owns border-radius, size, and bg fallback for the chip.
 
 const AvatarDropdown = styled.div`
   position: absolute;
@@ -742,16 +732,6 @@ const DropdownLogoutIcon = () => (
   </svg>
 );
 
-const getInitials = (name?: string, email?: string) => {
-  if (name) {
-    const parts = name.trim().split(/\s+/);
-    return parts.length >= 2
-      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-      : name.slice(0, 2).toUpperCase();
-  }
-  return email ? email.slice(0, 2).toUpperCase() : '??';
-};
-
 export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, onToggleSidebar, sidebarCollapsed }) => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -770,7 +750,8 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const user = (me as any)?.data ?? me;
-  const initials = getInitials(user?.name, user?.email);
+  // ponytail: seed on stable email so the same user always renders the same
+  // face. <DiceBearAvatar/> owns its own border-radius + bg fallback.
 
   const handleLogout = () => {
     setShowLogoutDialog(false);
@@ -1139,7 +1120,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
           </NotifList>
         </NotifPanel>
         <AvatarWrap>
-          <UserAvatar>{initials}</UserAvatar>
+          <DiceBearAvatar seed={user?.email ?? user?.name ?? 'me'} size={30} radius={15} />
           <AvatarDropdown data-avatar-dropdown>
             <DropdownItem onClick={() => navigate('/cms-user-info')}>
               <DropdownProfileIcon /> {t('nav.userInfo')}
