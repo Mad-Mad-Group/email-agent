@@ -625,11 +625,8 @@ const DropdownItem = styled.button<{ $danger?: boolean }>`
   svg { flex-shrink: 0; }
 `;
 
-const DropdownDivider = styled.hr`
-  border: none;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
-  margin: 4px 0;
-`;
+// ponytail: <DropdownDivider/> removed — only the two deleted dropdown items
+// ever used it, so it became dead code the moment those items left.
 
 /* ── Logout dialog (moved from Sidebar) ── */
 const LogoutOverlay = styled.div`
@@ -713,18 +710,6 @@ const NotifBellIcon = () => (
 /* ── Component ── */
 
 /* ── Dropdown menu icons ── */
-
-const DropdownProfileIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-  </svg>
-);
-
-const DropdownSettingsIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-  </svg>
-);
 
 const DropdownLogoutIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
@@ -1122,13 +1107,6 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
         <AvatarWrap>
           <DiceBearAvatar seed={user?.email ?? user?.name ?? 'me'} size={30} radius={15} />
           <AvatarDropdown data-avatar-dropdown>
-            <DropdownItem onClick={() => navigate('/cms-user-info')}>
-              <DropdownProfileIcon /> {t('nav.userInfo')}
-            </DropdownItem>
-            <DropdownItem onClick={() => navigate('/cms-settings')}>
-              <DropdownSettingsIcon /> {t('nav.settings')}
-            </DropdownItem>
-            <DropdownDivider />
             <DropdownItem $danger onClick={() => setShowLogoutDialog(true)}>
               <DropdownLogoutIcon /> {t('nav.signOut')}
             </DropdownItem>
