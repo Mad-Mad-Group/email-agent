@@ -92,12 +92,61 @@ async function bootstrap() {
   // Swagger API 文件
   const config = new DocumentBuilder()
     .setTitle('Lead Scraper CMS API')
-    .setDescription('搵客系統 CMS 後端 API 文件')
-    .setVersion('1')
-    .addBearerAuth()
+    .setDescription(
+      '搵客系統 CMS 後端 API 文件。\n\n' +
+      '## UAT 環境\n' +
+      '- **Dev (LAN):** `http://192.168.1.111:4000/api`\n' +
+      '- **UAT (public):** (Phase 3 設定後填入)\n\n' +
+      '## 認證\n' +
+      '所有受保護 endpoint 需要 `Authorization: Bearer <jwt>` header。\n' +
+      '點擊右上角 **Authorize** 貼上 login 返嘅 token。\n\n' +
+      '## 模組\n' +
+      '所有 controller 已用 `@ApiTags` 標記,Swagger UI 左側可點擊瀏覽。',
+    )
+    .setVersion('1.0.0')
+    .setContact('MAD MAD Group', 'https://github.com/Mad-Mad-Group/email-agent', 'dev@madmad.com')
+    .setLicense('Proprietary', 'https://github.com/Mad-Mad-Group/email-agent/blob/dev/LICENSE')
+    .addBearerAuth(
+      {
+        type: 'http',
+        scheme: 'bearer',
+        bearerFormat: 'JWT',
+        description: '從 POST /api/auth/login 取得 JWT,貼上 token (不含 "Bearer " 前綴)',
+      },
+      'jwt',
+    )
+    .addServer(process.env.SWAGGER_SERVER_URL || `http://localhost:${process.env.PORT || 4000}`, 'Current instance')
+    .addServer('http://192.168.1.111:4000', 'Dev box (LAN)')
+    .addServer('https://uat.clientradar-ai.com', 'UAT (Phase 3)')
+    .addServer('https://api.clientradar-ai.com', 'Production')
+    .addTag('Health', '健康檢查')
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  SwaggerModule.setup('api/docs', app, document, {
+    swaggerOptions: {
+      persistAuthorization: true,  // 保留已授權 token,refresh 唔洗重新 login
+      tagsSorter: 'alpha',
+      operationsSorter: 'alpha',
+      docExpansion: 'false',
+      filter: true,
+      tryItOutEnabled: true,
+    },
+    customSiteTitle: 'ClientRadar AI API Docs',
+    customfavIcon: '/favicon.ico',
+  });
+
+  // 同步 export OpenAPI JSON,方便離線共享/CI/contract test
+  if (process.env.SWAGGER_EXPORT_JSON === 'true') {
+    const fs = require('fs');
+    const outDir = process.env.SWAGGER_EXPORT_PATH || './swagger-spec';
+    fs.mkdirSync(outDir, { recursive: true });
+    fs.writeFileSync(
+      `${outDir}/openapi.json`,
+      JSON.stringify(document, null, 2),
+      'utf-8',
+    );
+    console.log(`[CMS] Swagger spec exported to ${outDir}/openapi.json`);
+  }
 
   const port = process.env.PORT || 4000;
   await app.listen(port);

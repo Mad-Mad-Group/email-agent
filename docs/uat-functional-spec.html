@@ -1,0 +1,1098 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ClientRadar AI — UAT 功能清單與系統流程圖</title>
+<style>
+:root {
+  --bg: #0f1116;
+  --panel: #161a23;
+  --panel-2: #1d2230;
+  --border: #2a3142;
+  --text: #e6e8ee;
+  --muted: #98a2b3;
+  --accent: #6bd4f0;
+  --accent-2: #a78bfa;
+  --good: #57e08a;
+  --warn: #f7b955;
+  --radius: 8px;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang TC", "Microsoft JhengHei", sans-serif; line-height: 1.65; }
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+main { max-width: 980px; margin: 0 auto; padding: 28px 32px 96px; }
+header.banner {
+  background: linear-gradient(135deg, #1d2230 0%, #161a23 100%);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 28px;
+  margin-bottom: 28px;
+}
+header.banner .meta { color: var(--muted); font-size: 0.85rem; margin-bottom: 8px; }
+header.banner h1 { margin: 0 0 8px; font-size: 1.6rem; color: var(--accent); }
+header.banner p { margin: 4px 0; color: var(--muted); font-size: 0.95rem; }
+nav.toc { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 22px; margin-bottom: 32px; }
+nav.toc h2 { margin: 0 0 10px; font-size: 0.95rem; text-transform: uppercase; letter-spacing: 1px; color: var(--accent-2); }
+nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 24px; }
+nav.toc li { break-inside: avoid; font-size: 0.9rem; padding: 2px 0; }
+nav.toc a { color: var(--text); }
+nav.toc a:hover { color: var(--accent); }
+.md-h { margin: 36px 0 14px; line-height: 1.3; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+.md-h1 { font-size: 1.6rem; color: var(--accent); border-bottom: none; padding-bottom: 0; }
+.md-h2 { font-size: 1.35rem; color: var(--accent); border-bottom-color: var(--accent); }
+.md-h3 { font-size: 1.15rem; color: var(--accent-2); }
+.md-h4 { font-size: 1.05rem; color: var(--accent-2); }
+.md-h5, .md-h6 { font-size: 1rem; color: var(--muted); }
+p { margin: 0.6em 0; }
+ul, ol { padding-left: 28px; margin: 0.5em 0 1.2em; }
+li { margin: 0.2em 0; }
+code.md-inline-code {
+  background: var(--panel-2);
+  color: #ffd58a;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.86em;
+}
+pre {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin: 12px 0;
+  overflow-x: auto;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+pre.mermaid {
+  background: #0e131c;
+  border: 1px dashed var(--accent);
+  font-family: "SF Mono", monospace;
+  text-align: center;
+}
+pre code { color: #e6e8ee; }
+.md-table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 12px 0 20px;
+  font-size: 0.92rem;
+}
+.md-table th, .md-table td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  vertical-align: top;
+}
+.md-table th {
+  background: var(--panel-2);
+  color: var(--accent);
+  font-weight: 600;
+}
+.md-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+hr { border: none; border-top: 1px dashed var(--border); margin: 28px 0; }
+strong { color: var(--good); }
+em { color: var(--accent-2); }
+blockquote {
+  border-left: 3px solid var(--accent);
+  background: rgba(107,212,240,0.05);
+  margin: 16px 0;
+  padding: 10px 18px;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+blockquote code.md-inline-code { color: var(--accent); }
+footer {
+  margin-top: 56px;
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--border);
+}
+@media (max-width: 720px) {
+  nav.toc ol { columns: 1; }
+  main { padding: 16px; }
+}
+@media print {
+  :root { --bg: white; --panel: white; --text: black; }
+  nav.toc { display: none; }
+  pre.mermaid { break-inside: avoid; }
+}
+</style>
+</head>
+<body>
+<main>
+<header class="banner">
+  <div class="meta">ClientRadar AI · UAT 文件 · v1.0 · 2026-07-28</div>
+  <h1>ClientRadar AI — UAT 功能清單與系統流程圖</h1>
+  <p>本文件以網頁版呈現,所有 Mermaid 圖表由 <a href="https://mermaid.js.org/">Mermaid.js</a> 即時渲染。</p>
+  <p>每章節都有錨點連結,可直接於 URL hash 後分享到同事。</p>
+</header>
+<nav class="toc">
+  <h2>目錄</h2>
+  <ol id="toc-list"><li>(由 JavaScript 即時生成)</li></ol>
+</nav>
+<h1 id="clientradar-ai--uat" class="md-h md-h1">ClientRadar AI — UAT 功能清單與系統流程圖</h1>
+<blockquote><strong>版本</strong>：v1.0（2026-07-28） <strong>對象</strong>：UAT 測試團隊、系統管理員、上級主管 <strong>目的</strong>：完整列出系統所有功能,並以圖示呈現流程關係</blockquote>
+<hr>
+<h2 id="section" class="md-h md-h2">目錄</h2>
+<ul><li><a href="#1-系統定位" target="_blank" rel="noopener">1. 系統定位</a></li><li><a href="#2-功能總覽" target="_blank" rel="noopener">2. 功能總覽(七大模組)</a></li><li><a href="#3-功能清單" target="_blank" rel="noopener">3. 功能清單(逐項)</a></li><li><a href="#4-角色與權限" target="_blank" rel="noopener">4. 角色與權限</a></li><li><a href="#5-系統架構圖" target="_blank" rel="noopener">5. 系統架構圖</a></li><li><a href="#6-核心業務流程" target="_blank" rel="noopener">6. 核心業務流程</a></li><li><a href="#7-資料流時序圖" target="_blank" rel="noopener">7. 資料流時序圖</a></li><li><a href="#8-即時通訊事件流" target="_blank" rel="noopener">8. 即時通訊(SSE)事件流</a></li><li><a href="#9-ai-worker-排程" target="_blank" rel="noopener">9. AI Worker 排程</a></li><li><a href="#10-部署拓樸" target="_blank" rel="noopener">10. 部署拓樸</a></li></ul>
+<hr>
+<h2 id="1" class="md-h md-h2">1. 系統定位</h2>
+<p><strong>ClientRadar AI</strong> 是一套結合像素風 UI 嘅 CRM + AI 自動化外展系統。核心能力係<strong>用 LLM + 隱身瀏覽器去搵潛在客戶、撰寫個人化外展郵件、追蹤跟進</strong>,從「開 lead 名單」到「預約會議」全自動。</p>
+<p><strong>使用者對象</strong>:</p>
+<ul><li><strong>Sales / BD</strong>:每日操作,搵新客、回覆、跟進。</li><li><strong>Marketing Manager</strong>:設定評分規則、查看數據儀表板。</li><li><strong>Admin / Super Admin</strong>:使用者管理、系統設定、角色權限。</li></ul>
+<p><strong>完成嘅核實路徑</strong>:<code class="md-inline-code">輸入 keyword + 地區</code> → <code class="md-inline-code">數百條 verified leads + 自動發信 + 自動跟進 + 智能分類回覆</code>。</p>
+<hr>
+<h2 id="2" class="md-h md-h2">2. 功能總覽</h2>
+<p>系統由 <strong>7 大模組</strong>組成:</p>
+<table class="md-table">
+<thead><tr>
+<th style="text-align:left">#</th>
+<th style="text-align:left">模組</th>
+<th style="text-align:left">功能摘要</th>
+</tr></thead><tbody>
+<tr>
+<td style="text-align:left">1</td>
+<td style="text-align:left"><strong>認證 &amp; 使用者</strong></td>
+<td style="text-align:left">註冊、登入、改密碼、忘記密碼、Profile、角色管理</td>
+</tr>
+<tr>
+<td style="text-align:left">2</td>
+<td style="text-align:left"><strong>線索管理 (Leads)</strong></td>
+<td style="text-align:left">三欄式 CRM,新增、編輯、狀態、AI 分析、再處理</td>
+</tr>
+<tr>
+<td style="text-align:left">3</td>
+<td style="text-align:left"><strong>AI Pipeline (Hermes)</strong></td>
+<td style="text-align:left">搜尋 → 充實 → 分析 → 撰寫郵件 → 發送 → 回覆分類</td>
+</tr>
+<tr>
+<td style="text-align:left">4</td>
+<td style="text-align:left"><strong>郵件佇列 (Email Queue)</strong></td>
+<td style="text-align:left">LLM 草稿、人工審核、發送、跟進、重試</td>
+</tr>
+<tr>
+<td style="text-align:left">5</td>
+<td style="text-align:left"><strong>搜尋 (Search)</strong></td>
+<td style="text-align:left">多來源觸發 + SSE 即時進度條 + Hero 結果卡</td>
+</tr>
+<tr>
+<td style="text-align:left">6</td>
+<td style="text-align:left"><strong>任務佇列 (Tasks)</strong></td>
+<td style="text-align:left">Worker 任務排程、claim/complete/fail 模式、統計</td>
+</tr>
+<tr>
+<td style="text-align:left">7</td>
+<td style="text-align:left"><strong>系統輔助</strong></td>
+<td style="text-align:left">日曆、通知、Token 用量、檔案上傳、健康檢查、Swagger API 文件</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="3" class="md-h md-h2">3. 功能清單(逐項)</h2>
+<h3 id="31" class="md-h md-h3">3.1 認證 &amp; 使用者管理</h3>
+<table class="md-table">
+<thead><tr>
+<th style="text-align:left">ID</th>
+<th style="text-align:left">功能</th>
+<th style="text-align:left">路由</th>
+<th style="text-align:left">說明</th>
+</tr></thead><tbody>
+<tr>
+<td style="text-align:left">F1.1</td>
+<td style="text-align:left">註冊</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/auth/register</code></td>
+<td style="text-align:left">Email + 密碼 + 姓名 + 公司資料</td>
+</tr>
+<tr>
+<td style="text-align:left">F1.2</td>
+<td style="text-align:left">登入</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/auth/login</code></td>
+<td style="text-align:left">JWT 發放,存 <code class="md-inline-code">hermes_token</code> localStorage</td>
+</tr>
+<tr>
+<td style="text-align:left">F1.3</td>
+<td style="text-align:left">取得當前使用者</td>
+<td style="text-align:left"><code class="md-inline-code">GET /api/auth/me</code></td>
+<td style="text-align:left">用於初始化 user context</td>
+</tr>
+<tr>
+<td style="text-align:left">F1.4</td>
+<td style="text-align:left">改密碼</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/auth/change-password</code></td>
+<td style="text-align:left">舊密碼驗證</td>
+</tr>
+<tr>
+<td style="text-align:left">F1.5</td>
+<td style="text-align:left">忘記密碼</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/auth/forgot-password</code></td>
+<td style="text-align:left">Email 發送 reset link</td>
+</tr>
+<tr>
+<td style="text-align:left">F1.6</td>
+<td style="text-align:left">重設密碼</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/auth/reset-password</code></td>
+<td style="text-align:left">Token-based reset</td>
+</tr>
+<tr>
+<td style="text-align:left">F1.7</td>
+<td style="text-align:left">更新個人資料</td>
+<td style="text-align:left"><code class="md-inline-code">PATCH /api/auth/profile</code></td>
+<td style="text-align:left">姓名、公司、語言偏好</td>
+</tr>
+<tr>
+<td style="text-align:left">F1.8</td>
+<td style="text-align:left">角色管理</td>
+<td style="text-align:left"><code class="md-inline-code">GET/POST/PATCH/DELETE /api/roles/*</code></td>
+<td style="text-align:left">定義角色 + 權限集合</td>
+</tr>
+<tr>
+<td style="text-align:left">F1.9</td>
+<td style="text-align:left">使用者管理</td>
+<td style="text-align:left"><code class="md-inline-code">GET/POST/PATCH/DELETE /api/users/*</code></td>
+<td style="text-align:left">Admin 操作使用者清單</td>
+</tr>
+<tr>
+<td style="text-align:left">F1.10</td>
+<td style="text-align:left">角色權限保護</td>
+<td style="text-align:left"><code class="md-inline-code">RolesGuard + @Roles()</code></td>
+<td style="text-align:left">Admin / Super Admin 路由保護</td>
+</tr>
+</tbody></table>
+<h3 id="32-leads" class="md-h md-h3">3.2 線索管理 (Leads)</h3>
+<table class="md-table">
+<thead><tr>
+<th style="text-align:left">ID</th>
+<th style="text-align:left">功能</th>
+<th style="text-align:left">路由</th>
+<th style="text-align:left">說明</th>
+</tr></thead><tbody>
+<tr>
+<td style="text-align:left">F2.1</td>
+<td style="text-align:left">線索列表(分頁)</td>
+<td style="text-align:left"><code class="md-inline-code">GET /api/leads</code></td>
+<td style="text-align:left">頁碼 + limit + 排序 + 過濾</td>
+</tr>
+<tr>
+<td style="text-align:left">F2.2</td>
+<td style="text-align:left">線索詳情</td>
+<td style="text-align:left"><code class="md-inline-code">GET /api/leads/:id</code></td>
+<td style="text-align:left">單筆完整資料 + emails</td>
+</tr>
+<tr>
+<td style="text-align:left">F2.3</td>
+<td style="text-align:left">新增線索</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/leads</code></td>
+<td style="text-align:left">手動輸入 / 從搜尋結果匯入</td>
+</tr>
+<tr>
+<td style="text-align:left">F2.4</td>
+<td style="text-align:left">編輯線索</td>
+<td style="text-align:left"><code class="md-inline-code">PATCH /api/leads/:id</code></td>
+<td style="text-align:left">公司資料、聯絡資料</td>
+</tr>
+<tr>
+<td style="text-align:left">F2.5</td>
+<td style="text-align:left">更新狀態</td>
+<td style="text-align:left"><code class="md-inline-code">PATCH /api/leads/:id/status</code></td>
+<td style="text-align:left">new / pending / contacted / rejected / meeting</td>
+</tr>
+<tr>
+<td style="text-align:left">F2.6</td>
+<td style="text-align:left">標記有興趣</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/leads/:id/mark-interested</code></td>
+<td style="text-align:left">從 Webhook / IMAP 觸發</td>
+</tr>
+<tr>
+<td style="text-align:left">F2.7</td>
+<td style="text-align:left">重新處理</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/leads/:id/reprocess</code></td>
+<td style="text-align:left">重新跑 enrich / analyze / draft</td>
+</tr>
+<tr>
+<td style="text-align:left">F2.8</td>
+<td style="text-align:left">刪除單筆</td>
+<td style="text-align:left"><code class="md-inline-code">DELETE /api/leads/:id</code></td>
+<td style="text-align:left">軟刪除(<code class="md-inline-code">_deleted_at</code>)</td>
+</tr>
+<tr>
+<td style="text-align:left">F2.9</td>
+<td style="text-align:left">批量刪除</td>
+<td style="text-align:left"><code class="md-inline-code">DELETE /api/leads</code></td>
+<td style="text-align:left">多選</td>
+</tr>
+<tr>
+<td style="text-align:left">F2.10</td>
+<td style="text-align:left">三欄式 UI(Agile CRM)</td>
+<td style="text-align:left"><code class="md-inline-code">/client-pool</code></td>
+<td style="text-align:left">Left list / Center detail / Right actions</td>
+</tr>
+<tr>
+<td style="text-align:left">F2.11</td>
+<td style="text-align:left">已驗證郵箱池</td>
+<td style="text-align:left"><code class="md-inline-code">/client-pool?view=verified</code></td>
+<td style="text-align:left">跨線索共享 email list</td>
+</tr>
+<tr>
+<td style="text-align:left">F2.12</td>
+<td style="text-align:left">線索狀態 pill</td>
+<td style="text-align:left">(UI)</td>
+<td style="text-align:left">同色 pill 顯示,有 day-by-day 視覺統一</td>
+</tr>
+</tbody></table>
+<h3 id="33-ai-pipeline-hermes" class="md-h md-h3">3.3 AI Pipeline (Hermes)</h3>
+<table class="md-table">
+<thead><tr>
+<th style="text-align:left">ID</th>
+<th style="text-align:left">功能</th>
+<th style="text-align:left">對應 Worker 任務</th>
+<th style="text-align:left">說明</th>
+</tr></thead><tbody>
+<tr>
+<td style="text-align:left">F3.1</td>
+<td style="text-align:left">啟動 Pipeline</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/hermes/run</code></td>
+<td style="text-align:left">keyword + location + source + target_count</td>
+</tr>
+<tr>
+<td style="text-align:left">F3.2</td>
+<td style="text-align:left">Campaign 狀態查詢</td>
+<td style="text-align:left"><code class="md-inline-code">GET /api/hermes/campaigns/:id</code></td>
+<td style="text-align:left">進度、已完成數、lead_ids</td>
+</tr>
+<tr>
+<td style="text-align:left">F3.3</td>
+<td style="text-align:left">S1 搜尋</td>
+<td style="text-align:left"><code class="md-inline-code">doSearch()</code></td>
+<td style="text-align:left">Google Maps / Search / LinkedIn via Hermes CUA</td>
+</tr>
+<tr>
+<td style="text-align:left">F3.4</td>
+<td style="text-align:left">S2 充實</td>
+<td style="text-align:left"><code class="md-inline-code">doEnrich()</code></td>
+<td style="text-align:left">三層:Node fetch / Hermes CUA / domain guess</td>
+</tr>
+<tr>
+<td style="text-align:left">F3.5</td>
+<td style="text-align:left">S2 分析</td>
+<td style="text-align:left"><code class="md-inline-code">doAnalyze()</code></td>
+<td style="text-align:left">LLM 生成合作角度 + 服務匹配</td>
+</tr>
+<tr>
+<td style="text-align:left">F3.6</td>
+<td style="text-align:left">S3 草稿</td>
+<td style="text-align:left"><code class="md-inline-code">doDraft()</code></td>
+<td style="text-align:left">LLM 撰寫 + 自評 confidence 0-100</td>
+</tr>
+<tr>
+<td style="text-align:left">F3.7</td>
+<td style="text-align:left">S3 跟進草稿</td>
+<td style="text-align:left"><code class="md-inline-code">doFollowupDraft()</code></td>
+<td style="text-align:left">5+ 天無回覆 → 跟進郵件</td>
+</tr>
+<tr>
+<td style="text-align:left">F3.8</td>
+<td style="text-align:left">S3 重新外展</td>
+<td style="text-align:left"><code class="md-inline-code">doReoutreachDraft()</code></td>
+<td style="text-align:left">重試 / 升級外展</td>
+</tr>
+<tr>
+<td style="text-align:left">F3.9</td>
+<td style="text-align:left">S4 發送</td>
+<td style="text-align:left"><code class="md-inline-code">doSend()</code></td>
+<td style="text-align:left">Nodemailer SMTP(<code class="md-inline-code">ENABLE_REAL_SEND=true</code>)</td>
+</tr>
+<tr>
+<td style="text-align:left">F3.10</td>
+<td style="text-align:left">S4 回覆分類</td>
+<td style="text-align:left"><code class="md-inline-code">doReplyCheck()</code></td>
+<td style="text-align:left">IMAP 掃描 + AI 分類 / meeting / auto-reply</td>
+</tr>
+<tr>
+<td style="text-align:left">F3.11</td>
+<td style="text-align:left">S4 跟進排程</td>
+<td style="text-align:left"><code class="md-inline-code">doCheckFollowups()</code></td>
+<td style="text-align:left">5 天無回覆 → 建 followup 任務</td>
+</tr>
+<tr>
+<td style="text-align:left">F3.12</td>
+<td style="text-align:left">評分規則</td>
+<td style="text-align:left">(Settings)</td>
+<td style="text-align:left">tone / length / must-include / 自訂</td>
+</tr>
+</tbody></table>
+<h3 id="34-email-queue" class="md-h md-h3">3.4 郵件佇列 (Email Queue)</h3>
+<table class="md-table">
+<thead><tr>
+<th style="text-align:left">ID</th>
+<th style="text-align:left">功能</th>
+<th style="text-align:left">路由</th>
+<th style="text-align:left">說明</th>
+</tr></thead><tbody>
+<tr>
+<td style="text-align:left">F4.1</td>
+<td style="text-align:left">列表</td>
+<td style="text-align:left"><code class="md-inline-code">GET /api/email-queue</code></td>
+<td style="text-align:left">全部狀態 + 過濾</td>
+</tr>
+<tr>
+<td style="text-align:left">F4.2</td>
+<td style="text-align:left">詳情</td>
+<td style="text-align:left"><code class="md-inline-code">GET /api/email-queue/:id</code></td>
+<td style="text-align:left">subject + body + draft_score</td>
+</tr>
+<tr>
+<td style="text-align:left">F4.3</td>
+<td style="text-align:left">編輯草稿</td>
+<td style="text-align:left"><code class="md-inline-code">PATCH /api/email-queue/:id</code></td>
+<td style="text-align:left">編輯 subject / body</td>
+</tr>
+<tr>
+<td style="text-align:left">F4.4</td>
+<td style="text-align:left">審核通過</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/email-queue/:id/approve</code></td>
+<td style="text-align:left"><code class="md-inline-code">pending</code> → <code class="md-inline-code">approved</code></td>
+</tr>
+<tr>
+<td style="text-align:left">F4.5</td>
+<td style="text-align:left">拒絕</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/email-queue/:id/reject</code></td>
+<td style="text-align:left"><code class="md-inline-code">pending</code> → <code class="md-inline-code">rejected</code></td>
+</tr>
+<tr>
+<td style="text-align:left">F4.6</td>
+<td style="text-align:left">發送</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/email-queue/:id/send</code></td>
+<td style="text-align:left"><code class="md-inline-code">approved</code> → <code class="md-inline-code">sent</code>(Worker S4)</td>
+</tr>
+<tr>
+<td style="text-align:left">F4.7</td>
+<td style="text-align:left">模板編輯器</td>
+<td style="text-align:left"><code class="md-inline-code">/cms-email-queue</code></td>
+<td style="text-align:left">WYSIWYG 編輯</td>
+</tr>
+</tbody></table>
+<h3 id="35-search" class="md-h md-h3">3.5 搜尋 (Search)</h3>
+<table class="md-table">
+<thead><tr>
+<th style="text-align:left">ID</th>
+<th style="text-align:left">功能</th>
+<th style="text-align:left">路由</th>
+<th style="text-align:left">說明</th>
+</tr></thead><tbody>
+<tr>
+<td style="text-align:left">F5.1</td>
+<td style="text-align:left">多來源搜尋</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/search</code></td>
+<td style="text-align:left">GMaps / Google / LinkedIn</td>
+</tr>
+<tr>
+<td style="text-align:left">F5.2</td>
+<td style="text-align:left">觸發 Hermes</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/hermes/run</code></td>
+<td style="text-align:left">入 Campaign + S1 task</td>
+</tr>
+<tr>
+<td style="text-align:left">F5.3</td>
+<td style="text-align:left">SSE 即時進度</td>
+<td style="text-align:left"><code class="md-inline-code">GET /api/events</code></td>
+<td style="text-align:left">階段更新、lead 完成數</td>
+</tr>
+<tr>
+<td style="text-align:left">F5.4</td>
+<td style="text-align:left">Hero 結果卡</td>
+<td style="text-align:left">(UI)</td>
+<td style="text-align:left">已找到 lead 即時 preview</td>
+</tr>
+<tr>
+<td style="text-align:left">F5.5</td>
+<td style="text-align:left">取消搜尋</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/hermes/campaigns/:id/cancel</code></td>
+<td style="text-align:left">kill running pipeline</td>
+</tr>
+</tbody></table>
+<h3 id="36-tasks" class="md-h md-h3">3.6 任務佇列 (Tasks)</h3>
+<table class="md-table">
+<thead><tr>
+<th style="text-align:left">ID</th>
+<th style="text-align:left">功能</th>
+<th style="text-align:left">路由</th>
+<th style="text-align:left">說明</th>
+</tr></thead><tbody>
+<tr>
+<td style="text-align:left">F6.1</td>
+<td style="text-align:left">任務列表</td>
+<td style="text-align:left"><code class="md-inline-code">GET /api/tasks</code></td>
+<td style="text-align:left">skill / status / assigned_agent 過濾</td>
+</tr>
+<tr>
+<td style="text-align:left">F6.2</td>
+<td style="text-align:left">任務統計</td>
+<td style="text-align:left"><code class="md-inline-code">GET /api/tasks/stats</code></td>
+<td style="text-align:left">各 skill pending / running / done</td>
+</tr>
+<tr>
+<td style="text-align:left">F6.3</td>
+<td style="text-align:left">任務詳情</td>
+<td style="text-align:left"><code class="md-inline-code">GET /api/tasks/:taskId</code></td>
+<td style="text-align:left">result + error</td>
+</tr>
+<tr>
+<td style="text-align:left">F6.4</td>
+<td style="text-align:left">新增任務</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/tasks</code></td>
+<td style="text-align:left">admin 手動建</td>
+</tr>
+<tr>
+<td style="text-align:left">F6.5</td>
+<td style="text-align:left">Worker claim</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/tasks/claim</code></td>
+<td style="text-align:left">按 <code class="md-inline-code">skill_id</code> claim</td>
+</tr>
+<tr>
+<td style="text-align:left">F6.6</td>
+<td style="text-align:left">Worker 完成</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/tasks/:taskId/complete</code></td>
+<td style="text-align:left">提交 result</td>
+</tr>
+<tr>
+<td style="text-align:left">F6.7</td>
+<td style="text-align:left">Worker 失敗</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/tasks/:taskId/fail</code></td>
+<td style="text-align:left">提交 error</td>
+</tr>
+</tbody></table>
+<h3 id="37" class="md-h md-h3">3.7 系統輔助</h3>
+<table class="md-table">
+<thead><tr>
+<th style="text-align:left">ID</th>
+<th style="text-align:left">功能</th>
+<th style="text-align:left">路由 / 位置</th>
+<th style="text-align:left">說明</th>
+</tr></thead><tbody>
+<tr>
+<td style="text-align:left">F7.1</td>
+<td style="text-align:left">日曆事件 CRUD</td>
+<td style="text-align:left"><code class="md-inline-code">/app-calendar</code> + <code class="md-inline-code">/api/calendar/*</code></td>
+<td style="text-align:left">meeting / follow-up / deadline</td>
+</tr>
+<tr>
+<td style="text-align:left">F7.2</td>
+<td style="text-align:left">通知中心</td>
+<td style="text-align:left">Topbar 鈴鐺 + SSE</td>
+<td style="text-align:left">i18n-key 翻譯</td>
+</tr>
+<tr>
+<td style="text-align:left">F7.3</td>
+<td style="text-align:left">Token 用量追蹤</td>
+<td style="text-align:left"><code class="md-inline-code">/cms-settings?tab=tokens</code></td>
+<td style="text-align:left">per user / per task</td>
+</tr>
+<tr>
+<td style="text-align:left">F7.4</td>
+<td style="text-align:left">檔案上傳</td>
+<td style="text-align:left"><code class="md-inline-code">POST /api/uploads</code></td>
+<td style="text-align:left">avatar / attachment</td>
+</tr>
+<tr>
+<td style="text-align:left">F7.5</td>
+<td style="text-align:left">系統設定(5 Tab)</td>
+<td style="text-align:left"><code class="md-inline-code">/cms-settings</code></td>
+<td style="text-align:left">API key / scoring / schedule</td>
+</tr>
+<tr>
+<td style="text-align:left">F7.6</td>
+<td style="text-align:left">健康檢查</td>
+<td style="text-align:left"><code class="md-inline-code">GET /api/health</code></td>
+<td style="text-align:left">監控用</td>
+</tr>
+<tr>
+<td style="text-align:left">F7.7</td>
+<td style="text-align:left">Swagger API 文件</td>
+<td style="text-align:left"><code class="md-inline-code">/api/docs</code></td>
+<td style="text-align:left">OpenAPI spec</td>
+</tr>
+<tr>
+<td style="text-align:left">F7.8</td>
+<td style="text-align:left">推播通知 (Web Push)</td>
+<td style="text-align:left">瀏覽器層</td>
+<td style="text-align:left">VAPID public key config</td>
+</tr>
+<tr>
+<td style="text-align:left">F7.9</td>
+<td style="text-align:left">i18n(3 語)</td>
+<td style="text-align:left">全站</td>
+<td style="text-align:left">繁中 / 簡中 / English</td>
+</tr>
+<tr>
+<td style="text-align:left">F7.10</td>
+<td style="text-align:left">深淺主題切換</td>
+<td style="text-align:left">Topbar</td>
+<td style="text-align:left">localStorage 持久化</td>
+</tr>
+<tr>
+<td style="text-align:left">F7.11</td>
+<td style="text-align:left">Onboarding 新手教學</td>
+<td style="text-align:left">首次登入</td>
+<td style="text-align:left">Spotlight + tooltip</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="4" class="md-h md-h2">4. 角色與權限</h2>
+<pre class="mermaid">flowchart TD
+    A[訪客] --&gt;|register| B[Staff]
+    B --&gt;|admin promote| C[Admin]
+    C --&gt;|super_admin promote| D[Super Admin]
+    
+    B --&gt;|access| P1[Dashboard / Search / Leads / EmailQueue / Calendar / Tasks / UserInfo]
+    C --&gt;|access + | P2[+ Users / Roles / Verified Emails]
+    D --&gt;|access + | P3[+ 系統設定 / Token 用量 / 排程工作]
+    
+    style B fill:#e8f5e9
+    style C fill:#fff9c4
+    style D fill:#ffcdd2</pre>
+<p><strong>注意</strong>:<code class="md-inline-code">PermissionsGuard</code> 而家<strong>回傳 <code class="md-inline-code">true</code></strong>,role-based 細粒度控制尚未啟用。<strong>部署前須 resolve</strong>。</p>
+<hr>
+<h2 id="5" class="md-h md-h2">5. 系統架構圖</h2>
+<pre class="mermaid">flowchart LR
+    subgraph Client[&quot;Browser (UAT User)&quot;]
+        UI[React 19 + Vite&lt;br&gt;Pixel-themed UI]
+    end
+    
+    subgraph WebServer[&quot;公司 Web Server (新)&quot;]
+        RP[Reverse Proxy&lt;br&gt;Nginx / Caddy]
+    end
+    
+    subgraph FrontendBox[&quot;前端主機 (UAT)&quot;]
+        FE[Vite-built dist/&lt;br&gt;靜態檔]
+    end
+    
+    subgraph BackendBox[&quot;Backend Mac (192.168.1.111)&quot;]
+        API[NestJS&lt;br&gt;:4000]
+        WorkerA[Worker Leader&lt;br&gt;cms/worker]
+        W1[Worker S1]
+        W2[Worker S2]
+        W3[Worker S3]
+        W4[Worker S4]
+    end
+    
+    subgraph HermesBox[&quot;Hermes AI Agent&lt;br&gt;(公司 Mac mini, 新位置)&quot;]
+        Hermes[Hermes CLI&lt;br&gt;LLM + CUA Browser]
+        HermesDB[(~/.hermes/&lt;br&gt;skills + state.db&lt;br&gt;+ config.yaml)]
+    end
+    
+    DB[(MongoDB&lt;br&gt;lead_scraper)]
+    
+    UI --&gt;|HTTPS| RP
+    RP --&gt;|/| FE
+    RP --&gt;|/api/*| API
+    RP --&gt;|/api/events (SSE)| API
+    
+    API &lt;--&gt;|tasks/claim,complete| WorkerA
+    WorkerA --&gt; W1
+    WorkerA --&gt; W2
+    WorkerA --&gt; W3
+    WorkerA --&gt; W4
+    
+    W1 -.-&gt;|hermes -z&lt;br&gt;spawn child| Hermes
+    W2 -.-&gt;|hermes -z| Hermes
+    W3 -.-&gt;|hermes -z| Hermes
+    W4 -.-&gt;|IMAP + SMTP only| MailServer[Gmail SMTP/IMAP]
+    
+    API --&gt;|Mongoose| DB
+    WorkerA --&gt;|mongodb driver| DB
+    Hermes --&gt;|讀 ~/.hermes/| HermesDB
+    
+    style Hermes fill:#ffe0b2
+    style BackendBox fill:#e3f2fd
+    style FrontendBox fill:#f3e5f5
+    style HermesBox fill:#fff3e0</pre>
+<p><strong>重點</strong>:</p>
+<ul><li><strong>Frontend / Backend / Hermes</strong> 將獨立部署於 3 個不同主機</li><li>只有 Backend 同 Hermes share MongoDB</li><li>Frontend 透過 Reverse Proxy 同時 serve static + proxy API</li></ul>
+<hr>
+<h2 id="6" class="md-h md-h2">6. 核心業務流程</h2>
+<h3 id="61-pipeline" class="md-h md-h3">6.1 主 Pipeline:搜尋 → 發信 → 回覆追蹤</h3>
+<pre class="mermaid">flowchart TD
+    Start([使用者喺 Search page&lt;br&gt;輸入 keyword + 地區]) --&gt; Trigger[POST /api/hermes/run]
+    Trigger --&gt; CreateCampaign[建立 Campaign&lt;br&gt;status=running]
+    CreateCampaign --&gt; S1[T1: S1 search task]
+    S1 --&gt; Worker1[Worker S1&lt;br&gt;Hermes CUA 搜尋]
+    Worker1 --&gt; LeadDedupe{Lead 去重&lt;br&gt;by website}
+    LeadDedupe --&gt;|new| WriteLead[(Write to leads)]
+    LeadDedupe --&gt;|duplicate| Skip[skip]
+    WriteLead --&gt; S2[T2: S2 enrich task&lt;br&gt;auto-enqueue]
+    S2 --&gt; Worker2[Worker S2&lt;br&gt;三層 email 充實]
+    Worker2 --&gt; Add2[+ 公司描述]
+    Add2 --&gt; S2b[T3: S2 analyze task&lt;br&gt;auto-enqueue]
+    S2b --&gt; Worker2b[Worker S2&lt;br&gt;LLM 分析]
+    Worker2b --&gt; S3[T4: S3 draft task]
+    S3 --&gt; Worker3[Worker S3&lt;br&gt;LLM 撰寫 + 自評分]
+    Worker3 --&gt; WriteEmail[(Write to email_queue&lt;br&gt;status=pending)]
+    
+    WriteEmail --&gt; UserAction{使用者&lt;br&gt;EmailQueue 審核}
+    UserAction --&gt;|approve| Status1[status=approved]
+    UserAction --&gt;|reject| Status2[status=rejected]
+    UserAction --&gt;|edit| Status3[重新草稿]
+    
+    Status1 --&gt; S4[T5: S4 send task]
+    S4 --&gt; Worker4[Worker S4&lt;br&gt;SMTP 發送]
+    Worker4 --&gt; StatusSent[status=sent]
+    StatusSent --&gt; CheckReply[T6: S4 reply check]
+    CheckReply --&gt; Worker5[Worker S4&lt;br&gt;IMAP 掃描]
+    Worker5 --&gt; Classify{AI 分類}
+    Classify --&gt;|interested| LeadUp[Lead: status=meeting&lt;br&gt;+ 通知]
+    Classify --&gt;|not interested| LeadDown[Lead: status=rejected]
+    Classify --&gt;|auto-reply| Skip2[skip, 5天後再 check]
+    Classify --&gt;|question| ToReview[通知: 等待 review]
+    
+    LeadDown --&gt;|5 天無回覆| Followup[T7: S3 followupDraft]
+    Followup --&gt; Worker3
+    
+    style Start fill:#c8e6c9
+    style WriteLead fill:#bbdefb
+    style WriteEmail fill:#fff9c4
+    style StatusSent fill:#c8e6c9
+    style LeadUp fill:#c8e6c9</pre>
+<h3 id="62-claim--complete" class="md-h md-h3">6.2 任務 claim / complete 模式</h3>
+<pre class="mermaid">sequenceDiagram
+    participant W as Worker (S1)
+    participant API as NestJS API
+    participant DB as MongoDB (tasks)
+    
+    loop 每 2 秒
+        W-&gt;&gt;API: POST /api/tasks/claim {skill_id: &quot;S1&quot;}
+        API-&gt;&gt;DB: findOne({status: pending, skill_id: S1})
+        DB--&gt;&gt;API: 任務 T1
+        API-&gt;&gt;DB: updateOne({status: running, assigned_agent_id: WORKER-1})
+        API--&gt;&gt;W: 200 + task T1
+    
+        Note over W: 跑 hermes -z &quot;search term&quot; 5-15 分鐘
+    
+        alt 成功
+            W-&gt;&gt;API: POST /api/tasks/T1/complete {result: {...}}
+            API-&gt;&gt;DB: updateOne({status: completed, completed_at: now})
+            API-&gt;&gt;DB: insert (lead documents × N)
+            API--&gt;&gt;W: 200
+        else 失敗
+            W-&gt;&gt;API: POST /api/tasks/T1/fail {error: &quot;...&quot;}
+            API-&gt;&gt;DB: updateOne({status: failed, error: ...})
+            API--&gt;&gt;W: 200
+        end
+    end</pre>
+<h3 id="63-followup" class="md-h md-h3">6.3 自動 followup 排程</h3>
+<pre class="mermaid">flowchart LR
+    Check{S4 doCheckFollowups&lt;br&gt;每日一次} --&gt; Scan[(掃描:&lt;br&gt;sent &gt; 5 天&lt;br&gt;AND 未回覆)]
+    Scan --&gt; Candidates[候選 lead&lt;br&gt;status=contacted&lt;br&gt;last_sent 過期]
+    Candidates --&gt; Enqueue[Enqueue S3&lt;br&gt;followup task]
+    Enqueue --&gt; Draft[Worker S3&lt;br&gt;doFollowupDraft]
+    Draft --&gt; NewEmail[(Create new&lt;br&gt;email_queue entry&lt;br&gt;type=followup)]
+    NewEmail --&gt; UserReview[人工審核&lt;br&gt;approve 後 send]
+    
+    style Check fill:#fff9c4
+    style NewEmail fill:#bbdefb</pre>
+<hr>
+<h2 id="7" class="md-h md-h2">7. 資料流時序圖</h2>
+<h3 id="71" class="md-h md-h3">7.1 使用者登入 → 看到首頁</h3>
+<pre class="mermaid">sequenceDiagram
+    actor U as User
+    participant FE as Frontend (Vite/React)
+    participant API as NestJS API
+    participant DB as MongoDB
+    participant SSE as SSE Stream
+    
+    U-&gt;&gt;FE: 訪問 /login
+    FE-&gt;&gt;U: 顯示 login form
+    U-&gt;&gt;FE: 輸入 email + password
+    FE-&gt;&gt;API: POST /api/auth/login
+    API-&gt;&gt;DB: users.findOne({email})
+    DB--&gt;&gt;API: user doc
+    API-&gt;&gt;API: bcrypt.compare
+    API-&gt;&gt;API: sign JWT (JWT_SECRET, 7d)
+    API--&gt;&gt;FE: { token, user }
+    FE-&gt;&gt;FE: localStorage[&#x27;hermes_token&#x27;] = ...
+    FE-&gt;&gt;API: GET /api/auth/me (Bearer token)
+    API--&gt;&gt;FE: user data
+    FE-&gt;&gt;FE: AuthContext 設定 user
+    FE-&gt;&gt;API: GET /api/events (EventSource)
+    API-&gt;&gt;SSE: 註冊 SSE client
+    Note over FE,SSE: Persistent connection
+    FE-&gt;&gt;U: 重定向到 /cms-agents</pre>
+<h3 id="72-lead-state-ui" class="md-h md-h3">7.2 Lead state 變更即時同步 UI</h3>
+<pre class="mermaid">sequenceDiagram
+    actor U as User (Tab 1)
+    participant FE1 as Frontend Tab 1
+    actor U2 as User (Tab 2, 同 browser)
+    participant FE2 as Frontend Tab 2
+    participant W as Worker S4
+    participant API as NestJS API
+    participant DB as MongoDB
+    
+    Note over W: 收到 IMAP reply, status 分類&lt;br&gt;doReplyCheck() 完成
+    
+    W-&gt;&gt;DB: leads.updateOne(_id, status=meeting)
+    W-&gt;&gt;API: POST /api/sse/notify {event: lead_update, lead_id: ...}
+    API-&gt;&gt;DB: leads SSE channel
+    API--&gt;&gt;FE1: SSE event: lead_update
+    API--&gt;&gt;FE2: SSE event: lead_update
+    
+    FE1-&gt;&gt;API: GET /api/leads/L1 (React Query refetch)
+    FE1-&gt;&gt;U: 顯示 updated status pill
+    FE2-&gt;&gt;API: GET /api/leads/L1
+    FE2-&gt;&gt;U2: 顯示 updated status pill
+    
+    Note over DB,API: 最終一致性 via SSE push + refetch</pre>
+<hr>
+<h2 id="8-sse" class="md-h md-h2">8. 即時通訊(SSE)事件流</h2>
+<h3 id="81-sse" class="md-h md-h3">8.1 SSE 通道總覽</h3>
+<pre class="mermaid">flowchart LR
+    subgraph Producers[&quot;產生事件&quot;]
+        W1[Worker S1] --&gt;|lead_update| SSEHub
+        W2[Worker S2] --&gt;|lead_update| SSEHub
+        W3[Worker S3] --&gt;|email_update| SSEHub
+        W4[Worker S4] --&gt;|lead_update / email_update| SSEHub
+        NEST[後端業務邏輯] --&gt;|notification / pipeline_progress| SSEHub
+    end
+    
+    SSEHub[SSE Channel&lt;br&gt;/api/events] --&gt; Client1[Frontend LeadPage]
+    SSEHub --&gt; Client2[Frontend Dashboard]
+    SSEHub --&gt; Client3[Frontend Topbar 通知]
+    SSEHub --&gt; Client4[Frontend EmailQueue]
+    SSEHub --&gt; Client5[Frontend Search Pipeline]
+    
+    style SSEHub fill:#fff9c4</pre>
+<h3 id="82" class="md-h md-h3">8.2 事件類型一覽</h3>
+<table class="md-table">
+<thead><tr>
+<th style="text-align:left">事件</th>
+<th style="text-align:left">來源</th>
+<th style="text-align:left">觸發條件</th>
+<th style="text-align:left">前端處理</th>
+</tr></thead><tbody>
+<tr>
+<td style="text-align:left"><code class="md-inline-code">lead_update</code></td>
+<td style="text-align:left">Worker S1/S2/S4 + 後端</td>
+<td style="text-align:left">lead 狀態變更 / 新增</td>
+<td style="text-align:left">React Query invalidate <code class="md-inline-code">['leads']</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><code class="md-inline-code">email_update</code></td>
+<td style="text-align:left">Worker S3/S4 + 後端</td>
+<td style="text-align:left">草稿 / approve / send</td>
+<td style="text-align:left">React Query invalidate <code class="md-inline-code">['email-queue']</code></td>
+</tr>
+<tr>
+<td style="text-align:left"><code class="md-inline-code">pipeline_progress</code></td>
+<td style="text-align:left">Hermes run campaign</td>
+<td style="text-align:left">Campaign stage 變化</td>
+<td style="text-align:left">Search page 進度條</td>
+</tr>
+<tr>
+<td style="text-align:left"><code class="md-inline-code">notification</code></td>
+<td style="text-align:left">後端 / Worker</td>
+<td style="text-align:left">新通知寫入</td>
+<td style="text-align:left">Badge 計數 + 鈴鐺 panel</td>
+</tr>
+<tr>
+<td style="text-align:left"><code class="md-inline-code">hermes_log</code></td>
+<td style="text-align:left">Worker 寫 AI log</td>
+<td style="text-align:left">Hermes stderr</td>
+<td style="text-align:left">Debug viewer</td>
+</tr>
+<tr>
+<td style="text-align:left"><code class="md-inline-code">ping</code></td>
+<td style="text-align:left">Server 每 15s</td>
+<td style="text-align:left">keepalive</td>
+<td style="text-align:left">reconnect 計時</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="9-ai-worker" class="md-h md-h2">9. AI Worker 排程</h2>
+<pre class="mermaid">flowchart LR
+    subgraph Leader[&quot;leader.ts: Master process&quot;]
+        Fork[fork 4 sub-workers]
+    end
+    
+    subgraph Pool[&quot;Worker Pool&quot;]
+        W1[S1 Worker&lt;br&gt;concurrency=3&lt;br&gt;搜尋]
+        W2[S2 Worker&lt;br&gt;concurrency=3&lt;br&gt;充實+分析]
+        W3[S3 Worker&lt;br&gt;concurrency=3&lt;br&gt;草稿+跟進]
+        W4[S4 Worker&lt;br&gt;concurrency=2&lt;br&gt;發送+回覆]
+    end
+    
+    Fork --&gt; W1
+    Fork --&gt; W2
+    Fork --&gt; W3
+    Fork --&gt; W4
+    
+    W1 -.crash.-&gt; Restart1[auto restart&lt;br&gt;delay 3s]
+    W2 -.crash.-&gt; Restart2[auto restart]
+    W3 -.crash.-&gt; Restart3[auto restart]
+    W4 -.crash.-&gt; Restart4[auto restart]
+    
+    W1 --&gt; Tasks1[(tasks + leads)]
+    W2 --&gt; Tasks2[(tasks + leads)]
+    W3 --&gt; Tasks3[(tasks + email_queue)]
+    W4 --&gt; Tasks4[(tasks + email_queue + IMAP)]
+    
+    style Fork fill:#fff9c4</pre>
+<hr>
+<h2 id="10" class="md-h md-h2">10. 部署拓樸</h2>
+<h3 id="101-uat" class="md-h md-h3">10.1 UAT 部署佈局</h3>
+<pre class="mermaid">flowchart TB
+    subgraph Internet[&quot;公司對外網絡&quot;]
+        Domain[uat.clientradar-ai.com]
+    end
+    
+    subgraph DMZ[&quot;公司 DMZ / Frontend Server&quot;]
+        Nginx[Nginx Reverse Proxy&lt;br&gt;TLS from 公司 cert]
+        Static[dist/ 靜態前端]
+    end
+    
+    subgraph Internal[&quot;辦公室內網&quot;]
+        Frontend[Frontend Mac&lt;br&gt;serves :5173 → dist]
+        Backend[Backend Mac&lt;br&gt;192.168.1.111&lt;br&gt;NestJS :4000]
+        Worker[Worker Mac&lt;br&gt;cms/worker&lt;br&gt;(將移去新機)]
+        Hermes[新 Hermes Mac mini&lt;br&gt;Hermes CLI + CUA]
+    end
+    
+    Domain --&gt; Nginx
+    Nginx --&gt; Static
+    Nginx --&gt;|location /api/*| Backend
+    Nginx --&gt;|location /api/events| Backend
+    
+    Backend --&gt; Worker
+    Worker -.spawn.-&gt; Hermes
+    
+    Backend &lt;--&gt;|Mongoose| MongoDB[(MongoDB&lt;br&gt;內網或 Atlas)]
+    
+    style Internal fill:#f3e5f5
+    style Hermes fill:#ffe0b2</pre>
+<h3 id="102-phase" class="md-h md-h3">10.2 部署 Phase 規劃</h3>
+<table class="md-table">
+<thead><tr>
+<th style="text-align:left">Phase</th>
+<th style="text-align:left">範圍</th>
+<th style="text-align:left">部署前置</th>
+</tr></thead><tbody>
+<tr>
+<td style="text-align:left">P0</td>
+<td style="text-align:left">Frontend (Vite-built) 推上 UAT 域名</td>
+<td style="text-align:left">前端 SPA 用 Nginx serve static</td>
+</tr>
+<tr>
+<td style="text-align:left">P1</td>
+<td style="text-align:left">Nginx <code class="md-inline-code">/api/*</code> reverse proxy 到內網 Backend Mac</td>
+<td style="text-align:left">後端維持現位(192.168.1.111)</td>
+</tr>
+<tr>
+<td style="text-align:left">P2</td>
+<td style="text-align:left">Worker 部署到 Backend Mac(或獨立 Worker Mac)</td>
+<td style="text-align:left">透過 MongoDB 同 Backend 通訊</td>
+</tr>
+<tr>
+<td style="text-align:left">P3</td>
+<td style="text-align:left">Hermes AI Agent 搬至公司新 Mac mini</td>
+<td style="text-align:left">port-forward 出 network access</td>
+</tr>
+</tbody></table>
+<p><strong>P3 嘅 plug-and-play 步驟見 companion 文件</strong>:<code class="md-inline-code">docs/uat-deployment-runbook.md</code></p>
+<hr>
+<h2 id="a" class="md-h md-h2">附錄 A:檔案總覽</h2>
+<table class="md-table">
+<thead><tr>
+<th style="text-align:left">文件</th>
+<th style="text-align:left">用途</th>
+</tr></thead><tbody>
+<tr>
+<td style="text-align:left"><code class="md-inline-code">docs/uat-functional-spec.md</code></td>
+<td style="text-align:left">本文件</td>
+</tr>
+<tr>
+<td style="text-align:left"><code class="md-inline-code">docs/uat-deployment-runbook.md</code></td>
+<td style="text-align:left">Hermes 換 Mac mini + plug-and-play 步驟</td>
+</tr>
+<tr>
+<td style="text-align:left"><code class="md-inline-code">HANDOVER.md</code></td>
+<td style="text-align:left">完整技術交接文件(已有)</td>
+</tr>
+<tr>
+<td style="text-align:left"><code class="md-inline-code">PROJECT.md</code></td>
+<td style="text-align:left">專案 high-level overview(已有)</td>
+</tr>
+</tbody></table>
+<hr>
+<p><strong>版本歷程</strong></p>
+<ul><li>v1.0(2026-07-28):初版,涵蓋 P0-P3 UAT 部署所需的全系統描述</li></ul>
+<footer>
+  Built with Mermaid.js · 530 lines · self-contained HTML
+  · <a href="./uat-functional-spec.md">原始 Markdown</a>
+</footer>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      primaryColor: '#1d2230',
+      primaryTextColor: '#e6e8ee',
+      primaryBorderColor: '#2a3142',
+      lineColor: '#6bd4f0',
+      secondaryColor: '#161a23',
+      tertiaryColor: '#161a23'
+    },
+    flowchart: { curve: 'basis', htmlLabels: true },
+    sequence: { diagramMarginX: 50, diagramMarginY: 30 },
+    securityLevel: 'loose'
+  });
+  (function buildTOC() {
+    const tocOl = document.getElementById('toc-list');
+    if (!tocOl) return;
+    tocOl.innerHTML = '';
+    const seenLabels = new Set();
+    document.querySelectorAll('main > h2').forEach((h, i) => {
+      // Skip the document's own TOC heading (中文: "目錄") to avoid self-reference
+      const numPrefix = h.textContent.match(/^(\d+\.?\s*)/);
+      let label = h.textContent;
+      if (numPrefix) label = label.substring(numPrefix[1].length);
+      if (label === '目錄') return;
+      if (seenLabels.has(label)) return;
+      seenLabels.add(label);
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = '#' + h.id;
+      // strip leading numeric prefix like "1. 系統定位" -> "系統定位"
+      const numPrefix = h.textContent.match(/^(\d+\.?\s*)/);
+      let label = h.textContent;
+      if (numPrefix) label = label.substring(numPrefix[1].length);
+      a.textContent = (i + 1) + '. ' + label;
+      li.appendChild(a);
+      const subList = [];
+      let next = h.nextElementSibling;
+      while (next && next.tagName !== 'H2') {
+        if (next.tagName === 'H3') {
+          const sub = document.createElement('li');
+          sub.style.marginLeft = '16px';
+          const sa = document.createElement('a');
+          sa.href = '#' + next.id;
+          sa.textContent = next.textContent;
+          sub.appendChild(sa);
+          subList.push(sub);
+        }
+        next = next.nextElementSibling;
+      }
+      if (subList.length) {
+        const ol = document.createElement('ol');
+        ol.style.paddingLeft = '8px';
+        subList.forEach(s => ol.appendChild(s));
+        li.appendChild(ol);
+      }
+      tocOl.appendChild(li);
+    });
+  })();
+</script>
+</body>
+</html>
