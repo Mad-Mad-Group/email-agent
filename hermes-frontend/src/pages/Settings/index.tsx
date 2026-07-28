@@ -499,7 +499,7 @@ function toDisplayEntries(data: unknown): [string, unknown][] {
 
 /* ── Tabs config ── */
 
-type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'email' | 'gmail-connection' | 'whatsapp' | 'other';
+type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'email' | 'myEmail' | 'whatsapp' | 'other';
 
 /* ── Component ── */
 
@@ -716,7 +716,7 @@ const Settings: React.FC = () => {
   tabs.push({ key: 'auto-send', label: t('settings.autoSendRules'), icon: <ZapIcon /> });
   tabs.push({ key: 'email-scoring', label: t('settings.emailScoringRules'), icon: <StarIcon /> });
   tabs.push({ key: 'email', label: t('settings.emailTab'), icon: <MailIcon /> });
-  tabs.push({ key: 'gmail-connection', label: t('settings.gmailConnectionTab'), icon: <MailIcon /> });
+  tabs.push({ key: 'myEmail', label: t('settings.myEmailTab'), icon: <MailIcon /> });
   tabs.push({ key: 'whatsapp', label: t('settings.whatsappTab'), icon: <WhatsAppIcon /> });
   if (hasOther) {
     tabs.push({ key: 'other', label: t('settings.currentConfig'), icon: <SlidersIcon /> });
@@ -1185,12 +1185,12 @@ const Settings: React.FC = () => {
             </>
           )}
 
-          {/* ── Gmail Connection (per-user OAuth2) ── */}
-          {tab === 'gmail-connection' && (
+          {/* ── My Email (per-user OAuth2 / SMTP/IMAP) ── */}
+          {tab === 'myEmail' && (
             <>
-              <ContentHeader><h2>{t('settings.gmailConnectionTitle')}</h2></ContentHeader>
+              <ContentHeader><h2>{t('settings.myEmailTitle')}</h2></ContentHeader>
               <ContentBody>
-                <DefaultBanner>{t('settings.gmailConnectionDesc')}</DefaultBanner>
+                <DefaultBanner>{t('settings.myEmailDesc')}</DefaultBanner>
                 <EmailConnectionSection />
               </ContentBody>
             </>
