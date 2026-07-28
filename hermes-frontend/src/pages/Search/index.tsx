@@ -1735,11 +1735,16 @@ const SearchPage: React.FC = () => {
       if (raw) {
         const j = JSON.parse(raw);
         if (typeof j.kw === 'string') {
+          // ponytail: one-shot migration — old default was 20. If cached
+          // 'search-form' has tc=20, treat it as the stale old-default
+          // and reset to 1 instead of honoring it. Any actual user-set
+          // value (probably ≠20) is preserved.
+          if (typeof j.tc === 'number' && j.tc >= 20) j.tc = 1;
           return j;
         }
       }
     } catch { /* ignore corrupt localStorage */ }
-    return { kw: '', loc: t('search.defaultLocation'), dist: 'all', tc: 20 };
+    return { kw: '', loc: t('search.defaultLocation'), dist: 'all', tc: 1 };
   };
   const saved = readSavedForm();
   const [keyword, setKeyword] = useState(saved.kw);
@@ -1966,7 +1971,7 @@ const SearchPage: React.FC = () => {
     if (pipelineComplete) {
       setKeyword('');
       setLocation(t('search.defaultLocation'));
-      setTargetCount(20);
+      setTargetCount(1);
       try { localStorage.removeItem('search-form'); } catch {}
     }
   }, [pipelineComplete]);
