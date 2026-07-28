@@ -9,6 +9,7 @@ import { useThemeMode } from '../../contexts/ThemeModeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useMe } from '../../api/hooks';
 import { leadsApi, Lead } from '../../api/leads';
+import { EmailConnectionSection } from '../../pages/Settings/EmailConnectionSection';
 import { emailQueueApi, EmailItem } from '../../api/emailQueue';
 import { tasksApi, TaskItem } from '../../api/services';
 import { useNotifications, useUnreadCount, useMarkNotificationRead, useMarkAllNotificationsRead, useDismissNotification, useDismissAllNotifications } from '../../api/hooks';
@@ -627,6 +628,13 @@ const DropdownItem = styled.button<{ $danger?: boolean }>`
 
 // ponytail: <DropdownDivider/> removed — only the two deleted dropdown items
 // ever used it, so it became dead code the moment those items left.
+// <EmailStatusDivider/> below is its scoped replacement, only used by the
+// avatar dropdown's <EmailConnectionSection/> ↔ Sign Out split.
+const EmailStatusDivider = styled.hr`
+  border: none;
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  margin: 4px 2px;
+`;
 
 /* ── Logout dialog (moved from Sidebar) ── */
 const LogoutOverlay = styled.div`
@@ -1107,6 +1115,8 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
         <AvatarWrap>
           <DiceBearAvatar seed={user?.email ?? user?.name ?? 'me'} size={30} radius={15} />
           <AvatarDropdown data-avatar-dropdown>
+            <EmailConnectionSection />
+            <EmailStatusDivider />
             <DropdownItem $danger onClick={() => setShowLogoutDialog(true)}>
               <DropdownLogoutIcon /> {t('nav.signOut')}
             </DropdownItem>

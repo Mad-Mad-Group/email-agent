@@ -87,7 +87,10 @@ export const EmailConnectionSection: React.FC = () => {
 
   const connect = useMutation({
     mutationFn: async () => {
-      const returnTo = `${window.location.origin}/cms-settings?tab=myEmail`;
+      // EmailConnectionSection is mounted inside the Topbar dropdown.
+      // OAuth callback returns to whatever page they were on; falling
+      // back to /cms-agents keeps it stable without a dedicated landing.
+      const returnTo = `${window.location.origin}${window.location.pathname}`;
       // Provider is hard-coded 'gmail' for Phase 1.
       const { data } = await client.post('/auth/email/gmail/start', { returnTo });
       return data.data as { url: string; state: string };
