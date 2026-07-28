@@ -8,6 +8,7 @@ import { media } from '../../styles/media';
 import { glassSurface } from '../../styles/glassSurface';
 import { useUsers, useMe, useTokenUsage } from '../../api/hooks';
 import { UserItem, usersApi } from '../../api/services';
+import DiceBearAvatar from '../../components/DiceBearAvatar';
 
 /* ══════════════════════════════════════
    CMS Users — LUNO Contacts-style UI
@@ -223,14 +224,8 @@ const NameCell = styled.div`
   display: flex; align-items: center; gap: ${({ theme }) => theme.spacing.sm}px;
 `;
 
-const AvatarCircle = styled.div<{ $bg: string }>`
-  width: 36px; height: 36px; border-radius: 50%;
-  background: ${({ $bg }) => $bg};
-  display: flex; align-items: center; justify-content: center;
-  font-size: 0.8125rem; font-weight: 600; color: ${({ theme }) => theme.colors.textPrimary};
-  flex-shrink: 0;
-  box-shadow: none;
-`;
+// AvatarCircle removed — see <DiceBearAvatar/> in render below. Seed on user.email
+// (fallback to user_id) so each user gets a deterministic face across reloads.
 
 const UserName = styled.span`
   color: ${({ theme }) => theme.colors.textPrimary}; font-weight: 500;
@@ -531,14 +526,9 @@ function formatDate(iso?: string): string {
 
 /* roleProps is now built inside the component via useTheme() */
 
-function getInitials(name: string): string {
-  return name
-    .split(' ')
-    .map(w => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
-}
+// getInitials + AvatarCircle removed — DiceBearAvatar renders deterministic
+// SVGs from seed = user.email ?? user.user_id, so initial-letter fallback no
+// longer needed.
 
 function formatNumber(n: number): string {
   return n.toLocaleString('en-US');
@@ -768,9 +758,7 @@ const Users: React.FC = () => {
                         <TRow key={u.user_id || i}>
                           <td>
                             <NameCell>
-                              <AvatarCircle $bg={theme.colors.surfaceMuted}>
-                                {getInitials(name)}
-                              </AvatarCircle>
+                              <DiceBearAvatar seed={user?.email ?? u.user_id ?? 'unknown'} size={36} radius={18} />
                               <UserName>{name}</UserName>
                             </NameCell>
                           </td>
@@ -808,9 +796,7 @@ const Users: React.FC = () => {
                         <TRow key={u._id} onClick={() => setSelectedUser(u)}>
                           <td>
                             <NameCell>
-                              <AvatarCircle $bg={avatar}>
-                                {getInitials(u.name)}
-                              </AvatarCircle>
+                              <DiceBearAvatar seed={u.email ?? u._id ?? 'unknown'} size={36} radius={18} />
                               <UserName>{u.name}</UserName>
                             </NameCell>
                           </td>
@@ -858,9 +844,7 @@ const Users: React.FC = () => {
           <DpOverlay onClick={handleCloseDetail} />
           <DpPanel>
             <DpHeader>
-              <AvatarCircle $bg={roleProps(selectedUser.role).avatar} style={{ width: 42, height: 42, fontSize: '0.875rem' }}>
-                {getInitials(selectedUser.name)}
-              </AvatarCircle>
+              <DiceBearAvatar seed={selectedUser.email ?? selectedUser._id ?? 'unknown'} size={42} radius={21} />
               <DpHeaderInfo>
                 <DpUserName>{selectedUser.name}</DpUserName>
                 <RoleBadge $bg={roleProps(selectedUser.role).bg} $fg={roleProps(selectedUser.role).fg}>
