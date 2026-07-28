@@ -94,7 +94,7 @@ const zhCN = {
     outbox: '发件箱',
     workflows: '工作流',
     team: '团队',
-    agents: 'AI Agent',
+    agents: 'AI 代理',
     cms: 'CMS',
     cmsDesc: '客户管理系统',
     verifiedEmails: '已验证邮箱',

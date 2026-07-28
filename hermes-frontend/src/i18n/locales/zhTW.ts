@@ -94,7 +94,7 @@ const zhTW = {
     outbox: '寄件匣',
     workflows: '工作流程',
     team: '團隊',
-    agents: 'AI Agent',
+    agents: 'AI 智能代理',
     cms: 'CMS',
     cmsDesc: '客戶管理系統',
     verifiedEmails: '已驗證信箱',
