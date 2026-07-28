@@ -13,6 +13,7 @@ import { emailQueueApi, EmailItem } from '../../api/emailQueue';
 import { tasksApi, TaskItem } from '../../api/services';
 import { useNotifications, useUnreadCount, useMarkNotificationRead, useMarkAllNotificationsRead, useDismissNotification, useDismissAllNotifications } from '../../api/hooks';
 import { NotificationItem } from '../../api/notifications';
+import DiceBearAvatar from '../DiceBearAvatar';
 
 interface TopbarProps {
   title: string;
@@ -579,19 +580,8 @@ const AvatarWrap = styled.div`
   &:hover > div[data-avatar-dropdown] { opacity: 1; pointer-events: auto; transform: translateY(0); }
 `;
 
-const UserAvatar = styled.div`
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: ${({ theme }) => theme.colors.accent};
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: ${({ theme }) => theme.colors.textInverted};
-  font-size: 0.75rem;
-  font-weight: 700;
-  cursor: pointer;
-`;
+// ponytail: <UserAvatar/> styled-component (initial-letter blue chip) removed.
+// <DiceBearAvatar/> now owns border-radius, size, and bg fallback for the chip.
 
 const AvatarDropdown = styled.div`
   position: absolute;
@@ -635,11 +625,8 @@ const DropdownItem = styled.button<{ $danger?: boolean }>`
   svg { flex-shrink: 0; }
 `;
 
-const DropdownDivider = styled.hr`
-  border: none;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
-  margin: 4px 0;
-`;
+// ponytail: <DropdownDivider/> removed — only the two deleted dropdown items
+// ever used it, so it became dead code the moment those items left.
 
 /* ── Logout dialog (moved from Sidebar) ── */
 const LogoutOverlay = styled.div`
@@ -724,33 +711,11 @@ const NotifBellIcon = () => (
 
 /* ── Dropdown menu icons ── */
 
-const DropdownProfileIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-  </svg>
-);
-
-const DropdownSettingsIcon = () => (
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-  </svg>
-);
-
 const DropdownLogoutIcon = () => (
   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
   </svg>
 );
-
-const getInitials = (name?: string, email?: string) => {
-  if (name) {
-    const parts = name.trim().split(/\s+/);
-    return parts.length >= 2
-      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-      : name.slice(0, 2).toUpperCase();
-  }
-  return email ? email.slice(0, 2).toUpperCase() : '??';
-};
 
 export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, onToggleSidebar, sidebarCollapsed }) => {
   const { t, i18n } = useTranslation();
@@ -770,7 +735,8 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const user = (me as any)?.data ?? me;
-  const initials = getInitials(user?.name, user?.email);
+  // ponytail: seed on stable email so the same user always renders the same
+  // face. <DiceBearAvatar/> owns its own border-radius + bg fallback.
 
   const handleLogout = () => {
     setShowLogoutDialog(false);
@@ -1139,15 +1105,8 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
           </NotifList>
         </NotifPanel>
         <AvatarWrap>
-          <UserAvatar>{initials}</UserAvatar>
+          <DiceBearAvatar seed={user?.email ?? user?.name ?? 'me'} size={30} radius={15} />
           <AvatarDropdown data-avatar-dropdown>
-            <DropdownItem onClick={() => navigate('/cms-user-info')}>
-              <DropdownProfileIcon /> {t('nav.userInfo')}
-            </DropdownItem>
-            <DropdownItem onClick={() => navigate('/cms-settings')}>
-              <DropdownSettingsIcon /> {t('nav.settings')}
-            </DropdownItem>
-            <DropdownDivider />
             <DropdownItem $danger onClick={() => setShowLogoutDialog(true)}>
               <DropdownLogoutIcon /> {t('nav.signOut')}
             </DropdownItem>

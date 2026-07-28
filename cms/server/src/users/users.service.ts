@@ -143,6 +143,23 @@ export class UsersService {
     };
   }
 
+  /* ── WhatsApp message templates ── */
+
+  async getWhatsappTemplates(id: string): Promise<{ id: string; name: string; body: string }[]> {
+    const user = await this.userModel.findById(id).select('whatsappTemplates').lean().exec();
+    return (user as any)?.whatsappTemplates ?? [];
+  }
+
+  async updateWhatsappTemplates(
+    id: string,
+    templates: { id: string; name: string; body: string }[],
+  ): Promise<{ id: string; name: string; body: string }[]> {
+    await this.userModel.findByIdAndUpdate(id, {
+      $set: { whatsappTemplates: templates, updated_at: new Date() },
+    }).exec();
+    return this.getWhatsappTemplates(id);
+  }
+
   async updateEmailSettings(
     id: string,
     data: {

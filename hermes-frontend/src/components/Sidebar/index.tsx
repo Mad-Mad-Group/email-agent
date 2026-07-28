@@ -705,6 +705,8 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
       <BottomMenuList>
         <li><MLink to="/cms-agents"><IconAgent /><FitSpan>{t('nav.agents')}</FitSpan>{counts['/cms-agents'] ? <Badge>{counts['/cms-agents']}</Badge> : null}</MLink></li>
         <li><MLink to="/cms-users"><IconUsers /><FitSpan>{t('nav.team')}</FitSpan></MLink></li>
+        <li><MLink to="/cms-user-info"><IconUserInfo /><FitSpan>{t('nav.userInfo')}</FitSpan></MLink></li>
+        <li><MLink to="/cms-settings"><IconSettings /><FitSpan>{t('nav.settings')}</FitSpan></MLink></li>
       </BottomMenuList>
       </ScrollArea>
 

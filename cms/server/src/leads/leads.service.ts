@@ -8,6 +8,9 @@ import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { randomBytes } from 'crypto';
 import { Lead, LeadDocument } from './schemas/lead.schema';
+import { EmailQueueItem, EmailQueueDocument } from '../email-queue/schemas/email-queue.schema';
+import { Analysis, AnalysisDocument } from '../ai/schemas/analysis.schema';
+import { CalendarEvent, CalendarEventDocument } from '../calendar/schemas/calendar-event.schema';
 import { CreateLeadDto } from './dto/create-lead.dto';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { ListLeadsQueryDto } from './dto/list-leads-query.dto';
@@ -19,13 +22,19 @@ import {
   toDbStatus,
 } from './dto/lead-status.enum';
 import { SseEvent, SseService } from '../sse/sse.service';
+import { TasksService } from '../tasks/tasks.service';
+import { SKILL } from '../tasks/dto/task-status.enum';
 
 @Injectable()
 export class LeadsService {
   constructor(
     @InjectModel(Lead.name) private readonly leadModel: Model<LeadDocument>,
+    @InjectModel(EmailQueueItem.name) private readonly emailQueueModel: Model<EmailQueueDocument>,
+    @InjectModel(Analysis.name) private readonly analysisModel: Model<AnalysisDocument>,
+    @InjectModel(CalendarEvent.name) private readonly calendarEventModel: Model<CalendarEventDocument>,
     // @Optional() 令單元測試/無 SSE 時都唔會炸
     @Optional() private readonly sse?: SseService,
+    @Optional() private readonly tasks?: TasksService,
   ) {}
 
   async create(dto: CreateLeadDto, userId?: string): Promise<LeadDocument> {
@@ -36,6 +45,16 @@ export class LeadsService {
       _status: 'unverified',
     });
     this.sse?.emit(SseEvent.LEAD_UPDATE, { id: lead.id, action: 'created' });
+
+    // 即刻觸發 pipeline（有 website 先做 enrich+analyze）
+    if (dto.website && this.tasks) {
+      this.tasks.enqueue({
+        skill_id: SKILL.ANALYZE,
+        title: `[auto] enrich+analyze — ${dto.company_name || lead.id}`,
+        params: { lead_object_id: lead.id, user_id: userId, auto_trigger: true },
+      }).catch(() => {}); // fire-and-forget，唔 block create response
+    }
+
     return lead;
   }
 
@@ -212,11 +231,23 @@ export class LeadsService {
     });
   }
 
-  /** soft delete（additive _deleted_at 標記，Python 會忽略）*/
+  /** hard delete lead + 清理所有關聯資料（email_queue / analyses / calendar_events） */
   async remove(id: string, userId?: string): Promise<void> {
     const lead = await this.findOne(id, userId);
-    lead._deleted_at = this.nowStamp();
-    await lead.save();
+    const leadId = lead.lead_id; // string key used by related collections
+
+    // 並行刪除關聯資料
+    await Promise.all([
+      lead.deleteOne(),
+      ...(leadId
+        ? [
+            this.emailQueueModel.deleteMany({ lead_id: leadId }).exec(),
+            this.analysisModel.deleteMany({ lead_id: leadId }).exec(),
+            this.calendarEventModel.deleteMany({ lead_id: leadId }).exec(),
+          ]
+        : []),
+    ]);
+
     this.sse?.emit(SseEvent.LEAD_UPDATE, { id: lead.id, action: 'deleted' });
   }
 

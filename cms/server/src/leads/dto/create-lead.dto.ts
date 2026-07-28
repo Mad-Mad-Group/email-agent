@@ -25,6 +25,7 @@ export class CreateLeadDto {
   @IsOptional() @IsArray() @IsString({ each: true }) extra_emails?: string[];
   @IsOptional() @IsString() phone?: string;
   @IsOptional() @IsArray() @IsString({ each: true }) extra_phones?: string[];
+  @IsOptional() @IsString() whatsapp?: string;
   @IsOptional() @IsString() website?: string;
   @IsOptional() @IsString() address?: string;
   @IsOptional() @IsObject() social_media?: Record<string, string>;

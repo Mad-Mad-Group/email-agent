@@ -73,6 +73,7 @@ const PageCard = styled.div`
   border-radius: ${({ theme }) => theme.radii.card}px;
   padding: 24px;
   display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
+  ${media.mobile} { padding: 12px 10px; gap: 10px; }
 `;
 
 const PageTitle = styled.h1`
@@ -85,8 +86,12 @@ const PageTitle = styled.h1`
     background: linear-gradient(135deg, #E0ACD2, #ACC0DE);
     -webkit-background-clip: text; background-clip: text;
   `}
+  ${media.mobile} { font-size: 1.15rem; }
 `;
-const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
+const PageSub = styled.p`
+  font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;
+  ${media.mobile} { display: none; }
+`;
 
 const BulkBar = styled.div`
   display: flex;
@@ -218,6 +223,13 @@ const CircleActionBtn = styled.button<{ $color?: string; $spinning?: boolean }>`
   &:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
   svg { width: 14px; height: 14px; }
 
+  ${media.mobile} {
+    width: 28px;
+    height: 28px;
+    svg { width: 12px; height: 12px; }
+    &::after { display: none; }
+  }
+
   ${({ $spinning }) => $spinning && css`
     animation: ${circleSpinGlow} 0.8s ease-in-out;
     border-color: #6C7A24;
@@ -249,6 +261,16 @@ const IconRefresh = ({ spinning }: { spinning?: boolean }) => (
     </svg>
   </RefreshIconWrap>
 );
+
+const HeaderRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  ${media.mobile} {
+    gap: 8px;
+    & > div:first-child { transform: scale(0.75); transform-origin: left center; margin-right: -12px; }
+  }
+`;
 
 /* ── Tabs Row ── */
 
@@ -292,6 +314,7 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
     background: ${({ $active }) => $active ? 'transparent' : 'rgba(0,0,0,0.04)'};
   }
   ${media.tabletDown} { padding: 8px 16px; }
+  ${media.mobile} { padding: 6px 12px; font-size: 0.78rem; gap: 5px; svg { width: 12px; height: 12px; } }
 `;
 
 const TabSlider = styled.div<{ $left: number; $width: number }>`
@@ -311,6 +334,7 @@ const TabNumber = styled.span`
   font-size: 1.25rem;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
+  ${media.mobile} { font-size: 1rem; }
 `;
 
 const ToolbarSep = styled.div`
@@ -326,6 +350,7 @@ const SubPillRow = styled.div`
   padding: 0;
   position: relative;
   ${media.tabletDown} { padding: 2px 12px; gap: 6px; flex-wrap: wrap; }
+  ${media.mobile} { padding: 0; gap: 6px; }
 `;
 
 const SubPillTrack = styled.div`
@@ -457,7 +482,8 @@ const Table = styled.table`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 12px;
   overflow: hidden;
-  th:nth-child(1) { width: 4%; }    /* checkbox */
+  th:nth-child(1) { width: 4%; text-overflow: clip; }    /* checkbox */
+  td:nth-child(1) { text-overflow: clip; }
   th:nth-child(2) { width: 34%; }   /* name */
   th:nth-child(3) { width: 16%; }   /* reply */
   th:nth-child(4) { width: 14%; }   /* source user / tech */
@@ -486,10 +512,15 @@ const Table = styled.table`
     line-height: 1.3;
   }
   ${media.mobile} {
-    min-width: 640px;
+    min-width: 420px;
     font-size: 0.75rem;
-    th, td { padding: 5px 8px; }
+    th, td { padding: 5px 6px; }
     th { font-size: 0.625rem; }
+    th:nth-child(4), td:nth-child(4),
+    th:nth-child(5), td:nth-child(5) { display: none; }
+    th:nth-child(2) { width: 44%; }
+    th:nth-child(3) { width: 30%; }
+    th:nth-child(6) { width: 18%; }
   }
 `;
 
@@ -521,19 +552,27 @@ const NameCell = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 `;
 
 const NameText = styled.div`
   display: flex;
   flex-direction: column;
+  min-width: 0;
   strong {
     color: ${({ theme }) => theme.colors.textPrimary};
     font-size: 0.8125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   small {
     color: ${({ theme }) => theme.colors.textTertiary};
     font-size: 0.6875rem;
     margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 `;
 
@@ -1031,6 +1070,13 @@ const Leads: React.FC = () => {
 
   const TABS: TabDef[] = [
     {
+      key: 'all',
+      label: t('leads.tabAll', '全部'),
+      color: 'blue',
+      icon: 'processing',
+      filter: () => true,
+    },
+    {
       key: 'processing',
       label: t('leads.tabProcessing', '待處理'),
       color: 'amber',
@@ -1068,7 +1114,7 @@ const Leads: React.FC = () => {
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('processing');
+  const [activeTab, setActiveTab] = useState('all');
   const styledTheme = useTheme() as any;
 
   /* ── Sliding indicator refs & state ── */
@@ -1292,7 +1338,9 @@ const Leads: React.FC = () => {
 
 
   const handleDelete = async (id: string) => {
-    const ok = await showConfirm(t('leads.confirmDelete'));
+    const lead = allLeads.find(l => l._id === id);
+    const name = lead?.company_name || id;
+    const ok = await showConfirm(t('leads.confirmDelete', { name }));
     if (ok) {
       deleteLead.mutate(id, {
         onSuccess: () => console.info('Lead 已刪除'),
@@ -1382,10 +1430,10 @@ const Leads: React.FC = () => {
   return (
     <Page>
         <PageCard>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <HeaderRow>
           <SpriteAvatar src={AGENTS.S1.sprite} frames={AGENTS.S1.frames} frameW={AGENTS.S1.frameW} frameH={AGENTS.S1.frameH} size={48} />
           <div><PageTitle>{t('leads.title')}</PageTitle><PageSub>{t('leads.subtitle')}</PageSub></div>
-        </div>
+        </HeaderRow>
 
         {/* ── Orbital-style View Tabs ── */}
         <TabsRow ref={tabsRowRef}>
@@ -1535,7 +1583,7 @@ const Leads: React.FC = () => {
                         </td>
                         <td>
                           <NameCell>
-                            <DpStatusPill $status={statusKey}>{statusText}</DpStatusPill>
+                            <DpStatusPill $status={statusKey} style={{ flexShrink: 0 }}>{statusText}</DpStatusPill>
                             <NameText>
                               <strong>{name}</strong>
                               {lead.website && <small>{lead.website}</small>}
@@ -1566,7 +1614,8 @@ const Leads: React.FC = () => {
                         <td style={{ textAlign: 'center' }}>
                           {(lead as any)._tech_score != null ? (() => {
                             const s = (lead as any)._tech_score as number;
-                            const bg = s >= 50 ? styledTheme.strong.mauve : s >= 25 ? styledTheme.colors.amber : styledTheme.strong.olive;
+                            const bg = s >= 50 ? styledTheme.strong.mauve : s >= 25 ? styledTheme.strong.gold : styledTheme.strong.olive;
+                            const fg = s >= 25 && s < 50 ? '#0B080B' : '#FFFFFF';
                             const label = s >= 50 ? t('leads.techOld') : s >= 25 ? t('leads.techNormal') : t('leads.techNew');
                             return (
                               <span style={{
@@ -1575,7 +1624,7 @@ const Leads: React.FC = () => {
                                 borderRadius: 12,
                                 fontSize: '0.7rem',
                                 fontWeight: 600,
-                                color: styledTheme.colors.textInverted,
+                                color: fg,
                                 background: bg,
                               }}>
                                 {s} {label}

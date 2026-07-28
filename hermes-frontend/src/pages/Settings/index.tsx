@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { media } from '../../styles/media';
 import { glassSurface } from '../../styles/glassSurface';
-import { useSettings, useNotificationPrefs, useUpdateNotificationPrefs, useEmailSettings, useUpdateEmailSettings } from '../../api/hooks';
+import { useSettings, useNotificationPrefs, useUpdateNotificationPrefs, useEmailSettings, useUpdateEmailSettings, useWhatsappTemplates, useUpdateWhatsappTemplates } from '../../api/hooks';
 import { settingsApi } from '../../api/services';
 
 /* ══════════════════════════════════════
@@ -326,6 +326,13 @@ const MailIcon = () => (
   </svg>
 );
 
+const WhatsAppIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M12 2C6.48 2 2 6.48 2 12c0 1.77.46 3.43 1.27 4.88L2 22l5.23-1.24A9.96 9.96 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2z" />
+    <path d="M16.5 14.38c-.23.66-1.32 1.22-1.82 1.3-.47.07-1.04.1-1.68-.11-.39-.13-.88-.3-1.52-.58-2.69-1.21-4.44-3.93-4.58-4.12-.13-.18-1.09-1.46-1.09-2.78s.68-1.97.93-2.24c.25-.27.54-.33.72-.33h.52c.17 0 .39-.06.61.47.23.54.79 1.93.86 2.07.07.14.12.3.02.47-.56 1.11-1.17 1.07-.86 1.6 1.13 1.93 2.23 2.58 3.92 3.38.28.13.44.11.6-.07.16-.18.68-.79.86-1.07.18-.27.37-.23.61-.14.25.1 1.6.76 1.87.89.28.14.46.21.52.33.08.11.08.69-.15 1.32z" />
+  </svg>
+);
+
 const SectionTitle = styled.div`
   font-size: 0.875rem; font-weight: 600;
   color: ${({ theme }) => theme.colors.accent};
@@ -491,7 +498,7 @@ function toDisplayEntries(data: unknown): [string, unknown][] {
 
 /* ── Tabs config ── */
 
-type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'email' | 'other';
+type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'email' | 'whatsapp' | 'other';
 
 /* ── Component ── */
 
@@ -610,6 +617,38 @@ const Settings: React.FC = () => {
     setTimeout(() => setEmailFeedback(null), 3000);
   };
 
+  // WhatsApp templates (per-user)
+  const { data: waTemplates, isLoading: waLoading } = useWhatsappTemplates();
+  const updateWa = useUpdateWhatsappTemplates();
+  const [waList, setWaList] = useState<{ id: string; name: string; body: string }[]>([]);
+  const [waInit, setWaInit] = useState(false);
+  const [waFeedback, setWaFeedback] = useState<string | null>(null);
+  useEffect(() => {
+    if (waTemplates && !waInit) {
+      setWaList(waTemplates as any[] ?? []);
+      setWaInit(true);
+    }
+  }, [waTemplates, waInit]);
+
+  const handleAddWaTemplate = () => {
+    setWaList(prev => [...prev, { id: Date.now().toString(36), name: '', body: '' }]);
+  };
+  const handleRemoveWaTemplate = (id: string) => {
+    setWaList(prev => prev.filter(t => t.id !== id));
+  };
+  const handleWaChange = (id: string, field: 'name' | 'body', value: string) => {
+    setWaList(prev => prev.map(t => t.id === id ? { ...t, [field]: value } : t));
+  };
+  const handleSaveWa = async () => {
+    try {
+      await updateWa.mutateAsync(waList);
+      setWaFeedback(t('settings.whatsappSaved'));
+    } catch {
+      setWaFeedback(t('settings.whatsappSaveFailed'));
+    }
+    setTimeout(() => setWaFeedback(null), 3000);
+  };
+
   // Notification preferences (per-user)
   const { data: notifPrefs, isLoading: notifLoading } = useNotificationPrefs();
   const updateNotif = useUpdateNotificationPrefs();
@@ -676,6 +715,7 @@ const Settings: React.FC = () => {
   tabs.push({ key: 'auto-send', label: t('settings.autoSendRules'), icon: <ZapIcon /> });
   tabs.push({ key: 'email-scoring', label: t('settings.emailScoringRules'), icon: <StarIcon /> });
   tabs.push({ key: 'email', label: t('settings.emailTab'), icon: <MailIcon /> });
+  tabs.push({ key: 'whatsapp', label: t('settings.whatsappTab'), icon: <WhatsAppIcon /> });
   if (hasOther) {
     tabs.push({ key: 'other', label: t('settings.currentConfig'), icon: <SlidersIcon /> });
   }
@@ -1135,6 +1175,81 @@ const Settings: React.FC = () => {
                     <BtnRow>
                       <SaveBtn onClick={handleSaveEmail} disabled={updateEmail.isPending}>
                         {updateEmail.isPending ? t('settings.updating') : t('settings.save')}
+                      </SaveBtn>
+                    </BtnRow>
+                  </>
+                )}
+              </ContentBody>
+            </>
+          )}
+
+          {/* ── WhatsApp Templates ── */}
+          {tab === 'whatsapp' && (
+            <>
+              <ContentHeader><h2>{t('settings.whatsappTitle')}</h2></ContentHeader>
+              <ContentBody>
+                {waLoading ? (
+                  <EmptyText>{t('settings.loadingSettings')}</EmptyText>
+                ) : (
+                  <>
+                    <DefaultBanner>{t('settings.whatsappDesc')}</DefaultBanner>
+                    <FormHint style={{ marginBottom: 12, fontSize: '0.75rem', opacity: 0.7 }}>
+                      {t('settings.whatsappVariables')}
+                    </FormHint>
+
+                    {waList.length === 0 && (
+                      <EmptyText>{t('settings.whatsappNoTemplates')}</EmptyText>
+                    )}
+
+                    {waList.map((tpl, idx) => (
+                      <Card key={tpl.id} style={{ padding: '14px 16px', marginBottom: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <span style={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.5, minWidth: 20 }}>#{idx + 1}</span>
+                          <Input
+                            value={tpl.name}
+                            onChange={e => handleWaChange(tpl.id, 'name', e.target.value)}
+                            placeholder={t('settings.whatsappTemplateNamePlaceholder')}
+                            style={{ flex: 1 }}
+                          />
+                          <SaveBtn
+                            onClick={() => handleRemoveWaTemplate(tpl.id)}
+                            style={{ background: 'transparent', color: theme.strong.mauve, padding: '4px 10px', fontSize: '0.75rem' }}
+                          >
+                            {t('settings.whatsappDeleteTemplate')}
+                          </SaveBtn>
+                        </div>
+                        <textarea
+                          value={tpl.body}
+                          onChange={e => handleWaChange(tpl.id, 'body', e.target.value)}
+                          placeholder={t('settings.whatsappTemplateBodyPlaceholder')}
+                          rows={4}
+                          style={{
+                            width: '100%', padding: '8px 10px', borderRadius: 6,
+                            border: `1px solid ${theme.colors.border}`,
+                            background: theme.colors.cardBg,
+                            color: theme.colors.text,
+                            fontFamily: 'inherit', fontSize: '0.85rem', resize: 'vertical',
+                          }}
+                        />
+                      </Card>
+                    ))}
+
+                    <SaveBtn
+                      onClick={handleAddWaTemplate}
+                      style={{ background: 'transparent', color: theme.colors.accent, border: `1px dashed ${theme.colors.border}`, width: '100%', marginBottom: 12 }}
+                    >
+                      {t('settings.whatsappAddTemplate')}
+                    </SaveBtn>
+
+                    {waFeedback && (
+                      <FormHint style={{ color: waFeedback === t('settings.whatsappSaved') ? theme.strong.olive : theme.strong.mauve }}>
+                        {waFeedback}
+                      </FormHint>
+                    )}
+
+                    <BtnRow>
+                      <SaveBtn onClick={handleSaveWa} disabled={updateWa.isPending}>
+                        {updateWa.isPending ? t('settings.updating') : t('settings.save')}
                       </SaveBtn>
                     </BtnRow>
                   </>

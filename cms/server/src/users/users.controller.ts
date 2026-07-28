@@ -62,6 +62,21 @@ export class UserPrefsController {
   ) {
     return this.usersService.updateEmailSettings(user.userId, body);
   }
+
+  /* ── WhatsApp message templates ── */
+
+  @Get('whatsapp-templates')
+  async getWhatsappTemplates(@CurrentUser() user: JwtUser) {
+    return this.usersService.getWhatsappTemplates(user.userId);
+  }
+
+  @Patch('whatsapp-templates')
+  async updateWhatsappTemplates(
+    @CurrentUser() user: JwtUser,
+    @Body() body: { id: string; name: string; body: string }[],
+  ) {
+    return this.usersService.updateWhatsappTemplates(user.userId, body);
+  }
 }
 
 @ApiTags('Users 用戶管理')

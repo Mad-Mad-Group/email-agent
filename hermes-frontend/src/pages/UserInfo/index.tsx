@@ -5,22 +5,16 @@ import { glassSurface } from '../../styles/glassSurface';
 import { media } from '../../styles/media';
 import { useMe, useUpdateProfile, useChangePassword } from '../../api/hooks';
 import toast from 'react-hot-toast';
+import DiceBearAvatar from '../../components/DiceBearAvatar';
 
 /* ══════════════════════════════════════
    User Info — 個人資料頁面 (LUNO style)
    ══════════════════════════════════════ */
 
-const getInitials = (name?: string, email?: string) => {
-  if (name) {
-    const parts = name.trim().split(/\s+/);
-    return parts.length >= 2
-      ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
-      : name.slice(0, 2).toUpperCase();
-  }
-  return email ? email.slice(0, 2).toUpperCase() : '??';
-};
+// ponytail: getInitials + <Avatar/> styled (64px blue initial-letter circle)
+// removed — <DiceBearAvatar/> owns size, radius, and bg fallback.
 
-/* ── Layout ── */
+// ── Layout ──
 
 const Page = styled.div`display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;`;
 
@@ -50,16 +44,6 @@ const HeroCard = styled(Card)`
 const HeroBody = styled.div`
   display: flex; align-items: center; gap: 20px;
   ${media.mobile} { flex-direction: column; text-align: center; }
-`;
-
-const Avatar = styled.div`
-  width: 64px; height: 64px;
-  border-radius: 50%;
-  background: ${({ theme }) => theme.colors.accent};
-  color: ${({ theme }) => theme.colors.textInverted};
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.35rem; font-weight: 700; letter-spacing: 1px;
-  flex-shrink: 0;
 `;
 
 const HeroInfo = styled.div`flex: 1;`;
@@ -418,7 +402,7 @@ const UserInfoPage: React.FC = () => {
       {/* ── Hero profile card ── */}
       <HeroCard>
         <HeroBody>
-          <Avatar>{getInitials(user?.name, user?.email)}</Avatar>
+          <DiceBearAvatar seed={user?.email ?? user?.name ?? 'me'} size={64} radius={32} />
           <HeroInfo>
             <HeroName>{user?.name ?? '—'}</HeroName>
             <HeroEmail>{user?.email ?? '—'}</HeroEmail>

@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { leadsApi, LeadListParams } from './leads';
 import { emailQueueApi, EmailListParams } from './emailQueue';
 import { notificationsApi } from './notifications';
-import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi, AgentSkillStats, verifiedEmailsApi, notificationPrefsApi, tokenUsageApi, emailSettingsApi, EmailSettings } from './services';
+import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi, AgentSkillStats, verifiedEmailsApi, notificationPrefsApi, tokenUsageApi, emailSettingsApi, EmailSettings, whatsappTemplatesApi, WhatsappTemplate } from './services';
 import { authApi } from './auth';
 
 /* ── Auth ── */
@@ -438,6 +438,25 @@ export const useUpdateNotificationPrefs = () => {
       notificationPrefsApi.update(prefs),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['notification-prefs'] });
+    },
+  });
+};
+
+/* ── WhatsApp Templates ── */
+
+export const useWhatsappTemplates = () =>
+  useQuery({
+    queryKey: ['whatsapp-templates'],
+    queryFn: () => whatsappTemplatesApi.get().then(r => r.data),
+  });
+
+export const useUpdateWhatsappTemplates = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (templates: WhatsappTemplate[]) =>
+      whatsappTemplatesApi.update(templates),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['whatsapp-templates'] });
     },
   });
 };

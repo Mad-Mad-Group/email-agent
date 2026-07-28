@@ -78,6 +78,11 @@ export class User {
 
   @Prop({ default: 993 })
   imapPort: number;
+
+  /* ── WhatsApp message templates (per-user) ── */
+
+  @Prop({ type: [Object], default: [] })
+  whatsappTemplates: { id: string; name: string; body: string }[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

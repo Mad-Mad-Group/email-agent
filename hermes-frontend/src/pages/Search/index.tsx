@@ -1771,7 +1771,9 @@ const SearchPage: React.FC = () => {
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (locRef.current && !locRef.current.contains(e.target as Node)) {
-        setShowLocPicker(false);
+        // ponytail: setShowLocPicker removed — no matching useState exists.
+        // (Teammate commit 98e65c5d referenced a setter that was never declared,
+        // causing Uncaught ReferenceError on every outside click.)
         setShowModePicker(false);
       }
     };
