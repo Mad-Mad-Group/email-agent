@@ -89,7 +89,7 @@ const zhTW = {
     bankAccounts: '銀行帳戶',
     menu: '菜單',
     leadPool: '潛在客戶池',
-    clientPool: 'Client Pool',
+    clientPool: '客戶池',
     leadSearch: '潛在客戶搜尋',
     outbox: '寄件匣',
     workflows: '工作流程',
