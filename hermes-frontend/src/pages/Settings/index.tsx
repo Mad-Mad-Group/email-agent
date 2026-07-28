@@ -7,6 +7,7 @@ import { glassSurface } from '../../styles/glassSurface';
 import { useSettings, useNotificationPrefs, useUpdateNotificationPrefs, useEmailSettings, useUpdateEmailSettings, useWhatsappTemplates, useUpdateWhatsappTemplates } from '../../api/hooks';
 import { settingsApi } from '../../api/services';
 import { EmailConnectionSection } from './EmailConnectionSection';
+import { useAuth } from '../../contexts/AuthContext';
 
 /* ══════════════════════════════════════
    CMS Settings — LUNO-style UI
@@ -499,13 +500,15 @@ function toDisplayEntries(data: unknown): [string, unknown][] {
 
 /* ── Tabs config ── */
 
-type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'email' | 'myEmail' | 'whatsapp' | 'other';
+type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'email' | 'whatsapp' | 'other';
 
 /* ── Component ── */
 
 const Settings: React.FC = () => {
   const { t } = useTranslation();
   const theme = useTheme();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
   const queryClient = useQueryClient();
   const { data, isLoading } = useSettings();
   const [busy, setBusy] = useState(false);
@@ -716,7 +719,6 @@ const Settings: React.FC = () => {
   tabs.push({ key: 'auto-send', label: t('settings.autoSendRules'), icon: <ZapIcon /> });
   tabs.push({ key: 'email-scoring', label: t('settings.emailScoringRules'), icon: <StarIcon /> });
   tabs.push({ key: 'email', label: t('settings.emailTab'), icon: <MailIcon /> });
-  tabs.push({ key: 'myEmail', label: t('settings.myEmailTab'), icon: <MailIcon /> });
   tabs.push({ key: 'whatsapp', label: t('settings.whatsappTab'), icon: <WhatsAppIcon /> });
   if (hasOther) {
     tabs.push({ key: 'other', label: t('settings.currentConfig'), icon: <SlidersIcon /> });
@@ -1096,102 +1098,100 @@ const Settings: React.FC = () => {
             </>
           )}
 
-          {/* ── Email SMTP/IMAP ── */}
+          {/* ── Email ── Unified tab: per-user connection + (admin only) org-wide SMTP defaults ── */}
           {tab === 'email' && (
             <>
               <ContentHeader><h2>{t('settings.emailSettingsTitle')}</h2></ContentHeader>
               <ContentBody>
-                {emailLoading ? (
-                  <EmptyText>{t('settings.loadingSettings')}</EmptyText>
-                ) : (
+                <SectionTitle>{t('settings.emailYourConnectionTitle')}</SectionTitle>
+                <DefaultBanner>{t('settings.emailYourConnectionDesc')}</DefaultBanner>
+                <EmailConnectionSection />
+
+                {isAdmin && (
                   <>
-                    <DefaultBanner>{t('settings.emailSettingsDesc')}</DefaultBanner>
+                    <div style={{ height: 24 }} />
+                    <SectionTitle>{t('settings.emailAdminSectionTitle')}</SectionTitle>
+                    <DefaultBanner>{t('settings.emailAdminSectionDesc')}</DefaultBanner>
+                    {emailLoading ? (
+                      <EmptyText>{t('settings.loadingSettings')}</EmptyText>
+                    ) : (
+                      <>
+                        <SectionTitle>{t('settings.smtpSection')}</SectionTitle>
+                        <FormGroup>
+                          <Label>{t('settings.smtpHost')}</Label>
+                          <Input
+                            value={emailForm.smtpHost}
+                            onChange={e => setEmailForm(f => ({ ...f, smtpHost: e.target.value }))}
+                            placeholder={t('settings.smtpHostPlaceholder')}
+                          />
+                        </FormGroup>
+                        <FormGroup>
+                          <Label>{t('settings.smtpPort')}</Label>
+                          <Input
+                            type="number"
+                            value={emailForm.smtpPort}
+                            onChange={e => setEmailForm(f => ({ ...f, smtpPort: Number(e.target.value) }))}
+                          />
+                        </FormGroup>
+                        <FormGroup>
+                          <Label>{t('settings.smtpUser')}</Label>
+                          <Input
+                            value={emailForm.smtpUser}
+                            onChange={e => setEmailForm(f => ({ ...f, smtpUser: e.target.value }))}
+                            placeholder={t('settings.smtpUserPlaceholder')}
+                          />
+                        </FormGroup>
+                        <FormGroup>
+                          <Label>{t('settings.smtpPass')}</Label>
+                          <Input
+                            type="password"
+                            value={emailForm.smtpPass}
+                            onChange={e => setEmailForm(f => ({ ...f, smtpPass: e.target.value }))}
+                            placeholder={t('settings.smtpPassPlaceholder')}
+                          />
+                        </FormGroup>
+                        <FormGroup>
+                          <Label>{t('settings.smtpFrom')}</Label>
+                          <Input
+                            value={emailForm.smtpFrom}
+                            onChange={e => setEmailForm(f => ({ ...f, smtpFrom: e.target.value }))}
+                            placeholder={t('settings.smtpFromPlaceholder')}
+                          />
+                        </FormGroup>
 
-                    <SectionTitle>{t('settings.smtpSection')}</SectionTitle>
-                    <FormGroup>
-                      <Label>{t('settings.smtpHost')}</Label>
-                      <Input
-                        value={emailForm.smtpHost}
-                        onChange={e => setEmailForm(f => ({ ...f, smtpHost: e.target.value }))}
-                        placeholder={t('settings.smtpHostPlaceholder')}
-                      />
-                    </FormGroup>
-                    <FormGroup>
-                      <Label>{t('settings.smtpPort')}</Label>
-                      <Input
-                        type="number"
-                        value={emailForm.smtpPort}
-                        onChange={e => setEmailForm(f => ({ ...f, smtpPort: Number(e.target.value) }))}
-                      />
-                    </FormGroup>
-                    <FormGroup>
-                      <Label>{t('settings.smtpUser')}</Label>
-                      <Input
-                        value={emailForm.smtpUser}
-                        onChange={e => setEmailForm(f => ({ ...f, smtpUser: e.target.value }))}
-                        placeholder={t('settings.smtpUserPlaceholder')}
-                      />
-                    </FormGroup>
-                    <FormGroup>
-                      <Label>{t('settings.smtpPass')}</Label>
-                      <Input
-                        type="password"
-                        value={emailForm.smtpPass}
-                        onChange={e => setEmailForm(f => ({ ...f, smtpPass: e.target.value }))}
-                        placeholder={t('settings.smtpPassPlaceholder')}
-                      />
-                    </FormGroup>
-                    <FormGroup>
-                      <Label>{t('settings.smtpFrom')}</Label>
-                      <Input
-                        value={emailForm.smtpFrom}
-                        onChange={e => setEmailForm(f => ({ ...f, smtpFrom: e.target.value }))}
-                        placeholder={t('settings.smtpFromPlaceholder')}
-                      />
-                    </FormGroup>
+                        <SectionTitle>{t('settings.imapSection')}</SectionTitle>
+                        <FormGroup>
+                          <Label>{t('settings.imapHost')}</Label>
+                          <Input
+                            value={emailForm.imapHost}
+                            onChange={e => setEmailForm(f => ({ ...f, imapHost: e.target.value }))}
+                            placeholder={t('settings.imapHostPlaceholder')}
+                          />
+                        </FormGroup>
+                        <FormGroup>
+                          <Label>{t('settings.imapPort')}</Label>
+                          <Input
+                            type="number"
+                            value={emailForm.imapPort}
+                            onChange={e => setEmailForm(f => ({ ...f, imapPort: Number(e.target.value) }))}
+                          />
+                        </FormGroup>
 
-                    <SectionTitle>{t('settings.imapSection')}</SectionTitle>
-                    <FormGroup>
-                      <Label>{t('settings.imapHost')}</Label>
-                      <Input
-                        value={emailForm.imapHost}
-                        onChange={e => setEmailForm(f => ({ ...f, imapHost: e.target.value }))}
-                        placeholder={t('settings.imapHostPlaceholder')}
-                      />
-                    </FormGroup>
-                    <FormGroup>
-                      <Label>{t('settings.imapPort')}</Label>
-                      <Input
-                        type="number"
-                        value={emailForm.imapPort}
-                        onChange={e => setEmailForm(f => ({ ...f, imapPort: Number(e.target.value) }))}
-                      />
-                    </FormGroup>
+                        {emailFeedback && (
+                          <FormHint style={{ color: emailFeedback === t('settings.emailSaved') ? theme.strong.olive : theme.strong.mauve }}>
+                            {emailFeedback}
+                          </FormHint>
+                        )}
 
-                    {emailFeedback && (
-                      <FormHint style={{ color: emailFeedback === t('settings.emailSaved') ? theme.strong.olive : theme.strong.mauve }}>
-                        {emailFeedback}
-                      </FormHint>
+                        <BtnRow>
+                          <SaveBtn onClick={handleSaveEmail} disabled={updateEmail.isPending}>
+                            {updateEmail.isPending ? t('settings.updating') : t('settings.save')}
+                          </SaveBtn>
+                        </BtnRow>
+                      </>
                     )}
-
-                    <BtnRow>
-                      <SaveBtn onClick={handleSaveEmail} disabled={updateEmail.isPending}>
-                        {updateEmail.isPending ? t('settings.updating') : t('settings.save')}
-                      </SaveBtn>
-                    </BtnRow>
                   </>
                 )}
-              </ContentBody>
-            </>
-          )}
-
-          {/* ── My Email (per-user OAuth2 / SMTP/IMAP) ── */}
-          {tab === 'myEmail' && (
-            <>
-              <ContentHeader><h2>{t('settings.myEmailTitle')}</h2></ContentHeader>
-              <ContentBody>
-                <DefaultBanner>{t('settings.myEmailDesc')}</DefaultBanner>
-                <EmailConnectionSection />
               </ContentBody>
             </>
           )}
