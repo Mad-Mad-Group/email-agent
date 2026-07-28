@@ -22,6 +22,8 @@ import {
   toDbStatus,
 } from './dto/lead-status.enum';
 import { SseEvent, SseService } from '../sse/sse.service';
+import { TasksService } from '../tasks/tasks.service';
+import { SKILL } from '../tasks/dto/task-status.enum';
 
 @Injectable()
 export class LeadsService {
@@ -32,6 +34,7 @@ export class LeadsService {
     @InjectModel(CalendarEvent.name) private readonly calendarEventModel: Model<CalendarEventDocument>,
     // @Optional() 令單元測試/無 SSE 時都唔會炸
     @Optional() private readonly sse?: SseService,
+    @Optional() private readonly tasks?: TasksService,
   ) {}
 
   async create(dto: CreateLeadDto, userId?: string): Promise<LeadDocument> {
@@ -42,6 +45,16 @@ export class LeadsService {
       _status: 'unverified',
     });
     this.sse?.emit(SseEvent.LEAD_UPDATE, { id: lead.id, action: 'created' });
+
+    // 即刻觸發 pipeline（有 website 先做 enrich+analyze）
+    if (dto.website && this.tasks) {
+      this.tasks.enqueue({
+        skill_id: SKILL.ANALYZE,
+        title: `[auto] enrich+analyze — ${dto.company_name || lead.id}`,
+        params: { lead_object_id: lead.id, user_id: userId, auto_trigger: true },
+      }).catch(() => {}); // fire-and-forget，唔 block create response
+    }
+
     return lead;
   }
 

@@ -482,7 +482,8 @@ const Table = styled.table`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 12px;
   overflow: hidden;
-  th:nth-child(1) { width: 4%; }    /* checkbox */
+  th:nth-child(1) { width: 4%; text-overflow: clip; }    /* checkbox */
+  td:nth-child(1) { text-overflow: clip; }
   th:nth-child(2) { width: 34%; }   /* name */
   th:nth-child(3) { width: 16%; }   /* reply */
   th:nth-child(4) { width: 14%; }   /* source user / tech */
@@ -551,19 +552,27 @@ const NameCell = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 `;
 
 const NameText = styled.div`
   display: flex;
   flex-direction: column;
+  min-width: 0;
   strong {
     color: ${({ theme }) => theme.colors.textPrimary};
     font-size: 0.8125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   small {
     color: ${({ theme }) => theme.colors.textTertiary};
     font-size: 0.6875rem;
     margin-top: 1px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 `;
 
@@ -1061,6 +1070,13 @@ const Leads: React.FC = () => {
 
   const TABS: TabDef[] = [
     {
+      key: 'all',
+      label: t('leads.tabAll', '全部'),
+      color: 'blue',
+      icon: 'processing',
+      filter: () => true,
+    },
+    {
       key: 'processing',
       label: t('leads.tabProcessing', '待處理'),
       color: 'amber',
@@ -1098,7 +1114,7 @@ const Leads: React.FC = () => {
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('processing');
+  const [activeTab, setActiveTab] = useState('all');
   const styledTheme = useTheme() as any;
 
   /* ── Sliding indicator refs & state ── */
@@ -1567,7 +1583,7 @@ const Leads: React.FC = () => {
                         </td>
                         <td>
                           <NameCell>
-                            <DpStatusPill $status={statusKey}>{statusText}</DpStatusPill>
+                            <DpStatusPill $status={statusKey} style={{ flexShrink: 0 }}>{statusText}</DpStatusPill>
                             <NameText>
                               <strong>{name}</strong>
                               {lead.website && <small>{lead.website}</small>}
@@ -1598,7 +1614,8 @@ const Leads: React.FC = () => {
                         <td style={{ textAlign: 'center' }}>
                           {(lead as any)._tech_score != null ? (() => {
                             const s = (lead as any)._tech_score as number;
-                            const bg = s >= 50 ? styledTheme.strong.mauve : s >= 25 ? styledTheme.colors.amber : styledTheme.strong.olive;
+                            const bg = s >= 50 ? styledTheme.strong.mauve : s >= 25 ? styledTheme.strong.gold : styledTheme.strong.olive;
+                            const fg = s >= 25 && s < 50 ? '#0B080B' : '#FFFFFF';
                             const label = s >= 50 ? t('leads.techOld') : s >= 25 ? t('leads.techNormal') : t('leads.techNew');
                             return (
                               <span style={{
@@ -1607,7 +1624,7 @@ const Leads: React.FC = () => {
                                 borderRadius: 12,
                                 fontSize: '0.7rem',
                                 fontWeight: 600,
-                                color: styledTheme.colors.textInverted,
+                                color: fg,
                                 background: bg,
                               }}>
                                 {s} {label}

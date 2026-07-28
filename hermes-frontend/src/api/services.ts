@@ -112,6 +112,20 @@ export const emailSettingsApi = {
     client.patch<EmailSettings>('/users/me/email-settings', data),
 };
 
+/* ── WhatsApp Templates (per-user) ── */
+
+export interface WhatsappTemplate {
+  id: string;
+  name: string;
+  body: string;
+}
+
+export const whatsappTemplatesApi = {
+  get: () => client.get<WhatsappTemplate[]>('/users/me/whatsapp-templates'),
+  update: (templates: WhatsappTemplate[]) =>
+    client.patch<WhatsappTemplate[]>('/users/me/whatsapp-templates', templates),
+};
+
 /* ── Search ── */
 
 export interface SearchPayload {
