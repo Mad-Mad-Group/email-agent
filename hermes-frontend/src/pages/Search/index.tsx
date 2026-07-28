@@ -2188,7 +2188,7 @@ const SearchPage: React.FC = () => {
                 />
               </LocInputWrap>
               <NumberWrap>
-                <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(200, (Number(c) || 1) + 5))}><ChevronUp /></NumArrowBtn>
+                <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.min(200, (Number(c) || 1) + 1))}><ChevronUp /></NumArrowBtn>
                 <NumberInput
                   type="number"
                   min={1}
@@ -2205,7 +2205,7 @@ const SearchPage: React.FC = () => {
                     setTargetCount((!n || n < 1) ? 1 : Math.min(200, n));
                   }}
                 />
-                <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.max(1, (Number(c) || 1) - 5))}><ChevronDown /></NumArrowBtn>
+                <NumArrowBtn type="button" onClick={() => setTargetCount(c => Math.max(1, (Number(c) || 1) - 1))}><ChevronDown /></NumArrowBtn>
               </NumberWrap>
               <BarSearchBtn type="submit" disabled={search.isPending || !keyword.trim()}>
                 {search.isPending ? <Spinner /> : <SearchBtnIcon />}
