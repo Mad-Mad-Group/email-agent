@@ -265,8 +265,11 @@ export const DpStatusPill = styled.span<{ $status?: string }>`
   font-weight: 500;
   padding: 2px 8px;
   /* ponytail: min-width keeps status pills visually aligned in /client-pool
-     rows regardless of i18n label length ("新" = 1 char vs "待处理" = 3 chars). */
-  min-width: 4em;
+     rows regardless of i18n label length. English "New"/"Pending" vs CJK
+     "新"/"待处理" — 5em comfortably fits 9-char English labels while
+     not over-padding CJK 3-char labels. Longer labels (e.g. "Not Interested")
+     naturally grow past the floor. */
+  min-width: 5em;
   border-radius: 99px;
   background: ${({ $status }) => STATUS_PILL_COLORS[$status || '']?.bg || '#f0f0f0'};
   color: ${({ $status }) => STATUS_PILL_COLORS[$status || '']?.fg || '#888'};
