@@ -325,7 +325,7 @@ const DpBody = styled.div`
 `;
 
 const DpColLeft = styled.div`
-  padding: 16px 24px 16px 28px;
+  padding: 14px 20px 14px 24px;
   overflow-y: auto;
   min-height: 0;
   display: flex;
@@ -340,12 +340,12 @@ const DpColLeft = styled.div`
 `;
 
 const DpColCenter = styled.div`
-  padding: 16px 24px 16px;
+  padding: 14px 20px 14px;
   overflow-y: auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   min-width: 0;
   background: ${({ theme }) => theme.colors.surface};
   &::-webkit-scrollbar { width: 5px; }
@@ -356,7 +356,7 @@ const DpColCenter = styled.div`
 `;
 
 export const DpSectionTitle = styled.h3`
-  margin: 0 0 12px;
+  margin: 0 0 8px;
   font-size: 0.6875rem;
   font-weight: 700;
   text-transform: uppercase;
@@ -379,7 +379,7 @@ const DpSectionContent = styled.div`
 
 const DpDivider = styled.div`
   height: 0;
-  margin: 10px 0;
+  margin: 6px 0;
 `;
 
 export const DpField = styled.div<{ $stacked?: boolean }>`

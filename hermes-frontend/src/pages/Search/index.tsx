@@ -153,8 +153,8 @@ const GradientGreeting = styled.h1`
   z-index: 2;
   position: relative;
   ${media.mobile} {
-    max-width: 260px;
-    font-size: clamp(1.2rem, 5vw, 2rem);
+    max-width: min(88vw, 420px);
+    font-size: clamp(1.6rem, 7.5vw, 2.25rem);
   }
 `;
 

@@ -255,7 +255,7 @@ const EmailTimeline = styled.div`
 `;
 const EmailTimelineNode = styled.div`
   position: relative;
-  margin-bottom: 18px;
+  margin-bottom: 10px;
 `;
 const EmailTimelineDot = styled.div<{ $color?: string }>`
   position: absolute;

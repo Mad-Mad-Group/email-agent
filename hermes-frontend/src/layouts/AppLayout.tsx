@@ -149,7 +149,7 @@ const Content = styled.div`
   overflow: visible;
 
   ${media.mobile} {
-    padding: 56px 10px 8px;
+    padding: 8px 10px 8px;
     gap: 8px;
   }
 `;
@@ -177,23 +177,27 @@ const ROUTE_TITLE_KEYS: Record<string, string> = {
 
 /* ── Mobile hamburger (only shows on small screens) ── */
 
+/* Must match the mobile drawer width in components/Sidebar (Wrapper, ${media.mobile}) */
+const MOBILE_DRAWER_W = 260;
+const HAMBURGER_SIZE = 44;
+
 const MobileHamburgerBtn = styled.button<{ $open?: boolean }>`
   display: none;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: ${HAMBURGER_SIZE}px;
+  height: ${HAMBURGER_SIZE}px;
   border: none;
   border-radius: ${({ theme }) => theme.radii.control}px;
   background: transparent;
   color: ${({ theme }) => theme.colors.accent};
   cursor: pointer;
   position: fixed;
-  top: 12px;
-  left: 12px;
+  top: 10px;
+  /* Snaps between the two positions instead of sliding: while the button was
+     animating across, taps landed where it used to be and did nothing. */
+  left: ${({ $open }) => ($open ? `${MOBILE_DRAWER_W - HAMBURGER_SIZE - 10}px` : '12px')};
   z-index: 1100;
-  transform: translateX(${({ $open }) => ($open ? '200px' : '0')});
-  transition: transform 0.25s ease;
 
   ${media.mobile} {
     display: flex;

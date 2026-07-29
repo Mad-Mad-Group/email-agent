@@ -17,10 +17,10 @@ import { AGENTS, FARMER, ACTIVITY_AGENT } from '../../config/agents';
 /* ── Layout ── */
 
 const Page = styled.div`
-  display: flex; flex-direction: column; gap: 24px;
-  padding: 32px 28px 40px; min-width: 0; overflow-x: hidden;
-  ${media.tablet} { padding: 20px 16px 28px; gap: 16px; }
-  ${media.mobile} { padding: 20px 16px 32px; }
+  display: flex; flex-direction: column; gap: 16px;
+  padding: 24px 28px 32px; min-width: 0; overflow-x: hidden;
+  ${media.tablet} { padding: 16px 16px 24px; gap: 12px; }
+  ${media.mobile} { padding: 16px 16px 28px; }
 `;
 
 /* ── Intelly Greeting ── */
@@ -38,14 +38,14 @@ const GreetingDate = styled.p`
 
 /* ── Dashboard Grid: full width, no calendar sidebar ── */
 const DashGrid = styled.div`
-  display: flex; flex-direction: column; gap: 20px;
+  display: flex; flex-direction: column; gap: 14px;
 `;
 const CardsArea = styled.div`
   display: flex; flex-direction: column; gap: 20px; min-width: 0;
 `;
 const CardRow = styled.div`
-  display: flex; gap: 20px; align-items: stretch;
-  ${media.tablet} { gap: 12px; }
+  display: flex; gap: 14px; align-items: stretch;
+  ${media.tablet} { gap: 10px; }
   ${media.mobile} { flex-direction: column; }
 `;
 /* Embedded section inside a board — no bg, dark text */

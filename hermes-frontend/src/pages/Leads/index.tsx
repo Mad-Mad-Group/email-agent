@@ -73,6 +73,8 @@ const PageCard = styled.div`
   border-radius: ${({ theme }) => theme.radii.card}px;
   padding: 24px;
   display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
+  min-width: 0;
+  ${media.mobile} { padding: 12px; }
 `;
 
 const PageTitle = styled.h1`
@@ -217,7 +219,11 @@ const TabsRow = styled.div`
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   &::-webkit-scrollbar { display: none; }
+  /* fit-content alone let the box grow past the viewport, so overflow-x never
+     kicked in and the far tabs were clipped instead of scrollable. */
   width: fit-content;
+  max-width: 100%;
+  min-width: 0;
 `;
 
 const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
@@ -289,8 +295,11 @@ const SubPillTrack = styled.div`
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
   &::-webkit-scrollbar { display: none; }
+  /* Same as TabsRow: must be allowed to become narrower than its content,
+     otherwise the trailing pills are clipped with no way to scroll to them. */
   width: fit-content;
-  flex-shrink: 0;
+  max-width: 100%;
+  min-width: 0;
 `;
 
 const RowCheckbox = styled.input.attrs({ type: 'checkbox' })`
@@ -393,6 +402,9 @@ const SearchInput = styled.input`
 
 const TableWrap = styled.div`
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  min-width: 0;
+  max-width: 100%;
   padding: 0;
 `;
 
