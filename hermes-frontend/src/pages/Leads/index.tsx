@@ -14,7 +14,7 @@ import { glassSurface } from '../../styles/glassSurface';
 import { useDialog } from '../../components';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER, SOURCE_AGENT } from '../../config/agents';
-import LeadDetailPanel, { hashColorIndex, AvatarIcon, Avatar, ReplyBadge, DpSectionTitle, DpActionBtn, DpField, DpFieldLabel, DpFieldValue, DpFieldIcon, getReplyBadge, NEXT_STATUS, REPLY_ICONS, DpStatusPill } from '../../components/LeadDetailPanel';
+import LeadDetailPanel, { hashColorIndex, AvatarIcon, Avatar, ReplyBadge, DpSectionTitle, DpActionBtn, DpField, DpFieldLabel, DpFieldValue, DpFieldIcon, getReplyBadge, NEXT_STATUS, REPLY_ICONS, DpStatusPill, STATUS_PILL_COLORS } from '../../components/LeadDetailPanel';
 import LeadEmails from '../../components/LeadEmails';
 
 /* ══════════════════════════════════════
@@ -414,7 +414,7 @@ const Table = styled.table`
   th:nth-child(5) { width: 13%; }   /* imported */
   th:nth-child(6) { width: 9%; }    /* action */
   th, td {
-    padding: 12px 14px;
+    padding: 8px 14px;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
@@ -475,8 +475,7 @@ const TRow = styled.tr<{ $even?: boolean; $collapsed?: boolean }>`
 const NameCell = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 4px 0;
+  gap: 10px;
 `;
 
 const NAME_AVATAR_KEYS = ['mauve', 'gold', 'blue', 'olive'] as const;
@@ -490,13 +489,13 @@ const hashNameIndex = (name: string): number => {
 
 const NameAvatar = styled.div<{ $idx: number }>`
   flex-shrink: 0;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.9375rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   background: ${({ theme, $idx }) => theme.pastel[NAME_AVATAR_KEYS[$idx]]}55;
   color: ${({ theme, $idx }) => theme.strong[NAME_AVATAR_KEYS[$idx]]};
@@ -505,21 +504,23 @@ const NameAvatar = styled.div<{ $idx: number }>`
 const NameText = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 1px;
   min-width: 0;
   strong {
     color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: 0.9375rem;
+    font-size: 0.875rem;
     font-weight: 700;
-    white-space: normal;
-    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 260px;
   }
   small {
     display: inline-flex;
     align-items: center;
     gap: 4px;
     color: ${({ theme }) => theme.colors.accent}99;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     transition: color 0.15s;
   }
   &:hover small {
@@ -1563,10 +1564,8 @@ const Leads: React.FC = () => {
                                   {lead.website}
                                 </small>
                               )}
-                              <div style={{ marginTop: 2 }}>
-                                <DpStatusPill $status={statusKey}>{statusText}</DpStatusPill>
-                              </div>
                             </NameText>
+                            <DpStatusPill $status={statusKey}>{statusText}</DpStatusPill>
                           </NameCell>
                         </td>
                         <td>
