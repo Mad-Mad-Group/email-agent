@@ -241,13 +241,15 @@ const UserName = styled.span`
 /* ROLE_COLORS is now built inside the component via useTheme() */
 
 const RoleBadge = styled.span<{ $bg: string; $fg: string }>`
-  display: inline-block; padding: 2px 10px; border-radius: 99px;
-  font-size: 0.6875rem; font-weight: 600;
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 12px; border-radius: 99px;
+  font-size: 0.75rem; font-weight: 600;
   background: ${({ $bg }) => $bg};
   color: ${({ $fg }) => $fg};
   text-transform: capitalize;
   border: 1px solid ${({ $bg }) => $bg}55;
   box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  svg { width: 11px; height: 11px; flex-shrink: 0; }
 `;
 
 /* ── Permissions ── */
@@ -352,12 +354,12 @@ const DpPanel = styled.div`
   left: 50%;
   transform: translate(-50%, -50%);
   z-index: 1201;
-  width: 500px;
+  width: 560px;
   max-width: 95vw;
   max-height: 90vh;
   overflow-y: auto;
-  border-radius: 18px;
-  box-shadow: 0 20px 60px rgba(11,8,11,0.18);
+  border-radius: 20px;
+  box-shadow: 0 24px 80px rgba(11,8,11,0.14), 0 0 0 1px rgba(0,0,0,0.04);
   animation: ${dpFadeIn} 0.2s ease-out;
   ${media.mobile} { width: 95%; }
 `;
@@ -365,94 +367,128 @@ const DpPanel = styled.div`
 const DpHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 22px 24px 18px;
-  border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  gap: 18px;
+  padding: 28px 32px 24px;
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 32px;
+    right: 32px;
+    height: 2px;
+    background: linear-gradient(90deg, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.colors.accent}44, transparent);
+    border-radius: 1px;
+  }
 `;
 
 const DpHeaderInfo = styled.div`
   flex: 1;
+  min-width: 0;
+`;
+
+const DpNameRow = styled.div`
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 10px;
+`;
+
+const DpEmailSub = styled.div`
+  font-size: 0.875rem;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  svg { width: 14px; height: 14px; color: ${({ theme }) => theme.colors.textTertiary}; flex-shrink: 0; }
 `;
 
 const DpUserName = styled.h2`
   margin: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1.5rem;
+  font-weight: 800;
   color: ${({ theme }) => theme.colors.textPrimary};
+  letter-spacing: -0.02em;
 `;
 
 const DpCloseBtn = styled.button`
-  background: transparent;
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: ${({ theme }) => theme.colors.canvas};
   border: none;
   cursor: pointer;
   width: 36px;
   height: 36px;
-  border-radius: 50%;
+  border-radius: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textSecondary};
   flex-shrink: 0;
-  transition: background 150ms var(--ease-out);
+  transition: background 150ms var(--ease-out), color 150ms var(--ease-out);
   @media (hover: hover) and (pointer: fine) {
     &:hover {
-      background: ${({ theme }) => `${theme.colors.accent}15`};
+      background: ${({ theme }) => theme.colors.surfaceMuted};
+      color: ${({ theme }) => theme.colors.textPrimary};
     }
   }
 `;
 
 const DpBody = styled.div`
-  padding: 20px 24px;
+  padding: 24px 32px 28px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
 `;
 
-const DpSectionCard = styled.div`
-  background: ${({ theme }) => theme.colors.canvas};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 12px;
-  padding: 16px 18px;
-`;
+const DpSection = styled.div``;
 
-const DpGrid = styled(DpSectionCard)`
+const DpGrid = styled.div<{ $editing?: boolean }>`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 16px 20px;
+  gap: ${({ $editing }) => $editing ? '16px 24px' : '18px 28px'};
   ${media.mobile} { grid-template-columns: 1fr; }
 `;
 
-const DpField = styled.div`
+const DpField = styled.div<{ $stacked?: boolean }>`
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: ${({ $stacked }) => $stacked ? '6px' : '4px'};
 `;
 
-const DpFieldLabel = styled.span`
-  font-size: 0.6875rem;
-  font-weight: 700;
+const DpFieldLabel = styled.span<{ $stacked?: boolean }>`
+  font-size: 0.75rem;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   color: ${({ theme }) => theme.colors.textTertiary};
 `;
 
 const DpFieldValue = styled.span`
-  font-size: 0.875rem;
+  font-size: 0.9375rem;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
   word-break: break-word;
+  line-height: 1.5;
 `;
 
 const DpSectionTitle = styled.h3`
-  margin: 0;
-  font-size: 0.8125rem;
+  margin: 0 0 14px;
+  font-size: 0.6875rem;
   font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.1em;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: ${({ theme }) => theme.colors.border}80;
+  }
 `;
 
 
@@ -463,14 +499,16 @@ const DpPermGrid = styled.div`
 `;
 
 const DpPermBadge = styled.span<{ $active?: boolean; $bg?: string }>`
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   padding: 5px 14px;
   border-radius: 99px;
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   background: ${({ $active, $bg, theme }) => $active ? ($bg ?? theme.colors.surfaceMuted) : 'transparent'};
   color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textTertiary};
-  border: 1px solid ${({ $active, theme }) => $active ? 'transparent' : theme.colors.border};
+  svg { width: 12px; height: 12px; flex-shrink: 0; }
 `;
 
 const DpFooter = styled.div`
@@ -478,62 +516,80 @@ const DpFooter = styled.div`
   justify-content: space-between;
   align-items: center;
   gap: 8px;
-  padding: 14px 24px;
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  padding: 18px 32px;
+  border-top: 1px solid ${({ theme }) => theme.colors.border}80;
 `;
 
 const DpFooterStatus = styled.span`
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: ${({ theme }) => theme.colors.textTertiary};
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  svg { width: 14px; height: 14px; }
 `;
 
 const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
-  padding: 8px 18px;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  padding: 10px 24px;
+  border: ${({ $variant, theme }) => $variant ? 'none' : `1.5px solid ${theme.colors.border}`};
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  transition: opacity 0.15s;
+  transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: ${({ $variant, theme }) =>
     $variant === 'danger' ? theme.strong.mauve :
-    $variant === 'primary' ? theme.colors.accent : theme.colors.surfaceMuted};
+    $variant === 'primary' ? `linear-gradient(135deg, #184F95, ${theme.colors.accent})` : theme.colors.surface};
   color: ${({ $variant, theme }) =>
     $variant === 'danger' ? theme.colors.textInverted :
-    $variant === 'primary' ? theme.colors.textInverted : 'inherit'};
-  &:hover { opacity: 0.85; }
+    $variant === 'primary' ? theme.colors.textInverted : theme.colors.textSecondary};
+  box-shadow: ${({ $variant }) =>
+    $variant === 'primary' ? '0 4px 12px rgba(42,120,214,0.25)' : 'none'};
+  &:hover {
+    ${({ $variant }) => $variant === 'primary'
+      ? 'box-shadow: 0 6px 20px rgba(42,120,214,0.35); transform: translateY(-1px);'
+      : 'border-color: #9CA3AF; color: #0B080B;'}
+  }
+  svg { width: 14px; height: 14px; }
 `;
 
 /* ── Edit form input ── */
 
 const DpInput = styled.input`
-  padding: 9px 12px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  font-size: 0.875rem;
+  padding: 12px 16px;
+  border: 1.5px solid ${({ theme }) => theme.colors.border};
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-family: ${({ theme }) => theme.fonts.primary};
   color: ${({ theme }) => theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.surface};
+  background: ${({ theme }) => theme.colors.canvas};
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
   &:focus {
     border-color: ${({ theme }) => theme.colors.accent};
-    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.accent}22;
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.accent}1A;
+    background: ${({ theme }) => theme.colors.surface};
   }
 `;
 
 const DpSelect = styled.select`
-  padding: 9px 12px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  font-size: 0.875rem;
+  padding: 12px 16px;
+  border: 1.5px solid ${({ theme }) => theme.colors.border};
+  border-radius: 10px;
+  font-size: 0.9375rem;
+  font-family: ${({ theme }) => theme.fonts.primary};
   color: ${({ theme }) => theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.surface};
+  background: ${({ theme }) => theme.colors.canvas};
   outline: none;
-  transition: border-color 0.15s, box-shadow 0.15s;
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
   &:focus {
     border-color: ${({ theme }) => theme.colors.accent};
-    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.accent}22;
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.accent}1A;
+    background: ${({ theme }) => theme.colors.surface};
   }
 `;
 
@@ -904,22 +960,29 @@ const Users: React.FC = () => {
           <DpOverlay onClick={handleCloseDetail} />
           <DpPanel>
             <DpHeader>
-              <AvatarCircle $bg={roleProps(selectedUser.role).avatar} style={{ width: 48, height: 48, fontSize: '1rem', color: theme.colors.textPrimary }}>
+              <AvatarCircle $bg={roleProps(selectedUser.role).avatar} style={{ width: 64, height: 64, fontSize: '1.25rem', borderRadius: 16, color: theme.colors.textPrimary, background: `linear-gradient(135deg, ${roleProps(selectedUser.role).avatar}, ${roleProps(selectedUser.role).avatar}99)`, boxShadow: `0 4px 12px ${roleProps(selectedUser.role).avatar}44` }}>
                 {getInitials(selectedUser.name)}
               </AvatarCircle>
               <DpHeaderInfo>
-                <DpUserName>{selectedUser.name}</DpUserName>
-                <RoleBadge $bg={roleProps(selectedUser.role).bg} $fg={roleProps(selectedUser.role).fg}>
-                  {roleLabel(selectedUser.role)}
-                </RoleBadge>
+                <DpNameRow>
+                  <DpUserName>{selectedUser.name}</DpUserName>
+                  <RoleBadge $bg={roleProps(selectedUser.role).bg} $fg={roleProps(selectedUser.role).fg}>
+                    <svg viewBox="0 0 16 16" fill="none"><path d="M8 1L2 4v4c0 4 3 6 6 7 3-1 6-3 6-7V4L8 1z" stroke="currentColor" strokeWidth="1.5" fill="none"/></svg>
+                    {roleLabel(selectedUser.role)}
+                  </RoleBadge>
+                </DpNameRow>
+                <DpEmailSub>
+                  <svg viewBox="0 0 16 16" fill="none"><path d="M2 4h12v8H2V4zm0 0l6 4 6-4" stroke="currentColor" strokeWidth="1.3"/></svg>
+                  {selectedUser.email}
+                </DpEmailSub>
               </DpHeaderInfo>
-              <DpCloseBtn onClick={handleCloseDetail}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></DpCloseBtn>
+              <DpCloseBtn onClick={handleCloseDetail}><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></DpCloseBtn>
             </DpHeader>
 
             <DpBody>
               {editing ? (
                 /* ── Edit Mode ── */
-                <DpGrid>
+                <DpGrid $editing>
                   <DpField $stacked>
                     <DpFieldLabel $stacked>{t('users.name')}</DpFieldLabel>
                     <DpInput value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
@@ -940,31 +1003,41 @@ const Users: React.FC = () => {
               ) : (
                 <>
                   {/* ── View Mode ── */}
-                  <DpGrid>
-                    <DpField>
-                      <DpFieldLabel>{t('users.email')}</DpFieldLabel>
-                      <DpFieldValue>{selectedUser.email}</DpFieldValue>
-                    </DpField>
-                    <DpField>
-                      <DpFieldLabel>{t('users.role')}</DpFieldLabel>
-                      <DpFieldValue>{roleLabel(selectedUser.role)}</DpFieldValue>
-                    </DpField>
-                    <DpField>
-                      <DpFieldLabel>{t('users.joinDate')}</DpFieldLabel>
-                      <DpFieldValue>{formatDate(selectedUser.createdAt)}</DpFieldValue>
-                    </DpField>
-                  </DpGrid>
+                  <DpSection>
+                    <DpSectionTitle>{t('users.basicInfo')}</DpSectionTitle>
+                    <DpGrid>
+                      <DpField>
+                        <DpFieldLabel>{t('users.role')}</DpFieldLabel>
+                        <DpFieldValue>{roleLabel(selectedUser.role)}</DpFieldValue>
+                      </DpField>
+                      <DpField>
+                        <DpFieldLabel>{t('users.joinDate')}</DpFieldLabel>
+                        <DpFieldValue>{formatDate(selectedUser.createdAt)}</DpFieldValue>
+                      </DpField>
+                    </DpGrid>
+                  </DpSection>
 
                   {/* Permissions Section */}
                   {(selectedUser.permissions ?? []).length > 0 && (
-                    <DpSectionCard>
+                    <DpSection>
                       <DpSectionTitle>{t('users.permissions')}</DpSectionTitle>
-                      <DpPermGrid style={{ marginTop: 12 }}>
-                        {(selectedUser.permissions ?? []).map(perm => (
-                          <DpPermBadge key={perm} $active $bg={permProps(perm).bg}>{t(`users.perms.${perm}`, perm)}</DpPermBadge>
-                        ))}
+                      <DpPermGrid>
+                        {(selectedUser.permissions ?? []).map(perm => {
+                          const PERM_ICONS: Record<string, string> = {
+                            manage_users: 'M8 8a3 3 0 100-6 3 3 0 000 6zm0 1c-3 0-6 1.5-6 4v1h12v-1c0-2.5-3-4-6-4z',
+                            manage_leads: 'M2 14V4l4 2 4-2 4 2v10l-4-2-4 2-4-2z',
+                            manage_emails: 'M2 4h12v8H2V4zm0 0l6 4 6-4',
+                            manage_settings: 'M8 5.5a2.5 2.5 0 100 5 2.5 2.5 0 000-5zM8 1v2M8 13v2M1 8h2M13 8h2',
+                          };
+                          return (
+                            <DpPermBadge key={perm} $active $bg={permProps(perm).bg}>
+                              {PERM_ICONS[perm] && <svg viewBox="0 0 16 16" fill="none"><path d={PERM_ICONS[perm]} stroke="currentColor" strokeWidth="1.2"/></svg>}
+                              {t(`users.perms.${perm}`, perm)}
+                            </DpPermBadge>
+                          );
+                        })}
                       </DpPermGrid>
-                    </DpSectionCard>
+                    </DpSection>
                   )}
                 </>
               )}
@@ -972,17 +1045,22 @@ const Users: React.FC = () => {
 
             <DpFooter>
               <DpFooterStatus>
+                <svg viewBox="0 0 16 16" fill="none"><path d="M12 2h-.5V1h-1v1h-5V1h-1v1H4a1 1 0 00-1 1v10a1 1 0 001 1h8a1 1 0 001-1V3a1 1 0 00-1-1zm0 11H4V5.5h8V13z" fill="currentColor"/></svg>
                 {t('users.memberSince', { date: formatDate(selectedUser.createdAt) })}
               </DpFooterStatus>
               {editing ? (
-                <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ display: 'flex', gap: 10 }}>
                   <DpActionBtn onClick={() => setEditing(false)}>{t('common.cancel')}</DpActionBtn>
                   <DpActionBtn $variant="primary" onClick={handleSaveEdit} disabled={updateUser.isPending}>
+                    <svg viewBox="0 0 16 16" fill="none"><path d="M3 8.5l3 3 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     {updateUser.isPending ? t('users.saving') : t('common.save')}
                   </DpActionBtn>
                 </div>
               ) : (
-                <DpActionBtn $variant="primary" onClick={handleStartEdit}>{t('common.edit')}</DpActionBtn>
+                <DpActionBtn $variant="primary" onClick={handleStartEdit}>
+                  <svg viewBox="0 0 16 16" fill="none"><path d="M11.5 1.5l3 3L5 14H2v-3l9.5-9.5z" stroke="currentColor" strokeWidth="1.5"/></svg>
+                  {t('common.edit')}
+                </DpActionBtn>
               )}
             </DpFooter>
           </DpPanel>

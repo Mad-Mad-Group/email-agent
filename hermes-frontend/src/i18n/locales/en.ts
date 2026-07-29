@@ -930,6 +930,7 @@ const en = {
   users: {
     title: 'Team',
     subtitle: 'Manage team members and role permissions.',
+    basicInfo: 'Basic Info',
     teamOverview: 'Team Overview',
     membersSummary: '{{count}} member(s) across {{admin}} admin, {{manager}} manager, and {{user}} user role(s)',
     allUsers: 'All Users',

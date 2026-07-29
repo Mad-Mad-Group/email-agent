@@ -3,7 +3,7 @@ import { HermesTheme } from '../types/theme';
 const shared = {
   radii: { card: 16, tile: 16, control: 8 },
   fonts: {
-    primary: "'Plus Jakarta Sans', 'Noto Sans TC', 'PingFang TC', 'PingFang SC', -apple-system, system-ui, 'Microsoft JhengHei', sans-serif",
+    primary: "'Source Serif 4', 'Noto Serif TC', 'PingFang TC', 'PingFang SC', Georgia, 'Microsoft JhengHei', serif",
     display: "'Righteous', 'Plus Jakarta Sans', sans-serif",
     mono: "'JetBrains Mono', ui-monospace, monospace",
   },

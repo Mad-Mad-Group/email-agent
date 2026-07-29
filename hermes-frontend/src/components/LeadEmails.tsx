@@ -30,10 +30,6 @@ const getEmailStatusColor = (_theme: any): Record<string, { bg: string; fg: stri
 
 /* ── Keyframes ── */
 
-const glowPulseGreen = keyframes`
-  0%, 100% { box-shadow: 0 0 8px rgba(76,175,80,0.3); }
-  50% { box-shadow: 0 0 16px rgba(76,175,80,0.5), 0 0 32px rgba(76,175,80,0.2); }
-`;
 const glowPulseGold = keyframes`
   0%, 100% { box-shadow: 0 0 8px rgba(255,193,7,0.35); }
   50% { box-shadow: 0 0 16px rgba(255,193,7,0.55), 0 0 32px rgba(255,193,7,0.2); }
@@ -44,33 +40,34 @@ const glowPulseGold = keyframes`
 const EmailCard = styled.div<{ $expanded?: boolean; $status?: string }>`
   border-radius: 10px;
   max-width: 100%;
-  padding: 14px 18px;
+  padding: 14px 18px 14px 20px;
   position: relative;
   overflow: hidden;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-left-width: 3px;
+  border-left-style: solid;
   transition: background 0.2s;
-  /* pending */
+  /* pending — 待審核，需要動作 (warning) */
   ${({ $status }) => $status === 'pending' && css`
-    background: #fffef5;
-    border: 1.5px solid #ffe082;
-    box-shadow: 0 0 6px rgba(255,193,7,0.2);
-    animation: ${glowPulseGold} 2s ease-in-out infinite;
+    background: #fdfaf0;
+    border-left-color: #e5a100;
+    animation: ${glowPulseGold} 2.5s ease-in-out infinite;
   `}
-  /* approved */
+  /* approved — 已批准，即將發送 (success) */
   ${({ $status }) => $status === 'approved' && css`
-    background: #f8fcf8;
-    border: 1.5px solid #a5d6a7;
-    box-shadow: 0 0 6px rgba(76,175,80,0.2);
-    animation: ${glowPulseGreen} 2s ease-in-out infinite;
+    background: #f5faf5;
+    border-left-color: #43a047;
   `}
-  /* sent */
+  /* sent — 已發送 (info / brand) */
   ${({ $status }) => $status === 'sent' && css`
-    background: #f9fcf9;
-    border: 1px solid #e0efe0;
+    background: ${({ theme }) => theme.colors.surface};
+    border-left-color: ${({ theme }) => theme.colors.accent};
   `}
-  /* rejected */
+  /* rejected — 已拒絕 (danger) */
   ${({ $status }) => $status === 'rejected' && css`
-    background: #fff5f5;
-    border: 1px solid #f5c6c6;
+    background: #fdf6f6;
+    border-left-color: #c62828;
     &::after {
       content: '✗';
       position: absolute;
@@ -78,20 +75,19 @@ const EmailCard = styled.div<{ $expanded?: boolean; $status?: string }>`
       right: 12px;
       font-size: 4rem;
       font-weight: 800;
-      color: rgba(211, 47, 47, 0.13);
+      color: rgba(211, 47, 47, 0.1);
       pointer-events: none;
       line-height: 1;
     }
   `}
-  /* failed */
+  /* failed — 系統失敗 (danger) */
   ${({ $status }) => $status === 'failed' && css`
-    background: #fffafa;
-    border: 1px solid #f5d5d5;
+    background: #fdf6f6;
+    border-left-color: #c62828;
   `}
   /* fallback */
-  ${({ $status }) => !$status && css`
-    background: #fafafa;
-    border: 1px solid #eee;
+  ${({ $status, theme }) => !$status && css`
+    border-left-color: ${theme.colors.border};
   `}
 `;
 const EmailCardHead = styled.div`
@@ -167,16 +163,20 @@ const EmailActionBtn = styled.button<{ $bg: string; $fg: string }>`
   align-items: center;
   gap: 4px;
   padding: 6px 14px;
-  border: 0.5px solid #e5737388;
+  border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 99px;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #c62828;
-  background: #fce4ec;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  background: transparent;
   cursor: pointer;
-  transition: background 0.15s var(--ease-out);
+  transition: all 0.15s var(--ease-out);
   @media (hover: hover) and (pointer: fine) {
-    &:hover:not(:disabled) { background: #f8bbd0; }
+    &:hover:not(:disabled) {
+      color: #c62828;
+      border-color: #e5737388;
+      background: #fce4ec;
+    }
   }
   &:disabled { opacity: 0.45; cursor: not-allowed; }
 `;
@@ -191,13 +191,14 @@ const LeadSendBtn = styled.button`
   background: #43a047;
   color: #fff;
   font-size: 0.875rem;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
-  transition: background 0.15s var(--ease-out);
+  box-shadow: 0 2px 8px rgba(67,160,71,0.28);
+  transition: all 0.15s var(--ease-out);
   @media (hover: hover) and (pointer: fine) {
-    &:hover:not(:disabled) { background: #388e3c; }
+    &:hover:not(:disabled) { background: #388e3c; box-shadow: 0 3px 10px rgba(67,160,71,0.35); }
   }
-  &:disabled { opacity: 0.45; cursor: not-allowed; }
+  &:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
 `;
 
 /* ── Internal styled components used by LeadEmails ── */
@@ -315,16 +316,20 @@ const EditBtn = styled.button`
   align-items: center;
   gap: 4px;
   padding: 6px 14px;
-  border: 1px solid #ffe08266;
+  border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 99px;
   font-size: 0.8125rem;
   font-weight: 500;
-  color: #e65100;
-  background: #fff3e0;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  background: transparent;
   cursor: pointer;
-  transition: background 0.15s var(--ease-out);
+  transition: all 0.15s var(--ease-out);
   @media (hover: hover) and (pointer: fine) {
-    &:hover { background: #ffe0b2; }
+    &:hover {
+      color: #e65100;
+      border-color: #ffe08266;
+      background: #fff3e0;
+    }
   }
 `;
 const EditOverlay = styled.div`
@@ -453,7 +458,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
 
   return (
     <>
-      <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="#6C97D1" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.emailRecords')} ({emails.length})</DpSectionTitle>
+      <DpSectionTitle>{t('leads.emailRecords')} ({emails.length})</DpSectionTitle>
       <EmailTimeline>
         {emails.map((d) => {
           const typeTag = d._type ? getEmailTypeLabel(t, leTheme)[d._type] : null;

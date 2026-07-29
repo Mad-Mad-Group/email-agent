@@ -52,12 +52,13 @@ export const AvatarIcon: React.FC<{ name: string }> = ({ name }) => (
 );
 
 export const Avatar = styled.div<{ $colorIndex: number }>`
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
   background: ${({ $colorIndex, theme }) => {
     const key = AVATAR_COLOR_KEYS[$colorIndex] || 'blue';
-    return `${(theme.colors as any)[key]}22`;
+    const base = (theme.colors as any)[key] || theme.colors.accent;
+    return `linear-gradient(135deg, ${base}33, ${base}55)`;
   }};
   color: ${({ theme }) => theme.colors.textPrimary};
   display: flex;
@@ -66,7 +67,7 @@ export const Avatar = styled.div<{ $colorIndex: number }>`
   font-size: 1rem;
   font-weight: 700;
   flex-shrink: 0;
-  box-shadow: none;
+  box-shadow: 0 2px 8px rgba(42,120,214,0.12);
   line-height: 1;
 `;
 
@@ -174,17 +175,19 @@ const DpPanel = styled.div<{ $closing?: boolean }>`
   display: flex;
   flex-direction: column;
   ${glassSurface};
-  border-radius: ${({ theme }) => theme.radii.card + 2}px;
+  background: ${({ theme }) => theme.mode === 'dark' ? theme.colors.canvas : '#F5F6F8'};
+  border-radius: 20px;
   overflow: hidden;
+  box-shadow: 0 24px 80px rgba(11,8,11,0.14), 0 0 0 1px rgba(0,0,0,0.04);
   animation: ${({ $closing }) => $closing ? dpSlideDown : dpSlideUp} 0.25s ease-out forwards;
   &::after {
     content: '';
     position: absolute;
-    left: 300px;
-    top: 0;
-    bottom: 0;
-    width: 0.5px;
-    background: ${({ theme }) => theme.colors.border};
+    left: 320px;
+    top: 12px;
+    bottom: 12px;
+    width: 1px;
+    background: linear-gradient(180deg, transparent, ${({ theme }) => theme.colors.border}, transparent);
     z-index: 3;
     pointer-events: none;
   }
@@ -200,10 +203,21 @@ const DpPanel = styled.div<{ $closing?: boolean }>`
 const DpHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 10px 20px;
-  background: transparent;
+  gap: 16px;
+  padding: 20px 28px 18px;
+  background: ${({ theme }) => `linear-gradient(135deg, ${theme.colors.accent}14, transparent 65%)`};
   min-height: 24px;
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 24px;
+    right: 24px;
+    height: 2px;
+    background: linear-gradient(90deg, ${({ theme }) => theme.colors.accent}, ${({ theme }) => theme.colors.accent}44, transparent);
+    border-radius: 1px;
+  }
 `;
 
 const DpHeaderInfo = styled.div`
@@ -213,12 +227,13 @@ const DpHeaderInfo = styled.div`
 
 const DpCompanyName = styled.h2`
   margin: 0;
-  font-size: 1.125rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 800;
   color: ${({ theme }) => theme.colors.textPrimary};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  letter-spacing: -0.02em;
 `;
 
 const DpHeaderMeta = styled.div`
@@ -252,29 +267,43 @@ export const STATUS_PILL_COLORS: Record<string, { bg: string; fg: string }> = {
   rejected:  { bg: '#fce4ec', fg: '#c62828' },
 };
 export const DpStatusPill = styled.span<{ $status?: string }>`
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
   font-size: 0.75rem;
-  font-weight: 500;
-  padding: 2px 8px;
+  font-weight: 700;
+  padding: 3px 10px;
   border-radius: 99px;
   background: ${({ $status }) => STATUS_PILL_COLORS[$status || '']?.bg || '#f0f0f0'};
   color: ${({ $status }) => STATUS_PILL_COLORS[$status || '']?.fg || '#888'};
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
 `;
 
 const DpCloseBtn = styled.button`
+  position: absolute;
+  top: 14px;
+  right: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 32px;
   height: 32px;
   border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: ${({ theme }) => theme.colors.textTertiary};
+  border-radius: 10px;
+  background: ${({ theme }) => theme.colors.canvas};
+  color: ${({ theme }) => theme.colors.textSecondary};
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out);
   font-size: 18px;
+  z-index: 5;
   @media (hover: hover) and (pointer: fine) {
     &:hover {
       background: ${({ theme }) => theme.colors.surfaceMuted};
@@ -288,7 +317,7 @@ const DpBody = styled.div`
   height: 0;
   min-height: 0;
   display: grid;
-  grid-template-columns: 300px 1fr;
+  grid-template-columns: 320px 1fr;
   grid-template-rows: 1fr;
   gap: 0;
   overflow: hidden;
@@ -296,28 +325,29 @@ const DpBody = styled.div`
 `;
 
 const DpColLeft = styled.div`
-  padding: 4px 20px 10px 28px;
+  padding: 16px 24px 16px 28px;
   overflow-y: auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 0;
-  background: transparent;
+  background: ${({ theme }) => theme.colors.surfaceMuted}30;
   &::-webkit-scrollbar { width: 5px; }
   &::-webkit-scrollbar-track { background: transparent; }
   &::-webkit-scrollbar-thumb { background: #2A78D699; border-radius: 99px; }
   &::-webkit-scrollbar-thumb:hover { background: #2A78D6CC; }
-  ${media.tabletDown} { overflow-y: visible; padding: 10px 16px; }
+  ${media.tabletDown} { overflow-y: visible; padding: 12px 16px; }
 `;
 
 const DpColCenter = styled.div`
-  padding: 4px 20px 10px;
+  padding: 16px 24px 16px;
   overflow-y: auto;
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 14px;
   min-width: 0;
+  background: ${({ theme }) => theme.colors.surface};
   &::-webkit-scrollbar { width: 5px; }
   &::-webkit-scrollbar-track { background: transparent; }
   &::-webkit-scrollbar-thumb { background: #2A78D699; border-radius: 99px; }
@@ -326,14 +356,21 @@ const DpColCenter = styled.div`
 `;
 
 export const DpSectionTitle = styled.h3`
-  margin: 0 0 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: #2A78D6;
+  margin: 0 0 12px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: ${({ theme }) => theme.colors.textTertiary};
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 8px;
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: ${({ theme }) => theme.colors.border}80;
+  }
 `;
 
 const DpSectionContent = styled.div`
@@ -342,7 +379,7 @@ const DpSectionContent = styled.div`
 
 const DpDivider = styled.div`
   height: 0;
-  margin: 6px 0;
+  margin: 10px 0;
 `;
 
 export const DpField = styled.div<{ $stacked?: boolean }>`
@@ -350,7 +387,7 @@ export const DpField = styled.div<{ $stacked?: boolean }>`
   align-items: ${({ $stacked }) => $stacked ? 'stretch' : 'flex-start'};
   flex-direction: ${({ $stacked }) => $stacked ? 'column' : 'row'};
   gap: ${({ $stacked }) => $stacked ? '4px' : '6px'};
-  padding: 3px 0;
+  padding: 4px 0;
 `;
 
 export const DpFieldLabel = styled.span<{ $stacked?: boolean }>`
@@ -358,7 +395,9 @@ export const DpFieldLabel = styled.span<{ $stacked?: boolean }>`
   align-items: center;
   gap: 4px;
   font-size: 0.6875rem;
-  font-weight: 500;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   color: ${({ theme }) => theme.colors.textTertiary};
   min-width: ${({ $stacked }) => $stacked ? '0' : '52px'};
   flex-shrink: 0;
@@ -366,12 +405,13 @@ export const DpFieldLabel = styled.span<{ $stacked?: boolean }>`
 `;
 
 export const DpFieldValue = styled.span`
-  font-size: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
   word-break: break-word;
   flex: 1;
   min-width: 0;
-  line-height: 1.4;
+  line-height: 1.45;
   a { color: ${({ theme }) => theme.colors.accent}; text-decoration: none; &:hover { text-decoration: underline; } }
 `;
 
@@ -381,7 +421,8 @@ export const DpFieldIcon = styled.span`
   justify-content: center;
   width: 13px;
   height: 13px;
-  color: ${({ theme }) => theme.colors.textTertiary};
+  color: ${({ theme }) => theme.colors.accent};
+  opacity: 0.8;
   flex-shrink: 0;
   svg { width: 12px; height: 12px; }
 `;
@@ -393,12 +434,12 @@ const DpTagList = styled.div`
   margin-top: 4px;
 `;
 
-const DpTag = styled.span`
+const DpTag = styled.span<{ $tag?: string }>`
   display: inline-block;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 99px;
   font-size: 0.6875rem;
-  font-weight: 500;
+  font-weight: 600;
   background: ${({ theme }) => theme.colors.surfaceMuted};
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
@@ -554,25 +595,26 @@ const DpTimelineDotWrap = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 14px;
+  width: 18px;
   flex-shrink: 0;
-  padding-top: 4px;
+  padding-top: 5px;
 `;
 
 const DpTimelineDot = styled.span<{ $active?: boolean }>`
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
-  background: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.border};
+  background: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.border};
+  box-shadow: ${({ $active, theme }) => $active ? `0 0 0 3px ${theme.colors.accent}22` : 'none'};
 `;
 
 const DpTimelineLine = styled.span`
-  width: 1px;
+  width: 1.5px;
   flex: 1;
-  background: ${({ theme }) => theme.colors.border};
+  background: linear-gradient(180deg, ${({ theme }) => theme.colors.accent}44, ${({ theme }) => theme.colors.border});
   margin-top: 4px;
-  min-height: 10px;
+  min-height: 12px;
 `;
 
 const DpTimelineContent = styled.div`
@@ -581,14 +623,14 @@ const DpTimelineContent = styled.div`
 `;
 
 const DpTimelineText = styled.span<{ $active?: boolean }>`
-  font-size: 0.75rem;
+  font-size: 0.8125rem;
   color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textTertiary};
   font-weight: ${({ $active }) => $active ? 500 : 400};
   line-height: 1.3;
 `;
 
 const DpTimelineTime = styled.div`
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   color: ${({ theme }) => theme.colors.textTertiary};
   margin-top: 1px;
 `;
@@ -596,24 +638,34 @@ const DpTimelineTime = styled.div`
 export const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   display: inline-flex;
   align-items: center;
-  padding: 6px 14px;
-  border-radius: 99px;
-  font-size: 0.8125rem;
-  font-weight: 500;
+  gap: 6px;
+  padding: 10px 24px;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 700;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s var(--ease-out);
-  border: 0.5px solid ${({ $variant }) =>
-    $variant === 'primary' ? '#2A78D6' :
+  border: none;
+  transition: all 0.18s var(--ease-out);
+  background: ${({ $variant, theme }) =>
+    $variant === 'primary' ? `linear-gradient(135deg, #184F95, ${theme.colors.accent})` :
     $variant === 'danger' ? '#e57373' :
-    '#999'};
-  background: transparent;
+    theme.colors.canvas};
   color: ${({ $variant, theme }) =>
-    $variant === 'primary' ? '#2A78D6' :
-    $variant === 'danger' ? '#e57373' :
+    $variant === 'primary' ? '#fff' :
+    $variant === 'danger' ? '#fff' :
     theme.colors.textPrimary};
+  box-shadow: ${({ $variant }) =>
+    $variant === 'primary' ? '0 4px 16px rgba(42,120,214,0.18)' :
+    'none'};
+  svg { width: 15px; height: 15px; flex-shrink: 0; }
   @media (hover: hover) and (pointer: fine) {
-    &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+    &:hover {
+      transform: translateY(-1px);
+      box-shadow: ${({ $variant }) =>
+        $variant === 'primary' ? '0 6px 20px rgba(42,120,214,0.25)' :
+        '0 2px 8px rgba(0,0,0,0.08)'};
+    }
   }
 `;
 
@@ -750,7 +802,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
         <div onMouseDown={e => onDpResizeStart(e, 'sw')} style={{ position:'absolute', bottom:0, left:0, width:8, height:8, cursor:'sw-resize', zIndex:11 }} />
         <div onMouseDown={e => onDpResizeStart(e, 'se')} style={{ position:'absolute', bottom:0, right:0, width:8, height:8, cursor:'se-resize', zIndex:11 }} />
         <DpHeader>
-          <Avatar $colorIndex={hashColorIndex(name)} style={{ width: 40, height: 40, fontSize: '0.8rem', borderRadius: 10 }} />
+          <Avatar $colorIndex={hashColorIndex(name)} style={{ width: 48, height: 48, fontSize: '0.95rem', borderRadius: 14 }} />
           <DpHeaderInfo>
             <DpCompanyName>
               {name}
@@ -765,7 +817,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
         <DpBody>
           {/* Left: Avatar + Name + About + Journey + Tags */}
           <DpColLeft>
-            <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1a5 5 0 015 5c0 2.5-2 4-5 4s-5-1.5-5-4a5 5 0 015-5zM3 13c0-1.66 2.24-3 5-3s5 1.34 5 3" stroke="#2A78D6" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.about')}</DpSectionTitle>
+            <DpSectionTitle>{t('leads.about')}</DpSectionTitle>
             <DpSectionContent>
             <DpField>
               <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.email')}</DpFieldLabel>
@@ -785,7 +837,18 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
             </DpField>
             <DpField>
               <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M8 1l2 4h4l-3 3 1 4-4-2-4 2 1-4-3-3h4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.rating')}</DpFieldLabel>
-              <DpFieldValue>{lead.rating ? `${lead.rating} / 5.0` : '—'}</DpFieldValue>
+              <DpFieldValue>
+                {lead.rating ? (() => {
+                  const r = Number(lead.rating) || 0;
+                  const color = r >= 4 ? styledTheme.strong.olive : r >= 3 ? styledTheme.strong.gold : styledTheme.strong.mauve;
+                  return (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontWeight: 700, color }}>
+                      <svg width="13" height="13" viewBox="0 0 16 16" fill={color} stroke="none"><path d="M8 1l2 4.5 5 .5-3.75 3.5L12.25 15 8 12.5 3.75 15l1-5.5L1 6l5-.5L8 1z"/></svg>
+                      {lead.rating} / 5.0
+                    </span>
+                  );
+                })() : '—'}
+              </DpFieldValue>
             </DpField>
             <DpField>
               <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1.2"/><path d="M8 5v3l2 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.status')}</DpFieldLabel>
@@ -799,7 +862,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
 
             <DpDivider />
 
-            <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 14V4l4 2 4-2 4 2v10l-4-2-4 2-4-2z" stroke="#2A78D6" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.leadJourney')}</DpSectionTitle>
+            <DpSectionTitle>{t('leads.leadJourney')}</DpSectionTitle>
             <DpSectionContent>
             <DpTimeline>
               <DpTimelineItem>
@@ -851,12 +914,12 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
             </DpSectionContent>
 
             <DpDivider />
-            <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 8.5V2.5a1 1 0 011-1h6l6.5 6.5-7 7L1 8.5z" stroke="#2A78D6" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><circle cx="5" cy="5" r="1" fill="#2A78D6"/></svg>{t('leads.tags')}</DpSectionTitle>
+            <DpSectionTitle>{t('leads.tags')}</DpSectionTitle>
             <DpSectionContent>
             <DpTagList>
               {lead.industry_tags && lead.industry_tags.length > 0
                 ? lead.industry_tags.map(tag => (
-                    <DpTag key={tag}>{tag}</DpTag>
+                    <DpTag key={tag} $tag={tag}>{tag}</DpTag>
                   ))
                 : <span style={{ fontSize: '0.8125rem', color: '#888' }}>{'—'}</span>
               }
@@ -867,7 +930,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
             {(lead._tech_score != null || lead._email_draft_score != null || lead._collab_primary) && (
               <>
                 <DpDivider />
-                <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1l2 4.5 5 .5-3.75 3.5L12.25 15 8 12.5 3.75 15l1-5.5L1 6l5-.5L8 1z" stroke="#2A78D6" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.aiAnalysis')}</DpSectionTitle>
+                <DpSectionTitle>{t('leads.aiAnalysis')}</DpSectionTitle>
                 <DpSectionContent>
                   <AiTabBar>
                     <AiTab $active={aiTab === 'scores'} onClick={() => setAiTab('scores')}>{t('leads.aiTabScores')}</AiTab>
@@ -940,7 +1003,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
                           <DpFieldLabel>{t('leads.collabServices')}</DpFieldLabel>
                           <DpFieldValue>
                             <DpTagList>
-                              {lead._collab_services.map(s => <DpTag key={s}>{s}</DpTag>)}
+                              {lead._collab_services.map(s => <DpTag key={s} $tag={s}>{s}</DpTag>)}
                             </DpTagList>
                           </DpFieldValue>
                         </DpField>
@@ -959,7 +1022,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
               return (
                 <>
                   <DpDivider />
-                  <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 10c0 .55-.45 1-1 1H5l-3 3V3c0-.55.45-1 1-1h10c.55 0 1 .45 1 1v7z" stroke="#2A78D6" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.replyInfo')}</DpSectionTitle>
+                  <DpSectionTitle>{t('leads.replyInfo')}</DpSectionTitle>
                   <DpSectionContent>
                   <DpField>
                     <DpFieldLabel>{t('leads.replyCategory')}</DpFieldLabel>

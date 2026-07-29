@@ -4,8 +4,7 @@ import toast from 'react-hot-toast';
 import { useSearchParams } from 'react-router-dom';
 import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useClearAllLeads, useReprocessLead, useMe, useSmtpStatus } from '../../api/hooks';
-import { useNavigate } from 'react-router-dom';
+import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useClearAllLeads, useReprocessLead, useMe } from '../../api/hooks';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from '../../api/services';
 import { Lead, leadsApi } from '../../api/leads';
@@ -403,27 +402,27 @@ const Table = styled.table`
   border-collapse: separate;
   border-spacing: 0;
   font-family: ${({ theme }) => theme.fonts.primary};
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   min-width: 960px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 12px;
   overflow: hidden;
   th:nth-child(1) { width: 4%; }    /* # / checkbox */
-  th:nth-child(2) { width: 34%; }   /* name */
-  th:nth-child(3) { width: 16%; }   /* reply */
-  th:nth-child(4) { width: 14%; }   /* source user / tech */
-  th:nth-child(5) { width: 14%; }   /* imported */
+  th:nth-child(2) { width: 38%; }   /* name */
+  th:nth-child(3) { width: 15%; }   /* reply */
+  th:nth-child(4) { width: 13%; }   /* source user / tech */
+  th:nth-child(5) { width: 13%; }   /* imported */
   th:nth-child(6) { width: 9%; }    /* action */
   th, td {
-    padding: 7px 12px;
+    padding: 12px 14px;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
   th {
-    font-weight: 600;
-    font-size: 0.78rem;
+    font-weight: 700;
+    font-size: 0.8125rem;
     color: ${({ theme }) => theme.colors.textSecondary};
     background: ${({ theme }) => theme.colors.canvas};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
@@ -433,14 +432,19 @@ const Table = styled.table`
   td {
     background: ${({ theme }) => theme.colors.surface};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-    font-size: 0.78rem;
-    line-height: 1.3;
+    font-size: 0.875rem;
+    line-height: 1.35;
+  }
+  td:nth-child(2) {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
   }
   ${media.mobile} {
     min-width: 640px;
-    font-size: 0.75rem;
-    th, td { padding: 5px 8px; }
-    th { font-size: 0.625rem; }
+    font-size: 0.8rem;
+    th, td { padding: 8px 10px; }
+    th { font-size: 0.6875rem; }
   }
 `;
 
@@ -471,20 +475,56 @@ const TRow = styled.tr<{ $even?: boolean; $collapsed?: boolean }>`
 const NameCell = styled.div`
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  padding: 4px 0;
+`;
+
+const NAME_AVATAR_KEYS = ['mauve', 'gold', 'blue', 'olive'] as const;
+const hashNameIndex = (name: string): number => {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash) % NAME_AVATAR_KEYS.length;
+};
+
+const NameAvatar = styled.div<{ $idx: number }>`
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  background: ${({ theme, $idx }) => theme.pastel[NAME_AVATAR_KEYS[$idx]]}55;
+  color: ${({ theme, $idx }) => theme.strong[NAME_AVATAR_KEYS[$idx]]};
 `;
 
 const NameText = styled.div`
   display: flex;
   flex-direction: column;
+  gap: 3px;
+  min-width: 0;
   strong {
     color: ${({ theme }) => theme.colors.textPrimary};
-    font-size: 0.8125rem;
+    font-size: 0.9375rem;
+    font-weight: 700;
+    white-space: normal;
+    line-height: 1.25;
   }
   small {
-    color: ${({ theme }) => theme.colors.textTertiary};
-    font-size: 0.6875rem;
-    margin-top: 1px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: ${({ theme }) => theme.colors.accent}99;
+    font-size: 0.75rem;
+    transition: color 0.15s;
+  }
+  &:hover small {
+    color: ${({ theme }) => theme.colors.accent};
+    text-decoration: underline;
   }
 `;
 
@@ -1204,10 +1244,6 @@ const Leads: React.FC = () => {
     return map;
   }, [usersData]);
 
-  // SMTP status check
-  const { data: smtpStatus } = useSmtpStatus();
-  const navigate = useNavigate();
-
   const [clearMsg, setClearMsg] = useState('');
   const [oldWebsiteOnly, setOldWebsiteOnly] = useState(false);
   const [sortByTech, setSortByTech] = useState(false);
@@ -1373,23 +1409,6 @@ const Leads: React.FC = () => {
 
   return (
     <Page>
-        {/* SMTP 未設定彈窗 */}
-        {smtpStatus && !smtpStatus.configured && (
-          <Overlay>
-            <Modal>
-              <ModalHeader><h2>{t('leads.smtpRequiredTitle', 'SMTP 未設定')}</h2></ModalHeader>
-              <ModalBody style={{ textAlign: 'center', padding: '24px' }}>
-                <p style={{ marginBottom: 16, lineHeight: 1.6 }}>
-                  {t('leads.smtpRequiredDesc', '你尚未設定郵件伺服器 (SMTP)。系統需要 SMTP 設定才能執行搜尋及 Pipeline 操作。請先到 Settings 完成設定。')}
-                </p>
-                <PrimaryBtn onClick={() => navigate('/cms-settings')}>
-                  {t('leads.smtpRequiredBtn', '前往設定')}
-                </PrimaryBtn>
-              </ModalBody>
-            </Modal>
-          </Overlay>
-        )}
-
         <PageCard>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <SpriteAvatar src={AGENTS.S1.sprite} frames={AGENTS.S1.frames} frameW={AGENTS.S1.frameW} frameH={AGENTS.S1.frameH} size={48} />
@@ -1535,10 +1554,18 @@ const Leads: React.FC = () => {
                         <td style={{ color: styledTheme.colors.textTertiary, fontSize: '0.75rem', textAlign: 'center' }}>{(page - 1) * LIMIT + i + 1}</td>
                         <td>
                           <NameCell>
-                            <DpStatusPill $status={statusKey}>{statusText}</DpStatusPill>
+                            <NameAvatar $idx={hashNameIndex(name)}>{name.charAt(0).toUpperCase()}</NameAvatar>
                             <NameText>
                               <strong>{name}</strong>
-                              {lead.website && <small>{lead.website}</small>}
+                              {lead.website && (
+                                <small>
+                                  <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="8" cy="8" r="6.5" /><path d="M1.5 8h13M8 1.5c1.8 1.8 2.7 4 2.7 6.5s-.9 4.7-2.7 6.5c-1.8-1.8-2.7-4-2.7-6.5S6.2 3.3 8 1.5z" /></svg>
+                                  {lead.website}
+                                </small>
+                              )}
+                              <div style={{ marginTop: 2 }}>
+                                <DpStatusPill $status={statusKey}>{statusText}</DpStatusPill>
+                              </div>
                             </NameText>
                           </NameCell>
                         </td>

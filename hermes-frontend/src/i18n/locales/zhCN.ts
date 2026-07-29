@@ -89,7 +89,7 @@ const zhCN = {
     bankAccounts: '银行账户',
     menu: '菜单',
     leadPool: '潜在客户池',
-    clientPool: 'Client Pool',
+    clientPool: '客户池',
     leadSearch: '潜在客户搜索',
     outbox: '发件箱',
     workflows: '工作流',
@@ -926,6 +926,7 @@ const zhCN = {
   users: {
     title: '团队管理',
     subtitle: '管理团队成员与角色权限。',
+    basicInfo: '基本资料',
     teamOverview: '团队总览',
     membersSummary: '共 {{count}} 位成员，包含 {{admin}} 位管理员、{{manager}} 位经理、{{user}} 位用户',
     allUsers: '所有用户',
@@ -1349,7 +1350,7 @@ const zhCN = {
     notifTaskFailed: '任务失败',
   },
   clientPool: {
-    title: 'Client Pool',
+    title: '客户池',
     clientsTab: '客户',
     verifiedTab: '已验证邮箱',
   },

@@ -89,7 +89,7 @@ const zhTW = {
     bankAccounts: '銀行帳戶',
     menu: '菜單',
     leadPool: '潛在客戶池',
-    clientPool: 'Client Pool',
+    clientPool: '客戶池',
     leadSearch: '潛在客戶搜尋',
     outbox: '寄件匣',
     workflows: '工作流程',
@@ -928,6 +928,7 @@ const zhTW = {
   users: {
     title: '團隊管理',
     subtitle: '管理團隊成員與角色權限。',
+    basicInfo: '基本資料',
     teamOverview: '團隊總覽',
     membersSummary: '共 {{count}} 位成員，包含 {{admin}} 位管理員、{{manager}} 位經理、{{user}} 位使用者',
     allUsers: '所有使用者',
@@ -1352,7 +1353,7 @@ const zhTW = {
     notifTaskFailed: '任務失敗',
   },
   clientPool: {
-    title: 'Client Pool',
+    title: '客戶池',
     clientsTab: '客戶',
     verifiedTab: '已驗證信箱',
   },
