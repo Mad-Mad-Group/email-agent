@@ -61,7 +61,7 @@ export const lightTheme: HermesTheme = {
     olive: '#6C7A24',
   },
   sidebar: {
-    bg: '#F1EEE9',
+    bg: '#FAF8F5',
     text: '#0B080B',
     textMuted: 'rgba(11,8,11,0.45)',
     active: 'linear-gradient(135deg, #184F95, #2A78D6)',
