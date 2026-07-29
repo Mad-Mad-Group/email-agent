@@ -51,7 +51,11 @@ const PlusIcon = () => (
 /* ── Layout ── */
 
 const Page = styled.div`
-  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
+  display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.lg}px;
+  padding: 36px 32px 44px;
+  animation: fadeSlideUp 0.5s var(--ease-out) both;
+  ${media.tablet} { padding: 24px 18px 32px; }
+  ${media.mobile} { padding: 20px 16px 32px; }
 `;
 
 const PageCard = styled.div`
@@ -75,7 +79,7 @@ const PageTitle = styled.h1`
   background: ${({ theme }) => theme.gradients.brand};
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   ${({ theme }) => theme.mode === 'dark' && `
-    background: linear-gradient(135deg, #E0ACD2, #ACC0DE);
+    background: linear-gradient(135deg, #E0ACD2, #9EC5F4);
     -webkit-background-clip: text; background-clip: text;
   `}
 `;
@@ -104,25 +108,6 @@ const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'ghost' }>`
     if ($variant === 'danger') return `background: transparent; color: ${theme.colors.accent}; border-color: ${theme.colors.accent}; &:hover { background: ${theme.colors.accent}; color: ${theme.colors.textInverted}; }`;
     return `background: ${theme.colors.surface}; color: ${theme.colors.textSecondary}; border-color: ${theme.colors.border}; &:hover { background: ${theme.colors.surfaceMuted}; }`;
   }}
-`;
-
-/* ── Delete icon button (matching Leads style) ── */
-
-const DeleteIconBtn = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  padding: 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: color 0.15s, transform 0.15s;
-  &:hover {
-    color: ${({ theme }) => theme.strong.mauve};
-    transform: translateY(-1px);
-  }
 `;
 
 /* ── Stats Cards (LUNO style — aligned with Leads) ── */
@@ -200,9 +185,6 @@ const Table = styled.table`
   font-family: ${({ theme }) => theme.fonts.primary};
   font-size: 0.8rem;
   min-width: 960px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 12px;
-  overflow: hidden;
   th:nth-child(1) { width: 22%; }
   th:nth-child(2) { width: 14%; }
   th:nth-child(3) { width: 12%; }
@@ -221,22 +203,17 @@ const Table = styled.table`
   }
   th {
     font-weight: 600;
-    font-size: 0.78rem;
+    font-size: 0.6875rem;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    color: ${({ theme }) => theme.colors.textSecondary};
-    background: ${({ theme }) => theme.colors.canvas};
+    color: ${({ theme }) => theme.colors.textTertiary};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
     user-select: none;
     cursor: default;
   }
   td {
-    font-size: 0.78rem;
+    font-size: 0.8125rem;
     line-height: 1.4;
-    background: ${({ theme }) => theme.colors.surface};
-    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
-  }
-  tbody tr:last-child td {
     border-bottom: none;
   }
   ${media.mobile} {
@@ -250,6 +227,8 @@ const Table = styled.table`
 const TRow = styled.tr`
   transition: background 0.15s;
   cursor: pointer;
+  animation: fadeInRow 0.35s var(--ease-out) both;
+  &:nth-child(even) td { background: ${({ theme }) => theme.colors.surfaceMuted}40; }
   &:hover td { background: ${({ theme }) => `${theme.colors.accent}08`}; }
 `;
 
@@ -484,12 +463,9 @@ const VerifiedEmailsPage: React.FC = () => {
                         {item.created_at ? new Date(item.created_at).toLocaleDateString() : '—'}
                       </td>
                       <td>
-                        <DeleteIconBtn onClick={() => handleDelete(item._id)}>
-                          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M5.5 5.5A.5.5 0 016 6v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm2.5 0a.5.5 0 01.5.5v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm3 .5a.5.5 0 00-1 0v6a.5.5 0 001 0V6z" fill="currentColor"/>
-                            <path d="M14.5 3a1 1 0 01-1 1H13v9a2 2 0 01-2 2H5a2 2 0 01-2-2V4h-.5a1 1 0 010-2H6a1 1 0 011-1h2a1 1 0 011 1h3.5a1 1 0 011 1zM4.118 4L4 4.059V13a1 1 0 001 1h6a1 1 0 001-1V4.059L11.882 4H4.118z" fill="currentColor"/>
-                          </svg>
-                        </DeleteIconBtn>
+                        <Btn $variant="danger" onClick={() => handleDelete(item._id)} style={{ padding: '4px 8px' }}>
+                          <TrashIcon />
+                        </Btn>
                       </td>
                     </TRow>
                   ))}

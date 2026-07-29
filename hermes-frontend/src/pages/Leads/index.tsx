@@ -73,7 +73,6 @@ const PageCard = styled.div`
   border-radius: ${({ theme }) => theme.radii.card}px;
   padding: 24px;
   display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
-  ${media.mobile} { padding: 12px 10px; gap: 10px; }
 `;
 
 const PageTitle = styled.h1`
@@ -83,61 +82,11 @@ const PageTitle = styled.h1`
   background: ${({ theme }) => theme.gradients.brand};
   -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
   ${({ theme }) => theme.mode === 'dark' && `
-    background: linear-gradient(135deg, #E0ACD2, #ACC0DE);
+    background: linear-gradient(135deg, #E0ACD2, #9EC5F4);
     -webkit-background-clip: text; background-clip: text;
   `}
-  ${media.mobile} { font-size: 1.15rem; }
 `;
-const PageSub = styled.p`
-  font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;
-  ${media.mobile} { display: none; }
-`;
-
-const BulkBar = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 16px;
-  border-radius: 10px;
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  font-size: 0.8125rem;
-  animation: bulkSlide 0.15s ease-out;
-  @keyframes bulkSlide {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-`;
-
-const BulkCount = styled.span`
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.accent};
-  white-space: nowrap;
-`;
-
-const BulkBtn = styled.button<{ $danger?: boolean }>`
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 5px 12px;
-  border: 1px solid ${({ $danger, theme }) => $danger ? '#ef4444' : theme.colors.border};
-  border-radius: 6px;
-  background: ${({ $danger }) => $danger ? '#fef2f2' : 'transparent'};
-  color: ${({ $danger, theme }) => $danger ? '#ef4444' : theme.colors.textPrimary};
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: background 0.12s;
-  &:hover { background: ${({ $danger }) => $danger ? '#fee2e2' : 'rgba(0,0,0,0.04)'}; }
-`;
-
-const BulkSep = styled.div`
-  width: 1px;
-  height: 20px;
-  background: ${({ theme }) => theme.colors.border};
-`;
+const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const FloatingToast = styled.div<{ $error?: boolean }>`
   position: fixed;
@@ -223,13 +172,6 @@ const CircleActionBtn = styled.button<{ $color?: string; $spinning?: boolean }>`
   &:disabled { opacity: 0.4; cursor: not-allowed; pointer-events: none; }
   svg { width: 14px; height: 14px; }
 
-  ${media.mobile} {
-    width: 28px;
-    height: 28px;
-    svg { width: 12px; height: 12px; }
-    &::after { display: none; }
-  }
-
   ${({ $spinning }) => $spinning && css`
     animation: ${circleSpinGlow} 0.8s ease-in-out;
     border-color: #6C7A24;
@@ -261,16 +203,6 @@ const IconRefresh = ({ spinning }: { spinning?: boolean }) => (
     </svg>
   </RefreshIconWrap>
 );
-
-const HeaderRow = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  ${media.mobile} {
-    gap: 8px;
-    & > div:first-child { transform: scale(0.75); transform-origin: left center; margin-right: -12px; }
-  }
-`;
 
 /* ── Tabs Row ── */
 
@@ -305,16 +237,11 @@ const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
   font-size: 0.875rem;
   font-weight: ${({ $active }) => $active ? 600 : 500};
   transition: color 0.2s;
-  svg { flex-shrink: 0; color: ${({ $color, theme }) =>
-    $color === 'amber' ? theme.strong.gold :
-    $color === 'green' ? theme.strong.olive :
-    $color === 'purple' ? theme.strong.mauve :
-    theme.strong.blue}; }
+  svg { flex-shrink: 0; color: ${({ theme }) => theme.strong.blue}; }
   &:hover {
     background: ${({ $active }) => $active ? 'transparent' : 'rgba(0,0,0,0.04)'};
   }
   ${media.tabletDown} { padding: 8px 16px; }
-  ${media.mobile} { padding: 6px 12px; font-size: 0.78rem; gap: 5px; svg { width: 12px; height: 12px; } }
 `;
 
 const TabSlider = styled.div<{ $left: number; $width: number }>`
@@ -334,7 +261,6 @@ const TabNumber = styled.span`
   font-size: 1.25rem;
   font-weight: 700;
   color: ${({ theme }) => theme.colors.textPrimary};
-  ${media.mobile} { font-size: 1rem; }
 `;
 
 const ToolbarSep = styled.div`
@@ -350,7 +276,6 @@ const SubPillRow = styled.div`
   padding: 0;
   position: relative;
   ${media.tabletDown} { padding: 2px 12px; gap: 6px; flex-wrap: wrap; }
-  ${media.mobile} { padding: 0; gap: 6px; }
 `;
 
 const SubPillTrack = styled.div`
@@ -482,8 +407,7 @@ const Table = styled.table`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 12px;
   overflow: hidden;
-  th:nth-child(1) { width: 4%; text-overflow: clip; }    /* checkbox */
-  td:nth-child(1) { text-overflow: clip; }
+  th:nth-child(1) { width: 4%; }    /* # / checkbox */
   th:nth-child(2) { width: 34%; }   /* name */
   th:nth-child(3) { width: 16%; }   /* reply */
   th:nth-child(4) { width: 14%; }   /* source user / tech */
@@ -512,15 +436,10 @@ const Table = styled.table`
     line-height: 1.3;
   }
   ${media.mobile} {
-    min-width: 420px;
+    min-width: 640px;
     font-size: 0.75rem;
-    th, td { padding: 5px 6px; }
+    th, td { padding: 5px 8px; }
     th { font-size: 0.625rem; }
-    th:nth-child(4), td:nth-child(4),
-    th:nth-child(5), td:nth-child(5) { display: none; }
-    th:nth-child(2) { width: 44%; }
-    th:nth-child(3) { width: 30%; }
-    th:nth-child(6) { width: 18%; }
   }
 `;
 
@@ -552,27 +471,19 @@ const NameCell = styled.div`
   display: flex;
   align-items: center;
   gap: 10px;
-  min-width: 0;
 `;
 
 const NameText = styled.div`
   display: flex;
   flex-direction: column;
-  min-width: 0;
   strong {
     color: ${({ theme }) => theme.colors.textPrimary};
     font-size: 0.8125rem;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
   small {
     color: ${({ theme }) => theme.colors.textTertiary};
     font-size: 0.6875rem;
     margin-top: 1px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
 `;
 
@@ -1037,20 +948,38 @@ const MOCK_LEADS: Lead[] = [
 
 /* ── Tabs config (labels moved inside component for i18n) ── */
 
+interface SubTab {
+  key: string;
+  label: string;
+  icon: string;
+  step?: string;
+}
 interface TabDef {
   key: string;
   label: string;
   color: string;
   icon: string;
-  filter: (l: Lead) => boolean;
+  stepRange: string;
+  subs: SubTab[];
+  filter: (l: Lead, sub: string) => boolean;
 }
 
-/* ── Tab icon SVG paths (16×16 viewBox) ── */
+/* ── Tab / Sub-pill icon SVG paths (16×16 viewBox) ── */
 const TAB_ICONS: Record<string, string> = {
-  processing: 'M8 1a7 7 0 100 14A7 7 0 008 1zM8 4v4M6 10h4',                        // hourglass/gear
+  processing: 'M8 1a7 7 0 100 14A7 7 0 008 1zM8 4v4M6 10h4',                        // AI brain/gear
   review:     'M4 2h8a1 1 0 011 1v10a1 1 0 01-1 1H4a1 1 0 01-1-1V3a1 1 0 011-1zm1 3h6M5 7h6M5 9h4', // document
   sent:       'M1 3h14v10H1V3zm0 0l7 5 7-5',                                          // envelope
-  replied:    'M1 3h14v10H1V3zm0 0l7 5 7-5M10 9l4 4M14 9l-4 4',                       // envelope with reply
+};
+const SUB_ICONS: Record<string, string> = {
+  '':             'M2 2h12v12H2V2zm2 3h8M4 7h8M4 9h5',                                // list
+  to_enrich:      'M8 1l2 3h3l-1 3 2 2-3 1-1 3-2-2-2 2-1-3-3-1 2-2-1-3h3z',          // sparkle (reuse)
+  to_analyze:     'M8 1l2 3h3l-1 3 2 2-3 1-1 3-2-2-2 2-1-3-3-1 2-2-1-3h3z',          // sparkle
+  draft_ready:    'M12.146 1.146a.5.5 0 01.708 0l2 2a.5.5 0 010 .708l-9.5 9.5a.5.5 0 01-.168.11l-5 2a.5.5 0 01-.65-.65l2-5a.5.5 0 01.11-.168l9.5-9.5z', // pen
+  email_draft:    'M1 3h14v10H1V3zm0 0l7 5 7-5',                                      // mail
+  wa_draft:       'M8 1a7 7 0 100 14A7 7 0 008 1zM5 6h6M5 8.5h4',                     // chat bubble
+  awaiting_reply: 'M8 1a7 7 0 100 14A7 7 0 008 1zm0 3v4l2.5 1.5',                     // clock
+  followed_up:    'M8 1a7 7 0 100 14A7 7 0 008 1zm-2 4l2 2 4-4',                      // check
+  no_reply:       'M8 1a7 7 0 100 14A7 7 0 008 1zM5.5 5.5l5 5M10.5 5.5l-5 5',         // X
 };
 
 /* ══════════════════════════════════════
@@ -1070,39 +999,62 @@ const Leads: React.FC = () => {
 
   const TABS: TabDef[] = [
     {
-      key: 'all',
-      label: t('leads.tabAll', '全部'),
+      key: 'processing',
+      label: t('leads.tabProcessing'),
       color: 'blue',
       icon: 'processing',
-      filter: () => true,
-    },
-    {
-      key: 'processing',
-      label: t('leads.tabProcessing', '待處理'),
-      color: 'amber',
-      icon: 'processing',
-      filter: (l) => isNew(l) && !(l as any)._has_email_draft,
+      stepRange: '1-3',
+      subs: [
+        { key: '', label: t('leads.subAll'), icon: '' },
+        { key: 'to_enrich', label: t('leads.subToEnrich'), icon: 'to_enrich', step: '1' },
+        { key: 'to_analyze', label: t('leads.subToAnalyze'), icon: 'to_analyze', step: '2' },
+        { key: 'draft_ready', label: t('leads.subDraftReady'), icon: 'draft_ready', step: '3' },
+      ],
+      filter: (l, sub) => {
+        if (!isNew(l)) return false;
+        if (sub === 'to_enrich') return !(l as any)._website_researched;
+        if (sub === 'to_analyze') return !!(l as any)._website_researched && !(l as any)._has_analysis;
+        if (sub === 'draft_ready') return !!(l as any)._has_email_draft;
+        return true;
+      },
     },
     {
       key: 'review',
-      label: t('leads.tabReview', '待審核'),
-      color: 'blue',
+      label: t('leads.tabReview'),
+      color: 'amber',
       icon: 'review',
-      filter: (l) => (isNew(l) && !!(l as any)._has_email_draft) || l.status === 'pending',
+      stepRange: '4',
+      subs: [
+        { key: '', label: t('leads.subAll'), icon: '' },
+        { key: 'email_draft', label: t('leads.subEmailDraft'), icon: 'email_draft', step: '4' },
+        { key: 'wa_draft', label: t('leads.subWaDraft'), icon: 'wa_draft', step: '4' },
+      ],
+      filter: (l, sub) => {
+        if (l.status !== 'pending') return false;
+        if (sub === 'email_draft') return !!(l as any)._has_email_draft;
+        if (sub === 'wa_draft') return !!(l as any)._has_wa_message;
+        return true;
+      },
     },
     {
       key: 'sent',
-      label: t('leads.tabSent', '已發送'),
+      label: t('leads.tabSent'),
       color: 'green',
       icon: 'sent',
-      filter: (l) => l.status === 'contacted' && !(l as any)._replied,
-    },
-    {
-      key: 'replied',
-      label: t('leads.tabReplied', '已回覆'),
-      color: 'purple',
-      icon: 'replied',
-      filter: (l) => l.status === 'contacted' && !!(l as any)._replied,
+      stepRange: '5-9',
+      subs: [
+        { key: '', label: t('leads.subAll'), icon: '' },
+        { key: 'awaiting_reply', label: t('leads.subAwaitingReply'), icon: 'awaiting_reply', step: '6' },
+        { key: 'followed_up', label: t('leads.subFollowedUp'), icon: 'followed_up', step: '7' },
+        { key: 'no_reply', label: t('leads.subNoReply'), icon: 'no_reply', step: '9' },
+      ],
+      filter: (l, sub) => {
+        if (l.status !== 'contacted') return false;
+        if (sub === 'awaiting_reply') return !(l as any)._no_reply && !((l as any)._followup_count > 0);
+        if (sub === 'followed_up') return ((l as any)._followup_count || 0) > 0;
+        if (sub === 'no_reply') return !!(l as any)._no_reply;
+        return true;
+      },
     },
   ];
 
@@ -1114,12 +1066,15 @@ const Leads: React.FC = () => {
 
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState('processing');
+  const [activeSub, setActiveSub] = useState('');
   const styledTheme = useTheme() as any;
 
   /* ── Sliding indicator refs & state ── */
   const tabsRowRef = useRef<HTMLDivElement>(null);
+  const subTrackRef = useRef<HTMLDivElement>(null);
   const [tabSlider, setTabSlider] = useState({ left: 0, width: 0 });
+  const [subSlider, setSubSlider] = useState({ left: 0, width: 0 });
 
   const updateTabSlider = useCallback(() => {
     const container = tabsRowRef.current;
@@ -1130,7 +1085,21 @@ const Leads: React.FC = () => {
     }
   }, [activeTab]);
 
+  const updateSubSlider = useCallback(() => {
+    const container = subTrackRef.current;
+    if (!container) return;
+    const btn = container.querySelector(`[data-sub-key="${activeSub}"]`) as HTMLElement | null;
+    if (btn) {
+      setSubSlider({ left: btn.offsetLeft, width: btn.offsetWidth });
+    }
+  }, [activeSub, activeTab]);
+
   useLayoutEffect(() => { updateTabSlider(); }, [updateTabSlider]);
+  useLayoutEffect(() => {
+    // Small RAF delay so new sub pills are rendered before measuring
+    const id = requestAnimationFrame(updateSubSlider);
+    return () => cancelAnimationFrame(id);
+  }, [updateSubSlider]);
 
   const [searchParams, setSearchParams] = useSearchParams();
   const [showAdd, setShowAdd] = useState(false);
@@ -1156,7 +1125,6 @@ const Leads: React.FC = () => {
   const [replyChecking, setReplyChecking] = useState(false);
   const [replyCheckMsg, setReplyCheckMsg] = useState('');
   const [followupCheckMsg, setFollowupCheckMsg] = useState('');
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const closeAddModal = useCallback(() => {
     setAddClosing(true);
@@ -1244,12 +1212,12 @@ const Leads: React.FC = () => {
   const allLeads: Lead[] = [...MOCK_LEADS, ...apiLeads];
 
   const handleSimulateNoReply = async () => {
-    const MAX_FOLLOWUPS = 3;
     const candidates = allLeads.filter(lead =>
       !lead._id.startsWith('mock-') &&
       lead.status === 'contacted' &&
       !lead._replied &&
-      ((lead as any)._followup_count || 0) < MAX_FOLLOWUPS,
+      !(lead as any)._no_reply &&
+      !((lead as any)._followup_count > 0),
     );
     if (candidates.length === 0) {
       toast(t('leads.noLeadsToSimulate'));
@@ -1309,7 +1277,7 @@ const Leads: React.FC = () => {
       })
     : allLeads;
   const curTab = TABS.find(t => t.key === activeTab) || TABS[0];
-  const tabFiltered = searchFiltered.filter(l => curTab.filter(l));
+  const tabFiltered = searchFiltered.filter(l => curTab.filter(l, activeSub));
 
   // 舊網站 filter + tech_score 排序
   const techFiltered = oldWebsiteOnly
@@ -1328,19 +1296,29 @@ const Leads: React.FC = () => {
   const tabCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const tab of TABS) {
-      counts[tab.key] = allLeads.filter(l => tab.filter(l)).length;
+      counts[tab.key] = allLeads.filter(l => tab.filter(l, '')).length;
     }
     return counts;
   }, [allLeads]);
+
+  // Sub-tab counts（受主 tab 影響）
+  const subCounts = useMemo(() => {
+    const mainFiltered = allLeads.filter(l => curTab.filter(l, ''));
+    const counts: Record<string, number> = {};
+    for (const sub of curTab.subs) {
+      counts[sub.key] = sub.key === ''
+        ? mainFiltered.length
+        : mainFiltered.filter(l => curTab.filter(l, sub.key)).length;
+    }
+    return counts;
+  }, [allLeads, curTab]);
 
   // 保留 stats.total 畀 KPI header
   const stats = useMemo(() => ({ total: allLeads.length }), [allLeads]);
 
 
   const handleDelete = async (id: string) => {
-    const lead = allLeads.find(l => l._id === id);
-    const name = lead?.company_name || id;
-    const ok = await showConfirm(t('leads.confirmDelete', { name }));
+    const ok = await showConfirm(t('leads.confirmDelete'));
     if (ok) {
       deleteLead.mutate(id, {
         onSuccess: () => console.info('Lead 已刪除'),
@@ -1355,6 +1333,12 @@ const Leads: React.FC = () => {
 
   const handleTabClick = (key: string) => {
     setActiveTab(key);
+    setActiveSub('');
+    setPage(1);
+  };
+
+  const handleSubClick = (key: string) => {
+    setActiveSub(key);
     setPage(1);
   };
 
@@ -1377,51 +1361,6 @@ const Leads: React.FC = () => {
 
 
 
-  // ── Multi-select helpers ──
-  const toggleSelect = useCallback((id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  }, []);
-
-  const toggleSelectAll = useCallback(() => {
-    const pageIds = leads.map(l => l._id);
-    setSelectedIds(prev => {
-      const allSelected = pageIds.every(id => prev.has(id));
-      if (allSelected) {
-        const next = new Set(prev);
-        pageIds.forEach(id => next.delete(id));
-        return next;
-      }
-      return new Set([...prev, ...pageIds]);
-    });
-  }, [leads]);
-
-  // Clear selection on tab/page change
-  useEffect(() => { setSelectedIds(new Set()); }, [activeTab, page]);
-
-  const handleBulkDelete = async () => {
-    const ids = [...selectedIds];
-    if (!ids.length) return;
-    const ok = await showConfirm(t('leads.confirmBulkDelete', { count: ids.length }));
-    if (!ok) return;
-    for (const id of ids) {
-      deleteLead.mutate(id);
-    }
-    setSelectedIds(new Set());
-  };
-
-  const handleBulkStatus = async (newStatus: string) => {
-    const ids = [...selectedIds];
-    if (!ids.length) return;
-    for (const id of ids) {
-      changeStatus.mutate({ id, status: newStatus });
-    }
-    setSelectedIds(new Set());
-  };
-
   const handleCloseDetail = useCallback(() => {
     setDetailClosing(true);
     detailTimerRef.current = setTimeout(() => { setSelectedLead(null); setDetailClosing(false); }, 200);
@@ -1430,10 +1369,10 @@ const Leads: React.FC = () => {
   return (
     <Page>
         <PageCard>
-        <HeaderRow>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <SpriteAvatar src={AGENTS.S1.sprite} frames={AGENTS.S1.frames} frameW={AGENTS.S1.frameW} frameH={AGENTS.S1.frameH} size={48} />
           <div><PageTitle>{t('leads.title')}</PageTitle><PageSub>{t('leads.subtitle')}</PageSub></div>
-        </HeaderRow>
+        </div>
 
         {/* ── Orbital-style View Tabs ── */}
         <TabsRow ref={tabsRowRef}>
@@ -1455,9 +1394,29 @@ const Leads: React.FC = () => {
           ))}
         </TabsRow>
 
-        {/* ── Action bar ── */}
+        {/* ── Sub-status pills in track bar + right-side actions ── */}
         <SubPillRow>
-          <SubPillTrack />
+          <SubPillTrack ref={subTrackRef}>
+            {curTab.subs.length > 1 && <>
+              <SubSlider $left={subSlider.left} $width={subSlider.width} />
+              {curTab.subs.map(sub => (
+                <SubPill
+                  key={sub.key}
+                  data-sub-key={sub.key}
+                  $active={activeSub === sub.key}
+                  $color={SUB_COLOR_KEYS[sub.key] || 'blue'}
+                  onClick={() => handleSubClick(sub.key)}
+                >
+                  {SUB_ICONS[sub.key] && (
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round">
+                      <path d={SUB_ICONS[sub.key]} />
+                    </svg>
+                  )}
+                  {sub.label} {subCounts[sub.key] ?? 0}
+                </SubPill>
+              ))}
+            </>}
+          </SubPillTrack>
           <SearchWrap>
             <SearchIcon><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></SearchIcon>
             <SearchInput
@@ -1468,7 +1427,7 @@ const Leads: React.FC = () => {
           </SearchWrap>
 
           <CircleActionBtn title={t('leads.simulateNoReply')} onClick={handleSimulateNoReply} disabled={simulating} $spinning={simulating}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M1 3h10v7H1z"/><path d="M1 3l5 4 5-4"/><path d="M12 7l3 3-3 3"/><path d="M15 10H9"/></svg>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M1 1l14 14M4 4a5 5 0 007 7M3 8a5 5 0 010-5M13 8a5 5 0 010 5"/></svg>
           </CircleActionBtn>
 
           <CircleActionBtn title={t('leads.filterOldWebsiteOn')} onClick={() => { setOldWebsiteOnly(v => !v); setPage(1); }} style={oldWebsiteOnly ? { background: styledTheme.colors.accent, color: '#fff', borderColor: 'transparent' } : undefined}>
@@ -1496,35 +1455,11 @@ const Leads: React.FC = () => {
           document.body
         )}
           <div style={{ marginTop: 16 }}><ToolbarSep /></div>
-          {selectedIds.size > 0 && (
-            <BulkBar>
-              <BulkCount>{t('leads.bulkSelected', { count: selectedIds.size })}</BulkCount>
-              <BulkSep />
-              <BulkBtn onClick={() => handleBulkStatus('pending')}>
-                <IconArrowRight /> {t('leads.bulkToPending')}
-              </BulkBtn>
-              <BulkBtn onClick={() => handleBulkStatus('contacted')}>
-                <IconArrowRight /> {t('leads.bulkToContacted')}
-              </BulkBtn>
-              <BulkSep />
-              <BulkBtn $danger onClick={handleBulkDelete}>
-                <IconTrash /> {t('leads.bulkDelete')}
-              </BulkBtn>
-              <BulkBtn onClick={() => setSelectedIds(new Set())}>
-                {t('leads.bulkClear')}
-              </BulkBtn>
-            </BulkBar>
-          )}
           <TableWrap>
             <Table>
               <thead>
                 <tr>
-                  <th style={{ textAlign: 'center' }}>
-                    <RowCheckbox
-                      checked={leads.length > 0 && leads.every(l => selectedIds.has(l._id))}
-                      onChange={toggleSelectAll}
-                    />
-                  </th>
+                  <th style={{ textAlign: 'center' }}><RowCheckbox readOnly /></th>
                   <th>{t('leads.name')} <IconSortArrow /></th>
                   <th>{t('leads.reply')}</th>
                   {isAdmin && <th>{t('leads.sourceUser')}</th>}
@@ -1575,15 +1510,10 @@ const Leads: React.FC = () => {
                       return (
                         <React.Fragment key={lead._id}>
                           <TRow $even={i % 2 === 1} style={{ cursor: 'pointer' }} onClick={() => setSelectedLead(lead)}>
-                        <td style={{ textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                          <RowCheckbox
-                            checked={selectedIds.has(lead._id)}
-                            onChange={() => toggleSelect(lead._id)}
-                          />
-                        </td>
+                        <td style={{ color: styledTheme.colors.textTertiary, fontSize: '0.75rem', textAlign: 'center' }}>{(page - 1) * LIMIT + i + 1}</td>
                         <td>
                           <NameCell>
-                            <DpStatusPill $status={statusKey} style={{ flexShrink: 0 }}>{statusText}</DpStatusPill>
+                            <DpStatusPill $status={statusKey}>{statusText}</DpStatusPill>
                             <NameText>
                               <strong>{name}</strong>
                               {lead.website && <small>{lead.website}</small>}
@@ -1595,16 +1525,6 @@ const Leads: React.FC = () => {
                             const badge = getReplyBadge(lead, t, styledTheme);
                             return <ReplyBadge $bg={badge.bg} $fg={badge.fg}>{badge.icon && REPLY_ICONS[badge.icon] && <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d={REPLY_ICONS[badge.icon]} /></svg>}{badge.text}</ReplyBadge>;
                           })()}
-                          {(lead as any)._followup_count > 0 && (
-                            <ReplyBadge $bg={styledTheme.pastel.gold} $fg={styledTheme.colors.textPrimary} style={{ marginLeft: 4 }}>
-                              {t('leads.followupBadge', { count: (lead as any)._followup_count })}
-                            </ReplyBadge>
-                          )}
-                          {(lead as any)._reoutreach_done && (
-                            <ReplyBadge $bg={styledTheme.pastel.blue} $fg={styledTheme.colors.textPrimary} style={{ marginLeft: 4 }}>
-                              {t('leads.reoutreachBadge')}
-                            </ReplyBadge>
-                          )}
                         </td>
                         {isAdmin && (
                           <td style={{ fontSize: '0.75rem', color: styledTheme.colors.textSecondary }}>
@@ -1614,8 +1534,7 @@ const Leads: React.FC = () => {
                         <td style={{ textAlign: 'center' }}>
                           {(lead as any)._tech_score != null ? (() => {
                             const s = (lead as any)._tech_score as number;
-                            const bg = s >= 50 ? styledTheme.strong.mauve : s >= 25 ? styledTheme.strong.gold : styledTheme.strong.olive;
-                            const fg = s >= 25 && s < 50 ? '#0B080B' : '#FFFFFF';
+                            const bg = s >= 50 ? styledTheme.strong.mauve : s >= 25 ? styledTheme.colors.amber : styledTheme.strong.olive;
                             const label = s >= 50 ? t('leads.techOld') : s >= 25 ? t('leads.techNormal') : t('leads.techNew');
                             return (
                               <span style={{
@@ -1624,7 +1543,7 @@ const Leads: React.FC = () => {
                                 borderRadius: 12,
                                 fontSize: '0.7rem',
                                 fontWeight: 600,
-                                color: fg,
+                                color: styledTheme.colors.textInverted,
                                 background: bg,
                               }}>
                                 {s} {label}
@@ -1788,16 +1707,6 @@ const Leads: React.FC = () => {
           onStatusChange={(id, status) => handleStatusChange(id, status)}
           onDelete={(id) => handleDelete(id)}
           onReprocess={(id, stage) => reprocessLead.mutate({ id, stage })}
-          onSimulateReoutreach={async (id) => {
-            try {
-              const res = await leadsApi.simulateNoReply(id);
-              toast.success(t('leads.simulateDone', { count: 1 }));
-              refetch();
-              queryClient.invalidateQueries({ queryKey: ['emailQueue'] });
-            } catch (err: any) {
-              toast.error(t('leads.simulateFailed', { count: 1 }) + (err?.message || ''));
-            }
-          }}
           rightPanel={
             selectedLead.company_name ? (
               <LeadEmails companyName={selectedLead.company_name} leadId={selectedLead._id} />
