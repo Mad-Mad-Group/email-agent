@@ -404,10 +404,10 @@ const MLink = styled(NavLink)`
   }
 
   &.active {
-    background: ${({ theme }) => theme.strong.blue}22;
-    color: ${({ theme }) => theme.strong.blue};
+    background: ${({ theme }) => theme.sidebar.active};
+    color: #FFFFFF;
     font-weight: 600;
-    svg { color: ${({ theme }) => theme.strong.blue}; }
+    svg { color: #FFFFFF; }
   }
 
   svg { flex-shrink: 0; }
@@ -660,11 +660,6 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
   useEffect(() => {
     const path = location.pathname;
     if (counts[path]) clearBadge(path);
-    // /client-pool contains both /cms-leads and /cms-verified-emails
-    if (path === '/client-pool') {
-      if (counts['/cms-leads']) clearBadge('/cms-leads');
-      if (counts['/cms-verified-emails']) clearBadge('/cms-verified-emails');
-    }
   }, [location.pathname, counts, clearBadge]);
 
   const [openMenus, setOpenMenus] = useState<Record<string, boolean>>({
@@ -705,8 +700,6 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
       <BottomMenuList>
         <li><MLink to="/cms-agents"><IconAgent /><FitSpan>{t('nav.agents')}</FitSpan>{counts['/cms-agents'] ? <Badge>{counts['/cms-agents']}</Badge> : null}</MLink></li>
         <li><MLink to="/cms-users"><IconUsers /><FitSpan>{t('nav.team')}</FitSpan></MLink></li>
-        <li><MLink to="/cms-user-info"><IconUserInfo /><FitSpan>{t('nav.userInfo')}</FitSpan></MLink></li>
-        <li><MLink to="/cms-settings"><IconSettings /><FitSpan>{t('nav.settings')}</FitSpan></MLink></li>
       </BottomMenuList>
       </ScrollArea>
 

@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { Lead } from '../api/leads';
-import { useMe, useWhatsappTemplates } from '../api/hooks';
 import { media } from '../styles/media';
 import { glassSurface } from '../styles/glassSurface';
 
@@ -193,30 +192,23 @@ const DpPanel = styled.div<{ $closing?: boolean }>`
     &::after { display: none; }
   }
   ${media.mobile} {
-    width: 100vw !important;
-    height: 100vh !important;
-    top: 0 !important;
-    left: 0 !important;
-    border-radius: 0;
+    width: 95vw;
+    height: 92vh;
   }
 `;
 
 const DpHeader = styled.div`
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 20px 20px 10px 28px;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
   background: transparent;
   min-height: 24px;
-  position: relative;
-  ${media.mobile} { padding: 16px 16px 8px 16px; }
 `;
 
 const DpHeaderInfo = styled.div`
   flex: 1;
   min-width: 0;
-  max-width: 220px;
-  ${media.mobile} { max-width: none; }
 `;
 
 const DpCompanyName = styled.h2`
@@ -224,7 +216,9 @@ const DpCompanyName = styled.h2`
   font-size: 1.125rem;
   font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
-  word-break: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const DpHeaderMeta = styled.div`
@@ -258,129 +252,16 @@ export const STATUS_PILL_COLORS: Record<string, { bg: string; fg: string }> = {
   rejected:  { bg: '#fce4ec', fg: '#c62828' },
 };
 export const DpStatusPill = styled.span<{ $status?: string }>`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-block;
   font-size: 0.75rem;
   font-weight: 500;
   padding: 2px 8px;
-  /* ponytail: min-width keeps status pills visually aligned in /client-pool
-     rows regardless of i18n label length. English "New"/"Pending" vs CJK
-     "新"/"待处理" — 5em comfortably fits 9-char English labels while
-     not over-padding CJK 3-char labels. Longer labels (e.g. "Not Interested")
-     naturally grow past the floor. */
-  min-width: 5em;
   border-radius: 99px;
   background: ${({ $status }) => STATUS_PILL_COLORS[$status || '']?.bg || '#f0f0f0'};
   color: ${({ $status }) => STATUS_PILL_COLORS[$status || '']?.fg || '#888'};
 `;
 
-/* ── WhatsApp send popup ── */
-
-const WaSendBtn = styled.button`
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 8px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 4px;
-  background: transparent;
-  color: #25D366;
-  cursor: pointer;
-  font-size: 0.7rem;
-  font-weight: 600;
-  margin-left: 6px;
-  transition: background 0.15s, border-color 0.15s;
-  &:hover { background: rgba(37, 211, 102, 0.1); border-color: #25D366; }
-`;
-
-const WaPopupOverlay = styled.div`
-  position: fixed; inset: 0; z-index: 9999;
-  background: rgba(0, 0, 0, 0.35);
-  display: flex; align-items: center; justify-content: center;
-`;
-
-const WaPopupCard = styled.div`
-  ${glassSurface};
-  width: 420px; max-width: calc(100vw - 32px);
-  border-radius: 12px; padding: 20px;
-  display: flex; flex-direction: column; gap: 14px;
-  max-height: 80vh; overflow-y: auto;
-`;
-
-const WaPopupTitle = styled.h3`
-  margin: 0; font-size: 1rem; font-weight: 700;
-  color: ${({ theme }) => theme.colors.text};
-`;
-
-const WaSelect = styled.select`
-  padding: 8px 10px; border-radius: 6px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.cardBg};
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 0.85rem; width: 100%;
-`;
-
-const WaPreview = styled.div`
-  padding: 12px; border-radius: 8px;
-  background: ${({ theme }) => theme.colors.cardBg};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  font-size: 0.85rem; white-space: pre-wrap; line-height: 1.5;
-  min-height: 60px;
-  color: ${({ theme }) => theme.colors.text};
-`;
-
-const WaBtnRow = styled.div`
-  display: flex; gap: 8px; justify-content: flex-end;
-`;
-
-const WaOpenBtn = styled.button`
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 8px 16px; border: none; border-radius: 6px;
-  background: #25D366; color: #fff; font-weight: 600;
-  font-size: 0.85rem; cursor: pointer;
-  &:hover { background: #1ebe5d; }
-  &:disabled { opacity: 0.5; cursor: not-allowed; }
-`;
-
-const WaCancelBtn = styled.button`
-  padding: 8px 16px; border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 6px; background: transparent;
-  color: ${({ theme }) => theme.colors.text};
-  font-size: 0.85rem; cursor: pointer;
-  &:hover { background: ${({ theme }) => theme.colors.cardBg}; }
-`;
-
-const DpDeleteBtn = styled.button`
-  position: absolute;
-  top: 12px;
-  right: 48px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: ${({ theme }) => theme.colors.textTertiary};
-  cursor: pointer;
-  flex-shrink: 0;
-  z-index: 5;
-  transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out);
-  font-size: 18px;
-  @media (hover: hover) and (pointer: fine) {
-    &:hover {
-      background: rgba(229, 115, 115, 0.15);
-      color: #e57373;
-    }
-  }
-`;
-
 const DpCloseBtn = styled.button`
-  position: absolute;
-  top: 12px;
-  right: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -392,7 +273,6 @@ const DpCloseBtn = styled.button`
   color: ${({ theme }) => theme.colors.textTertiary};
   cursor: pointer;
   flex-shrink: 0;
-  z-index: 5;
   transition: background 0.15s var(--ease-out), color 0.15s var(--ease-out);
   font-size: 18px;
   @media (hover: hover) and (pointer: fine) {
@@ -401,10 +281,6 @@ const DpCloseBtn = styled.button`
       color: ${({ theme }) => theme.colors.textPrimary};
     }
   }
-`;
-
-const DpResizeHandles = styled.div`
-  ${media.mobile} { display: none; }
 `;
 
 const DpBody = styled.div`
@@ -420,7 +296,7 @@ const DpBody = styled.div`
 `;
 
 const DpColLeft = styled.div`
-  padding: 16px 20px 10px 28px;
+  padding: 4px 20px 10px 28px;
   overflow-y: auto;
   min-height: 0;
   display: flex;
@@ -429,10 +305,9 @@ const DpColLeft = styled.div`
   background: transparent;
   &::-webkit-scrollbar { width: 5px; }
   &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { background: #6C97D199; border-radius: 99px; }
-  &::-webkit-scrollbar-thumb:hover { background: #6C97D1CC; }
+  &::-webkit-scrollbar-thumb { background: #2A78D699; border-radius: 99px; }
+  &::-webkit-scrollbar-thumb:hover { background: #2A78D6CC; }
   ${media.tabletDown} { overflow-y: visible; padding: 10px 16px; }
-  ${media.mobile} { padding: 8px 12px; }
 `;
 
 const DpColCenter = styled.div`
@@ -445,10 +320,9 @@ const DpColCenter = styled.div`
   min-width: 0;
   &::-webkit-scrollbar { width: 5px; }
   &::-webkit-scrollbar-track { background: transparent; }
-  &::-webkit-scrollbar-thumb { background: #6C97D199; border-radius: 99px; }
-  &::-webkit-scrollbar-thumb:hover { background: #6C97D1CC; }
+  &::-webkit-scrollbar-thumb { background: #2A78D699; border-radius: 99px; }
+  &::-webkit-scrollbar-thumb:hover { background: #2A78D6CC; }
   ${media.tabletDown} { overflow-y: visible; padding: 12px 16px; }
-  ${media.mobile} { padding: 8px 12px; }
 `;
 
 export const DpSectionTitle = styled.h3`
@@ -456,7 +330,7 @@ export const DpSectionTitle = styled.h3`
   font-size: 0.875rem;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: #6C97D1;
+  color: #2A78D6;
   display: flex;
   align-items: center;
   gap: 5px;
@@ -486,7 +360,7 @@ export const DpFieldLabel = styled.span<{ $stacked?: boolean }>`
   font-size: 0.6875rem;
   font-weight: 500;
   color: ${({ theme }) => theme.colors.textTertiary};
-  min-width: ${({ $stacked }) => $stacked ? '0' : '72px'};
+  min-width: ${({ $stacked }) => $stacked ? '0' : '52px'};
   flex-shrink: 0;
   padding-top: ${({ $stacked }) => $stacked ? '0' : '1px'};
 `;
@@ -730,12 +604,12 @@ export const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
   white-space: nowrap;
   transition: background 0.15s var(--ease-out);
   border: 0.5px solid ${({ $variant }) =>
-    $variant === 'primary' ? '#6C97D1' :
+    $variant === 'primary' ? '#2A78D6' :
     $variant === 'danger' ? '#e57373' :
     '#999'};
   background: transparent;
   color: ${({ $variant, theme }) =>
-    $variant === 'primary' ? '#6C97D1' :
+    $variant === 'primary' ? '#2A78D6' :
     $variant === 'danger' ? '#e57373' :
     theme.colors.textPrimary};
   @media (hover: hover) and (pointer: fine) {
@@ -752,7 +626,6 @@ export interface LeadDetailPanelProps {
   onStatusChange?: (id: string, nextStatus: string) => void;
   onDelete?: (id: string) => void;
   onReprocess?: (id: string, stage: string) => void;
-  onSimulateReoutreach?: (id: string) => void;
   rightPanel?: React.ReactNode;
 }
 
@@ -765,33 +638,11 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
   onStatusChange,
   onDelete,
   onReprocess,
-  onSimulateReoutreach,
   rightPanel,
 }) => {
   const { t, i18n } = useTranslation();
   const styledTheme = useTheme() as any;
   const [aiTab, setAiTab] = useState<'scores' | 'collab'>('scores');
-
-  // WhatsApp send popup
-  const [waOpen, setWaOpen] = useState(false);
-  const [waSelectedId, setWaSelectedId] = useState('');
-  const { data: waTemplates } = useWhatsappTemplates();
-  const { data: meData } = useMe();
-  const me = meData as any;
-
-  const waResolve = useCallback((body: string) => {
-    return body
-      .replace(/\{\{company_name\}\}/gi, lead.company_name || '')
-      .replace(/\{\{contact_name\}\}/gi, (lead as any).contact_name || '')
-      .replace(/\{\{my_company\}\}/gi, me?.companyName || '')
-      .replace(/\{\{my_name\}\}/gi, me?.name || '')
-      .replace(/\{\{phone\}\}/gi, lead.phone || lead.whatsapp || '')
-      .replace(/\{\{website\}\}/gi, lead.website || '');
-  }, [lead, me]);
-
-  const waSelected = (waTemplates as any[])?.find((t: any) => t.id === waSelectedId);
-  const waPreviewText = waSelected ? waResolve(waSelected.body) : '';
-  const waPhone = (lead.whatsapp || lead.phone || '').replace(/\D/g, '');
 
   // Drag & resize state
   const dpRef = useRef<HTMLDivElement>(null);
@@ -886,21 +737,20 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
     return new Date(iso).toLocaleString(dateLocale, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
-  const mainPortal = createPortal(
+  return createPortal(
     <DpOverlay $closing={closing} onClick={onClose}>
       <DpPanel ref={dpRef} $closing={closing} onClick={(e: React.MouseEvent) => e.stopPropagation()} style={{ left: dpPos.x, top: dpPos.y, width: dpSize.w, height: dpSize.h }}>
-        {/* Resize handles — hidden on mobile (fullscreen) */}
-        <DpResizeHandles>
-          <div onMouseDown={e => onDpResizeStart(e, 'n')} style={{ position:'absolute', top:0, left:8, right:8, height:4, cursor:'n-resize', zIndex:10 }} />
-          <div onMouseDown={e => onDpResizeStart(e, 's')} style={{ position:'absolute', bottom:0, left:8, right:8, height:4, cursor:'s-resize', zIndex:10 }} />
-          <div onMouseDown={e => onDpResizeStart(e, 'w')} style={{ position:'absolute', top:8, bottom:8, left:0, width:4, cursor:'w-resize', zIndex:10 }} />
-          <div onMouseDown={e => onDpResizeStart(e, 'e')} style={{ position:'absolute', top:8, bottom:8, right:0, width:4, cursor:'e-resize', zIndex:10 }} />
-          <div onMouseDown={e => onDpResizeStart(e, 'nw')} style={{ position:'absolute', top:0, left:0, width:8, height:8, cursor:'nw-resize', zIndex:11 }} />
-          <div onMouseDown={e => onDpResizeStart(e, 'ne')} style={{ position:'absolute', top:0, right:0, width:8, height:8, cursor:'ne-resize', zIndex:11 }} />
-          <div onMouseDown={e => onDpResizeStart(e, 'sw')} style={{ position:'absolute', bottom:0, left:0, width:8, height:8, cursor:'sw-resize', zIndex:11 }} />
-          <div onMouseDown={e => onDpResizeStart(e, 'se')} style={{ position:'absolute', bottom:0, right:0, width:8, height:8, cursor:'se-resize', zIndex:11 }} />
-        </DpResizeHandles>
+        {/* Resize handles */}
+        <div onMouseDown={e => onDpResizeStart(e, 'n')} style={{ position:'absolute', top:0, left:8, right:8, height:4, cursor:'n-resize', zIndex:10 }} />
+        <div onMouseDown={e => onDpResizeStart(e, 's')} style={{ position:'absolute', bottom:0, left:8, right:8, height:4, cursor:'s-resize', zIndex:10 }} />
+        <div onMouseDown={e => onDpResizeStart(e, 'w')} style={{ position:'absolute', top:8, bottom:8, left:0, width:4, cursor:'w-resize', zIndex:10 }} />
+        <div onMouseDown={e => onDpResizeStart(e, 'e')} style={{ position:'absolute', top:8, bottom:8, right:0, width:4, cursor:'e-resize', zIndex:10 }} />
+        <div onMouseDown={e => onDpResizeStart(e, 'nw')} style={{ position:'absolute', top:0, left:0, width:8, height:8, cursor:'nw-resize', zIndex:11 }} />
+        <div onMouseDown={e => onDpResizeStart(e, 'ne')} style={{ position:'absolute', top:0, right:0, width:8, height:8, cursor:'ne-resize', zIndex:11 }} />
+        <div onMouseDown={e => onDpResizeStart(e, 'sw')} style={{ position:'absolute', bottom:0, left:0, width:8, height:8, cursor:'sw-resize', zIndex:11 }} />
+        <div onMouseDown={e => onDpResizeStart(e, 'se')} style={{ position:'absolute', bottom:0, right:0, width:8, height:8, cursor:'se-resize', zIndex:11 }} />
         <DpHeader>
+          <Avatar $colorIndex={hashColorIndex(name)} style={{ width: 40, height: 40, fontSize: '0.8rem', borderRadius: 10 }} />
           <DpHeaderInfo>
             <DpCompanyName>
               {name}
@@ -909,21 +759,13 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
               <DpStatusPill $status={lead.status ?? 'new'}>{statusLabel(lead.status)}</DpStatusPill>
             </DpHeaderMeta>
           </DpHeaderInfo>
-          {onDelete && (
-            <DpDeleteBtn title={t('leads.delete')} onClick={() => {
-              onDelete(lead._id);
-              onClose();
-            }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M5.33 4V2.67a1.33 1.33 0 011.34-1.34h2.66a1.33 1.33 0 011.34 1.34V4M6.67 7.33v4M9.33 7.33v4M3.33 4h9.34l-.67 9.33a1.33 1.33 0 01-1.33 1.34H5.33A1.33 1.33 0 014 13.33L3.33 4z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </DpDeleteBtn>
-          )}
           <DpCloseBtn onClick={onClose}><svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></DpCloseBtn>
         </DpHeader>
 
         <DpBody>
           {/* Left: Avatar + Name + About + Journey + Tags */}
           <DpColLeft>
-            <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1a5 5 0 015 5c0 2.5-2 4-5 4s-5-1.5-5-4a5 5 0 015-5zM3 13c0-1.66 2.24-3 5-3s5 1.34 5 3" stroke="#6C97D1" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.about')}</DpSectionTitle>
+            <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1a5 5 0 015 5c0 2.5-2 4-5 4s-5-1.5-5-4a5 5 0 015-5zM3 13c0-1.66 2.24-3 5-3s5 1.34 5 3" stroke="#2A78D6" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.about')}</DpSectionTitle>
             <DpSectionContent>
             <DpField>
               <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.email')}</DpFieldLabel>
@@ -931,29 +773,8 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
             </DpField>
             <DpField>
               <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M10 1.5a3.5 3.5 0 013.5 3.5c0 3-5 8.5-5 8.5s-5-5.5-5-8.5A3.5 3.5 0 017 1.79" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.phone')}</DpFieldLabel>
-              <DpFieldValue>
-                {lead.phone ? (
-                  <span style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                    <span>{lead.phone}</span>
-                    {lead.extra_phones?.map((p, i) => <span key={i} style={{ opacity: 0.75 }}>{p}</span>)}
-                  </span>
-                ) : '—'}
-              </DpFieldValue>
+              <DpFieldValue>{lead.phone || '—'}</DpFieldValue>
             </DpField>
-            {lead.whatsapp && (
-            <DpField>
-              <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M8 1C4.13 1 1 4.13 1 8c0 1.23.32 2.39.88 3.4L1 15l3.7-.87A6.96 6.96 0 008 15c3.87 0 7-3.13 7-7s-3.13-7-7-7zm3.44 9.76c-.15.42-.87.8-1.2.85-.3.05-.68.07-1.1-.07a10 10 0 01-1.58-.58c-1.78-.84-2.94-2.65-3.03-2.77-.09-.12-.72-.96-.72-1.83s.45-1.3.62-1.47c.16-.18.35-.22.47-.22h.34c.11 0 .26-.04.4.31.15.35.52 1.27.56 1.36.05.09.08.19.02.31-.37.73-.77.7-.57 1.05.74 1.27 1.47 1.7 2.58 2.22.18.09.28.07.39-.05s.45-.52.57-.7c.12-.18.24-.15.4-.09.17.06 1.05.5 1.23.59.18.09.3.14.34.21.05.08.05.46-.1.88z" fill="currentColor"/></svg></DpFieldIcon>WhatsApp</DpFieldLabel>
-              <DpFieldValue>
-                <a href={`https://wa.me/${lead.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer">{lead.whatsapp}</a>
-                {(waTemplates as any[])?.length > 0 && (
-                  <WaSendBtn onClick={() => { setWaOpen(true); setWaSelectedId((waTemplates as any[])[0]?.id || ''); }}>
-                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M15 1L7.5 8.5M15 1l-4.5 14-3-6.5L1 5.5 15 1z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    {t('settings.whatsappOpenChat')}
-                  </WaSendBtn>
-                )}
-              </DpFieldValue>
-            </DpField>
-            )}
             <DpField>
               <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zM1 8h14M8 1c1.7 2 2.7 4 2.7 7s-1 5-2.7 7c-1.7-2-2.7-4-2.7-7s1-5 2.7-7z" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.website')}</DpFieldLabel>
               <DpFieldValue>{lead.website ? <a href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`} target="_blank" rel="noopener noreferrer">{lead.website}</a> : '—'}</DpFieldValue>
@@ -978,7 +799,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
 
             <DpDivider />
 
-            <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 14V4l4 2 4-2 4 2v10l-4-2-4 2-4-2z" stroke="#6C97D1" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.leadJourney')}</DpSectionTitle>
+            <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 14V4l4 2 4-2 4 2v10l-4-2-4 2-4-2z" stroke="#2A78D6" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.leadJourney')}</DpSectionTitle>
             <DpSectionContent>
             <DpTimeline>
               <DpTimelineItem>
@@ -1009,35 +830,11 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
                 <DpTimelineItem>
                   <DpTimelineDotWrap>
                     <DpTimelineDot $active />
-                    {(lead._replied || (lead as any)._followup_count > 0 || (lead as any)._reoutreach_done) && <DpTimelineLine />}
+                    {lead._replied && <DpTimelineLine />}
                   </DpTimelineDotWrap>
                   <DpTimelineContent>
                     <DpTimelineText $active>{t('leads.contactedStep')}</DpTimelineText>
                     {lead.updatedAt && <DpTimelineTime>{fmtTime(lead.updatedAt)}</DpTimelineTime>}
-                  </DpTimelineContent>
-                </DpTimelineItem>
-              )}
-              {(lead as any)._followup_count > 0 && (
-                <DpTimelineItem>
-                  <DpTimelineDotWrap>
-                    <DpTimelineDot $active />
-                    {(lead._replied || (lead as any)._reoutreach_done) && <DpTimelineLine />}
-                  </DpTimelineDotWrap>
-                  <DpTimelineContent>
-                    <DpTimelineText $active>{t('leads.followupStep', { count: (lead as any)._followup_count })}</DpTimelineText>
-                    {(lead as any)._last_followup_at && <DpTimelineTime>{fmtTime((lead as any)._last_followup_at)}</DpTimelineTime>}
-                  </DpTimelineContent>
-                </DpTimelineItem>
-              )}
-              {(lead as any)._reoutreach_done && (
-                <DpTimelineItem>
-                  <DpTimelineDotWrap>
-                    <DpTimelineDot $active />
-                    {lead._replied && <DpTimelineLine />}
-                  </DpTimelineDotWrap>
-                  <DpTimelineContent>
-                    <DpTimelineText $active>{t('leads.reoutreachStep')}</DpTimelineText>
-                    {(lead as any)._reoutreach_at && <DpTimelineTime>{fmtTime((lead as any)._reoutreach_at)}</DpTimelineTime>}
                   </DpTimelineContent>
                 </DpTimelineItem>
               )}
@@ -1051,20 +848,10 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
                 </DpTimelineItem>
               )}
             </DpTimeline>
-            {onSimulateReoutreach && lead.status === 'contacted' && !lead._replied && ((lead as any)._followup_count || 0) < 3 && (
-              <DpActionBtn
-                $variant="primary"
-                style={{ marginTop: 8, width: '100%', fontSize: '0.75rem', padding: '6px 12px' }}
-                onClick={() => onSimulateReoutreach(lead._id)}
-              >
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"><path d="M13.5 8a5.5 5.5 0 0 1-9.72 3.5M2.5 8a5.5 5.5 0 0 1 9.72-3.5" /><path d="M13.5 3v3.5H10M2.5 13v-3.5H6" /></svg>
-                {' '}{t('leads.triggerReoutreach')}
-              </DpActionBtn>
-            )}
             </DpSectionContent>
 
             <DpDivider />
-            <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 8.5V2.5a1 1 0 011-1h6l6.5 6.5-7 7L1 8.5z" stroke="#6C97D1" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><circle cx="5" cy="5" r="1" fill="#6C97D1"/></svg>{t('leads.tags')}</DpSectionTitle>
+            <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M1 8.5V2.5a1 1 0 011-1h6l6.5 6.5-7 7L1 8.5z" stroke="#2A78D6" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/><circle cx="5" cy="5" r="1" fill="#2A78D6"/></svg>{t('leads.tags')}</DpSectionTitle>
             <DpSectionContent>
             <DpTagList>
               {lead.industry_tags && lead.industry_tags.length > 0
@@ -1080,7 +867,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
             {(lead._tech_score != null || lead._email_draft_score != null || lead._collab_primary) && (
               <>
                 <DpDivider />
-                <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1l2 4.5 5 .5-3.75 3.5L12.25 15 8 12.5 3.75 15l1-5.5L1 6l5-.5L8 1z" stroke="#6C97D1" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.aiAnalysis')}</DpSectionTitle>
+                <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1l2 4.5 5 .5-3.75 3.5L12.25 15 8 12.5 3.75 15l1-5.5L1 6l5-.5L8 1z" stroke="#2A78D6" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.aiAnalysis')}</DpSectionTitle>
                 <DpSectionContent>
                   <AiTabBar>
                     <AiTab $active={aiTab === 'scores'} onClick={() => setAiTab('scores')}>{t('leads.aiTabScores')}</AiTab>
@@ -1172,7 +959,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
               return (
                 <>
                   <DpDivider />
-                  <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 10c0 .55-.45 1-1 1H5l-3 3V3c0-.55.45-1 1-1h10c.55 0 1 .45 1 1v7z" stroke="#6C97D1" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.replyInfo')}</DpSectionTitle>
+                  <DpSectionTitle><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 10c0 .55-.45 1-1 1H5l-3 3V3c0-.55.45-1 1-1h10c.55 0 1 .45 1 1v7z" stroke="#2A78D6" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('leads.replyInfo')}</DpSectionTitle>
                   <DpSectionContent>
                   <DpField>
                     <DpFieldLabel>{t('leads.replyCategory')}</DpFieldLabel>
@@ -1213,57 +1000,6 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
     </DpOverlay>,
     document.body
   );
-
-  const waPopup = waOpen ? createPortal(
-    <WaPopupOverlay onClick={() => setWaOpen(false)}>
-      <WaPopupCard onClick={e => e.stopPropagation()}>
-        <WaPopupTitle>{t('settings.whatsappSendTitle')}</WaPopupTitle>
-
-        {!waPhone ? (
-          <WaPreview style={{ opacity: 0.6 }}>{t('settings.whatsappNoPhone')}</WaPreview>
-        ) : (waTemplates as any[])?.length === 0 ? (
-          <WaPreview style={{ opacity: 0.6 }}>{t('settings.whatsappNoTemplates')}</WaPreview>
-        ) : (
-          <>
-            <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.6, display: 'block', marginBottom: 4 }}>
-                {t('settings.whatsappSelectTemplate')}
-              </label>
-              <WaSelect value={waSelectedId} onChange={e => setWaSelectedId(e.target.value)}>
-                {(waTemplates as any[])?.map((tpl: any) => (
-                  <option key={tpl.id} value={tpl.id}>{tpl.name || '(unnamed)'}</option>
-                ))}
-              </WaSelect>
-            </div>
-
-            <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.6, display: 'block', marginBottom: 4 }}>
-                {t('settings.whatsappPreview')}
-              </label>
-              <WaPreview>{waPreviewText || '—'}</WaPreview>
-            </div>
-          </>
-        )}
-
-        <WaBtnRow>
-          <WaCancelBtn onClick={() => setWaOpen(false)}>{t('common.cancel')}</WaCancelBtn>
-          <WaOpenBtn
-            disabled={!waPhone || !waPreviewText}
-            onClick={() => {
-              window.open(`https://wa.me/${waPhone}?text=${encodeURIComponent(waPreviewText)}`, '_blank');
-              setWaOpen(false);
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M8 1C4.13 1 1 4.13 1 8c0 1.23.32 2.39.88 3.4L1 15l3.7-.87A6.96 6.96 0 008 15c3.87 0 7-3.13 7-7s-3.13-7-7-7z" stroke="#fff" strokeWidth="1.2"/></svg>
-            {t('settings.whatsappOpenChat')}
-          </WaOpenBtn>
-        </WaBtnRow>
-      </WaPopupCard>
-    </WaPopupOverlay>,
-    document.body
-  ) : null;
-
-  return <>{mainPortal}{waPopup}</>
 };
 
 export default LeadDetailPanel;
