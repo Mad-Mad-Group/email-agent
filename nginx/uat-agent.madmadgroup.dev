@@ -1,0 +1,11 @@
+server {
+    listen 80;
+    server_name uat-agent.madmadgroup.dev;
+
+    root  /var/www/agent-frontend;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
