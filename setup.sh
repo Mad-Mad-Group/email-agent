@@ -30,14 +30,17 @@ echo "▸ Checking prerequisites..."
 if command -v node &>/dev/null; then
   NODE_VER=$(node -v)
   NODE_MAJOR=$(echo "$NODE_VER" | sed 's/v//' | cut -d. -f1)
-  if [ "$NODE_MAJOR" -ge 18 ]; then
+  NODE_MINOR=$(echo "$NODE_VER" | sed 's/v//' | cut -d. -f2)
+  if [ "$NODE_MAJOR" -ge 21 ] || ([ "$NODE_MAJOR" -eq 20 ] && [ "$NODE_MINOR" -ge 6 ]); then
     ok "Node.js $NODE_VER"
   else
-    fail "Node.js $NODE_VER (need >= 18)"
+    fail "Node.js $NODE_VER (need >= 20.6.0, Worker 需要 --env-file 支援)"
+    echo "       安裝方法: brew install node@20  或  nvm install 20"
     ERRORS=$((ERRORS + 1))
   fi
 else
-  fail "Node.js not found (need >= 18)"
+  fail "Node.js not found (need >= 20.6.0)"
+  echo "       安裝方法: brew install node@20  或  nvm install 20"
   ERRORS=$((ERRORS + 1))
 fi
 
@@ -73,14 +76,32 @@ echo ""
 # ── 2. Install dependencies ──
 echo "▸ Installing dependencies..."
 
+install_deps() {
+  local dir="$1"
+  local name="$2"
+  cd "$dir"
+  if npm install --silent 2>/dev/null; then
+    ok "$name dependencies installed"
+  else
+    warn "$name npm install failed, retrying with --legacy-peer-deps..."
+    if npm install --legacy-peer-deps --silent 2>/dev/null; then
+      ok "$name dependencies installed (with --legacy-peer-deps)"
+    else
+      fail "$name dependencies failed to install"
+      echo "       嘗試手動執行: cd $dir && npm install --legacy-peer-deps"
+      ERRORS=$((ERRORS + 1))
+    fi
+  fi
+}
+
 echo "  → cms/server"
-cd "$ROOT/cms/server" && npm install --silent 2>/dev/null && ok "cms/server dependencies installed"
+install_deps "$ROOT/cms/server" "cms/server"
 
 echo "  → cms/worker"
-cd "$ROOT/cms/worker" && npm install --silent 2>/dev/null && ok "cms/worker dependencies installed"
+install_deps "$ROOT/cms/worker" "cms/worker"
 
 echo "  → hermes-frontend"
-cd "$ROOT/hermes-frontend" && npm install --silent 2>/dev/null && ok "hermes-frontend dependencies installed"
+install_deps "$ROOT/hermes-frontend" "hermes-frontend"
 
 cd "$ROOT"
 echo ""
@@ -108,7 +129,20 @@ setup_env "$ROOT/hermes-frontend" "hermes-frontend"
 
 echo ""
 
-# ── 4. Verify TypeScript compilation ──
+# ── 4. Seed MongoDB ──
+echo "▸ Initializing MongoDB..."
+echo "  (建立 collections、indexes、預設角色及管理員帳號)"
+
+if node "$ROOT/scripts/seed-db.js" 2>/dev/null; then
+  ok "MongoDB seed 完成"
+else
+  warn "MongoDB seed 失敗 — 請確認 MongoDB 正在運行，或稍後手動執行:"
+  echo "       node scripts/seed-db.js"
+fi
+
+echo ""
+
+# ── 5. Verify TypeScript compilation ──
 echo "▸ Verifying TypeScript..."
 
 cd "$ROOT/hermes-frontend"
@@ -121,19 +155,23 @@ fi
 cd "$ROOT"
 echo ""
 
-# ── 5. Summary ──
+# ── 6. Summary ──
 echo "══════════════════════════════════════"
 echo "  Setup complete!"
 echo "══════════════════════════════════════"
 echo ""
 echo "  Next steps:"
 echo "    1. Edit the .env files with your actual values"
-echo "       (see PROJECT.md for full variable list)"
+echo "       (每個 .env.example 內有詳細說明)"
 echo ""
-echo "    2. Start the services:"
+echo "    2. 如果 MongoDB seed 未自動執行，手動執行:"
+echo "       node scripts/seed-db.js"
+echo ""
+echo "    3. Start the services:"
 echo "       Terminal 1:  cd cms/server && npm run start:dev"
 echo "       Terminal 2:  cd hermes-frontend && npm run dev"
 echo "       Terminal 3:  cd cms/worker && npm start  (optional)"
 echo ""
-echo "    3. Open http://localhost:5173 in your browser"
+echo "    4. Open http://localhost:5173 in your browser"
+echo "       預設管理員: admin@test.com / 123456"
 echo ""

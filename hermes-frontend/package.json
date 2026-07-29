@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": { "node": ">=20.0.0", "npm": ">=9.0.0" },
   "scripts": {
     "dev": "vite",
     "check:no-quarter": "bash ../scripts/check-no-quarter.sh",
