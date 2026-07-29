@@ -89,49 +89,56 @@ const CardIcon = styled.span<{ $color: string }>`
   color: ${({ $color }) => $color};
 `;
 
-/* ── Intelly Pastel Stat Cards ── */
+/* ── Intelly Pastel Stat Cards — iOS glass ── */
 const ActionCard = styled.div<{ $accent: string; $pastel: string }>`
   position: relative; border-radius: ${({ theme }) => theme.radii.card}px;
-  padding: 24px 20px 20px;
-  background: ${({ $pastel }) => $pastel};
+  padding: 18px 18px 16px;
+  background: linear-gradient(135deg, ${({ $pastel }) => $pastel}cc 0%, ${({ $pastel }) => $pastel}55 100%);
+  backdrop-filter: blur(20px) saturate(1.4);
+  -webkit-backdrop-filter: blur(20px) saturate(1.4);
+  border: 1px solid ${({ $pastel }) => $pastel}66;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.35), 0 2px 12px rgba(0,0,0,0.06);
   cursor: pointer; overflow: hidden;
   display: flex; flex-direction: column;
   min-width: 0;
   transition: transform ${({ theme }) => theme.motion.fast}, box-shadow ${({ theme }) => theme.motion.fast};
-  &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
-  ${media.tablet} { padding: 16px 14px 14px; }
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.45), 0 8px 24px rgba(0,0,0,0.12);
+  }
+  ${media.tablet} { padding: 14px 12px 12px; }
 `;
 const ActionWatermark = styled.div<{ $fg: string; $rot?: number }>`
-  position: absolute; right: -8px; top: -10px;
-  width: 105px; height: 105px; opacity: 0.38;
+  position: absolute; right: -6px; top: -8px;
+  width: 85px; height: 85px; opacity: 0.28;
   color: ${({ $fg }) => $fg}; z-index: 1; pointer-events: none;
   transform: rotate(${({ $rot }) => $rot ?? 14}deg);
   svg { width: 100%; height: 100%; }
-  ${media.tablet} { width: 70px; height: 70px; right: -4px; top: -6px; }
+  ${media.tablet} { width: 60px; height: 60px; right: -4px; top: -4px; }
 `;
 const ActionArrow = styled.div<{ $fg: string }>`
-  position: absolute; top: 16px; right: 16px; width: 24px; height: 24px;
+  position: absolute; top: 12px; right: 14px; width: 22px; height: 22px;
   border-radius: 50%; background: ${({ $fg }) => $fg}18;
   display: flex; align-items: center; justify-content: center;
-  color: ${({ $fg }) => $fg}; font-size: 0.65rem;
+  color: ${({ $fg }) => $fg}; font-size: 0.6rem;
 `;
 const ActionTitle = styled.div`
-  font-size: 1.75rem; font-weight: 800; text-transform: uppercase;
+  font-size: 1.4rem; font-weight: 800; text-transform: uppercase;
   letter-spacing: 0.06em; color: ${({ theme }) => theme.colors.textPrimary};
-  opacity: 0.7; margin-bottom: 8px;
-  ${media.tablet} { font-size: 1.1rem; margin-bottom: 4px; }
+  opacity: 0.7; margin-bottom: 4px;
+  ${media.tablet} { font-size: 1rem; margin-bottom: 2px; }
 `;
 const ActionCountRow = styled.div`
   display: flex; align-items: baseline; gap: 10px;
 `;
 const ActionCount = styled.div`
-  font-size: 2.5rem; font-weight: 800; color: ${({ theme }) => theme.colors.textPrimary}; line-height: 1;
-  ${media.tablet} { font-size: 1.75rem; }
+  font-size: 2rem; font-weight: 800; color: ${({ theme }) => theme.colors.textPrimary}; line-height: 1;
+  ${media.tablet} { font-size: 1.5rem; }
 `;
 const ActionLabel = styled.div`
   font-size: 0.8125rem; font-weight: 500; color: ${({ theme }) => theme.colors.textSecondary};
-  margin-top: 10px; line-height: 1.35;
-  ${media.tablet} { font-size: 0.75rem; margin-top: 6px; }
+  margin-top: 6px; line-height: 1.3;
+  ${media.tablet} { font-size: 0.75rem; margin-top: 4px; }
 `;
 const ActionTrend = styled.div<{ $up?: boolean }>`
   display: flex; align-items: center; gap: 10px;
