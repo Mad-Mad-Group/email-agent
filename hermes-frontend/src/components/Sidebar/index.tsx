@@ -254,7 +254,28 @@ const Wrapper = styled.aside<{ $mobileOpen?: boolean; $collapsed?: boolean }>`
   overflow: hidden;
   padding: 0;
   z-index: 1;
+  position: relative;
   transition: width 0.3s ease;
+  box-shadow:
+    0 1px 2px rgba(11,8,11,0.04),
+    0 8px 24px rgba(11,8,11,0.06),
+    6px 0 28px -8px ${({ theme }) => theme.strong.blue}33;
+
+  &::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 1px;
+    height: 100%;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      ${({ theme }) => theme.strong.blue}55 50%,
+      transparent 100%
+    );
+    pointer-events: none;
+  }
 
   ${media.mobile} {
     position: fixed;

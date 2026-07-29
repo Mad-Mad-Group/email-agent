@@ -126,7 +126,9 @@ const Main = styled.main`
   height: 100%;
   overflow-x: hidden;
   overflow-y: scroll;
-  background: ${({ theme }) => theme.colors.surface};
+  background: ${({ theme }) => theme.mode === 'dark'
+    ? `linear-gradient(180deg, ${theme.colors.surface} 0%, ${theme.colors.canvas} 140%)`
+    : `linear-gradient(180deg, #FFFFFF 0%, #FDFCFA 100%)`};
   border-radius: ${({ theme }) => theme.radii.card}px;
   border: 1px solid ${({ theme }) => theme.colors.border};
 
