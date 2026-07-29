@@ -4,7 +4,8 @@ import toast from 'react-hot-toast';
 import { useSearchParams } from 'react-router-dom';
 import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useClearAllLeads, useReprocessLead, useMe } from '../../api/hooks';
+import { useLeads, useDeleteLead, useChangeLeadStatus, useCreateLead, useClearAllLeads, useReprocessLead, useMe, useSmtpStatus } from '../../api/hooks';
+import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { usersApi } from '../../api/services';
 import { Lead, leadsApi } from '../../api/leads';
@@ -1235,6 +1236,10 @@ const Leads: React.FC = () => {
     return map;
   }, [usersData]);
 
+  // SMTP status check
+  const { data: smtpStatus } = useSmtpStatus();
+  const navigate = useNavigate();
+
   const [clearMsg, setClearMsg] = useState('');
   const [oldWebsiteOnly, setOldWebsiteOnly] = useState(false);
   const [sortByTech, setSortByTech] = useState(false);
@@ -1429,6 +1434,23 @@ const Leads: React.FC = () => {
 
   return (
     <Page>
+        {/* SMTP 未設定彈窗 */}
+        {smtpStatus && !smtpStatus.configured && (
+          <Overlay>
+            <Modal>
+              <ModalHeader><h2>{t('leads.smtpRequiredTitle', 'SMTP 未設定')}</h2></ModalHeader>
+              <ModalBody style={{ textAlign: 'center', padding: '24px' }}>
+                <p style={{ marginBottom: 16, lineHeight: 1.6 }}>
+                  {t('leads.smtpRequiredDesc', '你尚未設定郵件伺服器 (SMTP)。系統需要 SMTP 設定才能執行搜尋及 Pipeline 操作。請先到 Settings 完成設定。')}
+                </p>
+                <PrimaryBtn onClick={() => navigate('/cms-settings')}>
+                  {t('leads.smtpRequiredBtn', '前往設定')}
+                </PrimaryBtn>
+              </ModalBody>
+            </Modal>
+          </Overlay>
+        )}
+
         <PageCard>
         <HeaderRow>
           <SpriteAvatar src={AGENTS.S1.sprite} frames={AGENTS.S1.frames} frameW={AGENTS.S1.frameW} frameH={AGENTS.S1.frameH} size={48} />

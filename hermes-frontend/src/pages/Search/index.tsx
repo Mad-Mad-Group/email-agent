@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import styled, { keyframes, css, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { useSearch } from '../../api/hooks';
+import { useNavigate } from 'react-router-dom';
+import { useSearch, useSmtpStatus } from '../../api/hooks';
 import { SearchPayload, hermesApi } from '../../api/services';
 import { sseClient, SSEEvent } from '../../api/sse';
 import { leadsApi, Lead } from '../../api/leads';
@@ -1175,6 +1176,38 @@ const DpOverlay = styled.div`
   z-index: 1200;
 `;
 
+/* SMTP required overlay */
+const SmtpOverlay = styled.div`
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1300;
+`;
+const SmtpModal = styled.div`
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: 14px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+  width: 420px;
+  max-width: 90vw;
+  padding: 32px 28px;
+  text-align: center;
+`;
+const SmtpBtn = styled.button`
+  margin-top: 12px;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 8px;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textInverted};
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  &:hover { opacity: 0.9; }
+`;
+
 const DpPanel = styled.div`
   position: fixed;
   top: 50%;
@@ -1709,6 +1742,8 @@ const SearchPage: React.FC = () => {
   const { t } = useTranslation();
   const { setBadge } = useBadge();
   const theme = useTheme();
+  const navigate = useNavigate();
+  const { data: smtpStatus } = useSmtpStatus();
 
   /* Populate runtime color maps from theme */
   TYPE_COLORS = {
@@ -2056,6 +2091,20 @@ const SearchPage: React.FC = () => {
 
   return (
     <Page $hasResults={search.isPending || isPipelineRunning || pipelineComplete || search.isError}>
+      {/* SMTP 未設定彈窗 */}
+      {smtpStatus && !smtpStatus.configured && (
+        <SmtpOverlay>
+          <SmtpModal>
+            <h3 style={{ margin: '0 0 12px' }}>{t('leads.smtpRequiredTitle', 'SMTP 未設定')}</h3>
+            <p style={{ lineHeight: 1.6, margin: '0 0 16px', fontSize: '0.875rem' }}>
+              {t('leads.smtpRequiredDesc', '你尚未設定郵件伺服器 (SMTP)。系統需要 SMTP 設定才能執行搜尋及 Pipeline 操作。請先到 Settings 完成設定。')}
+            </p>
+            <SmtpBtn onClick={() => navigate('/cms-settings')}>
+              {t('leads.smtpRequiredBtn', '前往設定')}
+            </SmtpBtn>
+          </SmtpModal>
+        </SmtpOverlay>
+      )}
       {/* Orbital hero — idle state only */}
       {!(search.isPending || isPipelineRunning || pipelineComplete || search.isError) && (
         <OrbitalHero>

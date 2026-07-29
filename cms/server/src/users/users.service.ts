@@ -120,6 +120,17 @@ export class UsersService {
 
   /* ── Email SMTP / IMAP settings ── */
 
+  async hasSmtpConfigured(id: string): Promise<boolean> {
+    const user = await this.userModel
+      .findById(id)
+      .select('smtpHost smtpUser smtpPass')
+      .lean()
+      .exec();
+    if (!user) return false;
+    const u = user as any;
+    return !!(u.smtpHost && u.smtpUser && u.smtpPass);
+  }
+
   private readonly emailFields = [
     'smtpHost', 'smtpPort', 'smtpUser', 'smtpPass', 'smtpFrom',
     'imapHost', 'imapPort',
@@ -136,7 +147,8 @@ export class UsersService {
       smtpHost: (user as any).smtpHost ?? '',
       smtpPort: (user as any).smtpPort ?? 587,
       smtpUser: (user as any).smtpUser ?? '',
-      smtpPass: (user as any).smtpPass ? '****' : '',
+      smtpPass: '',
+      smtpHasPass: !!(user as any).smtpPass,
       smtpFrom: (user as any).smtpFrom ?? '',
       imapHost: (user as any).imapHost ?? '',
       imapPort: (user as any).imapPort ?? 993,
@@ -172,7 +184,7 @@ export class UsersService {
     for (const key of this.emailFields) {
       if ((data as any)[key] !== undefined) {
         // skip password if it's the masked placeholder
-        if (key === 'smtpPass' && (data as any)[key] === '****') continue;
+        if (key === 'smtpPass' && !(data as any)[key]) continue;
         $set[key] = (data as any)[key];
       }
     }

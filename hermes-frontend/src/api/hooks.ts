@@ -476,6 +476,14 @@ export const useUpdateEmailSettings = () => {
       emailSettingsApi.update(data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['email-settings'] });
+      qc.invalidateQueries({ queryKey: ['smtp-status'] });
     },
   });
 };
+
+export const useSmtpStatus = () =>
+  useQuery({
+    queryKey: ['smtp-status'],
+    queryFn: () => emailSettingsApi.smtpStatus().then(r => r.data),
+    staleTime: 60_000,
+  });

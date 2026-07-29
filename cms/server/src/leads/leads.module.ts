@@ -5,6 +5,7 @@ import { LeadsService } from './leads.service';
 import { LeadsController } from './leads.controller';
 import { SseModule } from '../sse/sse.module';
 import { TasksModule } from '../tasks/tasks.module';
+import { UsersModule } from '../users/users.module';
 import { EmailQueueItem, EmailQueueSchema } from '../email-queue/schemas/email-queue.schema';
 import { Analysis, AnalysisSchema } from '../ai/schemas/analysis.schema';
 import { CalendarEvent, CalendarEventSchema } from '../calendar/schemas/calendar-event.schema';
@@ -19,6 +20,7 @@ import { CalendarEvent, CalendarEventSchema } from '../calendar/schemas/calendar
     ]),
     SseModule,
     TasksModule,
+    UsersModule,
   ],
   controllers: [LeadsController],
   providers: [LeadsService],

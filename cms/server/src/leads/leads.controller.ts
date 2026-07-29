@@ -24,6 +24,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { TasksService } from '../tasks/tasks.service';
 import { SKILL } from '../tasks/dto/task-status.enum';
+import { UsersService } from '../users/users.service';
 
 interface JwtUser {
   userId: string;
@@ -52,7 +53,18 @@ export class LeadsController {
   constructor(
     private readonly leads: LeadsService,
     private readonly tasks: TasksService,
+    private readonly users: UsersService,
   ) {}
+
+  /** 檢查用戶 SMTP 設定，未設定就拋 400 */
+  private async requireSmtp(userId: string) {
+    const ok = await this.users.hasSmtpConfigured(userId);
+    if (!ok) {
+      throw new BadRequestException(
+        'SMTP 未設定。請先到 Settings → Email SMTP 設定你的郵件伺服器。',
+      );
+    }
+  }
 
   @Get()
   async list(@Query() query: ListLeadsQueryDto, @CurrentUser() user: JwtUser) {
@@ -66,6 +78,7 @@ export class LeadsController {
 
   @Post()
   async create(@Body() dto: CreateLeadDto, @CurrentUser() user: JwtUser) {
+    await this.requireSmtp(user.userId);
     return this.leads.create(dto, user.userId);
   }
 
@@ -131,6 +144,7 @@ export class LeadsController {
     @Query('stage') stage: string,
     @CurrentUser() user: JwtUser,
   ) {
+    await this.requireSmtp(user.userId);
     const skillId = STAGE_SKILL_MAP[stage];
     if (!skillId) {
       throw new BadRequestException(

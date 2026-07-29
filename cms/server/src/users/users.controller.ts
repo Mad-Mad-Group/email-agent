@@ -1,6 +1,7 @@
 import {
   Controller,
   Get,
+  Post,
   Patch,
   Delete,
   Param,
@@ -11,6 +12,7 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
 import { UsersService } from './users.service';
+import { EmailService } from '../email/email.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
@@ -25,7 +27,10 @@ interface JwtUser { userId: string; role: string; }
 @Controller('users/me')
 @UseGuards(JwtAuthGuard)
 export class UserPrefsController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly emailService: EmailService,
+  ) {}
 
   @Get('notification-prefs')
   async getNotificationPrefs(@CurrentUser() user: JwtUser) {
@@ -44,6 +49,12 @@ export class UserPrefsController {
 
   /* ── Email SMTP / IMAP settings ── */
 
+  @Get('smtp-status')
+  async getSmtpStatus(@CurrentUser() user: JwtUser) {
+    const configured = await this.usersService.hasSmtpConfigured(user.userId);
+    return { configured };
+  }
+
   @Get('email-settings')
   async getEmailSettings(@CurrentUser() user: JwtUser) {
     const u = await this.usersService.findById(user.userId);
@@ -61,6 +72,11 @@ export class UserPrefsController {
     },
   ) {
     return this.usersService.updateEmailSettings(user.userId, body);
+  }
+
+  @Post('smtp-test')
+  async testSmtp(@CurrentUser() user: JwtUser) {
+    return this.emailService.testConnection(user.userId);
   }
 
   /* ── WhatsApp message templates ── */

@@ -101,15 +101,25 @@ export interface EmailSettings {
   smtpPort: number;
   smtpUser: string;
   smtpPass: string;
+  smtpHasPass: boolean;
   smtpFrom: string;
   imapHost: string;
   imapPort: number;
+}
+
+export interface SmtpTestResult {
+  smtp: 'ok' | 'fail';
+  imap: 'ok' | 'fail' | 'skip';
+  smtpError?: string;
+  imapError?: string;
 }
 
 export const emailSettingsApi = {
   get: () => client.get<EmailSettings>('/users/me/email-settings'),
   update: (data: Partial<EmailSettings>) =>
     client.patch<EmailSettings>('/users/me/email-settings', data),
+  smtpStatus: () => client.get<{ configured: boolean }>('/users/me/smtp-status'),
+  testConnection: () => client.post<SmtpTestResult>('/users/me/smtp-test', {}, { timeout: 60000 }),
 };
 
 /* ── WhatsApp Templates (per-user) ── */

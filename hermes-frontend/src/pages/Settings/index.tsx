@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import { media } from '../../styles/media';
 import { glassSurface } from '../../styles/glassSurface';
-import { useSettings, useNotificationPrefs, useUpdateNotificationPrefs, useWhatsappTemplates, useUpdateWhatsappTemplates } from '../../api/hooks';
-import { settingsApi } from '../../api/services';
+import { useSettings, useNotificationPrefs, useUpdateNotificationPrefs, useWhatsappTemplates, useUpdateWhatsappTemplates, useEmailSettings, useUpdateEmailSettings } from '../../api/hooks';
+import { settingsApi, emailSettingsApi } from '../../api/services';
 import { useAuth } from '../../contexts/AuthContext';
 
 /* ══════════════════════════════════════
@@ -151,22 +151,58 @@ const Label = styled.label`
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
 
-const Input = styled.input`
+const Input = styled.input<{ $error?: boolean }>`
+  width: 100%;
+  box-sizing: border-box;
   padding: 10px 14px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  border: 1px solid ${({ $error, theme }) => $error ? '#e53e3e' : theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
-  background: ${({ theme }) => theme.colors.canvas};
+  background: ${({ $error, theme }) => $error ? '#fff5f5' : theme.colors.canvas};
   color: ${({ theme }) => theme.colors.textPrimary};
   font-size: 0.875rem;
   outline: none;
   transition: border-color 0.15s;
-  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
+  &:focus { border-color: ${({ $error, theme }) => $error ? '#e53e3e' : theme.colors.accent}; }
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; background: ${({ theme }) => theme.colors.surfaceMuted}; }
 `;
+
+const FieldErrorHint = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: #e53e3e;
+  margin-top: 2px;
+`;
+
+const InfoCircle = () => (
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
+  </svg>
+);
 
 const FormHint = styled.span`
   font-size: 0.75rem;
   color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
+const PasswordWrap = styled.div`
+  position: relative;
+`;
+const PasswordToggle = styled.button`
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: ${({ theme }) => theme.colors.textTertiary};
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  &:hover { color: ${({ theme }) => theme.colors.textSecondary}; }
 `;
 
 const BtnRow = styled.div`
@@ -331,6 +367,13 @@ const WhatsAppIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
     <path d="M12 2C6.48 2 2 6.48 2 12c0 1.77.46 3.43 1.27 4.88L2 22l5.23-1.24A9.96 9.96 0 0012 22c5.52 0 10-4.48 10-10S17.52 2 12 2z" />
     <path d="M16.5 14.38c-.23.66-1.32 1.22-1.82 1.3-.47.07-1.04.1-1.68-.11-.39-.13-.88-.3-1.52-.58-2.69-1.21-4.44-3.93-4.58-4.12-.13-.18-1.09-1.46-1.09-2.78s.68-1.97.93-2.24c.25-.27.54-.33.72-.33h.52c.17 0 .39-.06.61.47.23.54.79 1.93.86 2.07.07.14.12.3.02.47-.56 1.11-1.17 1.07-.86 1.6 1.13 1.93 2.23 2.58 3.92 3.38.28.13.44.11.6-.07.16-.18.68-.79.86-1.07.18-.27.37-.23.61-.14.25.1 1.6.76 1.87.89.28.14.46.21.52.33.08.11.08.69-.15 1.32z" />
+  </svg>
+);
+
+const EmailSmtpIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="4" width="20" height="16" rx="2" />
+    <path d="M22 7l-10 7L2 7" />
   </svg>
 );
 
@@ -499,7 +542,7 @@ function toDisplayEntries(data: unknown): [string, unknown][] {
 
 /* ── Tabs config ── */
 
-type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'whatsapp' | 'other';
+type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'email-smtp' | 'other';
 
 /* ── Component ── */
 
@@ -631,6 +674,105 @@ const Settings: React.FC = () => {
     setTimeout(() => setWaFeedback(null), 3000);
   };
 
+  // Email SMTP settings (per-user)
+  const { data: smtpData, isLoading: smtpLoading } = useEmailSettings();
+  const updateSmtp = useUpdateEmailSettings();
+  const [smtpForm, setSmtpForm] = useState({
+    smtpHost: '', smtpPort: 587, smtpUser: '', smtpPass: '', smtpFrom: '',
+    imapHost: '', imapPort: 993,
+  });
+  const [smtpInit, setSmtpInit] = useState(false);
+  const [smtpFeedback, setSmtpFeedback] = useState<string | null>(null);
+  const [showSmtpPass, setShowSmtpPass] = useState(false);
+  const [smtpHasPass, setSmtpHasPass] = useState(false);
+  const [smtpEditing, setSmtpEditing] = useState(false);
+  useEffect(() => {
+    if (smtpData && !smtpInit) {
+      setSmtpForm({
+        smtpHost: (smtpData as any).smtpHost ?? '',
+        smtpPort: (smtpData as any).smtpPort ?? 587,
+        smtpUser: (smtpData as any).smtpUser ?? '',
+        smtpPass: '',
+        smtpFrom: (smtpData as any).smtpFrom ?? '',
+        imapHost: (smtpData as any).imapHost ?? '',
+        imapPort: (smtpData as any).imapPort ?? 993,
+      });
+      setSmtpHasPass(!!(smtpData as any).smtpHasPass);
+      if (!(smtpData as any).smtpHost) setSmtpEditing(true);
+      setSmtpInit(true);
+    }
+  }, [smtpData, smtpInit]);
+  const handleSmtpChange = (field: string, value: string | number) => {
+    setSmtpForm(prev => ({ ...prev, [field]: value }));
+  };
+  // SMTP form validation — per-field errors (same style as Register form)
+  const [smtpErrors, setSmtpErrors] = useState<Record<string, string>>({});
+  const validateSmtp = (): boolean => {
+    const errs: Record<string, string> = {};
+    if (!smtpForm.smtpHost.trim()) errs.smtpHost = t('settings.smtpHostRequired', 'SMTP Host is required');
+    if (!smtpForm.smtpUser.trim()) errs.smtpUser = t('settings.smtpUserRequired', 'Username is required');
+    if (!smtpForm.smtpPass.trim() && !smtpHasPass) errs.smtpPass = t('settings.smtpPassRequired', 'Password is required');
+    if (!smtpForm.imapHost.trim()) errs.imapHost = t('settings.imapHostRequired', 'IMAP Host is required');
+    setSmtpErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
+
+  const handleCancelSmtp = () => {
+    if (smtpData) {
+      setSmtpForm({
+        smtpHost: (smtpData as any).smtpHost ?? '',
+        smtpPort: (smtpData as any).smtpPort ?? 587,
+        smtpUser: (smtpData as any).smtpUser ?? '',
+        smtpPass: '',
+        smtpFrom: (smtpData as any).smtpFrom ?? '',
+        imapHost: (smtpData as any).imapHost ?? '',
+        imapPort: (smtpData as any).imapPort ?? 993,
+      });
+    }
+    setSmtpErrors({});
+    setSmtpEditing(false);
+    setShowSmtpPass(false);
+  };
+
+  const handleSaveSmtp = async () => {
+    if (!validateSmtp()) return;
+    try {
+      await updateSmtp.mutateAsync(smtpForm);
+      setSmtpFeedback(t('settings.smtpSaved'));
+      setSmtpEditing(false);
+      setShowSmtpPass(false);
+      if (smtpForm.smtpPass) setSmtpHasPass(true);
+    } catch {
+      setSmtpFeedback(t('settings.smtpSaveFailed'));
+    }
+    setTimeout(() => setSmtpFeedback(null), 3000);
+  };
+
+  // SMTP / IMAP test connection
+  const [smtpTesting, setSmtpTesting] = useState(false);
+  const [smtpTestResult, setSmtpTestResult] = useState<string | null>(null);
+  const [smtpTestColor, setSmtpTestColor] = useState<string>('inherit');
+  const handleTestSmtp = async () => {
+    if (!validateSmtp()) return;
+    setSmtpTesting(true);
+    setSmtpTestResult(null);
+    try {
+      const res = await emailSettingsApi.testConnection();
+      const d = (res as any).data ?? res;
+      const parts: string[] = [];
+      parts.push(`SMTP: ${d.smtp === 'ok' ? '✓' : '✗ ' + (d.smtpError || 'fail')}`);
+      if (d.imap !== 'skip') parts.push(`IMAP: ${d.imap === 'ok' ? '✓' : '✗ ' + (d.imapError || 'fail')}`);
+      const allOk = d.smtp === 'ok' && (d.imap === 'ok' || d.imap === 'skip');
+      setSmtpTestColor(allOk ? theme.strong.olive : theme.strong.mauve);
+      setSmtpTestResult(allOk ? t('settings.smtpTestSuccess', 'Test passed') + ' — ' + parts.join(' / ') : t('settings.smtpTestFail', 'Test failed') + ' — ' + parts.join(' / '));
+    } catch (e: any) {
+      setSmtpTestColor(theme.strong.mauve);
+      setSmtpTestResult(t('settings.smtpTestFail', 'Test failed') + ': ' + (e?.message || ''));
+    }
+    setSmtpTesting(false);
+    setTimeout(() => setSmtpTestResult(null), 8000);
+  };
+
   // Notification preferences (per-user)
   const { data: notifPrefs, isLoading: notifLoading } = useNotificationPrefs();
   const updateNotif = useUpdateNotificationPrefs();
@@ -696,7 +838,7 @@ const Settings: React.FC = () => {
   tabs.push({ key: 'follow-up', label: t('settings.followUpSettings'), icon: <RepeatIcon /> });
   tabs.push({ key: 'auto-send', label: t('settings.autoSendRules'), icon: <ZapIcon /> });
   tabs.push({ key: 'email-scoring', label: t('settings.emailScoringRules'), icon: <StarIcon /> });
-  tabs.push({ key: 'whatsapp', label: t('settings.whatsappTab'), icon: <WhatsAppIcon /> });
+  tabs.push({ key: 'email-smtp', label: t('settings.smtpTab'), icon: <EmailSmtpIcon /> });
   if (hasOther) {
     tabs.push({ key: 'other', label: t('settings.currentConfig'), icon: <SlidersIcon /> });
   }
@@ -1082,72 +1224,103 @@ const Settings: React.FC = () => {
               not in the UI. ── */}
 
           {/* ── WhatsApp Templates ── */}
-          {tab === 'whatsapp' && (
+          {/* ── Email SMTP ── */}
+          {tab === 'email-smtp' && (
             <>
-              <ContentHeader><h2>{t('settings.whatsappTitle')}</h2></ContentHeader>
+              <ContentHeader><h2>{t('settings.smtpTitle')}</h2></ContentHeader>
               <ContentBody>
-                {waLoading ? (
+                {smtpLoading ? (
                   <EmptyText>{t('settings.loadingSettings')}</EmptyText>
                 ) : (
                   <>
-                    <DefaultBanner>{t('settings.whatsappDesc')}</DefaultBanner>
-                    <FormHint style={{ marginBottom: 12, fontSize: '0.75rem', opacity: 0.7 }}>
-                      {t('settings.whatsappVariables')}
-                    </FormHint>
+                    <DefaultBanner>{t('settings.smtpDesc')}</DefaultBanner>
 
-                    {waList.length === 0 && (
-                      <EmptyText>{t('settings.whatsappNoTemplates')}</EmptyText>
+                    <SectionTitle>{t('settings.smtpSection')}</SectionTitle>
+                    <FormGroup>
+                      <Label>{t('settings.smtpHost')} *</Label>
+                      <Input $error={!!smtpErrors.smtpHost} disabled={!smtpEditing} value={smtpForm.smtpHost} onChange={e => { handleSmtpChange('smtpHost', e.target.value); setSmtpErrors(prev => { const n = { ...prev }; delete n.smtpHost; return n; }); }} placeholder="smtp.gmail.com" />
+                      {smtpErrors.smtpHost && <FieldErrorHint><InfoCircle /> {smtpErrors.smtpHost}</FieldErrorHint>}
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>{t('settings.smtpPort')}</Label>
+                      <Input type="number" disabled={!smtpEditing} value={smtpForm.smtpPort} onChange={e => handleSmtpChange('smtpPort', Number(e.target.value))} placeholder="587" />
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>{t('settings.smtpUser')} *</Label>
+                      <Input $error={!!smtpErrors.smtpUser} disabled={!smtpEditing} value={smtpForm.smtpUser} onChange={e => { handleSmtpChange('smtpUser', e.target.value); setSmtpErrors(prev => { const n = { ...prev }; delete n.smtpUser; return n; }); }} placeholder="you@gmail.com" />
+                      {smtpErrors.smtpUser && <FieldErrorHint><InfoCircle /> {smtpErrors.smtpUser}</FieldErrorHint>}
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>{t('settings.smtpPass')} *</Label>
+                      <PasswordWrap>
+                        {showSmtpPass ? (
+                          <Input $error={!!smtpErrors.smtpPass} disabled={!smtpEditing} type="text" autoComplete="off" value={smtpForm.smtpPass} onChange={e => { handleSmtpChange('smtpPass', e.target.value); setSmtpErrors(prev => { const n = { ...prev }; delete n.smtpPass; return n; }); }} placeholder={smtpHasPass && !smtpForm.smtpPass ? t('settings.smtpPassSet') : t('settings.smtpPassPlaceholder')} style={{ paddingRight: 40 }} />
+                        ) : (
+                          <Input $error={!!smtpErrors.smtpPass} disabled={!smtpEditing} type="password" autoComplete="new-password" value={smtpForm.smtpPass} onChange={e => { handleSmtpChange('smtpPass', e.target.value); setSmtpErrors(prev => { const n = { ...prev }; delete n.smtpPass; return n; }); }} placeholder={smtpHasPass && !smtpForm.smtpPass ? t('settings.smtpPassSet') : t('settings.smtpPassPlaceholder')} style={{ paddingRight: 40 }} />
+                        )}
+                        <PasswordToggle type="button" onClick={() => setShowSmtpPass(v => !v)} title={showSmtpPass ? 'Hide' : 'Show'}>
+                          {showSmtpPass ? (
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94" />
+                              <path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19" />
+                              <line x1="1" y1="1" x2="23" y2="23" />
+                            </svg>
+                          ) : (
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                              <circle cx="12" cy="12" r="3" />
+                            </svg>
+                          )}
+                        </PasswordToggle>
+                      </PasswordWrap>
+                      {smtpErrors.smtpPass && <FieldErrorHint><InfoCircle /> {smtpErrors.smtpPass}</FieldErrorHint>}
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>{t('settings.smtpFrom')}</Label>
+                      <Input disabled={!smtpEditing} value={smtpForm.smtpFrom} onChange={e => handleSmtpChange('smtpFrom', e.target.value)} placeholder="Your Name <you@gmail.com>" />
+                      <FormHint>{t('settings.smtpFromHint', 'Format: Your Name <email@example.com>. Leave empty to use SMTP username.')}</FormHint>
+                    </FormGroup>
+
+                    <SectionTitle style={{ marginTop: 16 }}>{t('settings.imapSection')}</SectionTitle>
+                    <FormGroup>
+                      <Label>{t('settings.imapHost')} *</Label>
+                      <Input $error={!!smtpErrors.imapHost} disabled={!smtpEditing} value={smtpForm.imapHost} onChange={e => { handleSmtpChange('imapHost', e.target.value); setSmtpErrors(prev => { const n = { ...prev }; delete n.imapHost; return n; }); }} placeholder="imap.gmail.com" />
+                      {smtpErrors.imapHost && <FieldErrorHint><InfoCircle /> {smtpErrors.imapHost}</FieldErrorHint>}
+                    </FormGroup>
+                    <FormGroup>
+                      <Label>{t('settings.imapPort')}</Label>
+                      <Input type="number" disabled={!smtpEditing} value={smtpForm.imapPort} onChange={e => handleSmtpChange('imapPort', Number(e.target.value))} placeholder="993" />
+                    </FormGroup>
+
+                    {smtpFeedback && (
+                      <FormHint style={{ color: smtpFeedback === t('settings.smtpSaved') ? theme.strong.olive : theme.strong.mauve }}>
+                        {smtpFeedback}
+                      </FormHint>
                     )}
 
-                    {waList.map((tpl, idx) => (
-                      <Card key={tpl.id} style={{ padding: '14px 16px', marginBottom: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <span style={{ fontSize: '0.75rem', fontWeight: 600, opacity: 0.5, minWidth: 20 }}>#{idx + 1}</span>
-                          <Input
-                            value={tpl.name}
-                            onChange={e => handleWaChange(tpl.id, 'name', e.target.value)}
-                            placeholder={t('settings.whatsappTemplateNamePlaceholder')}
-                            style={{ flex: 1 }}
-                          />
-                          <SaveBtn
-                            onClick={() => handleRemoveWaTemplate(tpl.id)}
-                            style={{ background: 'transparent', color: theme.strong.mauve, padding: '4px 10px', fontSize: '0.75rem' }}
-                          >
-                            {t('settings.whatsappDeleteTemplate')}
-                          </SaveBtn>
-                        </div>
-                        <textarea
-                          value={tpl.body}
-                          onChange={e => handleWaChange(tpl.id, 'body', e.target.value)}
-                          placeholder={t('settings.whatsappTemplateBodyPlaceholder')}
-                          rows={4}
-                          style={{
-                            width: '100%', padding: '8px 10px', borderRadius: 6,
-                            border: `1px solid ${theme.colors.border}`,
-                            background: theme.colors.cardBg,
-                            color: theme.colors.text,
-                            fontFamily: 'inherit', fontSize: '0.85rem', resize: 'vertical',
-                          }}
-                        />
-                      </Card>
-                    ))}
-
-                    <SaveBtn
-                      onClick={handleAddWaTemplate}
-                      style={{ background: 'transparent', color: theme.colors.accent, border: `1px dashed ${theme.colors.border}`, width: '100%', marginBottom: 12 }}
-                    >
-                      {t('settings.whatsappAddTemplate')}
-                    </SaveBtn>
-
-                    {waFeedback && (
-                      <FormHint style={{ color: waFeedback === t('settings.whatsappSaved') ? theme.strong.olive : theme.strong.mauve }}>
-                        {waFeedback}
+                    {smtpTestResult && (
+                      <FormHint style={{ color: smtpTestColor }}>
+                        {smtpTestResult}
                       </FormHint>
                     )}
 
                     <BtnRow>
-                      <SaveBtn onClick={handleSaveWa} disabled={updateWa.isPending}>
-                        {updateWa.isPending ? t('settings.updating') : t('settings.save')}
+                      {smtpEditing ? (
+                        <>
+                          <SaveBtn onClick={handleSaveSmtp} disabled={updateSmtp.isPending}>
+                            {updateSmtp.isPending ? t('settings.updating') : t('settings.save')}
+                          </SaveBtn>
+                          <SaveBtn onClick={handleCancelSmtp} style={{ background: 'transparent', color: theme.colors.textSecondary, border: `1px solid ${theme.colors.border}` }}>
+                            {t('settings.cancel')}
+                          </SaveBtn>
+                        </>
+                      ) : (
+                        <SaveBtn onClick={() => setSmtpEditing(true)}>
+                          {t('settings.edit')}
+                        </SaveBtn>
+                      )}
+                      <SaveBtn onClick={handleTestSmtp} disabled={smtpTesting} style={{ background: 'transparent', color: theme.colors.accent, border: `1px solid ${theme.colors.accent}` }}>
+                        {smtpTesting ? t('settings.smtpTesting', 'Testing...') : t('settings.smtpTestBtn', 'Test Connection')}
                       </SaveBtn>
                     </BtnRow>
                   </>

@@ -366,6 +366,24 @@ async function buildUserCompanyContext(userId, db) {
         return null;
     }
 }
+async function getUserSmtpConfig(userId, db) {
+    if (!userId)
+        return null;
+    try {
+        const u = await db.collection('users').findOne({ _id: new mongodb_1.ObjectId(userId) }, { projection: { smtpHost: 1, smtpPort: 1, smtpUser: 1, smtpPass: 1, smtpFrom: 1, imapHost: 1, imapPort: 1 } });
+        if (u?.smtpHost && u?.smtpUser && u?.smtpPass) {
+            return {
+                host: u.smtpHost, port: u.smtpPort ?? 587,
+                user: u.smtpUser, pass: u.smtpPass,
+                from: u.smtpFrom || u.smtpUser,
+                imapHost: u.imapHost || 'imap.gmail.com', imapPort: u.imapPort ?? 993,
+                source: 'user',
+            };
+        }
+    }
+    catch { /* no config */ }
+    return null; // 用戶未設定 SMTP → 唔 fallback .env
+}
 async function login() {
     const r = await fetch(`${API}/auth/login`, {
         method: 'POST',
@@ -606,8 +624,7 @@ ${sigBlock}
 /**
  * 定時回覆檢查（inbound 閉環）：直接連 IMAP 讀 inbox → 對返已聯絡 lead
  * → 分類 → 寫返 lead 的 _reply_* 欄。
- * ⚠️ 用返 SMTP 同一組 creds（Gmail App Password 同時支援 SMTP 發 + IMAP 讀）。
- *    未配 SMTP_USER/PASS → graceful 回 0，唔 crash。
+ * 按 user_id 分組，每組用各自嘅 IMAP 設定連接；未設定嘅 user fallback 去 .env。
  */
 async function doReplyCheck(_p, db) {
     const leads = await db
@@ -617,90 +634,90 @@ async function doReplyCheck(_p, db) {
         .toArray();
     if (!leads.length)
         return { checked: 0, note: '冇待查回覆嘅 lead' };
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
-    if (!user || !pass) {
-        return { checked: leads.length, note: 'IMAP 未配（要 SMTP_USER/SMTP_PASS）' };
+    // 按 user_id 分組
+    const userGroups = new Map();
+    for (const l of leads) {
+        const uid = l.user_id || '__env__';
+        if (!userGroups.has(uid))
+            userGroups.set(uid, []);
+        userGroups.get(uid).push(l);
     }
-    const byEmail = new Map(leads.map((l) => [String(l.email).toLowerCase(), l]));
-    log(`[ReplyCheck] 待查 leads: ${leads.length}, emails: [${[...byEmail.keys()].join(', ')}]`);
-    const client = new imapflow_1.ImapFlow({
-        host: process.env.IMAP_HOST || 'imap.gmail.com',
-        port: Number(process.env.IMAP_PORT || 993),
-        secure: true,
-        auth: { user, pass },
-        logger: false,
-    });
     const matched = [];
     let scanned = 0;
-    try {
-        await client.connect();
-        const lock = await client.getMailboxLock('INBOX');
+    const errors = [];
+    for (const [uid, groupLeads] of userGroups) {
+        const smtp = await getUserSmtpConfig(uid === '__env__' ? undefined : uid, db);
+        if (!smtp) {
+            log(`[ReplyCheck] user=${uid}: IMAP 未配，跳過 ${groupLeads.length} leads`);
+            errors.push(`user=${uid}: IMAP 未配`);
+            continue;
+        }
+        const byEmail = new Map(groupLeads.map((l) => [String(l.email).toLowerCase(), l]));
+        log(`[ReplyCheck] user=${uid} (${smtp.source}): ${groupLeads.length} leads, IMAP=${smtp.imapHost}:${smtp.imapPort}`);
+        const client = new imapflow_1.ImapFlow({
+            host: smtp.imapHost,
+            port: smtp.imapPort,
+            secure: true,
+            auth: { user: smtp.user, pass: smtp.pass },
+            logger: false,
+        });
         try {
-            const since = new Date(Date.now() - 14 * 864e5); // 近 14 日
-            for await (const msg of client.fetch({ since }, { source: true })) {
-                scanned++;
-                const parsed = await (0, mailparser_1.simpleParser)(msg.source);
-                const from = (parsed.from?.value?.[0]?.address || '').toLowerCase();
-                const subject = parsed.subject || '';
-                log(`[ReplyCheck] #${scanned} from=${from} subject="${subject.slice(0, 80)}"`);
-                // 測試(SEND_OVERRIDE)模式：回覆 subject 仲帶住「[TEST→realcompany@x.com]」標記
-                // → 由 subject 解返真 lead（因為回覆嘅寄件人係測試地址，對唔返 lead.email）。
-                // 正式模式：直接用寄件人地址 = lead.email 對返。
-                const tag = subject.match(/\[TEST→([^\]\s]+)\]/i);
-                let lead = tag ? byEmail.get(tag[1].toLowerCase()) : undefined;
-                if (!lead)
-                    lead = byEmail.get(from);
-                // Fallback：測試模式下 from === SMTP_USER，用 subject 去 email_queue 反查 lead
-                if (!lead && from === (user || '').toLowerCase()) {
-                    const cleanSubject = subject.replace(/^\s*(re|回覆|回复)\s*[:：]\s*/i, '').trim();
-                    if (cleanSubject) {
-                        const eq = await db.collection('email_queue').findOne({ subject: cleanSubject, status: 'sent' }, { projection: { lead_id: 1 } });
-                        if (eq?.lead_id) {
-                            // lead_id 可能係 string，用 lead_id 欄位去 leads 搵
-                            const foundLead = leads.find((l) => l.lead_id === eq.lead_id || String(l._id) === String(eq.lead_id));
-                            if (foundLead) {
-                                lead = foundLead;
-                                log(`[ReplyCheck]   → fallback: 由 email_queue subject 反查到 lead=${foundLead.company_name || foundLead.email}`);
+            await client.connect();
+            const lock = await client.getMailboxLock('INBOX');
+            try {
+                const since = new Date(Date.now() - 14 * 864e5); // 近 14 日
+                for await (const msg of client.fetch({ since }, { source: true })) {
+                    scanned++;
+                    const parsed = await (0, mailparser_1.simpleParser)(msg.source);
+                    const from = (parsed.from?.value?.[0]?.address || '').toLowerCase();
+                    const subject = parsed.subject || '';
+                    log(`[ReplyCheck] #${scanned} from=${from} subject="${subject.slice(0, 80)}"`);
+                    const tag = subject.match(/\[TEST→([^\]\s]+)\]/i);
+                    let lead = tag ? byEmail.get(tag[1].toLowerCase()) : undefined;
+                    if (!lead)
+                        lead = byEmail.get(from);
+                    // Fallback：測試模式下 from === SMTP_USER，用 subject 去 email_queue 反查 lead
+                    if (!lead && from === (smtp.user || '').toLowerCase()) {
+                        const cleanSubject = subject.replace(/^\s*(re|回覆|回复)\s*[:：]\s*/i, '').trim();
+                        if (cleanSubject) {
+                            const eq = await db.collection('email_queue').findOne({ subject: cleanSubject, status: 'sent' }, { projection: { lead_id: 1 } });
+                            if (eq?.lead_id) {
+                                const foundLead = groupLeads.find((l) => l.lead_id === eq.lead_id || String(l._id) === String(eq.lead_id));
+                                if (foundLead) {
+                                    lead = foundLead;
+                                    log(`[ReplyCheck]   → fallback: 由 email_queue subject 反查到 lead=${foundLead.company_name || foundLead.email}`);
+                                }
                             }
                         }
                     }
+                    if (!lead)
+                        continue;
+                    const refs = parsed.references;
+                    const isReply = !!tag ||
+                        !!parsed.inReplyTo ||
+                        (Array.isArray(refs) ? refs.length > 0 : !!refs) ||
+                        /^\s*(re|回覆|回复)\s*[:：]/i.test(subject);
+                    if (!isReply)
+                        continue;
+                    log(`[ReplyCheck]   → ✓ matched lead=${lead.company_name || lead.email}`);
+                    matched.push({ lead, subject, text: parsed.text || '' });
+                    byEmail.delete(String(lead.email).toLowerCase());
                 }
-                if (!lead) {
-                    log(`[ReplyCheck]   → skip: 對唔上任何 lead (tag=${tag?.[1] || 'none'})`);
-                    continue;
-                }
-                // 只當「似回覆」先計，避免誤中 newsletter / 無關信：
-                // 有測試標記、或 In-Reply-To/References header、或 subject 有 Re:/回覆。
-                const refs = parsed.references;
-                const isReply = !!tag ||
-                    !!parsed.inReplyTo ||
-                    (Array.isArray(refs) ? refs.length > 0 : !!refs) ||
-                    /^\s*(re|回覆|回复)\s*[:：]/i.test(subject);
-                if (!isReply) {
-                    log(`[ReplyCheck]   → skip: lead matched 但唔似回覆`);
-                    continue;
-                }
-                log(`[ReplyCheck]   → ✓ matched lead=${lead.company_name || lead.email}`);
-                matched.push({ lead, subject, text: parsed.text || '' });
-                byEmail.delete(String(lead.email).toLowerCase()); // 一個 lead 只收一次
             }
+            finally {
+                lock.release();
+            }
+            await client.logout();
+        }
+        catch (e) {
+            log(`[ReplyCheck] user=${uid} IMAP 失敗：${e?.message ?? e}`);
+            errors.push(`user=${uid}: ${e?.message ?? e}`);
         }
         finally {
-            lock.release();
-        }
-        await client.logout();
-    }
-    catch (e) {
-        return { checked: leads.length, replies: 0, note: 'IMAP 讀取失敗：' + (e?.message ?? e) };
-    }
-    finally {
-        // 確保任何情況都收返個 connection（logout 過 / 未連上都無所謂）
-        try {
-            await client.close();
-        }
-        catch {
-            /* ignore */
+            try {
+                await client.close();
+            }
+            catch { /* ignore */ }
         }
     }
     // IMAP 已閂，先至逐封叫 Hermes 分析（LLM 慢，唔應該連住 inbox 一路等）。
@@ -855,7 +872,7 @@ async function doReplyCheck(_p, db) {
         if (await maybeDraftReply(m.lead, a, m.text, db))
             replyDrafts++;
     }
-    return { checked: leads.length, scanned, replies: updated, reply_drafts: replyDrafts, via };
+    return { checked: leads.length, scanned, replies: updated, reply_drafts: replyDrafts, via, ...(errors.length ? { errors } : {}) };
 }
 /** S1 搜尋 → 叫 Hermes 開 stealth browser 搵 Google Maps，回真公司 */
 async function doSearch(p, db) {
@@ -1782,18 +1799,20 @@ async function doSend(p, db) {
         await db.collection('leads').updateOne({ _id }, { $set: { _email_sent: true } });
         return { sent: false, note: 'real send 停用（ENABLE_REAL_SEND=true 先發），email 保持 pending 等人手審批' };
     }
-    // 真發：經 SMTP（nodemailer），一律寄去 TEST_RECIPIENT
-    if (!process.env.SMTP_HOST) {
-        return { sent: false, note: 'SMTP 未配（.env 填 SMTP_HOST/USER/PASS）' };
+    // 真發：先嘗試 per-user SMTP，fallback .env
+    const smtp = await getUserSmtpConfig(lead.user_id, db);
+    if (!smtp) {
+        return { sent: false, note: 'SMTP 未配（用戶未設定 SMTP，.env 亦無 SMTP_HOST）' };
     }
+    log(`  → 用 ${smtp.source === 'user' ? 'per-user' : '.env'} SMTP (${smtp.host}:${smtp.port})`);
     const transporter = nodemailer.createTransport({
-        host: process.env.SMTP_HOST,
-        port: Number(process.env.SMTP_PORT || 587),
-        secure: Number(process.env.SMTP_PORT) === 465,
-        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+        host: smtp.host,
+        port: smtp.port,
+        secure: smtp.port === 465,
+        auth: { user: smtp.user, pass: smtp.pass },
     });
     // 收件人：SEND_OVERRIDE 有設（測試安全）→ 一律寄去嗰度；冇設 → lead.email（真發）。
-    // creds（SMTP_USER/PASS）同收件人全部由跑 worker 嗰位喺 .env 設，唔 hardcode 落 code。
+    // creds 優先用 per-user SMTP（user 喺 Settings 設），fallback 用 .env。
     const override = process.env.SEND_OVERRIDE || process.env.TEST_RECIPIENT_EMAIL;
     const to = override || lead.email;
     if (!to)
@@ -1815,7 +1834,7 @@ async function doSend(p, db) {
     const bodyHtml = `<div style="white-space:pre-wrap;font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;line-height:1.6;font-size:14px;color:#1a1a1a">${bodyRaw}</div>`;
     try {
         await transporter.sendMail({
-            from: process.env.SMTP_FROM || process.env.SMTP_USER,
+            from: smtp.from,
             to,
             subject: override
                 ? `[TEST→${lead.email || '?'}] ${eq.subject ?? ''}` // 測試模式標明原收件人

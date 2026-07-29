@@ -1115,8 +1115,6 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
         <AvatarWrap>
           <DiceBearAvatar seed={user?.email ?? user?.name ?? 'me'} size={30} radius={15} />
           <AvatarDropdown data-avatar-dropdown>
-            <EmailConnectionSection />
-            <EmailStatusDivider />
             <DropdownItem $danger onClick={() => setShowLogoutDialog(true)}>
               <DropdownLogoutIcon /> {t('nav.signOut')}
             </DropdownItem>
