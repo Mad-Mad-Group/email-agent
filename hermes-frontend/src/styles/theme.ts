@@ -46,7 +46,7 @@ export const lightTheme: HermesTheme = {
     textSecondary: '#6B7280',
     textTertiary: '#9CA3AF',
     textInverted: '#FFFFFF',
-    accent: '#4A82D4',
+    accent: '#2A78D6',
   },
   pastel: {
     mauve: '#E8A0CC',
@@ -101,7 +101,7 @@ export const darkTheme: HermesTheme = {
     textSecondary: '#9CA3AF',
     textTertiary: '#6B7280',
     textInverted: '#0B080B',
-    accent: '#4A82D4',
+    accent: '#3987E5',
   },
   pastel: {
     mauve: '#3D2636',

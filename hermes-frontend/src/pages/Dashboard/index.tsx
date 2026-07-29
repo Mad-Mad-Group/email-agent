@@ -617,6 +617,14 @@ const TokenBarChart: React.FC<{ data: { period: string; total_tokens: number }[]
       )}
       <svg ref={svgRef} width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block' }}>
         <defs>
+          <linearGradient id="tokenBarGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#184F95" />
+            <stop offset="100%" stopColor="#9EC5F4" />
+          </linearGradient>
+          <pattern id="tokenBarHatch" width="6" height="6" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+            <rect width="6" height="6" fill="transparent" />
+            <line x1="0" y1="0" x2="0" y2="6" stroke="rgba(255,255,255,0.35)" strokeWidth="2" />
+          </pattern>
         </defs>
         {/* Y-axis grid lines */}
         {ticks.map((tick, i) => {
@@ -642,8 +650,11 @@ const TokenBarChart: React.FC<{ data: { period: string; total_tokens: number }[]
                onMouseLeave={() => setHover(null)}>
               <rect x={pl + i * gap} y={pt} width={gap} height={chartH} fill="transparent" />
               <rect x={x} y={y} width={barW} height={barH} rx={4} ry={4}
-                fill={theme.colors.accent} opacity={isHovered ? 1 : 0.3 + 0.7 * (d.total_tokens / maxVal)}
+                fill="url(#tokenBarGradient)" opacity={isHovered ? 1 : 0.5 + 0.5 * (d.total_tokens / maxVal)}
                 style={{ transition: 'all 0.15s ease' }} />
+              <rect x={x} y={y} width={barW} height={barH} rx={4} ry={4}
+                fill="url(#tokenBarHatch)" opacity={isHovered ? 1 : 0.5 + 0.5 * (d.total_tokens / maxVal)}
+                style={{ transition: 'all 0.15s ease', pointerEvents: 'none' }} />
               {/* Highlight effect on hover */}
               {isHovered && d.total_tokens > 0 && (
                 <>
