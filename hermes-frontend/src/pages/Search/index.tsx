@@ -139,6 +139,7 @@ const OrbitDot = styled.div<{ $color: string; $s: number }>`
 `;
 
 const GradientGreeting = styled.h1`
+  font-family: ${({ theme }) => theme.fonts.display};
   font-size: clamp(1.5rem, 4vw, 2.5rem);
   font-weight: 800;
   text-align: center;

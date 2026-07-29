@@ -4,7 +4,7 @@ const shared = {
   radii: { card: 16, tile: 16, control: 8 },
   fonts: {
     primary: "'Source Serif 4', 'Noto Serif TC', 'PingFang TC', 'PingFang SC', Georgia, 'Microsoft JhengHei', serif",
-    display: "'Righteous', 'Plus Jakarta Sans', sans-serif",
+    display: "'Righteous', 'Plus Jakarta Sans', 'Noto Serif TC', sans-serif",
     mono: "'JetBrains Mono', ui-monospace, monospace",
   },
   spacing: { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 },
