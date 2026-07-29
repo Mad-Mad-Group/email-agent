@@ -25,6 +25,7 @@ const CalLayout = styled.div`
   align-items: flex-start;
   ${media.tabletDown} {
     flex-direction: column;
+    align-items: stretch;
   }
 `;
 
@@ -34,7 +35,7 @@ const Sidebar = styled.div`
   display: flex;
   flex-direction: column;
   gap: 14px;
-  ${media.mobile} {
+  ${media.tabletDown} {
     width: 100%;
   }
 `;

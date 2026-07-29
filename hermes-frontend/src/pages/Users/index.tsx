@@ -254,11 +254,12 @@ const RoleBadge = styled.span<{ $bg: string; $fg: string }>`
 
 const PermList = styled.div`display: flex; gap: 4px; flex-wrap: wrap;`;
 
-const PermTag = styled.span`
+const PermTag = styled.span<{ $bg?: string; $fg?: string }>`
   display: inline-block; padding: 2px 8px; border-radius: 12px;
   font-size: 0.6875rem;
-  background: ${({ theme }) => theme.colors.surfaceMuted};
-  color: ${({ theme }) => theme.colors.textSecondary};
+  font-weight: 600;
+  background: ${({ theme, $bg }) => $bg ?? theme.colors.surfaceMuted};
+  color: ${({ theme, $fg }) => $fg ?? theme.colors.textSecondary};
 `;
 
 const PermCount = styled.span`
@@ -355,7 +356,8 @@ const DpPanel = styled.div`
   max-width: 95vw;
   max-height: 90vh;
   overflow-y: auto;
-  border-radius: 14px;
+  border-radius: 18px;
+  box-shadow: 0 20px 60px rgba(11,8,11,0.18);
   animation: ${dpFadeIn} 0.2s ease-out;
   ${media.mobile} { width: 95%; }
 `;
@@ -363,8 +365,8 @@ const DpPanel = styled.div`
 const DpHeader = styled.div`
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 20px 24px 16px;
+  gap: 14px;
+  padding: 22px 24px 18px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
@@ -409,29 +411,37 @@ const DpBody = styled.div`
   gap: 20px;
 `;
 
-const DpGrid = styled.div`
+const DpSectionCard = styled.div`
+  background: ${({ theme }) => theme.colors.canvas};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 12px;
+  padding: 16px 18px;
+`;
+
+const DpGrid = styled(DpSectionCard)`
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 14px;
+  gap: 16px 20px;
   ${media.mobile} { grid-template-columns: 1fr; }
 `;
 
 const DpField = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 4px;
 `;
 
 const DpFieldLabel = styled.span`
   font-size: 0.6875rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.05em;
   color: ${({ theme }) => theme.colors.textTertiary};
 `;
 
 const DpFieldValue = styled.span`
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
+  font-weight: 500;
   color: ${({ theme }) => theme.colors.textPrimary};
   word-break: break-word;
 `;
@@ -448,19 +458,19 @@ const DpSectionTitle = styled.h3`
 
 const DpPermGrid = styled.div`
   display: flex;
-  gap: 6px;
+  gap: 8px;
   flex-wrap: wrap;
 `;
 
-const DpPermBadge = styled.span<{ $active?: boolean }>`
+const DpPermBadge = styled.span<{ $active?: boolean; $bg?: string }>`
   display: inline-block;
-  padding: 4px 12px;
+  padding: 5px 14px;
   border-radius: 99px;
   font-size: 0.75rem;
-  font-weight: 500;
-  background: ${({ $active, theme }) => $active ? `${theme.colors.accent}18` : 'transparent'};
-  color: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.textTertiary};
-  border: 1px solid ${({ $active, theme }) => $active ? `${theme.colors.accent}40` : theme.colors.border};
+  font-weight: 600;
+  background: ${({ $active, $bg, theme }) => $active ? ($bg ?? theme.colors.surfaceMuted) : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textTertiary};
+  border: 1px solid ${({ $active, theme }) => $active ? 'transparent' : theme.colors.border};
 `;
 
 const DpFooter = styled.div`
@@ -498,25 +508,33 @@ const DpActionBtn = styled.button<{ $variant?: 'primary' | 'danger' }>`
 /* ── Edit form input ── */
 
 const DpInput = styled.input`
-  padding: 6px 10px;
+  padding: 9px 12px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 6px;
-  font-size: 0.8125rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
   color: ${({ theme }) => theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.canvas};
+  background: ${({ theme }) => theme.colors.surface};
   outline: none;
-  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
+  transition: border-color 0.15s, box-shadow 0.15s;
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.accent};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.accent}22;
+  }
 `;
 
 const DpSelect = styled.select`
-  padding: 6px 10px;
+  padding: 9px 12px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 6px;
-  font-size: 0.8125rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
   color: ${({ theme }) => theme.colors.textPrimary};
-  background: ${({ theme }) => theme.colors.canvas};
+  background: ${({ theme }) => theme.colors.surface};
   outline: none;
-  &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
+  transition: border-color 0.15s, box-shadow 0.15s;
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.accent};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.accent}22;
+  }
 `;
 
 /* ── Helpers ── */
@@ -607,14 +625,41 @@ const Users: React.FC = () => {
     (Array.isArray(tokenUsageRaw) ? tokenUsageRaw : (tokenUsageRaw as any)?.data ?? []) as any;
 
   const ROLE_COLORS: Record<string, { bg: string; fg: string; avatar: string }> = {
-    admin:   { bg: `${theme.colors.accent}18`, fg: theme.colors.accent, avatar: theme.colors.surfaceMuted },
-    manager: { bg: `${theme.strong.gold}18`, fg: theme.strong.gold, avatar: theme.colors.surfaceMuted },
-    user:    { bg: `${theme.colors.accent}18`, fg: theme.colors.accent, avatar: theme.colors.surfaceMuted },
+    admin:       { bg: theme.pastel.blue, fg: theme.colors.textPrimary, avatar: theme.pastel.blue },
+    manager:     { bg: theme.pastel.gold, fg: theme.colors.textPrimary, avatar: theme.pastel.gold },
+    staff:       { bg: theme.pastel.olive, fg: theme.colors.textPrimary, avatar: theme.pastel.olive },
+    user:        { bg: theme.pastel.olive, fg: theme.colors.textPrimary, avatar: theme.pastel.olive },
+    super_admin: { bg: theme.pastel.mauve, fg: theme.colors.textPrimary, avatar: theme.pastel.mauve },
   };
 
   const roleProps = (role: string) => {
     const lower = role.toLowerCase();
-    return ROLE_COLORS[lower] ?? { bg: `${theme.colors.textTertiary}18`, fg: theme.colors.textTertiary, avatar: theme.colors.surfaceMuted };
+    return ROLE_COLORS[lower] ?? { bg: theme.colors.surfaceMuted, fg: theme.colors.textSecondary, avatar: theme.colors.surfaceMuted };
+  };
+
+  const ROLE_LABEL_KEYS: Record<string, string> = {
+    admin: 'users.roleAdmin',
+    manager: 'users.roleAdmin',
+    staff: 'users.roleStaff',
+    user: 'users.roleStaff',
+    super_admin: 'users.roleSuperAdmin',
+  };
+
+  const roleLabel = (role: string) => {
+    const key = ROLE_LABEL_KEYS[role.toLowerCase()];
+    return key ? t(key) : role;
+  };
+
+  const PERM_COLORS: Record<string, string> = {
+    manage_users: theme.pastel.blue,
+    manage_leads: theme.pastel.olive,
+    manage_emails: theme.pastel.gold,
+    manage_settings: theme.pastel.mauve,
+  };
+
+  const permProps = (perm: string) => {
+    const bg = PERM_COLORS[perm] ?? theme.colors.surfaceMuted;
+    return { bg, fg: theme.colors.textPrimary };
   };
 
   const [activeTab, setActiveTab] = useState<RoleFilter>('all');
@@ -815,15 +860,16 @@ const Users: React.FC = () => {
                             </NameCell>
                           </td>
                           <td>{u.email}</td>
-                          <td><RoleBadge $bg={bg} $fg={fg}>{u.role}</RoleBadge></td>
+                          <td><RoleBadge $bg={bg} $fg={fg}>{roleLabel(u.role)}</RoleBadge></td>
                           <td>
                             {perms.length === 0 ? (
                               <PermCount>{t('users.noPermissions')}</PermCount>
                             ) : (
                               <PermList>
-                                {perms.slice(0, 2).map(p => (
-                                  <PermTag key={p}>{p}</PermTag>
-                                ))}
+                                {perms.slice(0, 2).map(p => {
+                                  const { bg, fg } = permProps(p);
+                                  return <PermTag key={p} $bg={bg} $fg={fg}>{t(`users.perms.${p}`, p)}</PermTag>;
+                                })}
                                 {perms.length > 2 && (
                                   <PermCount>{t('users.morePerms', { count: perms.length - 2 })}</PermCount>
                                 )}
@@ -858,13 +904,13 @@ const Users: React.FC = () => {
           <DpOverlay onClick={handleCloseDetail} />
           <DpPanel>
             <DpHeader>
-              <AvatarCircle $bg={roleProps(selectedUser.role).avatar} style={{ width: 42, height: 42, fontSize: '0.875rem' }}>
+              <AvatarCircle $bg={roleProps(selectedUser.role).avatar} style={{ width: 48, height: 48, fontSize: '1rem', color: theme.colors.textPrimary }}>
                 {getInitials(selectedUser.name)}
               </AvatarCircle>
               <DpHeaderInfo>
                 <DpUserName>{selectedUser.name}</DpUserName>
                 <RoleBadge $bg={roleProps(selectedUser.role).bg} $fg={roleProps(selectedUser.role).fg}>
-                  {selectedUser.role}
+                  {roleLabel(selectedUser.role)}
                 </RoleBadge>
               </DpHeaderInfo>
               <DpCloseBtn onClick={handleCloseDetail}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M15 5L5 15M5 5l10 10" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg></DpCloseBtn>
@@ -901,7 +947,7 @@ const Users: React.FC = () => {
                     </DpField>
                     <DpField>
                       <DpFieldLabel>{t('users.role')}</DpFieldLabel>
-                      <DpFieldValue style={{ textTransform: 'capitalize' }}>{selectedUser.role}</DpFieldValue>
+                      <DpFieldValue>{roleLabel(selectedUser.role)}</DpFieldValue>
                     </DpField>
                     <DpField>
                       <DpFieldLabel>{t('users.joinDate')}</DpFieldLabel>
@@ -911,14 +957,14 @@ const Users: React.FC = () => {
 
                   {/* Permissions Section */}
                   {(selectedUser.permissions ?? []).length > 0 && (
-                    <div>
+                    <DpSectionCard>
                       <DpSectionTitle>{t('users.permissions')}</DpSectionTitle>
-                      <DpPermGrid style={{ marginTop: 10 }}>
+                      <DpPermGrid style={{ marginTop: 12 }}>
                         {(selectedUser.permissions ?? []).map(perm => (
-                          <DpPermBadge key={perm} $active>{perm}</DpPermBadge>
+                          <DpPermBadge key={perm} $active $bg={permProps(perm).bg}>{t(`users.perms.${perm}`, perm)}</DpPermBadge>
                         ))}
                       </DpPermGrid>
-                    </div>
+                    </DpSectionCard>
                   )}
                 </>
               )}

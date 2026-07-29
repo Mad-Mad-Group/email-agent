@@ -9,9 +9,6 @@ const shared = {
   },
   spacing: { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 },
   breakpoints: { mobile: 640, tablet: 1024, desktop: 1280 },
-  gradients: {
-    brand: 'linear-gradient(135deg, #0B080B, #2A78D6)',
-  },
   motion: {
     fast: '150ms ease',
     normal: '200ms ease',
@@ -35,6 +32,9 @@ const shared = {
 export const lightTheme: HermesTheme = {
   ...shared,
   mode: 'light',
+  gradients: {
+    brand: 'linear-gradient(135deg, #0B080B, #2A78D6)',
+  },
   colors: {
     canvas: '#FAF8F5',
     surface: '#FFFFFF',
@@ -90,6 +90,9 @@ export const lightTheme: HermesTheme = {
 export const darkTheme: HermesTheme = {
   ...shared,
   mode: 'dark',
+  gradients: {
+    brand: 'linear-gradient(135deg, #FAF8F5, #3987E5)',
+  },
   colors: {
     canvas: '#0B080B',
     surface: '#161316',
