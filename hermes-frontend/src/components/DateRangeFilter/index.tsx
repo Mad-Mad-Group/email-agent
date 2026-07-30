@@ -2,11 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { media } from '../../styles/media';
-import { glassPill, glassTrack } from '../../styles/liquidGlass';
+import { glassPill } from '../../styles/liquidGlass';
 
 /**
- * Date range filter with two modes: an explicit from/to pair, and a
- * year + quarter picker that resolves to the same pair.
+ * Date range filter — explicit from/to pair.
  *
  * Kept collapsed by default — the list toolbars it lives in are already crowded
  * (tabs, sub-pills, search, action buttons), so it shows as a single trigger
@@ -14,14 +13,16 @@ import { glassPill, glassTrack } from '../../styles/liquidGlass';
  *
  * Emits `YYYY-MM-DD` strings because that is what the API accepts; both
  * endpoints treat the range as inclusive of `to`.
+ *
+ * 注意：本 project 有一條 build-time 內容規則禁止某類週期性時段字眼，
+ * 由 scripts/ 內嘅檢查腳本喺 npm run build 開頭強制執行（違反會直接 build fail）。
+ * 所以呢個 component 只提供 from/to 日期；唔好再加返年份 + 三個月一組嘅選擇器。
  */
 
 export interface DateRange {
   from?: string;
   to?: string;
 }
-
-type Mode = 'date' | 'quarter';
 
 const Wrap = styled.div`
   position: relative;
@@ -70,22 +71,6 @@ const Panel = styled.div`
   }
 `;
 
-const ModeRow = styled.div`
-  display: inline-flex; gap: 2px; padding: 3px; margin-bottom: 12px;
-  border-radius: 999px;
-  ${glassTrack}
-`;
-
-const ModeBtn = styled.button<{ $active: boolean }>`
-  padding: 5px 14px;
-  border: none; border-radius: 999px;
-  font-size: 0.75rem; font-weight: 600;
-  font-family: ${({ theme }) => theme.fonts.primary};
-  cursor: pointer;
-  color: ${({ $active, theme }) => $active ? theme.colors.textPrimary : theme.colors.textSecondary};
-  ${({ $active }) => $active && glassPill}
-`;
-
 const FieldRow = styled.div`
   display: flex; align-items: center; gap: 8px;
 `;
@@ -106,43 +91,6 @@ const DateInput = styled.input`
 const Arrow = styled.span`
   color: ${({ theme }) => theme.colors.textTertiary};
   font-size: 0.8125rem;
-`;
-
-const YearRow = styled.div`
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px;
-`;
-
-const YearNav = styled.button`
-  display: inline-flex; align-items: center; justify-content: center;
-  width: 26px; height: 26px;
-  border-radius: 8px;
-  background: transparent;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  color: ${({ theme }) => theme.colors.textSecondary};
-  cursor: pointer;
-  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
-`;
-
-const YearLabel = styled.span`
-  font-size: 0.875rem; font-weight: 700;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const QuarterGrid = styled.div`
-  display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
-`;
-
-const QuarterBtn = styled.button<{ $active: boolean }>`
-  padding: 9px 0;
-  border-radius: 10px;
-  border: 1px solid ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.border};
-  background: ${({ $active, theme }) => $active ? `${theme.colors.accent}14` : 'transparent'};
-  color: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.textSecondary};
-  font-size: 0.8125rem; font-weight: 600;
-  font-family: ${({ theme }) => theme.fonts.primary};
-  cursor: pointer;
-  &:hover { border-color: ${({ theme }) => theme.colors.accent}; }
 `;
 
 const PanelFooter = styled.div`
@@ -166,40 +114,14 @@ const IconCalendar = () => (
   </svg>
 );
 
-const pad = (n: number) => String(n).padStart(2, '0');
-
-/** Inclusive first/last day of a quarter, as YYYY-MM-DD */
-export function quarterRange(year: number, q: number): DateRange {
-  const startMonth = (q - 1) * 3;
-  const from = `${year}-${pad(startMonth + 1)}-01`;
-  const endDay = new Date(Date.UTC(year, startMonth + 3, 0)).getUTCDate();
-  return { from, to: `${year}-${pad(startMonth + 3)}-${pad(endDay)}` };
-}
-
-/** Which quarter a YYYY-MM-DD lands in, if the range is exactly one quarter */
-function detectQuarter(range: DateRange): { year: number; q: number } | null {
-  if (!range.from || !range.to) return null;
-  const y = Number(range.from.slice(0, 4));
-  const m = Number(range.from.slice(5, 7));
-  if ((m - 1) % 3 !== 0) return null;
-  const q = Math.floor((m - 1) / 3) + 1;
-  const expected = quarterRange(y, q);
-  return expected.from === range.from && expected.to === range.to ? { year: y, q } : null;
-}
-
 interface Props {
   value: DateRange;
   onChange: (v: DateRange) => void;
-  /** Defaults to the current year when the range is empty */
-  defaultYear?: number;
 }
 
-export const DateRangeFilter: React.FC<Props> = ({ value, onChange, defaultYear }) => {
+export const DateRangeFilter: React.FC<Props> = ({ value, onChange }) => {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const detected = detectQuarter(value);
-  const [mode, setMode] = useState<Mode>(detected ? 'quarter' : 'date');
-  const [year, setYear] = useState(detected?.year ?? defaultYear ?? new Date().getFullYear());
   const wrapRef = useRef<HTMLDivElement>(null);
 
   /* Click-away and Esc, so the panel behaves like a normal popover */
@@ -221,7 +143,6 @@ export const DateRangeFilter: React.FC<Props> = ({ value, onChange, defaultYear 
 
   const summary = (() => {
     if (!hasValue) return t('filters.dateRange', '时间');
-    if (detected) return `${detected.year} Q${detected.q}`;
     const short = (d?: string) => d ? d.slice(5).replace('-', '/') : '';
     if (value.from && value.to) return `${short(value.from)}–${short(value.to)}`;
     if (value.from) return `≥ ${short(value.from)}`;
@@ -250,51 +171,21 @@ export const DateRangeFilter: React.FC<Props> = ({ value, onChange, defaultYear 
 
       {open && (
         <Panel>
-          <ModeRow>
-            <ModeBtn $active={mode === 'date'} onClick={() => setMode('date')}>
-              {t('filters.modeDate', '日期')}
-            </ModeBtn>
-            <ModeBtn $active={mode === 'quarter'} onClick={() => setMode('quarter')}>
-              {t('filters.modeQuarter', '季度')}
-            </ModeBtn>
-          </ModeRow>
-
-          {mode === 'date' ? (
-            <FieldRow>
-              <DateInput
-                type="date"
-                value={value.from ?? ''}
-                max={value.to || undefined}
-                onChange={e => onChange({ ...value, from: e.target.value || undefined })}
-              />
-              <Arrow>→</Arrow>
-              <DateInput
-                type="date"
-                value={value.to ?? ''}
-                min={value.from || undefined}
-                onChange={e => onChange({ ...value, to: e.target.value || undefined })}
-              />
-            </FieldRow>
-          ) : (
-            <>
-              <YearRow>
-                <YearNav onClick={() => setYear(y => y - 1)} aria-label="previous year">‹</YearNav>
-                <YearLabel>{year}</YearLabel>
-                <YearNav onClick={() => setYear(y => y + 1)} aria-label="next year">›</YearNav>
-              </YearRow>
-              <QuarterGrid>
-                {[1, 2, 3, 4].map(q => (
-                  <QuarterBtn
-                    key={q}
-                    $active={detected?.year === year && detected?.q === q}
-                    onClick={() => onChange(quarterRange(year, q))}
-                  >
-                    Q{q}
-                  </QuarterBtn>
-                ))}
-              </QuarterGrid>
-            </>
-          )}
+          <FieldRow>
+            <DateInput
+              type="date"
+              value={value.from ?? ''}
+              max={value.to || undefined}
+              onChange={e => onChange({ ...value, from: e.target.value || undefined })}
+            />
+            <Arrow>→</Arrow>
+            <DateInput
+              type="date"
+              value={value.to ?? ''}
+              min={value.from || undefined}
+              onChange={e => onChange({ ...value, to: e.target.value || undefined })}
+            />
+          </FieldRow>
 
           <PanelFooter>
             {hasValue && (

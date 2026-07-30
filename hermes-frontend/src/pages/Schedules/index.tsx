@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { media } from '../../styles/media';
 import {
@@ -10,12 +10,8 @@ import {
   useTriggerPipelineSchedule,
   useCampaign,
 } from '../../api/hooks';
-<<<<<<< Updated upstream
-import { PipelineScheduleItem } from '../../api/services';
-import SpriteAvatar from '../../components/SpriteAvatar';
-import { AGENTS } from '../../config/agents';
-=======
 import { PipelineScheduleItem, CampaignItem } from '../../api/services';
+
 
 /* ── Cron helpers ────────────────────────────────────────────────
    後端收嘅係標準 5 欄位 cron（分 時 日 月 星期），見
@@ -30,24 +26,21 @@ type CronMode = 'daily' | 'weekdays' | 'weekly' | 'hourly' | 'minutely' | 'advan
 const parseTime = (time: string): [number, number] => {
   const m = /^(\d{1,2}):(\d{2})$/.exec(time.trim());
   if (!m) return [9, 0];
-  const h = Math.min(23, Math.max(0, parseInt(m[1], 10)));
-  const min = Math.min(59, Math.max(0, parseInt(m[2], 10)));
-  return [h, min];
+  return [
+    Math.min(23, Math.max(0, parseInt(m[1], 10))),
+    Math.min(59, Math.max(0, parseInt(m[2], 10))),
+  ];
 };
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
 /**
  * 後端 matchField 支援嘅語法：* / *&#47;n / n / n-m / n-m&#47;s / 逗號分隔。
- * 呢個 validator 刻意同後端睇齊，唔好放行後端解唔到嘅寫法 ——
- * 因為 getNextRun 解唔到時係靜靜 fallback「一小時後」，唔會報錯。
+ * 呢個 validator 刻意同後端睇齊 —— getNextRun 解唔到時係靜靜 fallback
+ * 「一小時後」，唔會報錯，所以放行錯格式等於畀用戶一個跑錯時間嘅排程。
  */
 const CRON_FIELD_RANGES: [number, number][] = [
-  [0, 59],  // 分
-  [0, 23],  // 時
-  [1, 31],  // 日
-  [1, 12],  // 月
-  [0, 6],   // 星期（0 = 星期日）
+  [0, 59], [0, 23], [1, 31], [1, 12], [0, 6],
 ];
 
 const isValidCronField = (expr: string, min: number, max: number): boolean => {
@@ -112,7 +105,6 @@ const describeCron = (cron: string, t: (k: string, o?: any) => string): string =
 
   return cron;
 };
->>>>>>> Stashed changes
 
 /* ── Layout ── */
 
@@ -139,6 +131,14 @@ const HeroBody = styled.div`
   ${media.mobile} { flex-direction: column; text-align: center; }
 `;
 
+const HeroAvatar = styled.div`
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: ${({ theme }) => theme.colors.accent};
+  color: ${({ theme }) => theme.colors.textInverted};
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+`;
 
 const HeroInfo = styled.div`flex: 1;`;
 
@@ -200,7 +200,6 @@ const Select = styled.select`
   option { font-size: 0.9375rem; padding: 8px 12px; }
 `;
 
-<<<<<<< Updated upstream
 /* ── Form panel ──
    No background or border of its own: PageCard already provides the surface, and
    a second filled+bordered box inside it read as two stacked panels. A rule and
@@ -222,19 +221,6 @@ const FieldWide = styled.div`
   grid-column: 1 / -1;
 `;
 
-const BtnRow = styled.div`
-  grid-column: 1 / -1;
-  display: flex; gap: 10px; padding-top: 6px;
-  ${media.mobile} { flex-direction: column-reverse; }
-`;
-=======
-/* 同 Settings 頁一致：每組 label + 控件 + hint 垂直排、間距統一。
-   之前用光禿禿嘅 <div>，令 inline 嘅 <Label> 有時喺控件上面（全寬 input 被逼換行）、
-   有時貼喺控件左邊（自動寬度 select），同一個表單三種排法。 */
-const FormGroup = styled.div`
-  display: flex; flex-direction: column; gap: 6px;
-`;
-
 /* 一行控件（頻率下拉 + 星期 / 時間 / 間隔） */
 const ControlRow = styled.div`
   display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
@@ -242,6 +228,7 @@ const ControlRow = styled.div`
 
 const FormHint = styled.div<{ $error?: boolean }>`
   font-size: 0.75rem;
+  margin-top: 6px;
   color: ${({ theme, $error }) => ($error ? theme.colors.danger : theme.colors.textTertiary)};
 `;
 
@@ -286,8 +273,11 @@ const ProgressFill = styled.div<{ $percent: number; $color: string }>`
   transition: width 0.4s var(--ease-out);
 `;
 
-const BtnRow = styled.div`display: flex; gap: 10px; padding-top: 4px;`;
->>>>>>> Stashed changes
+const BtnRow = styled.div`
+  grid-column: 1 / -1;
+  display: flex; gap: 10px; padding-top: 6px;
+  ${media.mobile} { flex-direction: column-reverse; }
+`;
 
 const SaveBtn = styled.button`
   padding: 10px 24px;
@@ -422,6 +412,11 @@ const ScheduleRow = styled.div`
 
 /* ── SVG Icons ── */
 
+const ClockIcon = () => (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+  </svg>
+);
 
 const PlayIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
@@ -456,28 +451,16 @@ const RunStatus: React.FC<{ schedule: PipelineScheduleItem }> = ({ schedule }) =
   const { data: campaign } = useCampaign(schedule.last_run_campaign_id);
 
   if (schedule.last_run_status === 'failed') {
-    return (
-      <StatusPill $color={theme.colors.danger}>
-        {t('settings.schedStatusFailed')}
-      </StatusPill>
-    );
+    return <StatusPill $color={theme.colors.danger}>{t('settings.schedStatusFailed')}</StatusPill>;
   }
 
   if (!schedule.last_run_at) {
-    return (
-      <StatusPill $color={theme.colors.textTertiary}>
-        {t('settings.schedStatusNeverRun')}
-      </StatusPill>
-    );
+    return <StatusPill $color={theme.colors.textTertiary}>{t('settings.schedStatusNeverRun')}</StatusPill>;
   }
 
   // 派 task 嘅類型（send_approved / reply_check / followup）冇 campaign 可追
   if (!schedule.last_run_campaign_id) {
-    return (
-      <StatusPill $color={theme.colors.accent}>
-        {t('settings.schedStatusDispatched')}
-      </StatusPill>
-    );
+    return <StatusPill $color={theme.colors.accent}>{t('settings.schedStatusDispatched')}</StatusPill>;
   }
 
   const c = campaign as CampaignItem | undefined;
@@ -533,6 +516,11 @@ const Schedules: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [schedName, setSchedName] = useState('');
   const [schedType, setSchedType] = useState<PipelineScheduleItem['type']>('search');
+  const [schedKeyword, setSchedKeyword] = useState('');
+  const [schedLocation, setSchedLocation] = useState('');
+  const [schedTargetCount, setSchedTargetCount] = useState(5);
+  const [busy, setBusy] = useState(false);
+  const [saveError, setSaveError] = useState('');
   /**
    * Frequency 係一個 mode，唔可以由 cron 字串反推：
    * 用戶自己打嘅 cron 有可能撞正某個 preset，靠反推就會打到一半跳模式、輸入框消失。
@@ -543,11 +531,6 @@ const Schedules: React.FC = () => {
   const [cronEveryHours, setCronEveryHours] = useState(2);
   const [cronEveryMinutes, setCronEveryMinutes] = useState(30);
   const [cronAdvanced, setCronAdvanced] = useState('0 9 * * 1-5');
-  const [schedKeyword, setSchedKeyword] = useState('');
-  const [schedLocation, setSchedLocation] = useState('');
-  const [schedTargetCount, setSchedTargetCount] = useState(5);
-  const [busy, setBusy] = useState(false);
-  const [saveError, setSaveError] = useState('');
 
   const CRON_MODES: { value: CronMode; label: string }[] = [
     { value: 'daily', label: t('settings.schedFreqDaily') },
@@ -605,7 +588,7 @@ const Schedules: React.FC = () => {
       await createSchedule.mutateAsync({ name: schedName, type: schedType, cron: schedCron, params });
       resetForm();
     } catch (err: any) {
-      // 之前係空 catch{}，所以請求失敗（例如 404）睇落好似「撳 Save 冇反應」
+      // 之前呢度係空 catch{}，所以請求失敗（例如 404）睇落好似「撳 Save 冇反應」
       const status = err?.response?.status;
       const detail = err?.response?.data?.message ?? err?.message;
       setSaveError(
@@ -641,7 +624,6 @@ const Schedules: React.FC = () => {
 
         {/* ── New schedule form ── */}
         {showForm && (
-<<<<<<< Updated upstream
           <FormPanel>
             <FormGrid>
               <FieldWide>
@@ -649,21 +631,12 @@ const Schedules: React.FC = () => {
                 <Input value={schedName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedName(e.target.value)} placeholder={t('settings.schedNamePlaceholder')} />
               </FieldWide>
               <div>
-=======
-          <div style={{ padding: 16, border: `1px solid ${theme.colors.border}`, borderRadius: 8, background: `${theme.colors.surfaceMuted}40` }}>
-            <div style={{ display: 'grid', gap: 12 }}>
-              <FormGroup>
-                <Label>{t('settings.schedName')}</Label>
-                <Input value={schedName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedName(e.target.value)} placeholder={t('settings.schedNamePlaceholder')} />
-              </FormGroup>
-              <FormGroup>
->>>>>>> Stashed changes
                 <Label>{t('settings.schedType')}</Label>
                 <Select value={schedType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSchedType(e.target.value as PipelineScheduleItem['type'])}>
                   {SCHEDULE_TYPES.map(st => <option key={st.value} value={st.value}>{st.label}</option>)}
                 </Select>
-              </FormGroup>
-              <FormGroup>
+              </div>
+              <FieldWide>
                 <Label>{t('settings.schedCron')}</Label>
                 <ControlRow>
                   <Select
@@ -713,6 +686,7 @@ const Schedules: React.FC = () => {
                       value={cronAdvanced}
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCronAdvanced(e.target.value)}
                       placeholder="0 9 * * 1-5"
+                      style={{ marginTop: 8 }}
                     />
                     <FormHint $error={cronError}>
                       {cronError ? t('settings.schedCronInvalid') : t('settings.schedCronAdvancedHint')}
@@ -722,24 +696,24 @@ const Schedules: React.FC = () => {
                   /* 用人話覆述一次拼出嚟嘅 cron，用戶唔需要識 cron 都確認得到 */
                   <FormHint>{describeCron(schedCron, t)}</FormHint>
                 )}
-              </FormGroup>
+              </FieldWide>
               {(schedType === 'search' || schedType === 'full_pipeline') && (
                 <>
-                  <FormGroup>
+                  <div>
                     <Label>{t('settings.schedKeyword')}</Label>
                     <Input value={schedKeyword} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedKeyword(e.target.value)} placeholder={t('settings.schedKeywordPlaceholder')} />
-                  </FormGroup>
-                  <FormGroup>
+                  </div>
+                  <div>
                     <Label>{t('settings.schedLocation')}</Label>
                     <Input value={schedLocation} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedLocation(e.target.value)} placeholder={t('settings.schedLocationPlaceholder')} />
-                  </FormGroup>
-                  <FormGroup>
+                  </div>
+                  <div>
                     <Label>{t('settings.schedTargetCount')}</Label>
                     <Input type="number" min={1} max={20} value={schedTargetCount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedTargetCount(Number(e.target.value))} />
-                  </FormGroup>
+                  </div>
                 </>
               )}
-              {saveError && <FormHint $error>{saveError}</FormHint>}
+              {saveError && <FieldWide><FormHint $error>{saveError}</FormHint></FieldWide>}
               <BtnRow>
                 <SaveBtn onClick={handleCreate} disabled={busy || !schedName.trim() || !cronReady}>
                   {busy ? '...' : t('settings.save')}
@@ -756,7 +730,6 @@ const Schedules: React.FC = () => {
         ) : (schedules as PipelineScheduleItem[]).length === 0 ? (
           <EmptyState>{t('settings.schedEmpty')}</EmptyState>
         ) : (
-<<<<<<< Updated upstream
           <ScheduleList>
             {(schedules as PipelineScheduleItem[]).map((s: PipelineScheduleItem) => (
               <ScheduleRow key={s._id}>
@@ -765,40 +738,22 @@ const Schedules: React.FC = () => {
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <RowTitle>{s.name}</RowTitle>
                     <RowMeta>
-                      {SCHEDULE_TYPES.find(st => st.value === s.type)?.label || s.type} &middot; <code>{s.cron}</code>
+                      {SCHEDULE_TYPES.find(st => st.value === s.type)?.label || s.type} &middot; {describeCron(s.cron, t)}
                     </RowMeta>
                   </div>
-                  <IconBtn onClick={() => triggerSchedule.mutate(s._id)} title={t('settings.schedTriggerNow')}>
-                    <PlayIcon />
+                  <RunStatus schedule={s} />
+                  <IconBtn
+                    onClick={() => triggerSchedule.mutate(s._id)}
+                    disabled={triggerSchedule.isPending && triggerSchedule.variables === s._id}
+                    title={t('settings.schedTriggerNow')}
+                  >
+                    {triggerSchedule.isPending && triggerSchedule.variables === s._id ? <Spinner /> : <PlayIcon />}
                   </IconBtn>
                   <IconBtn
                     $danger
                     title={t('settings.schedDelete', t('settings.cancel'))}
                     onClick={() => { if (confirm(t('settings.schedDeleteConfirm'))) deleteSchedule.mutate(s._id); }}
                   >
-=======
-          (schedules as PipelineScheduleItem[]).map((s: PipelineScheduleItem) => (
-            <ScheduleRow key={s._id}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <ToggleSwitch on={s.enabled} onChange={() => toggleSchedule.mutate(s._id)} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600 }}>{s.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: theme.colors.textTertiary }}>
-                    {SCHEDULE_TYPES.find(st => st.value === s.type)?.label || s.type} &middot; {describeCron(s.cron, t)}
-                  </div>
-                </div>
-                <RunStatus schedule={s} />
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <SaveBtn
-                    onClick={() => triggerSchedule.mutate(s._id)}
-                    disabled={triggerSchedule.isPending && triggerSchedule.variables === s._id}
-                    style={{ padding: '4px 10px', fontSize: '0.75rem', background: 'transparent', color: theme.colors.accent, border: `1px solid ${theme.colors.accent}` }}
-                    title={t('settings.schedTriggerNow')}
-                  >
-                    {triggerSchedule.isPending && triggerSchedule.variables === s._id ? <Spinner /> : <PlayIcon />}
-                  </SaveBtn>
-                  <SaveBtn onClick={() => { if (confirm(t('settings.schedDeleteConfirm'))) deleteSchedule.mutate(s._id); }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: 'transparent', color: theme.colors.danger, border: `1px solid ${theme.colors.danger}` }}>
->>>>>>> Stashed changes
                     <TrashIcon />
                   </IconBtn>
                 </RowMain>
