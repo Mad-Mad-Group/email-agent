@@ -34,6 +34,14 @@ export function useSseListener() {
 
     es.addEventListener('task_update', () => {
       qc.invalidateQueries({ queryKey: ['tasks'] });
+      // task 推進代表 campaign 有進度，順手刷新排程頁嘅進度顯示
+      qc.invalidateQueries({ queryKey: ['campaign'] });
+    });
+
+    // 定時排程被觸發 / 派工完成 → 立即刷新列表，唔使等 poll
+    es.addEventListener('schedule_update', () => {
+      qc.invalidateQueries({ queryKey: ['pipeline-schedules'] });
+      qc.invalidateQueries({ queryKey: ['campaign'] });
     });
 
     es.onerror = () => {

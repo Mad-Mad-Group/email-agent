@@ -496,6 +496,20 @@ export const usePipelineSchedules = () =>
     queryFn: () => pipelineSchedulesApi.list().then(r => r.data),
   });
 
+/**
+ * 追蹤某次排程觸發開出嘅 campaign 進度。
+ * SSE 已經會 invalidate，但 worker 中途唔會逐步 emit campaign 變更，
+ * 所以 running 期間額外每 5 秒 poll 一次，令 stage / done_count 跟得上。
+ */
+export const useCampaign = (campaignId?: string | null) =>
+  useQuery({
+    queryKey: ['campaign', campaignId],
+    queryFn: () => hermesApi.getCampaign(campaignId as string).then(r => r.data),
+    enabled: !!campaignId,
+    refetchInterval: q =>
+      (q.state.data as any)?.status === 'running' ? 5000 : false,
+  });
+
 export const useCreatePipelineSchedule = () => {
   const qc = useQueryClient();
   return useMutation({

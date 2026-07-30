@@ -559,7 +559,13 @@ function extractSetting(data: unknown, key: string): string {
   return found?.value != null ? String(found.value) : '';
 }
 
-const MANAGED_KEYS = new Set(['agent_ip_address', 'email_scoring_rules']);
+/** extractSetting 會 String() 化，object 值要用呢個 */
+function extractSettingRaw(data: unknown, key: string): unknown {
+  if (!Array.isArray(data)) return undefined;
+  return data.find((item: any) => item?.key === key)?.value;
+}
+
+const MANAGED_KEYS = new Set(['agent_ip_address', 'email_scoring_rules', 'agent_concurrency']);
 
 function toDisplayEntries(data: unknown): [string, unknown][] {
   if (!Array.isArray(data)) return [];
@@ -570,7 +576,25 @@ function toDisplayEntries(data: unknown): [string, unknown][] {
 
 /* ── Tabs config ── */
 
-type SettingsTab = 'agent-ip' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'email-smtp' | 'other';
+type SettingsTab = 'agent' | 'notifications' | 'follow-up' | 'auto-send' | 'email-scoring' | 'email-smtp' | 'other';
+
+/**
+ * AI Agent 並行度 —— per stage，同 cms/worker/leader.ts 嘅 sub-worker 一一對應。
+ * 上下限同後端 sanitizeAgentConcurrency 保持一致。
+ */
+const CONCURRENCY_MIN = 1;
+const CONCURRENCY_MAX = 10;
+const AGENT_STAGES = [
+  { key: 'S1', labelKey: 'settings.concurrencyStageS1', hintKey: 'settings.concurrencyStageS1Hint', fallback: 3 },
+  { key: 'S2', labelKey: 'settings.concurrencyStageS2', hintKey: 'settings.concurrencyStageS2Hint', fallback: 3 },
+  { key: 'S3', labelKey: 'settings.concurrencyStageS3', hintKey: 'settings.concurrencyStageS3Hint', fallback: 3 },
+  { key: 'S4', labelKey: 'settings.concurrencyStageS4', hintKey: 'settings.concurrencyStageS4Hint', fallback: 2 },
+] as const;
+
+type ConcurrencyMap = Record<string, number>;
+
+const DEFAULT_CONCURRENCY: ConcurrencyMap =
+  Object.fromEntries(AGENT_STAGES.map(s => [s.key, s.fallback]));
 
 /* ── Component ── */
 
@@ -586,11 +610,17 @@ const Settings: React.FC = () => {
   const { data, isLoading } = useSettings();
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
-  const [tab, setTab] = useState<SettingsTab>(isAdmin ? 'agent-ip' : 'notifications');
+  const [tab, setTab] = useState<SettingsTab>(isAdmin ? 'agent' : 'notifications');
 
   // Agent IP local state
   const [agentIp, setAgentIp] = useState('');
   const [agentIpDraft, setAgentIpDraft] = useState('');
+
+  // Agent concurrency local state
+  const [concurrency, setConcurrency] = useState<ConcurrencyMap>(DEFAULT_CONCURRENCY);
+  const [concurrencyDraft, setConcurrencyDraft] = useState<ConcurrencyMap>(DEFAULT_CONCURRENCY);
+  const [concurrencyBusy, setConcurrencyBusy] = useState(false);
+  const [concurrencyFeedback, setConcurrencyFeedback] = useState<string | null>(null);
 
   // Follow-up settings local state
   const [followUpDays, setFollowUpDays] = useState(7);
@@ -632,6 +662,17 @@ const Settings: React.FC = () => {
       const ip = extractSetting(data, 'agent_ip_address');
       setAgentIp(ip);
       setAgentIpDraft(ip);
+
+      const rawConcurrency = extractSettingRaw(data, 'agent_concurrency');
+      const merged: ConcurrencyMap = { ...DEFAULT_CONCURRENCY };
+      if (rawConcurrency && typeof rawConcurrency === 'object') {
+        for (const stage of AGENT_STAGES) {
+          const n = Number((rawConcurrency as any)[stage.key]);
+          if (Number.isFinite(n)) merged[stage.key] = n;
+        }
+      }
+      setConcurrency(merged);
+      setConcurrencyDraft(merged);
       // Load scoring rules if present
       if (!scoringLoaded) {
         const raw = extractSetting(data, 'email_scoring_rules');
@@ -831,6 +872,28 @@ const Settings: React.FC = () => {
 
   const handleDiscard = () => setAgentIpDraft(agentIp);
 
+  const concurrencyDirty = AGENT_STAGES.some(s => concurrencyDraft[s.key] !== concurrency[s.key]);
+  const concurrencyValid = AGENT_STAGES.every(s => {
+    const n = concurrencyDraft[s.key];
+    return Number.isInteger(n) && n >= CONCURRENCY_MIN && n <= CONCURRENCY_MAX;
+  });
+
+  const handleSaveConcurrency = async () => {
+    if (concurrencyBusy || !concurrencyValid) return;
+    setConcurrencyBusy(true);
+    setConcurrencyFeedback(null);
+    try {
+      await settingsApi.update({ settings: { agent_concurrency: concurrencyDraft } });
+      queryClient.invalidateQueries({ queryKey: ['settings'] });
+      setConcurrencyFeedback(t('settings.updated'));
+    } catch {
+      setConcurrencyFeedback(t('settings.updateFailed'));
+    } finally {
+      setConcurrencyBusy(false);
+      setTimeout(() => setConcurrencyFeedback(null), 3000);
+    }
+  };
+
   // Save scoring rules
   const handleSaveScoring = async () => {
     if (scoringBusy) return;
@@ -859,7 +922,8 @@ const Settings: React.FC = () => {
   /* ── Build visible tabs ── */
   const tabs: { key: SettingsTab; label: string; icon: React.ReactNode }[] = [];
   if (isAdmin) {
-    tabs.push({ key: 'agent-ip', label: t('settings.agentIpAddress'), icon: <NetworkIcon /> });
+    // Device IP 同並行度都係 admin-only 嘅 agent runtime 設定，合併成一個 tab
+    tabs.push({ key: 'agent', label: t('settings.agentTab'), icon: <NetworkIcon /> });
   }
   tabs.push({ key: 'notifications', label: t('settings.notifications'), icon: <BellIcon /> });
   tabs.push({ key: 'follow-up', label: t('settings.followUpSettings'), icon: <RepeatIcon /> });
@@ -878,7 +942,8 @@ const Settings: React.FC = () => {
         <HeroAvatar><SettingsGearIcon /></HeroAvatar>
         <HeroInfo>
           <HeroName>{t('settings.title')}</HeroName>
-          <HeroSub>{t('settings.agentIpHint')}</HeroSub>
+          {/* 頁面級副標題，唔應該綁死某一個 tab（原本寫死 agentIpHint） */}
+          <HeroSub>{t('settings.subtitle')}</HeroSub>
         </HeroInfo>
       </HeroBody>
 
@@ -895,14 +960,15 @@ const Settings: React.FC = () => {
 
         <ContentPanel>
           {/* ── Agent IP ── */}
-          {tab === 'agent-ip' && (
+          {tab === 'agent' && (
             <>
-              <ContentHeader><h2>{t('settings.agentIpAddress')}</h2></ContentHeader>
+              <ContentHeader><h2>{t('settings.agentTab')}</h2></ContentHeader>
               <ContentBody>
                 {isLoading ? (
                   <EmptyText>{t('settings.loadingSettings')}</EmptyText>
                 ) : (
                   <>
+                    <SectionTitle>{t('settings.agentIpAddress')}</SectionTitle>
                     <FormGroup>
                       <Label htmlFor="agent-ip">{t('settings.agentIpAddress')}</Label>
                       <Input
@@ -923,6 +989,55 @@ const Settings: React.FC = () => {
                         {busy ? t('settings.updating') : t('settings.save')}
                       </SaveBtn>
                       {ipDirty && <DiscardBtn onClick={handleDiscard}>{t('userInfo.discard')}</DiscardBtn>}
+                    </BtnRow>
+
+                    <SectionTitle>{t('settings.concurrencyTab')}</SectionTitle>
+                    <DefaultBanner>{t('settings.concurrencyDesc')}</DefaultBanner>
+
+                    {AGENT_STAGES.map(stage => {
+                      const value = concurrencyDraft[stage.key];
+                      const invalid = !Number.isInteger(value) || value < CONCURRENCY_MIN || value > CONCURRENCY_MAX;
+                      return (
+                        <FormGroup key={stage.key}>
+                          <Label htmlFor={`concurrency-${stage.key}`}>{t(stage.labelKey)}</Label>
+                          <Input
+                            id={`concurrency-${stage.key}`}
+                            type="number"
+                            min={CONCURRENCY_MIN}
+                            max={CONCURRENCY_MAX}
+                            step={1}
+                            $error={invalid}
+                            value={Number.isFinite(value) ? value : ''}
+                            onChange={(e) => {
+                              const n = e.target.value === '' ? NaN : Number(e.target.value);
+                              setConcurrencyDraft(prev => ({ ...prev, [stage.key]: n }));
+                            }}
+                          />
+                          <FormHint>{t(stage.hintKey)}</FormHint>
+                        </FormGroup>
+                      );
+                    })}
+
+                    {!concurrencyValid && (
+                      <FormHint style={{ color: theme.strong.mauve }}>
+                        {t('settings.concurrencyRange', { min: CONCURRENCY_MIN, max: CONCURRENCY_MAX })}
+                      </FormHint>
+                    )}
+                    <FormHint>{t('settings.concurrencyApplyHint')}</FormHint>
+
+                    {concurrencyFeedback && (
+                      <FormHint style={{ color: concurrencyFeedback === t('settings.updated') ? theme.strong.olive : theme.strong.mauve }}>
+                        {concurrencyFeedback}
+                      </FormHint>
+                    )}
+
+                    <BtnRow>
+                      <SaveBtn onClick={handleSaveConcurrency} disabled={concurrencyBusy || !concurrencyDirty || !concurrencyValid}>
+                        {concurrencyBusy ? t('settings.updating') : t('settings.save')}
+                      </SaveBtn>
+                      {concurrencyDirty && (
+                        <DiscardBtn onClick={() => setConcurrencyDraft(concurrency)}>{t('userInfo.discard')}</DiscardBtn>
+                      )}
                     </BtnRow>
                   </>
                 )}

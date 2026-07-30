@@ -101,8 +101,30 @@ export class TasksService {
     }).exec();
   }
 
+  /**
+   * 同一 skill、仲喺 pending 而且比 beforeCreatedAt 早入隊嘅 task 數 ——
+   * 即係「前方仲有幾多個排住」。claim 係按 _created_at 先到先得（見 claimNext 排序）。
+   */
+  async countPendingAhead(skillId: string, beforeCreatedAt?: string): Promise<number> {
+    if (!beforeCreatedAt) return 0;
+    return this.model.countDocuments({
+      skill_id: skillId,
+      status: TaskStatus.PENDING,
+      _created_at: { $lt: beforeCreatedAt },
+    }).exec();
+  }
+
+  /** 某個 campaign 嘅 task（用嚟查排隊位置）*/
+  async findByCampaign(campaignId: string, skillId: string): Promise<TaskDocument | null> {
+    return this.model
+      .findOne({ skill_id: skillId, 'params.campaign_id': campaignId })
+      .sort({ _created_at: 1 })
+      .exec();
+  }
+
   /** Hermes agent 攞下一個 pending task（原子 claim）*/
   async claimNext(dto: ClaimTaskDto): Promise<TaskDocument | null> {
+    this.touchAgent(dto.agent_id);
     const filter: FilterQuery<TaskDocument> = { status: TaskStatus.PENDING };
     if (dto.skill_id) filter.skill_id = dto.skill_id;
     if (dto.exclude_skills) {
@@ -188,24 +210,83 @@ export class TasksService {
     return task;
   }
 
+  /* ── Agent 存活偵測 ────────────────────────────────
+     Worker 每 POLL_MS（預設 2 秒）就 POST /tasks/claim，呢個本身就係心跳，
+     之前冇人記錄。有咗佢，前端就分得清「pipeline 跑住」同
+     「worker 已經死咗但 campaign 仲喺 DB 標 running」。
+
+     刻意用 in-memory：唔想為心跳每 2 秒寫一次 Mongo。
+     server 重啟會清空，但 worker 兩秒內就會重新報到。
+     ──────────────────────────────────────────────── */
+
+  /** agent_id → 最後見到嘅時間（ms） */
+  private readonly agentLastSeen = new Map<string, number>();
+
+  /** 幾久冇 claim 就當佢死（poll 係 2 秒，30 秒已經非常寬鬆） */
+  private static readonly AGENT_ONLINE_MS = 30_000;
+
+  private touchAgent(agentId?: string): void {
+    if (agentId) this.agentLastSeen.set(agentId, Date.now());
+  }
+
+  /** 目前仲活著嘅 agent id */
+  onlineAgents(): string[] {
+    const cutoff = Date.now() - TasksService.AGENT_ONLINE_MS;
+    const alive: string[] = [];
+    for (const [id, seen] of this.agentLastSeen) {
+      if (seen >= cutoff) alive.push(id);
+      else this.agentLastSeen.delete(id); // 順手清走死咗嘅
+    }
+    return alive;
+  }
+
+  /**
+   * 取消某個 campaign 仲未做完嘅 task（pending + running）。
+   *
+   * pending 嘅唔會再被 claim；running 嘅標成 cancelled 之後
+   * reap-stalled-tasks 亦唔會再 requeue 佢（reaper 只掃 running）——
+   * 呢個就係「強制 stop terminal 之後重開又繼續做返」嘅解法。
+   *
+   * 已經 in-flight 嘅 agent 唔會即刻中斷（冇 kill 機制），但佢做完之後
+   * orchestrator 見 campaign 唔係 running 就唔會派下一 stage，鏈到此為止。
+   */
+  async cancelByCampaign(campaignId: string): Promise<number> {
+    const res = await this.model.updateMany(
+      {
+        'params.campaign_id': campaignId,
+        status: { $in: [TaskStatus.PENDING, TaskStatus.RUNNING] },
+      },
+      { $set: { status: TaskStatus.CANCELLED, _updated_at: this.nowIso() } },
+    );
+    return res.modifiedCount ?? 0;
+  }
+
   /**
    * 把卡喺 running 太耐嘅 task（agent 死咗）requeue 返 pending。
    * 由 ⑧ Jobs 定時調用。回傳 requeue 咗幾多個。idempotent。
+   *
+   * skipCampaignIds：屬於呢啲 campaign 嘅 task 唔復活（已取消 / 已完成）。
+   * 冇呢個守衛，一個已經取消嘅 pipeline 嘅 running task 會喺 15 分鐘後
+   * 被 requeue 返 pending，然後 worker 一返嚟就繼續做。
    */
-  async requeueStalled(maxAgeMinutes: number): Promise<number> {
+  async requeueStalled(maxAgeMinutes: number, skipCampaignIds: string[] = []): Promise<number> {
     const cutoff = new Date(
       Date.now() - maxAgeMinutes * 60_000,
     ).toISOString();
-    const res = await this.model.updateMany(
-      { status: TaskStatus.RUNNING, _assigned_at: { $lt: cutoff } },
-      {
-        $set: {
-          status: TaskStatus.PENDING,
-          assigned_agent_id: null,
-          _updated_at: this.nowIso(),
-        },
+    const filter: FilterQuery<TaskDocument> = {
+      status: TaskStatus.RUNNING,
+      _assigned_at: { $lt: cutoff },
+    };
+    if (skipCampaignIds.length) {
+      filter['params.campaign_id'] = { $nin: skipCampaignIds };
+    }
+    const res = await this.model.updateMany(filter, {
+      $set: {
+        status: TaskStatus.PENDING,
+        assigned_agent_id: null,
+        _updated_at: this.nowIso(),
       },
-    );
+    });
     return res.modifiedCount ?? 0;
   }
 

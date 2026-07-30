@@ -20,6 +20,7 @@ import { HermesModule } from './hermes/hermes.module';
 import { JobsModule } from './jobs/jobs.module';
 import { CalendarModule } from './calendar/calendar.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AlertsModule } from './alerts/alerts.module';
 import { VerifiedEmailsModule } from './verified-emails/verified-emails.module';
 import { TokenUsageModule } from './token-usage/token-usage.module';
 import { PipelineSchedulesModule } from './pipeline-schedules/pipeline-schedules.module';
@@ -57,6 +58,7 @@ import { AppController } from './app.controller';
     JobsModule,
     CalendarModule,
     NotificationsModule,
+    AlertsModule,
     VerifiedEmailsModule,
     TokenUsageModule,
     PipelineSchedulesModule,

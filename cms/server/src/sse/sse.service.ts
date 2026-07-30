@@ -12,6 +12,7 @@ export enum SseEvent {
   TASK_UPDATE = 'task_update', // task 狀態變更
   HERMES_LOG = 'hermes_log', // Hermes pipeline 逐步 log
   PIPELINE_PROGRESS = 'pipeline_progress', // 進度條
+  SCHEDULE_UPDATE = 'schedule_update', // 定時排程被觸發 / 派工完成
 }
 
 /** 各事件 payload 型別（俾 A 對） */
@@ -48,6 +49,11 @@ export interface SsePayloads {
     current: number;
     total: number;
     percent: number;
+  };
+  [SseEvent.SCHEDULE_UPDATE]: {
+    id: string;
+    action: 'triggered' | 'dispatched' | 'failed';
+    campaignId?: string | null;
   };
 }
 
