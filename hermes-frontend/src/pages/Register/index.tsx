@@ -1,119 +1,29 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link, useNavigate } from 'react-router-dom';
-import styled from 'styled-components';
-import { glassSurface } from '../../styles/glassSurface';
+import { useNavigate } from 'react-router-dom';
 import { Button, FormField } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
+import {
+  AuthShell,
+  Brand,
+  HeroTitle,
+  HeroSub,
+  FormCard,
+  FormTitle,
+  Form,
+  FieldPair,
+  FooterRow,
+  FooterLink,
+  ErrorMsg,
+} from '../../components/AuthShell';
 
-const LANGUAGES = [
-  { code: 'en', label: 'EN' },
-  { code: 'zh-TW', label: '繁' },
-  { code: 'zh-CN', label: '简' },
-];
-
-const RegisterContainer = styled.div`
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background: ${({ theme }) => theme.colors.canvas};
-`;
-
-const RegisterCard = styled.div`
-  ${glassSurface};
-  border-radius: 12px;
-  padding: 40px;
-  width: 100%;
-  max-width: 420px;
-`;
-
-const Logo = styled.div`
-  text-align: center;
-  margin-bottom: 8px;
-  font-size: 32px;
-  font-weight: 700;
-  color: ${({ theme }) => theme.colors.accent};
-`;
-
-const Title = styled.h1`
-  text-align: center;
-  font-size: 20px;
-  font-weight: 600;
-  margin: 0 0 32px;
-  color: ${({ theme }) => theme.colors.textPrimary};
-`;
-
-const Form = styled.form`
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-`;
-
-const Footer = styled.div`
-  text-align: center;
-  margin-top: 24px;
-  font-size: 14px;
-  color: ${({ theme }) => theme.colors.textSecondary};
-`;
-
-const FooterLink = styled(Link)`
-  color: ${({ theme }) => theme.colors.accent};
-  text-decoration: none;
-  font-weight: 500;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const ErrorMsg = styled.div`
-  color: ${({ theme }) => theme.strong.mauve};
-  font-size: 0.8125rem;
-  text-align: center;
-`;
-
-const LangBar = styled.div`
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 10;
-  display: flex;
-  background: ${({ theme }) => theme.colors.surface};
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 20px;
-  padding: 3px;
-`;
-
-const LangBtn = styled.button<{ $active?: boolean }>`
-  position: relative;
-  z-index: 1;
-  padding: 4px 12px;
-  border: none;
-  border-radius: 16px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  background: transparent;
-  color: ${({ $active, theme }) => $active ? theme.colors.textInverted : theme.colors.textSecondary};
-  transition: color 0.25s;
-  &:hover { opacity: 0.8; }
-`;
-
-const LangSlider = styled.div<{ $idx: number; $count: number }>`
-  position: absolute;
-  top: 3px;
-  bottom: 3px;
-  left: ${({ $idx, $count }) => `calc(3px + ${$idx} * (100% - 6px) / ${$count})`};
-  width: ${({ $count }) => `calc((100% - 6px) / ${$count})`};
-  background: ${({ theme }) => theme.colors.accent};
-  border-radius: 16px;
-  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-`;
-
+/**
+ * Register — same shell as Login (radar hero, layered backdrop, terminal mark).
+ * It used to be a plain centred card, which made the two pages look like they
+ * came from different products.
+ */
 const Register: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { register: registerUser, loading } = useAuth();
   const [name, setName] = useState('');
@@ -157,35 +67,53 @@ const Register: React.FC = () => {
   };
 
   return (
-    <RegisterContainer>
-      <LangBar>
-        <LangSlider $idx={LANGUAGES.findIndex(l => l.code === i18n.language)} $count={LANGUAGES.length} />
-        {LANGUAGES.map((lang) => (
-          <LangBtn key={lang.code} $active={i18n.language === lang.code} onClick={() => i18n.changeLanguage(lang.code)}>
-            {lang.label}
-          </LangBtn>
-        ))}
-      </LangBar>
-      <RegisterCard>
-        <Logo>ClientRadar AI</Logo>
-        <Title>{t('register.title')}</Title>
+    <AuthShell compact>
+      <Brand>ClientRadar AI</Brand>
+      <HeroTitle>{t('register.title')}</HeroTitle>
+      <HeroSub>{t('login.heroSub')}</HeroSub>
+
+      <FormCard $wide>
+        <FormTitle>{t('register.registerButton')}</FormTitle>
         <Form onSubmit={handleSubmit}>
-          <FormField
-            label={t('register.fullName')}
-            type="text"
-            value={name}
-            onChange={setName}
-            placeholder={t('register.namePlaceholder')}
-            error={fieldErrors.name ? t(fieldErrors.name) : undefined}
-          />
-          <FormField
-            label={t('common.email')}
-            type="text"
-            value={email}
-            onChange={setEmail}
-            placeholder={t('register.emailPlaceholder')}
-            error={fieldErrors.email ? t(fieldErrors.email) : undefined}
-          />
+          {/* Paired so six fields don't turn into one very long column */}
+          <FieldPair>
+            <FormField
+              label={t('register.fullName')}
+              type="text"
+              value={name}
+              onChange={setName}
+              placeholder={t('register.namePlaceholder')}
+              error={fieldErrors.name ? t(fieldErrors.name) : undefined}
+            />
+            <FormField
+              label={t('common.email')}
+              type="text"
+              value={email}
+              onChange={setEmail}
+              placeholder={t('register.emailPlaceholder')}
+              error={fieldErrors.email ? t(fieldErrors.email) : undefined}
+            />
+          </FieldPair>
+
+          <FieldPair>
+            <FormField
+              label={t('register.password')}
+              type="password"
+              value={password}
+              onChange={setPassword}
+              placeholder={t('register.passwordPlaceholder')}
+              error={fieldErrors.password ? t(fieldErrors.password) : undefined}
+            />
+            <FormField
+              label={t('register.confirmPassword')}
+              type="password"
+              value={confirmPassword}
+              onChange={setConfirmPassword}
+              placeholder={t('register.confirmPlaceholder')}
+              error={fieldErrors.confirmPassword ? t(fieldErrors.confirmPassword) : undefined}
+            />
+          </FieldPair>
+
           <FormField
             label={t('register.companyName')}
             type="text"
@@ -200,36 +128,21 @@ const Register: React.FC = () => {
             value={companyDesc}
             onChange={setCompanyDesc}
             placeholder={t('register.companyDescriptionPlaceholder')}
-            rows={3}
+            rows={2}
             error={fieldErrors.companyDesc ? t(fieldErrors.companyDesc) : undefined}
           />
-          <FormField
-            label={t('register.password')}
-            type="password"
-            value={password}
-            onChange={setPassword}
-            placeholder={t('register.passwordPlaceholder')}
-            error={fieldErrors.password ? t(fieldErrors.password) : undefined}
-          />
-          <FormField
-            label={t('register.confirmPassword')}
-            type="password"
-            value={confirmPassword}
-            onChange={setConfirmPassword}
-            placeholder={t('register.confirmPlaceholder')}
-            error={fieldErrors.confirmPassword ? t(fieldErrors.confirmPassword) : undefined}
-          />
+
           {error && <ErrorMsg>{error}</ErrorMsg>}
           <Button variant="primary" type="submit" disabled={loading}>
             {loading ? t('auth.loadingBtn') : t('register.registerButton')}
           </Button>
         </Form>
-        <Footer>
+        <FooterRow>
           {t('register.hasAccount')}{' '}
           <FooterLink to="/login">{t('register.login')}</FooterLink>
-        </Footer>
-      </RegisterCard>
-    </RegisterContainer>
+        </FooterRow>
+      </FormCard>
+    </AuthShell>
   );
 };
 

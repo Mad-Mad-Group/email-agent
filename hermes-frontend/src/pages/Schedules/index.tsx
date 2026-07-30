@@ -10,11 +10,6 @@ import {
   useTriggerPipelineSchedule,
   useCampaign,
 } from '../../api/hooks';
-<<<<<<< Updated upstream
-import { PipelineScheduleItem } from '../../api/services';
-import SpriteAvatar from '../../components/SpriteAvatar';
-import { AGENTS } from '../../config/agents';
-=======
 import { PipelineScheduleItem, CampaignItem } from '../../api/services';
 
 /* ── Cron helpers ────────────────────────────────────────────────
@@ -112,7 +107,6 @@ const describeCron = (cron: string, t: (k: string, o?: any) => string): string =
 
   return cron;
 };
->>>>>>> Stashed changes
 
 /* ── Layout ── */
 
@@ -200,34 +194,6 @@ const Select = styled.select`
   option { font-size: 0.9375rem; padding: 8px 12px; }
 `;
 
-<<<<<<< Updated upstream
-/* ── Form panel ──
-   No background or border of its own: PageCard already provides the surface, and
-   a second filled+bordered box inside it read as two stacked panels. A rule and
-   some breathing room separate it instead. */
-const FormPanel = styled.div`
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
-  padding-top: ${({ theme }) => theme.spacing.lg}px;
-`;
-
-const FormGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px 18px;
-  ${media.mobile} { grid-template-columns: minmax(0, 1fr); gap: 12px; }
-`;
-
-/* Full-bleed field — for the name, which deserves the whole row */
-const FieldWide = styled.div`
-  grid-column: 1 / -1;
-`;
-
-const BtnRow = styled.div`
-  grid-column: 1 / -1;
-  display: flex; gap: 10px; padding-top: 6px;
-  ${media.mobile} { flex-direction: column-reverse; }
-`;
-=======
 /* 同 Settings 頁一致：每組 label + 控件 + hint 垂直排、間距統一。
    之前用光禿禿嘅 <div>，令 inline 嘅 <Label> 有時喺控件上面（全寬 input 被逼換行）、
    有時貼喺控件左邊（自動寬度 select），同一個表單三種排法。 */
@@ -287,7 +253,6 @@ const ProgressFill = styled.div<{ $percent: number; $color: string }>`
 `;
 
 const BtnRow = styled.div`display: flex; gap: 10px; padding-top: 4px;`;
->>>>>>> Stashed changes
 
 const SaveBtn = styled.button`
   padding: 10px 24px;
@@ -641,15 +606,6 @@ const Schedules: React.FC = () => {
 
         {/* ── New schedule form ── */}
         {showForm && (
-<<<<<<< Updated upstream
-          <FormPanel>
-            <FormGrid>
-              <FieldWide>
-                <Label>{t('settings.schedName')}</Label>
-                <Input value={schedName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedName(e.target.value)} placeholder={t('settings.schedNamePlaceholder')} />
-              </FieldWide>
-              <div>
-=======
           <div style={{ padding: 16, border: `1px solid ${theme.colors.border}`, borderRadius: 8, background: `${theme.colors.surfaceMuted}40` }}>
             <div style={{ display: 'grid', gap: 12 }}>
               <FormGroup>
@@ -657,7 +613,6 @@ const Schedules: React.FC = () => {
                 <Input value={schedName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedName(e.target.value)} placeholder={t('settings.schedNamePlaceholder')} />
               </FormGroup>
               <FormGroup>
->>>>>>> Stashed changes
                 <Label>{t('settings.schedType')}</Label>
                 <Select value={schedType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSchedType(e.target.value as PipelineScheduleItem['type'])}>
                   {SCHEDULE_TYPES.map(st => <option key={st.value} value={st.value}>{st.label}</option>)}
@@ -756,27 +711,6 @@ const Schedules: React.FC = () => {
         ) : (schedules as PipelineScheduleItem[]).length === 0 ? (
           <EmptyState>{t('settings.schedEmpty')}</EmptyState>
         ) : (
-<<<<<<< Updated upstream
-          <ScheduleList>
-            {(schedules as PipelineScheduleItem[]).map((s: PipelineScheduleItem) => (
-              <ScheduleRow key={s._id}>
-                <RowMain>
-                  <ToggleSwitch on={s.enabled} onChange={() => toggleSchedule.mutate(s._id)} />
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <RowTitle>{s.name}</RowTitle>
-                    <RowMeta>
-                      {SCHEDULE_TYPES.find(st => st.value === s.type)?.label || s.type} &middot; <code>{s.cron}</code>
-                    </RowMeta>
-                  </div>
-                  <IconBtn onClick={() => triggerSchedule.mutate(s._id)} title={t('settings.schedTriggerNow')}>
-                    <PlayIcon />
-                  </IconBtn>
-                  <IconBtn
-                    $danger
-                    title={t('settings.schedDelete', t('settings.cancel'))}
-                    onClick={() => { if (confirm(t('settings.schedDeleteConfirm'))) deleteSchedule.mutate(s._id); }}
-                  >
-=======
           (schedules as PipelineScheduleItem[]).map((s: PipelineScheduleItem) => (
             <ScheduleRow key={s._id}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -798,7 +732,6 @@ const Schedules: React.FC = () => {
                     {triggerSchedule.isPending && triggerSchedule.variables === s._id ? <Spinner /> : <PlayIcon />}
                   </SaveBtn>
                   <SaveBtn onClick={() => { if (confirm(t('settings.schedDeleteConfirm'))) deleteSchedule.mutate(s._id); }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: 'transparent', color: theme.colors.danger, border: `1px solid ${theme.colors.danger}` }}>
->>>>>>> Stashed changes
                     <TrashIcon />
                   </IconBtn>
                 </RowMain>
