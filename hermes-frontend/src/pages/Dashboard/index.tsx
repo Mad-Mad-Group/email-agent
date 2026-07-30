@@ -46,7 +46,14 @@ const CardsArea = styled.div`
 const CardRow = styled.div`
   display: flex; gap: 14px; align-items: stretch;
   ${media.tablet} { gap: 10px; }
-  ${media.mobile} { flex-direction: column; }
+  /* Cards carry an inline style={{ flex: 1 }} to share width in a row. Stacked
+     vertically that becomes flex-basis: 0 and makes them share *height*, which
+     crops the taller card's content — !important is needed to beat the inline
+     style, so each card is sized by its own content instead. */
+  ${media.mobile} {
+    flex-direction: column;
+    & > * { flex: none !important; }
+  }
 `;
 /* Embedded section inside a board — no bg, dark text */
 const EmbedTitle = styled.div`
@@ -73,10 +80,18 @@ const CardHeader = styled.div`
   display: flex; align-items: center; gap: 10px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   ${media.tablet} { padding: 10px 14px; font-size: 0.8125rem; }
+  /* Title + trailing controls don't fit on one line on phones — let the
+     controls drop to their own row instead of overflowing the card. */
+  ${media.mobile} { flex-wrap: wrap; row-gap: 8px; padding: 12px 14px; font-size: 0.875rem; }
 `;
 const CardHeaderRight = styled.span`
   margin-left: auto; font-size: 0.6875rem; font-weight: 400;
   color: ${({ theme }) => theme.colors.textTertiary}; text-transform: none;
+`;
+/* Trailing controls in a CardHeader: right-aligned normally, full-width row on phones */
+const CardHeaderActions = styled.div`
+  margin-left: auto; min-width: 0;
+  ${media.mobile} { margin-left: 0; width: 100%; }
 `;
 const CardBody = styled.div`
   padding: 16px 20px 20px;
@@ -226,10 +241,18 @@ const DonutWrap = styled.div`
     gap: 10px; padding: 2px;
     & > div:first-child svg { width: 165px; height: 165px; }
   }
+  /* Phones only had the tablet rule, so the donut stayed at its hard-coded
+     220px and squeezed the legend down to ~29px of unreadable ellipsis. */
+  ${media.mobile} {
+    gap: 12px; padding: 4px;
+    & > div:first-child svg { width: 150px; height: 150px; }
+  }
 `;
 const LegendList = styled.div`
   display: flex; flex-direction: column; gap: 14px; flex: 1; min-width: 0;
   ${media.tablet} { gap: 10px; }
+  /* Full-width row below the donut — DonutWrap already wraps */
+  ${media.mobile} { gap: 10px; min-width: 100%; }
 `;
 const LegendRow = styled.div`display: flex; flex-direction: column; gap: 3px;`;
 const LegendRowTop = styled.div`display: flex; align-items: center; gap: 6px;`;
@@ -528,6 +551,7 @@ const GranPillBar = styled.div`
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 20px;
   padding: 2px;
+  ${media.mobile} { width: 100%; }
 `;
 const GranPillSlider = styled.div<{ $idx: number; $count: number }>`
   position: absolute;
@@ -547,6 +571,7 @@ const GranPillBtn = styled.button<{ $active?: boolean }>`
   color: ${({ $active, theme }) => $active ? theme.colors.textInverted : theme.colors.textSecondary};
   transition: color 0.25s;
   &:hover { opacity: 0.8; }
+  ${media.mobile} { flex: 1; padding: 6px 4px; }
 `;
 
 const GRAN_OPTIONS = [
@@ -1229,7 +1254,7 @@ const Dashboard: React.FC = () => {
                 </svg>
               </CardIcon>
               {t('dashboard.tokenConsumption')}
-              <div style={{ marginLeft: 'auto' }}>
+              <CardHeaderActions>
                 <GranPillBar>
                   <GranPillSlider $idx={GRAN_OPTIONS.findIndex(g => g.key === granularity)} $count={GRAN_OPTIONS.length} />
                   {GRAN_OPTIONS.map(g => (
@@ -1238,7 +1263,7 @@ const Dashboard: React.FC = () => {
                     </GranPillBtn>
                   ))}
                 </GranPillBar>
-              </div>
+              </CardHeaderActions>
             </CardHeader>
             <TokenBarChart data={(tokenTimeseriesData && tokenTimeseriesData.length > 0) ? tokenTimeseriesData : demoTokenTimeseries} />
           </TokenChartCard>
