@@ -4,6 +4,13 @@ export enum TaskStatus {
   RUNNING = 'running',
   COMPLETED = 'completed',
   FAILED = 'failed',
+  /**
+   * 用戶主動取消。刻意同 failed 分開：
+   * failed 會被 orchestrator 當「跳過呢個 lead 繼續 pipeline」處理，
+   * 而 cancelled 係整條 pipeline 都唔要再做。
+   * 亦令 reap-stalled-tasks 唔會復活佢（佢只掃 running）。
+   */
+  CANCELLED = 'cancelled',
 }
 
 /**

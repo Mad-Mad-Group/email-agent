@@ -86,6 +86,60 @@ async function logTokenUsage(promptText, responseText) {
  * 叫 Hermes agent 做嘢（佢有 MiniMax + stealth browser + skills）。
  * --yolo = 非互動自動批准工具（開 browser 唔卡）。
  */
+/**
+ * hermes CLI 撞到 API 額度 / 限流嘅特徵字串。
+ * 呢個 CLI 唔屬本 repo，錯誤格式可能隨版本變，所以可以用
+ * QUOTA_PATTERNS env（逗號分隔）補充，唔使改 code。
+ */
+const QUOTA_PATTERNS = [
+    'rate limit',
+    'rate_limit',
+    'quota',
+    'insufficient balance',
+    'insufficient_quota',
+    'token limit',
+    'out of credit',
+    'too many requests',
+    '429',
+    '額度',
+    '限流',
+    ...(process.env.QUOTA_PATTERNS || '').split(',').map((x) => x.trim()).filter(Boolean),
+];
+function looksLikeQuotaError(...texts) {
+    for (const text of texts) {
+        if (!text)
+            continue;
+        const lower = text.toLowerCase();
+        for (const p of QUOTA_PATTERNS) {
+            if (lower.includes(p.toLowerCase()))
+                return text.slice(0, 500);
+        }
+    }
+    return null;
+}
+/** 同一個 worker process 內，15 分鐘內只報一次（server 側亦有 cooldown） */
+let lastQuotaAlertAt = 0;
+const QUOTA_ALERT_COOLDOWN_MS = 15 * 60000;
+/**
+ * 通知後端「額度用盡」→ 後端寫通知俾每個 admin + email。
+ * 原本呢件事只會出現喺 terminal log，CMS 完全睇唔到。
+ */
+async function reportQuotaExceeded(detail) {
+    if (Date.now() - lastQuotaAlertAt < QUOTA_ALERT_COOLDOWN_MS)
+        return;
+    lastQuotaAlertAt = Date.now();
+    log(`⚠ 偵測到 API 額度問題，通知 admin：${detail.slice(0, 160)}`);
+    try {
+        await api('/alerts/agent-quota', 'POST', {
+            detail,
+            agent_id: AGENT_ID,
+            skill_id: SKILL || undefined,
+        });
+    }
+    catch (e) {
+        log('⚠ 額度通知發送失敗:', e?.message ?? e);
+    }
+}
 function callHermes(prompt, timeoutMs = 300000) {
     const t0 = Date.now();
     return new Promise((resolve, reject) => {
@@ -93,8 +147,16 @@ function callHermes(prompt, timeoutMs = 300000) {
             encoding: 'utf8',
             timeout: timeoutMs,
             maxBuffer: 16 * 1024 * 1024,
-        }, (err, stdout) => {
+        }, (err, stdout, stderr) => {
             const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+            // 額度訊息可能出現喺 stderr / stdout / err.message 任何一處，
+            // 原本 callback 冇接 stderr，所以寫喺 stderr 嘅訊息會被完全丟掉。
+            const quota = looksLikeQuotaError(stderr, err?.message, stdout);
+            if (quota) {
+                if (stderr)
+                    console.log(`[hermes] stderr: ${stderr.slice(0, 300).replace(/\n/g, '⏎')}`);
+                void reportQuotaExceeded(quota);
+            }
             if (err) {
                 console.log(`[hermes] ✗ ${elapsed}s — error: ${err.message?.slice(0, 200)}`);
                 reject(err);
@@ -265,7 +327,20 @@ const SKILL = process.env.AGENT_SKILL || ''; // 空 = 任何 skill
 const SKILL_EXCLUDE = process.env.AGENT_SKILL_EXCLUDE || ''; // 逗號分隔，排除某啲 skill
 const POLL_MS = Number(process.env.POLL_MS || 2000);
 const MAX_IDLE = Number(process.env.WORKER_MAX_IDLE || 0); // 0 = 永遠
-const CONCURRENCY = Math.max(1, Number(process.env.CONCURRENCY || 3)); // 每個 worker 同時處理幾多個 task
+/** env 提供嘅 fallback（leader 由 S1_CONCURRENCY..S4_CONCURRENCY 傳落嚟） */
+const CONCURRENCY_ENV = Math.max(1, Number(process.env.CONCURRENCY || 3));
+/** 幾久去 API 拎一次最新並行度設定 */
+const CONCURRENCY_REFRESH_MS = Number(process.env.CONCURRENCY_REFRESH_MS || 30000);
+const CONCURRENCY_MIN = 1;
+const CONCURRENCY_MAX = 10;
+/**
+ * 生效中嘅並行度。admin 喺 Settings 改完，worker 最多 CONCURRENCY_REFRESH_MS
+ * 之後自動跟上，唔使重啟 leader。
+ *
+ * 注意：調低唔會殺死已經 in-flight 嘅 task，只係唔再 claim 新嘅，
+ * inFlight 會自然收縮到新上限。
+ */
+let concurrency = CONCURRENCY_ENV;
 let token = '';
 const log = (...a) => console.log(`[agent ${AGENT_ID}]`, ...a);
 const nowIso = () => new Date().toISOString();
@@ -410,6 +485,32 @@ async function api(path, method = 'GET', body) {
         return api(path, method, body);
     }
     return r.json();
+}
+/**
+ * 由 GET /settings 讀 `agent_concurrency`，取本 worker stage 嘅值。
+ * 讀唔到 / 唔合法就維持現值（唔會突然跌返預設）。
+ * SKILL 為空（單 worker 模式）時唔套用，因為冇對應 stage。
+ */
+async function refreshConcurrency() {
+    if (!SKILL)
+        return;
+    try {
+        const res = await api('/settings');
+        const list = res?.data ?? res ?? [];
+        const row = Array.isArray(list) ? list.find((s) => s?.key === 'agent_concurrency') : null;
+        const raw = row?.value?.[SKILL];
+        const n = Number(raw);
+        if (!Number.isFinite(n))
+            return;
+        const next = Math.min(CONCURRENCY_MAX, Math.max(CONCURRENCY_MIN, Math.round(n)));
+        if (next !== concurrency) {
+            log(`並行度更新: ${concurrency} → ${next}（來自 Settings）`);
+            concurrency = next;
+        }
+    }
+    catch (e) {
+        log('讀取並行度設定失敗，維持', concurrency, '—', e?.message ?? e);
+    }
 }
 const claim = () => api('/tasks/claim', 'POST', {
     agent_id: AGENT_ID,
@@ -1929,8 +2030,10 @@ async function handleTask(task, db) {
     }
 }
 async function main() {
-    log(`啟動 → API=${API} skill=${SKILL || 'any'} exclude=${SKILL_EXCLUDE || 'none'} concurrency=${CONCURRENCY}`);
+    log(`啟動 → API=${API} skill=${SKILL || 'any'} exclude=${SKILL_EXCLUDE || 'none'} concurrency=${concurrency}`);
     await loginWithRetry();
+    await refreshConcurrency();
+    let lastConcurrencyCheck = Date.now();
     const client = new mongodb_1.MongoClient(MONGO);
     await client.connect();
     const db = client.db();
@@ -1942,8 +2045,13 @@ async function main() {
         running = false;
     });
     while (running) {
+        // 定期跟返 Settings 嘅並行度（admin 改完唔使重啟）
+        if (Date.now() - lastConcurrencyCheck >= CONCURRENCY_REFRESH_MS) {
+            lastConcurrencyCheck = Date.now();
+            await refreshConcurrency();
+        }
         // 已滿載，等一個 slot 空出
-        if (inFlight >= CONCURRENCY) {
+        if (inFlight >= concurrency) {
             await sleep(POLL_MS);
             continue;
         }
@@ -1967,7 +2075,7 @@ async function main() {
         }
         idle = 0;
         inFlight++;
-        log(`✅ 接咗 task ${task.task_id} (${task.skill_id}) — 並行中: ${inFlight}/${CONCURRENCY}`);
+        log(`✅ 接咗 task ${task.task_id} (${task.skill_id}) — 並行中: ${inFlight}/${concurrency}`);
         // 通知前端：worker 已接手，附帶並行資訊
         const campId = task.params?.campaign_id;
         if (campId) {
@@ -1975,13 +2083,13 @@ async function main() {
                 runId: campId,
                 level: 'info',
                 stage: 'claim',
-                message: `${AGENT_ID} 接手處理（並行 ${inFlight}/${CONCURRENCY}）`,
+                message: `${AGENT_ID} 接手處理（並行 ${inFlight}/${concurrency}）`,
             });
         }
         // 唔 await — fire and forget，令 loop 可以立即 claim 下一個
         handleTask(task, db).finally(() => {
             inFlight--;
-            log(`🏁 完成 task ${task.task_id} — 並行中: ${inFlight}/${CONCURRENCY}`);
+            log(`🏁 完成 task ${task.task_id} — 並行中: ${inFlight}/${concurrency}`);
         });
     }
     // 等所有進行中嘅 task 完成

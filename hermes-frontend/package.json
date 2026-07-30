@@ -41,5 +41,17 @@
     "storybook": "^8.6.14",
     "typescript": "~6.0.2",
     "vite": "^8.1.0"
+  },
+  "//overrides": "Storybook 8 嘅 peer 只支援 vite ^4||^5||^6，本 project 用 vite 8，所以 npm install 會 ERESOLVE 失敗。用 overrides 只對 Storybook 一條線破例（$vite = 上面 devDependencies 嘅 vite 版本），其餘 dependency tree 仍然有完整 peer 檢查 —— 比 --legacy-peer-deps 精準得多。Storybook 唔參與 npm run build，所以生產 build 不受影響。升到 Storybook 9 之後可以移除呢段。",
+  "overrides": {
+    "@storybook/react-vite": {
+      "vite": "$vite"
+    },
+    "@storybook/builder-vite": {
+      "vite": "$vite"
+    },
+    "@joshwooding/vite-plugin-react-docgen-typescript": {
+      "vite": "$vite"
+    }
   }
 }

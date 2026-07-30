@@ -5,7 +5,7 @@ import { randomBytes } from 'crypto';
 import { ConfigService } from '@nestjs/config';
 import { TasksService } from '../tasks/tasks.service';
 import { TaskEvents } from '../tasks/task-events';
-import { SKILL } from '../tasks/dto/task-status.enum';
+import { SKILL, TaskStatus } from '../tasks/dto/task-status.enum';
 import { TaskDocument } from '../tasks/schemas/task.schema';
 import { SseEvent, SseService } from '../sse/sse.service';
 import { Campaign, CampaignDocument } from './schemas/campaign.schema';
@@ -40,6 +40,33 @@ const STAGE_NEXT: Record<string, string | null> = {
  * → 自動派下一 stage，串成 search→enrich→analyze→draft→send 一條龍。
  * 真正每 stage 嘅工作由 Hermes agent claim 去做。
  */
+/** lean() 出嚟嘅 campaign 純物件（strict:false，所以只列我哋會用嘅欄位） */
+export interface CampaignPlain {
+  campaign_id: string;
+  keyword?: string;
+  location?: string;
+  target_count?: number;
+  mode?: string;
+  user_id?: string;
+  status: string;
+  pipeline_stage?: string;
+  lead_ids: string[];
+  done_count: number;
+  _created_at?: string;
+  _updated_at?: string;
+}
+
+/** campaign + 即時排隊位置。明確標型別，否則 lean() 展開會令推斷型別爆到 TS7056 */
+export interface CampaignWithQueue extends CampaignPlain {
+  /** 前面仲有幾多個 S1 task 排住；已開始處理就係 0 */
+  queue_ahead: number;
+  /**
+   * 目前活著嘅 worker 數。0 代表冇人做嘢 —— campaign 喺 DB 標 running
+   * 但實際上停滯（例如 terminal 被強制 stop），前端要照實講而唔係一直轉圈。
+   */
+  workers_online: number;
+}
+
 @Injectable()
 export class HermesService implements OnModuleInit {
   constructor(
@@ -390,8 +417,91 @@ export class HermesService implements OnModuleInit {
     await this.email.sendMail(to, subject, html);
   }
 
-  async getCampaign(id: string) {
-    return this.campaigns.findOne({ campaign_id: id }).lean().exec();
+  async getCampaign(id: string): Promise<CampaignWithQueue | null> {
+    const campaign = await this.campaigns.findOne({ campaign_id: id }).lean().exec();
+    if (!campaign) return null;
+    return {
+      ...(campaign as unknown as CampaignPlain),
+      queue_ahead: await this.queueAheadFor(id),
+      workers_online: this.tasks.onlineAgents().length,
+    };
+  }
+
+  /**
+   * 用戶主動停止一條 pipeline。
+   *
+   * 做三件事：
+   *   1. campaign → cancelled。onTaskCompleted / onTaskFailed 都會 early-return，
+   *      所以就算有 in-flight task 做完，都唔會再派下一 stage。
+   *   2. 該 campaign 未做完嘅 task → cancelled，唔會再被 claim，
+   *      亦唔會被 reap-stalled-tasks 復活。
+   *   3. 廣播 SSE，其他 client（包括另一個瀏覽器）即刻同步。
+   *
+   * 限制：已經 in-flight 嘅 agent 唔會即刻中斷 —— 冇跨進程 kill 機制，
+   * 佢會做完手上嗰個 task 才停。UI 要講清楚「停止中」。
+   */
+  async cancelCampaign(campaignId: string, userId?: string): Promise<CampaignWithQueue | null> {
+    const campaign = await this.campaigns.findOne({ campaign_id: campaignId }).exec();
+    if (!campaign) return null;
+    // 只可以取消自己嘅 run
+    if (userId && campaign.user_id && campaign.user_id !== userId) return null;
+
+    if (campaign.status === 'running') {
+      campaign.status = 'cancelled';
+      campaign._updated_at = new Date().toISOString();
+      await campaign.save();
+    }
+
+    const cancelledTasks = await this.tasks.cancelByCampaign(campaignId);
+
+    this.sse.emit(SseEvent.HERMES_LOG, {
+      runId: campaignId,
+      level: 'warn',
+      stage: 'cancelled',
+      message: `Pipeline 已由用戶停止（取消 ${cancelledTasks} 個未完成任務）`,
+      msgKey: 'search.logCancelled',
+      msgParams: { count: cancelledTasks },
+    });
+
+    return this.getCampaign(campaignId);
+  }
+
+  /**
+   * 呢個 campaign 嘅 S1 task 前面仲有幾多個排住。
+   *
+   * run() 只喺開始一刻回一次 queue_ahead，之後永不更新，所以前端顯示
+   * 「排隊中」時個數字係死嘅。放喺 getCampaign 度就會跟住前端嘅輪詢即時變。
+   *
+   * 注意：claim 排序係 priority desc + _created_at asc，呢度只按時間算。
+   * pipeline task 一律用預設 priority，所以實務上一致。
+   */
+  private async queueAheadFor(campaignId: string): Promise<number> {
+    const task = await this.tasks.findByCampaign(campaignId, SKILL.SEARCH);
+    // 已經 claim 咗（running）或做完 → 唔再排隊
+    if (!task || task.status !== TaskStatus.PENDING) return 0;
+    return this.tasks.countPendingAhead(SKILL.SEARCH, task._created_at);
+  }
+
+  /**
+   * 用戶目前仲跑住嘅 campaign（最新一個）。
+   *
+   * 前端原本只靠 localStorage 記住 campaign_id，所以換瀏覽器 / 換裝置就
+   * 完全睇唔到進行中嘅 pipeline。有咗呢個端點，任何 client 都可以問伺服器
+   * 「我有冇 run 進行中」然後接返條 SSE 流。
+   */
+  async getActiveCampaign(userId?: string): Promise<CampaignWithQueue | null> {
+    if (!userId) return null;
+    const campaign = await this.campaigns
+      .findOne({ user_id: userId, status: 'running' })
+      .sort({ _created_at: -1 })
+      .lean()
+      .exec();
+    if (!campaign) return null;
+    return {
+      ...(campaign as unknown as CampaignPlain),
+      queue_ahead: await this.queueAheadFor(campaign.campaign_id),
+      workers_online: this.tasks.onlineAgents().length,
+    };
   }
 
   private progress(runId: string, stage: string, current: number, total: number) {

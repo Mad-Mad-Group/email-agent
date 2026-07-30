@@ -14,7 +14,9 @@ import { PipelineSchedulesService } from './pipeline-schedules.service';
 import { CreatePipelineScheduleDto } from './dto/create-pipeline-schedule.dto';
 import { UpdatePipelineScheduleDto } from './dto/update-pipeline-schedule.dto';
 
-@Controller('api/pipeline-schedules')
+// 唔好寫 'api/…'：main.ts 已經有 app.setGlobalPrefix('api')，
+// 帶前綴會變成 /api/api/pipeline-schedules。其他 controller 一律唔帶。
+@Controller('pipeline-schedules')
 @UseGuards(AuthGuard('jwt'))
 export class PipelineSchedulesController {
   constructor(private readonly service: PipelineSchedulesService) {}

@@ -2,6 +2,10 @@
 .env
 .env.*
 !.env.example
+# Hermes agent 遷移包 —— 內含 ~/.hermes/.env 同 auth.json（API 憑證）
+# 同 15k+ 條對話記錄。永遠唔可以入 git，見 scripts/hermes-migrate.sh
+hermes-migration-*.tar.gz
+*hermes-home*.tar.gz
 
 # Node / TS build output
 node_modules/

@@ -87,17 +87,7 @@ export class PipelineSchedulesService {
     this.logger.log(`[scheduler] ${due.length} 個排程到期`);
 
     for (const schedule of due) {
-      try {
-        await this.execute(schedule);
-        schedule.last_run_at = now;
-        schedule.last_run_status = 'success';
-        schedule.last_run_error = null;
-      } catch (e: any) {
-        this.logger.error(`[scheduler] ${schedule.name} 執行失敗: ${e?.message}`);
-        schedule.last_run_at = now;
-        schedule.last_run_status = 'failed';
-        schedule.last_run_error = e?.message || 'Unknown error';
-      }
+      await this.runOnce(schedule, now);
       // 計算下一次執行時間
       schedule.next_run_at = this.getNextRun(schedule.cron);
       await schedule.save();
@@ -108,24 +98,39 @@ export class PipelineSchedulesService {
   async triggerNow(id: string) {
     const schedule = await this.model.findById(id);
     if (!schedule) throw new NotFoundException('排程不存在');
-
-    try {
-      await this.execute(schedule);
-      schedule.last_run_at = new Date();
-      schedule.last_run_status = 'success';
-      schedule.last_run_error = null;
-    } catch (e: any) {
-      schedule.last_run_at = new Date();
-      schedule.last_run_status = 'failed';
-      schedule.last_run_error = e?.message || 'Unknown error';
-    }
+    await this.runOnce(schedule, new Date());
     await schedule.save();
     return schedule.toObject();
   }
 
+  /**
+   * 執行一次並更新狀態。派工前先廣播 SCHEDULE_UPDATE('triggered')，
+   * 令前端即刻見到「執行中」而唔係等到派工完先有反應。
+   */
+  private async runOnce(schedule: PipelineScheduleDocument, now: Date) {
+    const id = String(schedule._id);
+    schedule.last_run_at = now;
+    schedule.last_run_campaign_id = null;
+    this.sse.emit(SseEvent.SCHEDULE_UPDATE, { id, action: 'triggered' });
+
+    try {
+      const campaignId = await this.execute(schedule);
+      schedule.last_run_status = 'dispatched';
+      schedule.last_run_error = null;
+      schedule.last_run_campaign_id = campaignId;
+      this.sse.emit(SseEvent.SCHEDULE_UPDATE, { id, action: 'dispatched', campaignId });
+    } catch (e: any) {
+      this.logger.error(`[scheduler] ${schedule.name} 執行失敗: ${e?.message}`);
+      schedule.last_run_status = 'failed';
+      schedule.last_run_error = e?.message || 'Unknown error';
+      this.sse.emit(SseEvent.SCHEDULE_UPDATE, { id, action: 'failed' });
+    }
+  }
+
   // ── 根據類型執行對應 pipeline ──────────────────────
 
-  private async execute(schedule: PipelineScheduleDocument) {
+  /** @returns 開出嘅 campaign_id（search / full_pipeline），其他類型 null */
+  private async execute(schedule: PipelineScheduleDocument): Promise<string | null> {
     const { type, params, user_id, name } = schedule;
     this.logger.log(`[scheduler] 執行 "${name}" (${type})`);
 
@@ -137,9 +142,9 @@ export class PipelineSchedulesService {
     });
 
     switch (type) {
-      case 'search':
+      case 'search': {
         // 啟動完整搜尋 pipeline（S1→S2→S3）
-        await this.hermes.run(
+        const run = await this.hermes.run(
           {
             keyword: params.keyword || '',
             location: params.location || '',
@@ -149,7 +154,8 @@ export class PipelineSchedulesService {
           },
           user_id,
         );
-        break;
+        return run.campaign_id;
+      }
 
       case 'send_approved':
         // 派一個 S4 task 發送已審核郵件
@@ -158,7 +164,7 @@ export class PipelineSchedulesService {
           title: `[排程] ${name} — 發送已審核郵件`,
           params: { mode: 'send_approved', user_id, scheduled: true },
         });
-        break;
+        return null;
 
       case 'reply_check':
         // 派一個 S4 reply-check task
@@ -167,7 +173,7 @@ export class PipelineSchedulesService {
           title: `[排程] ${name} — 檢查回覆`,
           params: { mode: 'reply_check', user_id, scheduled: true },
         });
-        break;
+        return null;
 
       case 'followup':
         // 派一個 S4 check-followups task
@@ -176,11 +182,11 @@ export class PipelineSchedulesService {
           title: `[排程] ${name} — 跟進未回覆`,
           params: { mode: 'check_followups', user_id, scheduled: true },
         });
-        break;
+        return null;
 
-      case 'full_pipeline':
+      case 'full_pipeline': {
         // 啟動完整 pipeline（同 search 但可自訂參數）
-        await this.hermes.run(
+        const run = await this.hermes.run(
           {
             keyword: params.keyword || '',
             location: params.location || '',
@@ -190,7 +196,8 @@ export class PipelineSchedulesService {
           },
           user_id,
         );
-        break;
+        return run.campaign_id;
+      }
 
       default:
         throw new Error(`未知的排程類型: ${type}`);

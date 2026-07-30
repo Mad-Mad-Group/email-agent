@@ -6,6 +6,7 @@ import { TasksService } from '../tasks/tasks.service';
 import { SKILL } from '../tasks/dto/task-status.enum';
 import { SseEvent, SseService } from '../sse/sse.service';
 import { Lead, LeadDocument } from '../leads/schemas/lead.schema';
+import { Campaign, CampaignDocument } from '../hermes/schemas/campaign.schema';
 
 /** 卡喺 running 超過幾耐先 requeue（分鐘）*/
 const STALLED_MINUTES = 15;
@@ -22,6 +23,7 @@ export class JobsService {
 
   constructor(
     @InjectModel(Lead.name) private readonly leadModel: Model<LeadDocument>,
+    @InjectModel(Campaign.name) private readonly campaignModel: Model<CampaignDocument>,
     private readonly tasks: TasksService,
     private readonly sse: SseService,
   ) {}
@@ -30,7 +32,15 @@ export class JobsService {
   @Cron(CronExpression.EVERY_10_MINUTES)
   async reapStalledTasks(): Promise<{ requeued: number }> {
     return this.runJob('reap-stalled-tasks', async () => {
-      const n = await this.tasks.requeueStalled(STALLED_MINUTES);
+      // 已取消嘅 campaign 唔可以被復活 —— 否則用戶按咗停止，
+      // 15 分鐘之後 reaper 會把 running task 打返 pending，worker 又繼續做。
+      const cancelled = await this.campaignModel
+        .find({ status: 'cancelled' })
+        .select('campaign_id')
+        .lean()
+        .exec();
+      const skip = cancelled.map((c: any) => c.campaign_id).filter(Boolean);
+      const n = await this.tasks.requeueStalled(STALLED_MINUTES, skip);
       return { requeued: n };
     });
   }

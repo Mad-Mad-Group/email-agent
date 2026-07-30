@@ -8,10 +8,111 @@ import {
   useDeletePipelineSchedule,
   useTogglePipelineSchedule,
   useTriggerPipelineSchedule,
+  useCampaign,
 } from '../../api/hooks';
+<<<<<<< Updated upstream
 import { PipelineScheduleItem } from '../../api/services';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS } from '../../config/agents';
+=======
+import { PipelineScheduleItem, CampaignItem } from '../../api/services';
+
+/* ── Cron helpers ────────────────────────────────────────────────
+   後端收嘅係標準 5 欄位 cron（分 時 日 月 星期），見
+   cms/server/src/pipeline-schedules/pipeline-schedules.service.ts#getNextRun。
+   UI 唔會叫用戶自己砌，改為用結構化選擇器拼出 cron；
+   raw cron 只留喺 Advanced 模式俾 power user。
+   ─────────────────────────────────────────────────────────────── */
+
+type CronMode = 'daily' | 'weekdays' | 'weekly' | 'hourly' | 'minutely' | 'advanced';
+
+/** 「HH:MM」→ [時, 分]，parse 唔到就當 09:00 */
+const parseTime = (time: string): [number, number] => {
+  const m = /^(\d{1,2}):(\d{2})$/.exec(time.trim());
+  if (!m) return [9, 0];
+  const h = Math.min(23, Math.max(0, parseInt(m[1], 10)));
+  const min = Math.min(59, Math.max(0, parseInt(m[2], 10)));
+  return [h, min];
+};
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+/**
+ * 後端 matchField 支援嘅語法：* / *&#47;n / n / n-m / n-m&#47;s / 逗號分隔。
+ * 呢個 validator 刻意同後端睇齊，唔好放行後端解唔到嘅寫法 ——
+ * 因為 getNextRun 解唔到時係靜靜 fallback「一小時後」，唔會報錯。
+ */
+const CRON_FIELD_RANGES: [number, number][] = [
+  [0, 59],  // 分
+  [0, 23],  // 時
+  [1, 31],  // 日
+  [1, 12],  // 月
+  [0, 6],   // 星期（0 = 星期日）
+];
+
+const isValidCronField = (expr: string, min: number, max: number): boolean => {
+  if (expr === '*') return true;
+  return expr.split(',').every(part => {
+    if (!part) return false;
+    const inRange = (n: number) => n >= min && n <= max;
+
+    let m = /^\*\/(\d+)$/.exec(part);
+    if (m) return parseInt(m[1], 10) >= 1;
+
+    m = /^(\d+)$/.exec(part);
+    if (m) return inRange(parseInt(m[1], 10));
+
+    m = /^(\d+)-(\d+)$/.exec(part);
+    if (m) {
+      const lo = parseInt(m[1], 10), hi = parseInt(m[2], 10);
+      return inRange(lo) && inRange(hi) && lo <= hi;
+    }
+
+    m = /^(\d+)-(\d+)\/(\d+)$/.exec(part);
+    if (m) {
+      const lo = parseInt(m[1], 10), hi = parseInt(m[2], 10);
+      return inRange(lo) && inRange(hi) && lo <= hi && parseInt(m[3], 10) >= 1;
+    }
+
+    return false;
+  });
+};
+
+const isValidCron = (cron: string): boolean => {
+  const parts = cron.trim().split(/\s+/);
+  if (parts.length !== 5) return false;
+  return parts.every((p, i) => isValidCronField(p, CRON_FIELD_RANGES[i][0], CRON_FIELD_RANGES[i][1]));
+};
+
+/** 把 cron 反向講返人話；認唔出就原樣顯示 */
+const describeCron = (cron: string, t: (k: string, o?: any) => string): string => {
+  const parts = cron.trim().split(/\s+/);
+  if (parts.length !== 5) return cron;
+  const [min, hour, dom, mon, dow] = parts;
+  if (dom !== '*' || mon !== '*') return cron;
+
+  const everyMin = /^\*\/(\d+)$/.exec(min);
+  if (everyMin && hour === '*' && dow === '*') {
+    return t('settings.schedDescEveryMinutes', { n: everyMin[1] });
+  }
+
+  const everyHour = /^\*\/(\d+)$/.exec(hour);
+  if (everyHour && /^\d+$/.test(min) && dow === '*') {
+    return t('settings.schedDescEveryHours', { n: everyHour[1] });
+  }
+
+  if (/^\d+$/.test(min) && /^\d+$/.test(hour)) {
+    const time = `${pad2(parseInt(hour, 10))}:${pad2(parseInt(min, 10))}`;
+    if (dow === '*') return t('settings.schedDescDaily', { time });
+    if (dow === '1-5') return t('settings.schedDescWeekdays', { time });
+    if (/^[0-6]$/.test(dow)) {
+      return t('settings.schedDescWeekly', { day: t(`settings.schedDow${dow}`), time });
+    }
+  }
+
+  return cron;
+};
+>>>>>>> Stashed changes
 
 /* ── Layout ── */
 
@@ -99,6 +200,7 @@ const Select = styled.select`
   option { font-size: 0.9375rem; padding: 8px 12px; }
 `;
 
+<<<<<<< Updated upstream
 /* ── Form panel ──
    No background or border of its own: PageCard already provides the surface, and
    a second filled+bordered box inside it read as two stacked panels. A rule and
@@ -125,6 +227,67 @@ const BtnRow = styled.div`
   display: flex; gap: 10px; padding-top: 6px;
   ${media.mobile} { flex-direction: column-reverse; }
 `;
+=======
+/* 同 Settings 頁一致：每組 label + 控件 + hint 垂直排、間距統一。
+   之前用光禿禿嘅 <div>，令 inline 嘅 <Label> 有時喺控件上面（全寬 input 被逼換行）、
+   有時貼喺控件左邊（自動寬度 select），同一個表單三種排法。 */
+const FormGroup = styled.div`
+  display: flex; flex-direction: column; gap: 6px;
+`;
+
+/* 一行控件（頻率下拉 + 星期 / 時間 / 間隔） */
+const ControlRow = styled.div`
+  display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+`;
+
+const FormHint = styled.div<{ $error?: boolean }>`
+  font-size: 0.75rem;
+  color: ${({ theme, $error }) => ($error ? theme.colors.danger : theme.colors.textTertiary)};
+`;
+
+/* cron 係代碼，等寬字體先睇得清 `0 9 * * 1-5` 嘅欄位邊界 */
+const CronInput = styled(Input)`
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.04em;
+`;
+
+/* ── 執行狀態 pill ── */
+
+const StatusPill = styled.span<{ $color: string }>`
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.6875rem; font-weight: 700;
+  color: ${({ $color }) => $color};
+  background: ${({ $color }) => $color}1A;
+  white-space: nowrap;
+`;
+
+const Spinner = styled.span`
+  width: 9px; height: 9px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: schedSpin 0.7s linear infinite;
+  @keyframes schedSpin { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { animation: none; }
+`;
+
+const ProgressTrack = styled.div`
+  height: 4px; border-radius: 999px;
+  background: ${({ theme }) => theme.colors.surfaceMuted};
+  overflow: hidden;
+`;
+
+const ProgressFill = styled.div<{ $percent: number; $color: string }>`
+  height: 100%;
+  width: ${({ $percent }) => $percent}%;
+  background: ${({ $color }) => $color};
+  transition: width 0.4s var(--ease-out);
+`;
+
+const BtnRow = styled.div`display: flex; gap: 10px; padding-top: 4px;`;
+>>>>>>> Stashed changes
 
 const SaveBtn = styled.button`
   padding: 10px 24px;
@@ -280,6 +443,84 @@ const PlusIcon = () => (
 
 /* ── Component ── */
 
+/**
+ * 排程執行狀態。
+ *
+ * 注意：schedule.last_run_status 只反映「派工」成功與否 —— search / full_pipeline
+ * 嘅 HermesService.run() 開完 campaign 就即刻 return，worker 之後才真正做事。
+ * 所以真正嘅「執行中 / 完成」要睇 campaign（last_run_campaign_id）。
+ */
+const RunStatus: React.FC<{ schedule: PipelineScheduleItem }> = ({ schedule }) => {
+  const { t } = useTranslation();
+  const theme = useTheme();
+  const { data: campaign } = useCampaign(schedule.last_run_campaign_id);
+
+  if (schedule.last_run_status === 'failed') {
+    return (
+      <StatusPill $color={theme.colors.danger}>
+        {t('settings.schedStatusFailed')}
+      </StatusPill>
+    );
+  }
+
+  if (!schedule.last_run_at) {
+    return (
+      <StatusPill $color={theme.colors.textTertiary}>
+        {t('settings.schedStatusNeverRun')}
+      </StatusPill>
+    );
+  }
+
+  // 派 task 嘅類型（send_approved / reply_check / followup）冇 campaign 可追
+  if (!schedule.last_run_campaign_id) {
+    return (
+      <StatusPill $color={theme.colors.accent}>
+        {t('settings.schedStatusDispatched')}
+      </StatusPill>
+    );
+  }
+
+  const c = campaign as CampaignItem | undefined;
+  if (!c) {
+    return (
+      <StatusPill $color={theme.colors.accent}>
+        <Spinner /> {t('settings.schedStatusStarting')}
+      </StatusPill>
+    );
+  }
+
+  const total = c.target_count || c.lead_ids?.length || 0;
+  const done = c.done_count || 0;
+  const percent = total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+
+  if (c.status === 'running') {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 190 }}>
+        <StatusPill $color={theme.colors.accent}>
+          <Spinner />
+          {t('settings.schedStatusRunning')}
+          {c.pipeline_stage ? ` · ${t(`settings.schedStage_${c.pipeline_stage}`, c.pipeline_stage)}` : ''}
+          {total > 0 ? ` · ${done}/${total}` : ''}
+        </StatusPill>
+        <ProgressTrack>
+          <ProgressFill $percent={percent} $color={theme.colors.accent} />
+        </ProgressTrack>
+      </div>
+    );
+  }
+
+  if (c.status === 'failed') {
+    return <StatusPill $color={theme.colors.danger}>{t('settings.schedStatusFailed')}</StatusPill>;
+  }
+
+  return (
+    <StatusPill $color={theme.strong.olive}>
+      {t('settings.schedStatusCompleted')}
+      {total > 0 ? ` · ${done}/${total}` : ''}
+    </StatusPill>
+  );
+};
+
 const Schedules: React.FC = () => {
   const { t } = useTranslation();
 
@@ -292,19 +533,46 @@ const Schedules: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [schedName, setSchedName] = useState('');
   const [schedType, setSchedType] = useState<PipelineScheduleItem['type']>('search');
-  const [schedCron, setSchedCron] = useState('0 9 * * 1-5');
+  /**
+   * Frequency 係一個 mode，唔可以由 cron 字串反推：
+   * 用戶自己打嘅 cron 有可能撞正某個 preset，靠反推就會打到一半跳模式、輸入框消失。
+   */
+  const [cronMode, setCronMode] = useState<CronMode>('weekdays');
+  const [cronTime, setCronTime] = useState('09:00');
+  const [cronDow, setCronDow] = useState(1);          // 0 = 星期日
+  const [cronEveryHours, setCronEveryHours] = useState(2);
+  const [cronEveryMinutes, setCronEveryMinutes] = useState(30);
+  const [cronAdvanced, setCronAdvanced] = useState('0 9 * * 1-5');
   const [schedKeyword, setSchedKeyword] = useState('');
   const [schedLocation, setSchedLocation] = useState('');
   const [schedTargetCount, setSchedTargetCount] = useState(5);
   const [busy, setBusy] = useState(false);
+  const [saveError, setSaveError] = useState('');
 
-  const CRON_PRESETS = [
-    { label: t('settings.schedCronDaily9'), value: '0 9 * * *' },
-    { label: t('settings.schedCronWeekday9'), value: '0 9 * * 1-5' },
-    { label: t('settings.schedCronEvery2h'), value: '0 */2 * * *' },
-    { label: t('settings.schedCronEvery30m'), value: '*/30 * * * *' },
-    { label: t('settings.schedCronCustom'), value: '__custom__' },
+  const CRON_MODES: { value: CronMode; label: string }[] = [
+    { value: 'daily', label: t('settings.schedFreqDaily') },
+    { value: 'weekdays', label: t('settings.schedFreqWeekdays') },
+    { value: 'weekly', label: t('settings.schedFreqWeekly') },
+    { value: 'hourly', label: t('settings.schedFreqHourly') },
+    { value: 'minutely', label: t('settings.schedFreqMinutely') },
+    { value: 'advanced', label: t('settings.schedFreqAdvanced') },
   ];
+
+  /* 由選擇器拼出 cron —— 唯一嘅真相來源，冇獨立 cron state */
+  const schedCron = (() => {
+    if (cronMode === 'advanced') return cronAdvanced.trim();
+    const [h, m] = parseTime(cronTime);
+    switch (cronMode) {
+      case 'daily':    return `${m} ${h} * * *`;
+      case 'weekdays': return `${m} ${h} * * 1-5`;
+      case 'weekly':   return `${m} ${h} * * ${cronDow}`;
+      case 'hourly':   return `${m} */${cronEveryHours} * * *`;
+      case 'minutely': return `*/${cronEveryMinutes} * * * *`;
+    }
+  })();
+
+  const cronError = cronMode === 'advanced' && cronAdvanced.trim() !== '' && !isValidCron(cronAdvanced);
+  const cronReady = schedCron !== '' && isValidCron(schedCron);
 
   const SCHEDULE_TYPES: { value: PipelineScheduleItem['type']; label: string }[] = [
     { value: 'search', label: t('settings.schedTypeSearch') },
@@ -315,13 +583,17 @@ const Schedules: React.FC = () => {
   ];
 
   const resetForm = () => {
-    setSchedName(''); setSchedType('search'); setSchedCron('0 9 * * 1-5');
+    setSchedName(''); setSchedType('search');
+    setCronMode('weekdays'); setCronTime('09:00'); setCronDow(1);
+    setCronEveryHours(2); setCronEveryMinutes(30); setCronAdvanced('0 9 * * 1-5');
     setSchedKeyword(''); setSchedLocation(''); setSchedTargetCount(5);
+    setSaveError('');
     setShowForm(false);
   };
 
   const handleCreate = async () => {
-    if (!schedName.trim()) return;
+    if (!schedName.trim() || !cronReady) return;
+    setSaveError('');
     setBusy(true);
     try {
       const params: Record<string, any> = {};
@@ -332,7 +604,16 @@ const Schedules: React.FC = () => {
       }
       await createSchedule.mutateAsync({ name: schedName, type: schedType, cron: schedCron, params });
       resetForm();
-    } catch {}
+    } catch (err: any) {
+      // 之前係空 catch{}，所以請求失敗（例如 404）睇落好似「撳 Save 冇反應」
+      const status = err?.response?.status;
+      const detail = err?.response?.data?.message ?? err?.message;
+      setSaveError(
+        t('settings.schedSaveFailed') +
+        (status ? ` (${status})` : '') +
+        (detail ? `: ${Array.isArray(detail) ? detail.join(', ') : detail}` : ''),
+      );
+    }
     setBusy(false);
   };
 
@@ -360,6 +641,7 @@ const Schedules: React.FC = () => {
 
         {/* ── New schedule form ── */}
         {showForm && (
+<<<<<<< Updated upstream
           <FormPanel>
             <FormGrid>
               <FieldWide>
@@ -367,38 +649,99 @@ const Schedules: React.FC = () => {
                 <Input value={schedName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedName(e.target.value)} placeholder={t('settings.schedNamePlaceholder')} />
               </FieldWide>
               <div>
+=======
+          <div style={{ padding: 16, border: `1px solid ${theme.colors.border}`, borderRadius: 8, background: `${theme.colors.surfaceMuted}40` }}>
+            <div style={{ display: 'grid', gap: 12 }}>
+              <FormGroup>
+                <Label>{t('settings.schedName')}</Label>
+                <Input value={schedName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedName(e.target.value)} placeholder={t('settings.schedNamePlaceholder')} />
+              </FormGroup>
+              <FormGroup>
+>>>>>>> Stashed changes
                 <Label>{t('settings.schedType')}</Label>
                 <Select value={schedType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSchedType(e.target.value as PipelineScheduleItem['type'])}>
                   {SCHEDULE_TYPES.map(st => <option key={st.value} value={st.value}>{st.label}</option>)}
                 </Select>
-              </div>
-              <div>
+              </FormGroup>
+              <FormGroup>
                 <Label>{t('settings.schedCron')}</Label>
-                <Select value={CRON_PRESETS.some(p => p.value === schedCron) ? schedCron : '__custom__'} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => { if (e.target.value !== '__custom__') setSchedCron(e.target.value); }}>
-                  {CRON_PRESETS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-                </Select>
-                {!CRON_PRESETS.some(p => p.value === schedCron && p.value !== '__custom__') && (
-                  <Input value={schedCron} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedCron(e.target.value)} placeholder="0 9 * * 1-5" style={{ marginTop: 8 }} />
+                <ControlRow>
+                  <Select
+                    value={cronMode}
+                    onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCronMode(e.target.value as CronMode)}
+                  >
+                    {CRON_MODES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                  </Select>
+
+                  {cronMode === 'weekly' && (
+                    <Select value={cronDow} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCronDow(Number(e.target.value))}>
+                      {[1, 2, 3, 4, 5, 6, 0].map(d => (
+                        <option key={d} value={d}>{t(`settings.schedDow${d}`)}</option>
+                      ))}
+                    </Select>
+                  )}
+
+                  {(cronMode === 'daily' || cronMode === 'weekdays' || cronMode === 'weekly') && (
+                    <Input
+                      type="time"
+                      value={cronTime}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCronTime(e.target.value)}
+                      style={{ width: 'auto' }}
+                    />
+                  )}
+
+                  {cronMode === 'hourly' && (
+                    <Select value={cronEveryHours} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCronEveryHours(Number(e.target.value))}>
+                      {[1, 2, 3, 4, 6, 8, 12].map(n => (
+                        <option key={n} value={n}>{t('settings.schedEveryHoursOpt', { n })}</option>
+                      ))}
+                    </Select>
+                  )}
+
+                  {cronMode === 'minutely' && (
+                    <Select value={cronEveryMinutes} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setCronEveryMinutes(Number(e.target.value))}>
+                      {[5, 10, 15, 20, 30].map(n => (
+                        <option key={n} value={n}>{t('settings.schedEveryMinutesOpt', { n })}</option>
+                      ))}
+                    </Select>
+                  )}
+                </ControlRow>
+
+                {cronMode === 'advanced' ? (
+                  <>
+                    <CronInput
+                      value={cronAdvanced}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCronAdvanced(e.target.value)}
+                      placeholder="0 9 * * 1-5"
+                    />
+                    <FormHint $error={cronError}>
+                      {cronError ? t('settings.schedCronInvalid') : t('settings.schedCronAdvancedHint')}
+                    </FormHint>
+                  </>
+                ) : (
+                  /* 用人話覆述一次拼出嚟嘅 cron，用戶唔需要識 cron 都確認得到 */
+                  <FormHint>{describeCron(schedCron, t)}</FormHint>
                 )}
-              </div>
+              </FormGroup>
               {(schedType === 'search' || schedType === 'full_pipeline') && (
                 <>
-                  <div>
+                  <FormGroup>
                     <Label>{t('settings.schedKeyword')}</Label>
                     <Input value={schedKeyword} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedKeyword(e.target.value)} placeholder={t('settings.schedKeywordPlaceholder')} />
-                  </div>
-                  <div>
+                  </FormGroup>
+                  <FormGroup>
                     <Label>{t('settings.schedLocation')}</Label>
                     <Input value={schedLocation} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedLocation(e.target.value)} placeholder={t('settings.schedLocationPlaceholder')} />
-                  </div>
-                  <div>
+                  </FormGroup>
+                  <FormGroup>
                     <Label>{t('settings.schedTargetCount')}</Label>
                     <Input type="number" min={1} max={20} value={schedTargetCount} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedTargetCount(Number(e.target.value))} />
-                  </div>
+                  </FormGroup>
                 </>
               )}
+              {saveError && <FormHint $error>{saveError}</FormHint>}
               <BtnRow>
-                <SaveBtn onClick={handleCreate} disabled={busy || !schedName.trim()}>
+                <SaveBtn onClick={handleCreate} disabled={busy || !schedName.trim() || !cronReady}>
                   {busy ? '...' : t('settings.save')}
                 </SaveBtn>
                 <GhostBtn onClick={resetForm}>{t('settings.cancel')}</GhostBtn>
@@ -413,6 +756,7 @@ const Schedules: React.FC = () => {
         ) : (schedules as PipelineScheduleItem[]).length === 0 ? (
           <EmptyState>{t('settings.schedEmpty')}</EmptyState>
         ) : (
+<<<<<<< Updated upstream
           <ScheduleList>
             {(schedules as PipelineScheduleItem[]).map((s: PipelineScheduleItem) => (
               <ScheduleRow key={s._id}>
@@ -432,6 +776,29 @@ const Schedules: React.FC = () => {
                     title={t('settings.schedDelete', t('settings.cancel'))}
                     onClick={() => { if (confirm(t('settings.schedDeleteConfirm'))) deleteSchedule.mutate(s._id); }}
                   >
+=======
+          (schedules as PipelineScheduleItem[]).map((s: PipelineScheduleItem) => (
+            <ScheduleRow key={s._id}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <ToggleSwitch on={s.enabled} onChange={() => toggleSchedule.mutate(s._id)} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600 }}>{s.name}</div>
+                  <div style={{ fontSize: '0.75rem', color: theme.colors.textTertiary }}>
+                    {SCHEDULE_TYPES.find(st => st.value === s.type)?.label || s.type} &middot; {describeCron(s.cron, t)}
+                  </div>
+                </div>
+                <RunStatus schedule={s} />
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <SaveBtn
+                    onClick={() => triggerSchedule.mutate(s._id)}
+                    disabled={triggerSchedule.isPending && triggerSchedule.variables === s._id}
+                    style={{ padding: '4px 10px', fontSize: '0.75rem', background: 'transparent', color: theme.colors.accent, border: `1px solid ${theme.colors.accent}` }}
+                    title={t('settings.schedTriggerNow')}
+                  >
+                    {triggerSchedule.isPending && triggerSchedule.variables === s._id ? <Spinner /> : <PlayIcon />}
+                  </SaveBtn>
+                  <SaveBtn onClick={() => { if (confirm(t('settings.schedDeleteConfirm'))) deleteSchedule.mutate(s._id); }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: 'transparent', color: theme.colors.danger, border: `1px solid ${theme.colors.danger}` }}>
+>>>>>>> Stashed changes
                     <TrashIcon />
                   </IconBtn>
                 </RowMain>

@@ -107,9 +107,13 @@ const CardBody = styled.div`padding: ${({ theme }) => theme.spacing.md}px;`;
 
 const StatsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* auto-fit 而唔係 repeat(4, 1fr)：內容區窄嘅時候會摺行，
+     唔會硬擠成 4 欄然後切爛「SUPER ADMINS」之類長 label。
+     210px 係「卡片 chrome（padding 40 + icon 42 + gap 14）+ 夠位放兩個字 label」
+     嘅下限，摺出嚟係 2×2 而唔係 3+1 孤行。 */
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
   gap: ${({ theme }) => theme.spacing.md}px;
-  ${media.mobile} { grid-template-columns: repeat(2, 1fr); }
+  ${media.mobile} { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
 `;
 
 const StatCard2 = styled.div<{ $color: string }>`
@@ -136,6 +140,9 @@ const StatCardIcon = styled.div<{ $color: string }>`
 
 const StatCardInfo = styled.div`
   flex: 1;
+  /* 冇 min-width: 0 嘅話 flex item 唔會縮，
+     label 就會頂穿卡片再被 overflow: hidden 切走（而唯獨唔會換行） */
+  min-width: 0;
 `;
 
 const StatCardValue = styled.div<{ $color: string }>`
@@ -150,6 +157,8 @@ const StatCardLabel = styled.div`
   margin-top: 4px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  line-height: 1.3;
+  overflow-wrap: break-word;
 `;
 
 /* ── Tabs ── */
@@ -651,9 +660,9 @@ const TabIconAdmin = () => (
   </svg>
 );
 
-const TabIconManager = () => (
+const TabIconSuperAdmin = () => (
   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <rect x="2" y="7" width="20" height="14" rx="2" ry="2" /><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
+    <path d="M2 18h20l-2.5-9-4.5 4L12 6 9 13 4.5 9z" />
   </svg>
 );
 
@@ -671,15 +680,26 @@ const TabIconToken = () => (
 
 const TAB_ICONS: Record<string, React.FC> = {
   all: TabIconAll,
+  super_admin: TabIconSuperAdmin,
   admin: TabIconAdmin,
-  manager: TabIconManager,
-  user: TabIconUser,
+  staff: TabIconUser,
   tokenUsage: TabIconToken,
 };
 
 /* ── Tab definitions ── */
 
-type RoleFilter = 'all' | 'admin' | 'manager' | 'user' | 'tokenUsage';
+/**
+ * 只有後端真正存在嘅 role：見 cms/server/src/users/schemas/user.schema.ts
+ * (`@Prop({ default: 'staff' })`) 同 create/update-user.dto —— staff / admin / super_admin。
+ * 'staff' 對外顯示成「User」(users.roleUser)，DB 值唔變。
+ */
+type RoleFilter = 'all' | 'super_admin' | 'admin' | 'staff' | 'tokenUsage';
+
+/** 舊資料可能寫成 'user'，一律當 staff 處理 */
+const isStaffRole = (role: string) => {
+  const r = role.toLowerCase();
+  return r === 'staff' || r === 'user';
+};
 
 /* ── Component ── */
 
@@ -696,11 +716,10 @@ const Users: React.FC = () => {
     (Array.isArray(tokenUsageRaw) ? tokenUsageRaw : (tokenUsageRaw as any)?.data ?? []) as any;
 
   const ROLE_COLORS: Record<string, { bg: string; fg: string; avatar: string }> = {
+    super_admin: { bg: theme.pastel.mauve, fg: theme.colors.textPrimary, avatar: theme.pastel.mauve },
     admin:       { bg: theme.pastel.blue, fg: theme.colors.textPrimary, avatar: theme.pastel.blue },
-    manager:     { bg: theme.pastel.gold, fg: theme.colors.textPrimary, avatar: theme.pastel.gold },
     staff:       { bg: theme.pastel.olive, fg: theme.colors.textPrimary, avatar: theme.pastel.olive },
     user:        { bg: theme.pastel.olive, fg: theme.colors.textPrimary, avatar: theme.pastel.olive },
-    super_admin: { bg: theme.pastel.mauve, fg: theme.colors.textPrimary, avatar: theme.pastel.mauve },
   };
 
   const roleProps = (role: string) => {
@@ -709,11 +728,10 @@ const Users: React.FC = () => {
   };
 
   const ROLE_LABEL_KEYS: Record<string, string> = {
-    admin: 'users.roleAdmin',
-    manager: 'users.roleAdmin',
-    staff: 'users.roleStaff',
-    user: 'users.roleStaff',
     super_admin: 'users.roleSuperAdmin',
+    admin: 'users.roleAdmin',
+    staff: 'users.roleUser',
+    user: 'users.roleUser',
   };
 
   const roleLabel = (role: string) => {
@@ -766,9 +784,9 @@ const Users: React.FC = () => {
   const translatedTabs = useMemo(() => {
     const tabs: { key: RoleFilter; label: string; color: string }[] = [
       { key: 'all', label: t('users.allUsers'), color: theme.colors.accent },
+      { key: 'super_admin', label: t('users.superAdmins'), color: theme.strong.mauve },
       { key: 'admin', label: t('users.admins'), color: theme.colors.accent },
-      { key: 'manager', label: t('users.managers'), color: theme.strong.gold },
-      { key: 'user', label: t('users.users'), color: theme.strong.olive },
+      { key: 'staff', label: t('users.users'), color: theme.strong.olive },
     ];
     if (isAdmin) tabs.push({ key: 'tokenUsage', label: t('users.tokenUsage'), color: theme.strong.blue });
     return tabs;
@@ -777,15 +795,16 @@ const Users: React.FC = () => {
   /* Filtered list based on active tab */
   const filtered = useMemo(() => {
     if (activeTab === 'all') return users;
+    if (activeTab === 'staff') return users.filter(u => isStaffRole(u.role));
     return users.filter(u => u.role.toLowerCase() === activeTab);
   }, [users, activeTab]);
 
   /* Stats per role */
   const roleCounts = useMemo(() => ({
     all: users.length,
+    super_admin: users.filter(u => u.role.toLowerCase() === 'super_admin').length,
     admin: users.filter(u => u.role.toLowerCase() === 'admin').length,
-    manager: users.filter(u => u.role.toLowerCase() === 'manager').length,
-    user: users.filter(u => u.role.toLowerCase() === 'user').length,
+    staff: users.filter(u => isStaffRole(u.role)).length,
     tokenUsage: tokenUsage.length,
   }), [users, tokenUsage]);
 
@@ -804,6 +823,13 @@ const Users: React.FC = () => {
             <StatCardLabel>{t('users.allUsers')}</StatCardLabel>
           </StatCardInfo>
         </StatCard2>
+        <StatCard2 $color={theme.strong.mauve}>
+          <StatCardIcon $color={theme.strong.mauve}><TabIconSuperAdmin /></StatCardIcon>
+          <StatCardInfo>
+            <StatCardValue $color={theme.strong.mauve}>{roleCounts.super_admin}</StatCardValue>
+            <StatCardLabel>{t('users.superAdmins')}</StatCardLabel>
+          </StatCardInfo>
+        </StatCard2>
         <StatCard2 $color={theme.colors.accent}>
           <StatCardIcon $color={theme.colors.accent}><TabIconAdmin /></StatCardIcon>
           <StatCardInfo>
@@ -811,17 +837,10 @@ const Users: React.FC = () => {
             <StatCardLabel>{t('users.admins')}</StatCardLabel>
           </StatCardInfo>
         </StatCard2>
-        <StatCard2 $color={theme.strong.gold}>
-          <StatCardIcon $color={theme.strong.gold}><TabIconManager /></StatCardIcon>
-          <StatCardInfo>
-            <StatCardValue $color={theme.strong.gold}>{roleCounts.manager}</StatCardValue>
-            <StatCardLabel>{t('users.managers')}</StatCardLabel>
-          </StatCardInfo>
-        </StatCard2>
         <StatCard2 $color={theme.strong.olive}>
           <StatCardIcon $color={theme.strong.olive}><TabIconUser /></StatCardIcon>
           <StatCardInfo>
-            <StatCardValue $color={theme.strong.olive}>{roleCounts.user}</StatCardValue>
+            <StatCardValue $color={theme.strong.olive}>{roleCounts.staff}</StatCardValue>
             <StatCardLabel>{t('users.users')}</StatCardLabel>
           </StatCardInfo>
         </StatCard2>
@@ -1012,7 +1031,7 @@ const Users: React.FC = () => {
                   <DpField $stacked>
                     <DpFieldLabel $stacked>{t('users.role')}</DpFieldLabel>
                     <DpSelect value={editForm.role} onChange={e => setEditForm(f => ({ ...f, role: e.target.value }))}>
-                      <option value="staff">{t('users.roleStaff')}</option>
+                      <option value="staff">{t('users.roleUser')}</option>
                       <option value="admin">{t('users.roleAdmin')}</option>
                       <option value="super_admin">{t('users.roleSuperAdmin')}</option>
                     </DpSelect>

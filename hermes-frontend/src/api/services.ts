@@ -203,6 +203,12 @@ export const hermesApi = {
     client.post('/hermes/run', data),
   getCampaign: (id: string) =>
     client.get(`/hermes/campaigns/${id}`),
+  /** 目前登入用戶仲跑住嘅 campaign（冇則 null）——用嚟跨瀏覽器接返進行中嘅 pipeline */
+  getActiveCampaign: () =>
+    client.get('/hermes/campaigns/active'),
+  /** 用戶主動停止一條 pipeline */
+  cancelCampaign: (id: string) =>
+    client.post(`/hermes/campaigns/${id}/cancel`),
 };
 
 /* ── Uploads ── */
@@ -235,10 +241,25 @@ export interface PipelineScheduleItem {
   user_id: string;
   last_run_at: string | null;
   next_run_at: string | null;
-  last_run_status: 'success' | 'failed' | null;
+  /** 派工結果，唔等於 pipeline 完成 —— 實際進度睇 last_run_campaign_id */
+  last_run_status: 'dispatched' | 'failed' | null;
   last_run_error: string | null;
+  /** 今次觸發開出嘅 campaign_id；非 pipeline 類型為 null */
+  last_run_campaign_id: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface CampaignItem {
+  campaign_id: string;
+  keyword?: string;
+  location?: string;
+  target_count?: number;
+  /** running | completed | failed */
+  status: string;
+  pipeline_stage?: string;
+  lead_ids: string[];
+  done_count: number;
 }
 
 export interface CreatePipelineSchedulePayload {

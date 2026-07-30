@@ -829,7 +829,7 @@ const Divider = styled.hr`
   margin: 0; border: none; border-top: 1px solid ${({ theme }) => theme.colors.border};
 `;
 
-const StatusBanner = styled.div<{ $type: 'success' | 'error' | 'loading' }>`
+const StatusBanner = styled.div<{ $type: 'success' | 'error' | 'warning' | 'loading' }>`
   display: flex; align-items: center; gap: ${({ theme }) => theme.spacing.sm}px;
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border-radius: ${({ theme }) => theme.radii.control}px;
@@ -837,10 +837,12 @@ const StatusBanner = styled.div<{ $type: 'success' | 'error' | 'loading' }>`
   background: ${({ $type, theme }) =>
     $type === 'success' ? `${theme.strong.olive}0d`
     : $type === 'error' ? `${theme.strong.mauve}0d`
+    : $type === 'warning' ? `${theme.strong.gold}0d`
     : `${theme.colors.accent}0d`};
   color: ${({ $type, theme }) =>
     $type === 'success' ? theme.strong.olive
     : $type === 'error' ? theme.strong.mauve
+    : $type === 'warning' ? theme.strong.gold
     : theme.colors.accent};
   border: 1px solid ${({ $type, theme }) =>
     $type === 'success' ? `${theme.strong.olive}33`
@@ -1489,6 +1491,43 @@ const LeadCountNum = styled.span`
 
 /* ── Pipeline Progress ── */
 
+const CancelRow = styled.div`
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  justify-content: center;
+`;
+
+const CancelBtn = styled.button<{ $filled?: boolean }>`
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1px solid ${({ theme }) => theme.colors.danger};
+  background: ${({ $filled, theme }) => ($filled ? theme.colors.danger : 'transparent')};
+  color: ${({ $filled, theme }) => ($filled ? theme.colors.textInverted : theme.colors.danger)};
+  font-size: 0.75rem; font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  &:hover:not(:disabled) {
+    background: ${({ $filled, theme }) => ($filled ? theme.colors.danger : `${theme.colors.danger}14`)};
+    opacity: ${({ $filled }) => ($filled ? 0.88 : 1)};
+  }
+  &:disabled { opacity: 0.55; cursor: not-allowed; }
+`;
+
+const KeepBtn = styled.button`
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: 0.75rem; font-weight: 600;
+  cursor: pointer;
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+`;
+
+const CancelHint = styled.span`
+  font-size: 0.7rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
 const PipelineSection = styled.div`
   display: flex;
   flex-direction: column;
@@ -1838,6 +1877,29 @@ const SearchPage: React.FC = () => {
     } catch { return ''; }
   });
   const [pipelineProgress, setPipelineProgress] = useState<{stage: string, current: number, total: number, percent: number} | null>(null);
+  /** 前方仲有幾多個搜尋排住（0 = 已經輪到自己）。由 getCampaign 每 3 秒帶返嚟。 */
+  const [queueAhead, setQueueAhead] = useState(0);
+  /** 已經按過停止 —— in-flight 嘅 agent 唔會即刻死，所以要有「停止中」狀態 */
+  const [cancelling, setCancelling] = useState(false);
+  /** 今次 run 係被取消而唔係跑完 —— 兩者結果 banner 唔應該一樣 */
+  const [pipelineCancelled, setPipelineCancelled] = useState(false);
+  /**
+   * 有冇 worker 活著。null = 未知（未 poll 過）。
+   * 0 個 worker 而 campaign 仲標 running，代表 terminal 被停咗 —— pipeline 停滯，
+   * 唔應該一直轉圈假裝喺做嘢。
+   */
+  const [workersOnline, setWorkersOnline] = useState<number | null>(null);
+  /**
+   * 停止掣係兩段式：第一下 arm，第二下真正執行。
+   * 唔用原生 confirm() —— 佢喺唔少環境（embedded webview、
+   * 用戶勾過 Chrome 嘅「阻止此頁面顯示對話框」）會直接返 false 而唔彈窗，
+   * 結果就係撳完完全冇反應。
+   */
+  const [stopArmed, setStopArmed] = useState(false);
+  /* 刻意唔做「N 秒後自動解除 arm」：用戶讀確認文字隨時超時，
+     一超時第二下click就靜靜冇反應，即係重蹈原本個 bug。
+     要退出就撳「Keep running」。 */
+  const [stopError, setStopError] = useState('');
   const [pipelineComplete, setPipelineComplete] = useState(false);
   const [realResults, setRealResults] = useState<MockLead[]>([]);
   const pipelineLogRef = useRef<HTMLDivElement>(null);
@@ -1895,7 +1957,29 @@ const SearchPage: React.FC = () => {
     } catch {}
   }, [latestLogStage, pipelineComplete]);
 
-  /* ── Resume pipeline on mount (after refresh) ── */
+  /* ── 跨瀏覽器接返進行中嘅 pipeline ──
+     localStorage 綁死 browser profile，換瀏覽器 / 裝置 / 無痕窗就完全睇唔到
+     進行中嘅 run。所以 mount 時如果本機冇記錄，就問伺服器有冇 active campaign。
+     只喺 mount 做一次 —— 唔可以跟 campaignId 變化跑，因為開新搜尋會先
+     setCampaignId(null)，會同新 run 搶。 */
+  const adoptedActiveRef = useRef(false);
+  useEffect(() => {
+    if (adoptedActiveRef.current || campaignId) return;
+    adoptedActiveRef.current = true;
+
+    hermesApi.getActiveCampaign().then(res => {
+      const active = (res.data as any)?.data ?? res.data;
+      if (active?.campaign_id) {
+        setCampaignId(active.campaign_id);
+        if (active.pipeline_stage) setLatestLogStage(active.pipeline_stage);
+        setQueueAhead(active.queue_ahead ?? 0);
+        setWorkersOnline(active.workers_online ?? null);
+        setResuming(true);   // 交由下面 resume + SSE listener 接手
+      }
+    }).catch(() => { /* 冇進行中嘅 run，正常情況 */ });
+  }, []); // mount only
+
+  /* ── Resume pipeline (after refresh, or after adopting a server-side run) ── */
   useEffect(() => {
     if (!resuming || !campaignId) return;
     // Check if the campaign is still active
@@ -1910,11 +1994,16 @@ const SearchPage: React.FC = () => {
     }).catch(() => {
       // Campaign not found — clear stale state
       setCampaignId(null);
+    setCancelling(false);
+    setPipelineCancelled(false);
+    setWorkersOnline(null);
       setLatestLogStage('');
       setResuming(false);
       try { localStorage.removeItem('search-campaign-id'); localStorage.removeItem('search-pipeline-stage'); } catch {}
     });
-  }, []); // run once on mount
+    // fetchLeadsAndFinish 喺下面才宣告，唔可以放入 deps（TS2448）；
+    // effect body 延遲執行，讀到嘅一定係已賦值嘅 callback。
+  }, [campaignId, resuming]);
 
   /* ── Connect SSE on mount ── */
   useEffect(() => {
@@ -2025,8 +2114,13 @@ const SearchPage: React.FC = () => {
       if (done) return;
       hermesApi.getCampaign(campaignId).then(res => {
         const campaign = (res.data as any)?.data ?? res.data;
-        if (campaign?.status === 'completed' && !done) {
+        // 排隊位置係即時計嘅，跟住呢個輪詢更新（run() 只回一次死數字）
+        setQueueAhead(campaign?.queue_ahead ?? 0);
+        setWorkersOnline(campaign?.workers_online ?? null);
+        // cancelled 同 completed 一樣係終態，都要收工顯示結果
+        if ((campaign?.status === 'completed' || campaign?.status === 'cancelled') && !done) {
           done = true;
+          if (campaign.status === 'cancelled') setPipelineCancelled(true);
           fetchLeadsAndFinish(campaignId);
         }
       }).catch(() => { /* ignore polling errors */ });
@@ -2140,6 +2234,30 @@ const SearchPage: React.FC = () => {
   const resultData = search.data as unknown;
   const hasResults = search.isSuccess && resultData !== undefined && resultData !== null;
   const resultCount = Array.isArray(resultData) ? (resultData as unknown[]).length : null;
+  /** 停止當前 pipeline。in-flight 嘅 agent 做完手上嗰個 task 才真正停，所以有「停止中」中間態。 */
+  const handleCancelPipeline = useCallback(async () => {
+    if (!campaignId || cancelling) return;
+    setStopArmed(false);
+    setStopError('');
+    setCancelling(true);
+    try {
+      await hermesApi.cancelCampaign(campaignId);
+      // 唔即刻收工 —— 等 3 秒輪詢見到 status=cancelled 才顯示結果，
+      // 咁用戶就見到「停止中」而唔會誤會 in-flight 嗰個 task 已經死。
+    } catch (err: any) {
+      // 之前呢度係 catch{}，請求失敗一樣係「撳完冇反應」
+      const status = err?.response?.status;
+      const detail = err?.response?.data?.message ?? err?.message;
+      setStopError(
+        t('search.cancelFailed') +
+        (status ? ` (${status})` : '') +
+        (detail ? `: ${Array.isArray(detail) ? detail.join(', ') : detail}` : ''),
+      );
+      setCancelling(false);
+    }
+  }, [campaignId, cancelling, t]);
+
+
   const isPipelineRunning = !!campaignId && !pipelineComplete;
 
   return (
@@ -2338,7 +2456,10 @@ const SearchPage: React.FC = () => {
                   <RingCount>
                     {pipelineProgress
                       ? `${pipelineProgress.current}/${pipelineProgress.total}`
-                      : search.isPending ? t('search.submitting') : t('search.preparing')}
+                      : search.isPending ? t('search.submitting')
+                      : workersOnline === 0 ? t('search.workerOffline')
+                      : queueAhead > 0 ? t('search.queued')
+                      : t('search.preparing')}
                   </RingCount>
                 </SearchRing>
                 {pipelineProgress && (
@@ -2349,7 +2470,12 @@ const SearchPage: React.FC = () => {
                 <RingHint>
                   {pipelineProgress
                     ? t('search.percentComplete', { percent: Math.round(pipelineProgress.percent) })
-                    : search.isPending ? t('search.connectingToEngine') : t('search.waitingForPipeline')}
+                    : search.isPending ? t('search.connectingToEngine')
+                    /* worker 死咗就照實講，唔好一直轉圈當喺做嘢 */
+                    : workersOnline === 0 ? t('search.workerOfflineHint')
+                    /* 排隊中就講清楚前面有幾多個，唔好乾巴巴轉圈 */
+                    : queueAhead > 0 ? t('search.queuedAhead', { count: queueAhead })
+                    : t('search.waitingForPipeline')}
                 </RingHint>
               </SearchRingWrap>
             )}
@@ -2388,6 +2514,33 @@ const SearchPage: React.FC = () => {
                 })}
               </StepperWrap>
 
+              {workersOnline === 0 && (
+                <StatusBanner $type="warning">{t('search.workerOfflineBanner')}</StatusBanner>
+              )}
+
+              {/* 停止 pipeline */}
+              <CancelRow>
+                {stopArmed ? (
+                  <>
+                    <CancelBtn type="button" $filled onClick={handleCancelPipeline} disabled={cancelling}>
+                      {t('search.cancelConfirmBtn')}
+                    </CancelBtn>
+                    <KeepBtn type="button" onClick={() => setStopArmed(false)}>
+                      {t('search.cancelKeepRunning')}
+                    </KeepBtn>
+                    <CancelHint>{t('search.cancellingHint')}</CancelHint>
+                  </>
+                ) : (
+                  <>
+                    <CancelBtn type="button" onClick={() => setStopArmed(true)} disabled={cancelling}>
+                      {cancelling ? t('search.cancelling') : t('search.cancelPipeline')}
+                    </CancelBtn>
+                    {cancelling && <CancelHint>{t('search.cancellingHint')}</CancelHint>}
+                  </>
+                )}
+              </CancelRow>
+              {stopError && <StatusBanner $type="error">{stopError}</StatusBanner>}
+
               {/* Lead counter */}
               {pipelineProgress && pipelineProgress.total > 0 && (
                 <LeadCounter>
@@ -2413,7 +2566,11 @@ const SearchPage: React.FC = () => {
           {/* Complete → show results */}
           {pipelineComplete && (
             <PipelineSection>
-              <StatusBanner $type="success">{t('search.searchCompleteWithCount', { count: realResults.length })}</StatusBanner>
+              <StatusBanner $type={pipelineCancelled ? 'warning' : 'success'}>
+                {pipelineCancelled
+                  ? t('search.pipelineStoppedWithCount', { count: realResults.length })
+                  : t('search.searchCompleteWithCount', { count: realResults.length })}
+              </StatusBanner>
 
               {/* Result cards */}
               <ResultCardList>
