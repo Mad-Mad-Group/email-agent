@@ -10,6 +10,8 @@ import { useUsers, useMe, useTokenUsage } from '../../api/hooks';
 import { UserItem, usersApi } from '../../api/services';
 import { glassAvatar, glassPillTinted } from '../../styles/liquidGlass';
 import { sectionIconSlot, IconUser, IconShield } from '../../components/SectionIcons';
+import SpriteAvatar from '../../components/SpriteAvatar';
+import { FARMER } from '../../config/agents';
 
 /* ══════════════════════════════════════
    CMS Users — LUNO Contacts-style UI
@@ -72,6 +74,10 @@ const ToolbarRow = styled.div`
 `;
 
 const PageTitle = styled.h1`font-size: 1.25rem; font-weight: 700; margin: 0; color: ${({ theme }) => theme.colors.textPrimary};`;
+
+const HeroRow = styled.div`
+  display: flex; align-items: center; gap: 12px;
+`;
 const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.colors.textTertiary}; margin: 2px 0 0;`;
 
 const StatsRow = styled.div`
@@ -786,7 +792,10 @@ const Users: React.FC = () => {
   return (
     <Page>
       <PageCard>
-      <div><PageTitle>{t('users.title')}</PageTitle><PageSub>{t('users.subtitle')}</PageSub></div>
+      <HeroRow>
+        <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} size={120} />
+        <div><PageTitle>{t('users.title')}</PageTitle><PageSub>{t('users.subtitle')}</PageSub></div>
+      </HeroRow>
       <StatsGrid>
         <StatCard2 $color={theme.colors.accent}>
           <StatCardIcon $color={theme.colors.accent}><TabIconAll /></StatCardIcon>

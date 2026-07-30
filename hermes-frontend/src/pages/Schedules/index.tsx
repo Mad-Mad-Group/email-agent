@@ -10,6 +10,8 @@ import {
   useTriggerPipelineSchedule,
 } from '../../api/hooks';
 import { PipelineScheduleItem } from '../../api/services';
+import SpriteAvatar from '../../components/SpriteAvatar';
+import { AGENTS } from '../../config/agents';
 
 /* ── Layout ── */
 
@@ -36,14 +38,6 @@ const HeroBody = styled.div`
   ${media.mobile} { flex-direction: column; text-align: center; }
 `;
 
-const HeroAvatar = styled.div`
-  width: 64px; height: 64px;
-  border-radius: 50%;
-  background: ${({ theme }) => theme.colors.accent};
-  color: ${({ theme }) => theme.colors.textInverted};
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0;
-`;
 
 const HeroInfo = styled.div`flex: 1;`;
 
@@ -265,11 +259,6 @@ const ScheduleRow = styled.div`
 
 /* ── SVG Icons ── */
 
-const ClockIcon = () => (
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-    <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
-  </svg>
-);
 
 const PlayIcon = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
@@ -357,7 +346,7 @@ const Schedules: React.FC = () => {
       <PageCard>
         {/* ── Hero ── */}
         <HeroBody>
-          <HeroAvatar><ClockIcon /></HeroAvatar>
+          <SpriteAvatar src={AGENTS.S3.sprite} frames={AGENTS.S3.frames} frameW={AGENTS.S3.frameW} frameH={AGENTS.S3.frameH} size={52} />
           <HeroInfo>
             <HeroName>{t('settings.schedulesTab')}</HeroName>
             <HeroSub>{t('settings.schedEmpty').replace(/Click.*$/, '').replace(/點擊.*$/, '').replace(/点击.*$/, '').trim() || t('settings.schedulesTab')}</HeroSub>

@@ -436,7 +436,27 @@ const MLink = styled(NavLink)`
     color: #FFFFFF;
     font-weight: 600;
     svg { color: #FFFFFF; }
+    /* Watermark on the right of the active pill — a faint oversized glyph that
+       fills the empty tail of the highlight. Sits behind the label and ignores
+       pointer events, and is hidden when the rail is collapsed. */
+    position: relative;
+    overflow: hidden;
+    &::after {
+      content: '✦';
+      position: absolute;
+      right: -2px;
+      top: 50%;
+      transform: translateY(-50%) rotate(-12deg);
+      font-size: 2.1rem;
+      line-height: 1;
+      color: #FFFFFF;
+      opacity: 0.16;
+      pointer-events: none;
+      user-select: none;
+    }
   }
+
+  [data-collapsed="true"] &.active::after { content: none; }
 
   svg { flex-shrink: 0; }
 

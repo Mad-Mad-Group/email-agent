@@ -209,6 +209,9 @@ const WmStar = () => (
 
 const TableWrap = styled.div`
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  min-width: 0;
+  max-width: 100%;
   padding: 0;
 `;
 
@@ -218,8 +221,12 @@ const Table = styled.table`
   border-collapse: separate;
   border-spacing: 0;
   font-family: ${({ theme }) => theme.fonts.primary};
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   min-width: 960px;
+  /* Rounded, bordered container to match the client list */
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 12px;
+  overflow: hidden;
   th:nth-child(1) { width: 22%; }
   th:nth-child(2) { width: 14%; }
   th:nth-child(3) { width: 12%; }
@@ -237,25 +244,27 @@ const Table = styled.table`
     text-overflow: ellipsis;
   }
   th {
-    font-weight: 600;
-    font-size: 0.6875rem;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    color: ${({ theme }) => theme.colors.textTertiary};
+    font-weight: 700;
+    font-size: 0.8125rem;
+    color: ${({ theme }) => theme.colors.textSecondary};
+    background: ${({ theme }) => theme.colors.canvas};
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
     user-select: none;
     cursor: default;
   }
   td {
-    font-size: 0.8125rem;
-    line-height: 1.4;
-    border-bottom: none;
+    background: ${({ theme }) => theme.colors.surface};
+    border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+    font-size: 0.875rem;
+    line-height: 1.35;
   }
+  /* Last row keeps the rounded corner clean */
+  tbody tr:last-child td { border-bottom: none; }
   ${media.mobile} {
     min-width: 640px;
-    font-size: 0.75rem;
-    th, td { padding: 6px 10px; }
-    th { font-size: 0.5625rem; }
+    font-size: 0.8rem;
+    th, td { padding: 8px 10px; }
+    th { font-size: 0.6875rem; }
   }
 `;
 
@@ -263,7 +272,6 @@ const TRow = styled.tr`
   transition: background 0.15s;
   cursor: pointer;
   animation: fadeInRow 0.35s var(--ease-out) both;
-  &:nth-child(even) td { background: ${({ theme }) => theme.colors.surfaceMuted}40; }
   &:hover td { background: ${({ theme }) => `${theme.colors.accent}08`}; }
 `;
 
