@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import styled, { css, keyframes } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { media } from '../../styles/media';
@@ -49,16 +49,14 @@ const MainArea = styled.div`
 
 const AgendaPanel = styled.div`
   ${glassSurface}
-  width: 280px;
+  width: 340px;
   flex-shrink: 0;
-  padding: 16px 20px;
-  align-self: flex-start;
-  position: sticky;
-  top: 16px;
+  padding: 20px 22px;
+  align-self: stretch;
   border-radius: 14px;
   ${media.tabletDown} {
     width: 100%;
-    position: static;
+    align-self: auto;
   }
 `;
 
@@ -94,6 +92,113 @@ const CalHeader = styled.div`
 `;
 
 const CalTitle = styled.h2`font-size: 1.1rem; font-weight: 600; margin: 0;`;
+
+/* ── Title jump picker ── */
+
+const TitleWrap = styled.div`position: relative;`;
+
+const TitleBtn = styled.button<{ $open?: boolean }>`
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px 4px 2px;
+  background: transparent; border: none; border-radius: 10px;
+  font-family: ${({ theme }) => theme.fonts.primary};
+  color: ${({ theme }) => theme.colors.textPrimary};
+  cursor: pointer;
+  transition: background 0.15s;
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+  svg {
+    width: 14px; height: 14px; flex-shrink: 0;
+    color: ${({ theme }) => theme.colors.textTertiary};
+    transform: rotate(${({ $open }) => $open ? '180deg' : '0deg'});
+    transition: transform 0.2s;
+  }
+`;
+
+const JumpPanel = styled.div`
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 50;
+  width: 268px;
+  padding: 12px;
+  border-radius: 14px;
+  background: ${({ theme }) => theme.colors.surface};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  box-shadow: 0 10px 30px rgba(0,0,0,0.14);
+  ${media.mobile} { width: min(268px, calc(100vw - 40px)); }
+`;
+
+const JumpYearRow = styled.div`
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 10px;
+`;
+
+const JumpYearNav = styled.button`
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 26px; height: 26px; border-radius: 8px;
+  background: transparent;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  color: ${({ theme }) => theme.colors.textSecondary};
+  cursor: pointer;
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
+`;
+
+const JumpYearLabel = styled.span`
+  font-size: 0.9375rem; font-weight: 700;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const JumpMonthGrid = styled.div`
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;
+`;
+
+const JumpMonthBtn = styled.button<{ $active?: boolean; $isThisMonth?: boolean }>`
+  padding: 7px 0;
+  border-radius: 9px;
+  font-size: 0.75rem; font-weight: 600;
+  font-family: ${({ theme }) => theme.fonts.primary};
+  cursor: pointer;
+  border: 1px solid ${({ $active, $isThisMonth, theme }) =>
+    $active ? theme.colors.accent : $isThisMonth ? `${theme.strong.gold}` : theme.colors.border};
+  background: ${({ $active, theme }) => $active ? `${theme.colors.accent}18` : 'transparent'};
+  color: ${({ $active, theme }) => $active ? theme.colors.accent : theme.colors.textSecondary};
+  &:hover { border-color: ${({ theme }) => theme.colors.accent}; }
+`;
+
+const JumpDivider = styled.div`
+  height: 1px; margin: 12px 0 10px;
+  background: ${({ theme }) => theme.colors.border};
+`;
+
+
+
+const NowBtn = styled.button`
+  display: inline-flex; align-items: center; gap: 5px;
+  width: 100%; justify-content: center;
+  margin-top: 10px;
+  padding: 8px 0;
+  border-radius: 10px;
+  border: 1px solid ${({ theme }) => theme.colors.accent};
+  background: ${({ theme }) => theme.colors.accent}12;
+  color: ${({ theme }) => theme.colors.accent};
+  font-size: 0.8125rem; font-weight: 600;
+  font-family: ${({ theme }) => theme.fonts.primary};
+  cursor: pointer;
+  &:hover { background: ${({ theme }) => theme.colors.accent}22; }
+  svg { width: 14px; height: 14px; }
+`;
+
+const IconChevronDown = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+const IconNow = () => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="9" /><polyline points="12 7 12 12 15.5 14" />
+  </svg>
+);
 
 const CalNav = styled.div`display: flex; gap: 4px; align-items: center;`;
 const CalBtn = styled.button<{ $primary?: boolean; $disabled?: boolean }>`
@@ -141,6 +246,7 @@ const CalGrid = styled.div`
 const CalDayHeader = styled.div`
   padding: 8px 4px; text-align: center; font-size: 0.6875rem; font-weight: 600;
   text-transform: uppercase; color: ${({ theme }) => theme.colors.textTertiary};
+  &:first-child, &:last-child { color: ${({ theme }) => theme.strong.mauve}; }
   background: ${({ theme }) => theme.colors.surfaceMuted};
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
 `;
@@ -155,6 +261,10 @@ const CalCell = styled.div<{ $today?: boolean; $other?: boolean; $selected?: boo
   color: ${({ $other, theme }) => $other ? theme.colors.textTertiary : theme.colors.textPrimary};
   cursor: pointer;
   transition: background 0.12s;
+  /* Weekend columns tinted so the week reads at a glance (cols 1 and 7) */
+  &:nth-child(7n + 1), &:nth-child(7n) { background: ${({ theme }) => theme.colors.canvas}; }
+  ${({ $selected, theme }) => $selected && `&&& { background: ${theme.colors.accent}15; }`}
+  ${({ $today, $selected, theme }) => !$selected && $today && `&&& { background: ${theme.strong.gold}1f; }`}
   &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}; }
   &:nth-child(7n) { border-right: none; }
   ${media.tablet} { min-height: 56px; padding: 3px 4px; font-size: 0.7rem; }
@@ -171,10 +281,17 @@ const CellDay = styled.div<{ $today?: boolean }>`
   `}
 `;
 
-const EventBlock = styled.div<{ $color?: string; $past?: boolean }>`
+const EventBlock = styled.div<{ $color?: string; $past?: boolean; $type?: string }>`
   padding: 2px 6px; margin: 1px 0; border-radius: 6px; font-size: 0.65rem;
-  background: ${({ $past, $color, theme }) => $past ? `${theme.colors.textTertiary}20` : `${$color || theme.colors.accent}18`};
-  color: ${({ $past, $color, theme }) => $past ? theme.colors.textTertiary : ($color || theme.colors.accent)};
+  background: ${({ $past, $color, $type, theme }) => $past
+    ? `${theme.colors.textTertiary}20`
+    : `${$color || getTypeColor(theme, $type || 'other')}22`};
+  color: ${({ $past, $color, $type, theme }) => $past
+    ? theme.colors.textTertiary
+    : ($color || getTypeColor(theme, $type || 'other'))};
+  border-left: 2px solid ${({ $past, $color, $type, theme }) => $past
+    ? 'transparent'
+    : ($color || getTypeColor(theme, $type || 'other'))};
   font-weight: 500;
   text-decoration: ${({ $past }) => $past ? 'line-through' : 'none'};
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -182,14 +299,18 @@ const EventBlock = styled.div<{ $color?: string; $past?: boolean }>`
   ${media.mobile} { font-size: 0.55rem; }
 `;
 
-const EventDot = styled.div<{ $past?: boolean }>`
+const EventDot = styled.div<{ $past?: boolean; $type?: string }>`
   display: flex; align-items: center; gap: 4px; font-size: 0.65rem;
   color: ${({ $past, theme }) => $past ? theme.colors.textTertiary : 'inherit'};
   text-decoration: ${({ $past }) => $past ? 'line-through' : 'none'};
   padding: 1px 0;
   &::before {
     content: ''; width: 6px; height: 6px; border-radius: 50%;
-    background: ${({ $past, theme }) => $past ? theme.colors.textTertiary : theme.colors.accent}; flex-shrink: 0;
+    /* Was hardcoded to accent, so timed events all showed the same blue dot */
+    background: ${({ $past, $type, theme }) => $past
+      ? theme.colors.textTertiary
+      : getTypeColor(theme, $type || 'other')};
+    flex-shrink: 0;
   }
   ${media.mobile} { font-size: 0.55rem; }
 `;
@@ -201,10 +322,17 @@ const WeekGrid = styled.div`
   grid-template-columns: 56px repeat(7, 1fr);
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: 14px;
-  overflow: hidden;
+  /* 16 hour rows are ~1000px tall, which made the page jump ~450px longer than
+     month view. Cap it and scroll the hours instead; the header row below is
+     sticky so the weekdays stay visible while scrolling. */
+  max-height: min(620px, 68vh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  ${media.tabletDown} { max-height: none; overflow-y: visible; }
 `;
 
 const WeekDayHeader = styled.div<{ $today?: boolean }>`
+  position: sticky; top: 0; z-index: 3;
   padding: 10px 4px;
   text-align: center;
   font-size: 0.75rem;
@@ -250,6 +378,7 @@ const TimeLabel = styled.div`
 `;
 
 const TimeCorner = styled.div`
+  position: sticky; top: 0; left: 0; z-index: 4;
   background: ${({ theme }) => theme.colors.surfaceMuted};
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   border-right: 1px solid ${({ theme }) => theme.colors.border};
@@ -267,15 +396,22 @@ const WeekCell = styled.div<{ $today?: boolean }>`
 
 /* ── Week Event Card ── */
 
+/**
+ * One hue per event type. `meeting` and `other` both used to map to `accent`,
+ * and `other` is the fallback for any event the API sends without a type, so in
+ * practice the whole calendar rendered in a single blue.
+ */
 const getTypeColor = (theme: any, type: string) => {
   const map: Record<string, string> = {
-    meeting: theme.colors.accent,
-    follow_up: theme.strong.olive,
-    deadline: theme.strong.mauve,
-    other: theme.colors.accent,
+    meeting: theme.colors.accent,      // blue
+    follow_up: theme.strong.olive,     // green
+    deadline: theme.colors.danger,     // red — deadlines should read as urgent
+    other: theme.strong.gold,          // amber
   };
   return map[type] || map.other;
 };
+
+export const EVENT_TYPE_KEYS = ['meeting', 'follow_up', 'deadline', 'other'] as const;
 
 const WeekEventCard = styled.div<{ $type: string; $top: number; $height: number }>`
   position: absolute;
@@ -797,6 +933,39 @@ const Calendar: React.FC = () => {
     setWeekStart(getWeekStart(today.getFullYear(), today.getMonth(), today.getDate()));
   };
 
+  /* ── Title jump picker ── */
+  const [jumpOpen, setJumpOpen] = useState(false);
+  const [jumpYear, setJumpYear] = useState(year);
+  const jumpRef = useRef<HTMLDivElement>(null);
+
+  /* Re-sync the picker's year whenever it is reopened */
+  useEffect(() => { if (jumpOpen) setJumpYear(year); }, [jumpOpen, year]);
+
+  useEffect(() => {
+    if (!jumpOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (jumpRef.current && !jumpRef.current.contains(e.target as Node)) setJumpOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setJumpOpen(false); };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [jumpOpen]);
+
+  const jumpToMonth = (m: number) => {
+    setYear(jumpYear);
+    setMonth(m);
+    setSelectedDay(null);
+    setWeekStart(getWeekStart(jumpYear, m, 1));
+    setJumpOpen(false);
+  };
+
+
+  const goNow = () => { goToday(); setJumpOpen(false); };
+
   const isCurrentMonth = month === today.getMonth() && year === today.getFullYear();
 
   const getEvents = (day: number, isCurrent: boolean) => {
@@ -905,7 +1074,35 @@ const Calendar: React.FC = () => {
         <MainArea>
           <SpiralCalCard>
             <CalHeader>
-              <CalTitle>{viewMode === 'month' ? t('calendar.monthYearTitle', { month: months[month], year }) : weekTitle}</CalTitle>
+              <TitleWrap ref={jumpRef}>
+                <TitleBtn $open={jumpOpen} onClick={() => setJumpOpen(o => !o)}>
+                  <CalTitle>{viewMode === 'month' ? t('calendar.monthYearTitle', { month: months[month], year }) : weekTitle}</CalTitle>
+                  <IconChevronDown />
+                </TitleBtn>
+                {jumpOpen && (
+                  <JumpPanel>
+                    <JumpYearRow>
+                      <JumpYearNav onClick={() => setJumpYear(y => y - 1)} aria-label="previous year">‹</JumpYearNav>
+                      <JumpYearLabel>{jumpYear}</JumpYearLabel>
+                      <JumpYearNav onClick={() => setJumpYear(y => y + 1)} aria-label="next year">›</JumpYearNav>
+                    </JumpYearRow>
+                    <JumpMonthGrid>
+                      {months.map((mn, mi) => (
+                        <JumpMonthBtn
+                          key={mn}
+                          $active={jumpYear === year && mi === month}
+                          $isThisMonth={jumpYear === today.getFullYear() && mi === today.getMonth()}
+                          onClick={() => jumpToMonth(mi)}
+                        >
+                          {mn.slice(0, 3)}
+                        </JumpMonthBtn>
+                      ))}
+                    </JumpMonthGrid>
+                    <JumpDivider />
+                    <NowBtn onClick={goNow}><IconNow />{t('calendar.backToNow', '回到现在')}</NowBtn>
+                  </JumpPanel>
+                )}
+              </TitleWrap>
               <CalNav>
                 <PillWrap>
                   <PillBtn $active={viewMode === 'month'} onClick={() => setViewMode('month')}>{t('calendar.monthView')}</PillBtn>
@@ -936,8 +1133,8 @@ const Calendar: React.FC = () => {
                       <CellDay $today={cell.today}>{cell.day}</CellDay>
                       {events.map((ev, j) => (
                         ev.type === 'block'
-                          ? <EventBlock key={j} $color={ev.color} $past={ev.past}>{ev.title}</EventBlock>
-                          : <EventDot key={j} $past={ev.past}>{ev.time} {ev.title}</EventDot>
+                          ? <EventBlock key={j} $color={ev.color} $type={ev.eventType} $past={ev.past}>{ev.title}</EventBlock>
+                          : <EventDot key={j} $type={ev.eventType} $past={ev.past}>{ev.time} {ev.title}</EventDot>
                       ))}
                     </CalCell>
                   );
@@ -1011,8 +1208,13 @@ const Calendar: React.FC = () => {
 
         </MainArea>
 
-        {/* 右側議程 panel — 選咗日期顯示該日 schedule，否則顯示今日議程 */}
-        {viewMode === 'month' && (() => {
+        {/* 右側議程 panel — 選咗日期顯示該日 schedule，否則顯示今日議程.
+            Rendered in week view too: when it was month-only, switching views
+            removed it and MainArea (flex:1) snapped from 719px to 1075px wide,
+            resizing every cell in the process. Its content depends only on
+            selectedDay / filteredEvents / todayAgenda, none of which are
+            month-specific, so it works unchanged in either view. */}
+        {(() => {
           const showingSelected = selectedDay !== null;
           const isSelectedToday = showingSelected && selectedDay === today.getDate() && month === today.getMonth() && year === today.getFullYear();
           const panelEvents = showingSelected
