@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import styled, { useTheme } from 'styled-components';
+import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { media } from '../../styles/media';
-import { glassSurface } from '../../styles/glassSurface';
 import {
   usePipelineSchedules,
   useCreatePipelineSchedule,
@@ -19,11 +18,17 @@ const Page = styled.div`
   animation: fadeSlideUp 0.5s var(--ease-out) both;
 `;
 
+/* No surface of its own — content sits straight on the page background, same as
+   the PageCard in Leads and VerifiedEmails. */
 const PageCard = styled.div`
-  ${glassSurface};
-  border-radius: ${({ theme }) => theme.radii.card}px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
   padding: 28px;
   display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.lg}px;
+  min-width: 0;
+  ${media.tablet} { padding: 24px 18px; }
+  ${media.mobile} { padding: 16px 12px; }
 `;
 
 const HeroBody = styled.div`
@@ -59,7 +64,12 @@ const HeroSub = styled.div`
 
 /* ── Form ── */
 
+/* display:block matters: as an inline label it sat on the same line as a Select
+   (auto width) but got pushed above an Input (width:100%), so the form's rows
+   didn't line up with each other. */
 const Label = styled.label`
+  display: block;
+  margin-bottom: 6px;
   font-size: 0.8125rem; font-weight: 500;
   color: ${({ theme }) => theme.colors.textSecondary};
 `;
@@ -78,16 +88,49 @@ const Input = styled.input`
 `;
 
 const Select = styled.select`
-  padding: 10px 14px;
+  /* Was auto-width, so selects were visibly narrower than the inputs above them */
+  width: 100%; box-sizing: border-box;
+  padding: 10px 34px 10px 14px;
   border: 1px solid ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radii.control}px;
   background: ${({ theme }) => theme.colors.canvas};
   color: ${({ theme }) => theme.colors.textPrimary};
-  font-size: 0.875rem; outline: none;
+  font-size: 0.875rem; outline: none; cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  transition: border-color 0.15s;
   &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
+  option { font-size: 0.9375rem; padding: 8px 12px; }
 `;
 
-const BtnRow = styled.div`display: flex; gap: 10px; padding-top: 4px;`;
+/* ── Form panel ──
+   No background or border of its own: PageCard already provides the surface, and
+   a second filled+bordered box inside it read as two stacked panels. A rule and
+   some breathing room separate it instead. */
+const FormPanel = styled.div`
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  padding-top: ${({ theme }) => theme.spacing.lg}px;
+`;
+
+const FormGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 18px;
+  ${media.mobile} { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+`;
+
+/* Full-bleed field — for the name, which deserves the whole row */
+const FieldWide = styled.div`
+  grid-column: 1 / -1;
+`;
+
+const BtnRow = styled.div`
+  grid-column: 1 / -1;
+  display: flex; gap: 10px; padding-top: 6px;
+  ${media.mobile} { flex-direction: column-reverse; }
+`;
 
 const SaveBtn = styled.button`
   padding: 10px 24px;
@@ -98,6 +141,80 @@ const SaveBtn = styled.button`
   cursor: pointer; transition: opacity 0.15s;
   &:hover { opacity: 0.85; }
   &:disabled { opacity: 0.5; cursor: not-allowed; }
+`;
+
+/* Secondary action — replaces the inline style overrides that were stacked onto
+   SaveBtn at every call site. */
+const GhostBtn = styled.button`
+  padding: 10px 20px;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: 8px;
+  font-size: 0.8125rem; font-weight: 600;
+  cursor: pointer; transition: background 0.15s, border-color 0.15s;
+  &:hover {
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+    border-color: ${({ theme }) => theme.colors.borderStrong};
+  }
+`;
+
+const IconBtn = styled.button<{ $danger?: boolean }>`
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 30px; height: 30px; flex-shrink: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: ${({ $danger, theme }) => $danger ? theme.colors.danger : theme.colors.accent};
+  border: 1px solid ${({ $danger, theme }) => ($danger ? theme.colors.danger : theme.colors.accent)}40;
+  cursor: pointer; transition: background 0.15s, border-color 0.15s;
+  &:hover {
+    background: ${({ $danger, theme }) => ($danger ? theme.colors.danger : theme.colors.accent)}14;
+    border-color: ${({ $danger, theme }) => $danger ? theme.colors.danger : theme.colors.accent};
+  }
+`;
+
+const EmptyState = styled.div`
+  padding: 36px 20px;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.colors.textTertiary};
+`;
+
+/* ── Schedule list ── */
+
+const ScheduleList = styled.div`
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+`;
+
+const RowMain = styled.div`
+  display: flex; align-items: center; gap: 12px;
+`;
+
+const RowTitle = styled.div`
+  font-weight: 600; font-size: 0.9375rem;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const RowMeta = styled.div`
+  font-size: 0.75rem; color: ${({ theme }) => theme.colors.textTertiary};
+  margin-top: 2px;
+  code {
+    font-family: ${({ theme }) => theme.fonts.mono};
+    font-size: 0.7rem;
+    padding: 1px 5px; border-radius: 4px;
+    background: ${({ theme }) => theme.colors.surfaceMuted};
+  }
+`;
+
+const RowFooter = styled.div`
+  display: flex; flex-wrap: wrap; gap: 6px 16px;
+  font-size: 0.75rem; color: ${({ theme }) => theme.colors.textTertiary};
+  padding-left: 56px;
+  ${media.mobile} { padding-left: 0; }
+`;
+
+const RowError = styled.span`
+  color: ${({ theme }) => theme.colors.danger};
 `;
 
 /* ── Toggle Switch ── */
@@ -137,8 +254,12 @@ const ToggleSwitch: React.FC<{ on: boolean; onChange?: (v: boolean) => void }> =
 
 const ScheduleRow = styled.div`
   display: flex; flex-direction: column; gap: 8px;
-  padding: 14px 0;
+  padding: 14px 12px;
+  margin: 0 -12px;
+  border-radius: 10px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
+  transition: background 0.15s;
+  &:hover { background: ${({ theme }) => theme.colors.surfaceMuted}55; }
   &:last-child { border-bottom: none; }
 `;
 
@@ -172,7 +293,6 @@ const PlusIcon = () => (
 
 const Schedules: React.FC = () => {
   const { t } = useTranslation();
-  const theme = useTheme();
 
   const { data: schedules = [], isLoading: schedulesLoading } = usePipelineSchedules();
   const createSchedule = useCreatePipelineSchedule();
@@ -251,12 +371,12 @@ const Schedules: React.FC = () => {
 
         {/* ── New schedule form ── */}
         {showForm && (
-          <div style={{ padding: 16, border: `1px solid ${theme.colors.border}`, borderRadius: 8, background: `${theme.colors.surfaceMuted}40` }}>
-            <div style={{ display: 'grid', gap: 12 }}>
-              <div>
+          <FormPanel>
+            <FormGrid>
+              <FieldWide>
                 <Label>{t('settings.schedName')}</Label>
                 <Input value={schedName} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSchedName(e.target.value)} placeholder={t('settings.schedNamePlaceholder')} />
-              </div>
+              </FieldWide>
               <div>
                 <Label>{t('settings.schedType')}</Label>
                 <Select value={schedType} onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setSchedType(e.target.value as PipelineScheduleItem['type'])}>
@@ -292,48 +412,50 @@ const Schedules: React.FC = () => {
                 <SaveBtn onClick={handleCreate} disabled={busy || !schedName.trim()}>
                   {busy ? '...' : t('settings.save')}
                 </SaveBtn>
-                <SaveBtn onClick={resetForm} style={{ background: 'transparent', color: theme.colors.textSecondary, border: `1px solid ${theme.colors.border}` }}>
-                  {t('settings.cancel')}
-                </SaveBtn>
+                <GhostBtn onClick={resetForm}>{t('settings.cancel')}</GhostBtn>
               </BtnRow>
-            </div>
-          </div>
+            </FormGrid>
+          </FormPanel>
         )}
 
         {/* ── Schedule list ── */}
         {schedulesLoading ? (
-          <div style={{ padding: 20, textAlign: 'center', color: theme.colors.textTertiary }}>Loading...</div>
+          <EmptyState>Loading…</EmptyState>
         ) : (schedules as PipelineScheduleItem[]).length === 0 ? (
-          <div style={{ padding: 20, textAlign: 'center', color: theme.colors.textTertiary }}>{t('settings.schedEmpty')}</div>
+          <EmptyState>{t('settings.schedEmpty')}</EmptyState>
         ) : (
-          (schedules as PipelineScheduleItem[]).map((s: PipelineScheduleItem) => (
-            <ScheduleRow key={s._id}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <ToggleSwitch on={s.enabled} onChange={() => toggleSchedule.mutate(s._id)} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 600 }}>{s.name}</div>
-                  <div style={{ fontSize: '0.75rem', color: theme.colors.textTertiary }}>
-                    {SCHEDULE_TYPES.find(st => st.value === s.type)?.label || s.type} &middot; <code style={{ fontSize: '0.7rem' }}>{s.cron}</code>
+          <ScheduleList>
+            {(schedules as PipelineScheduleItem[]).map((s: PipelineScheduleItem) => (
+              <ScheduleRow key={s._id}>
+                <RowMain>
+                  <ToggleSwitch on={s.enabled} onChange={() => toggleSchedule.mutate(s._id)} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <RowTitle>{s.name}</RowTitle>
+                    <RowMeta>
+                      {SCHEDULE_TYPES.find(st => st.value === s.type)?.label || s.type} &middot; <code>{s.cron}</code>
+                    </RowMeta>
                   </div>
-                </div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  <SaveBtn onClick={() => triggerSchedule.mutate(s._id)} style={{ padding: '4px 10px', fontSize: '0.75rem', background: 'transparent', color: theme.colors.accent, border: `1px solid ${theme.colors.accent}` }} title={t('settings.schedTriggerNow')}>
+                  <IconBtn onClick={() => triggerSchedule.mutate(s._id)} title={t('settings.schedTriggerNow')}>
                     <PlayIcon />
-                  </SaveBtn>
-                  <SaveBtn onClick={() => { if (confirm(t('settings.schedDeleteConfirm'))) deleteSchedule.mutate(s._id); }} style={{ padding: '4px 10px', fontSize: '0.75rem', background: 'transparent', color: theme.colors.danger, border: `1px solid ${theme.colors.danger}` }}>
+                  </IconBtn>
+                  <IconBtn
+                    $danger
+                    title={t('settings.schedDelete', t('settings.cancel'))}
+                    onClick={() => { if (confirm(t('settings.schedDeleteConfirm'))) deleteSchedule.mutate(s._id); }}
+                  >
                     <TrashIcon />
-                  </SaveBtn>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 16, fontSize: '0.75rem', color: theme.colors.textTertiary }}>
-                <span>{t('settings.schedLastRun')}: {formatDate(s.last_run_at)}</span>
-                <span>{t('settings.schedNextRun')}: {formatDate(s.next_run_at)}</span>
-                {s.last_run_status === 'failed' && (
-                  <span style={{ color: theme.colors.danger }}>{t('settings.schedFailed')}: {s.last_run_error}</span>
-                )}
-              </div>
-            </ScheduleRow>
-          ))
+                  </IconBtn>
+                </RowMain>
+                <RowFooter>
+                  <span>{t('settings.schedLastRun')}: {formatDate(s.last_run_at)}</span>
+                  <span>{t('settings.schedNextRun')}: {formatDate(s.next_run_at)}</span>
+                  {s.last_run_status === 'failed' && (
+                    <RowError>{t('settings.schedFailed')}: {s.last_run_error}</RowError>
+                  )}
+                </RowFooter>
+              </ScheduleRow>
+            ))}
+          </ScheduleList>
         )}
       </PageCard>
     </Page>

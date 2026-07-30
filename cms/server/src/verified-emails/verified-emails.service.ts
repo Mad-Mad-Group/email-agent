@@ -21,6 +21,20 @@ export class VerifiedEmailsService {
       const rx = new RegExp(q.search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
       filter.$or = [{ email: rx }, { company_name: rx }, { domain: rx }];
     }
+    if (q.dateFrom || q.dateTo) {
+      /**
+       * created_at is a real Date (mongoose timestamps), so compare Dates here.
+       * The upper bound is exclusive-next-midnight so the whole of dateTo counts.
+       */
+      const range: Record<string, Date> = {};
+      if (q.dateFrom) range.$gte = new Date(`${q.dateFrom}T00:00:00.000Z`);
+      if (q.dateTo) {
+        const end = new Date(`${q.dateTo}T00:00:00.000Z`);
+        end.setUTCDate(end.getUTCDate() + 1);
+        range.$lt = end;
+      }
+      filter.created_at = range;
+    }
 
     const page = q.page ?? 1;
     const limit = q.limit ?? 20;

@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { media } from '../../styles/media';
 import { glassSurface, glassSurfaceLight } from '../../styles/glassSurface';
 import client from '../../api/client';
+import { sectionIconSlot, IconAgenda } from '../../components/SectionIcons';
 
 /* ══════════════════════════════════════
    LUNO Calendar — Month + Week views
@@ -602,6 +603,15 @@ const AgendaDate = styled.span`
   color: ${({ theme }) => theme.colors.textTertiary};
 `;
 
+const AgendaHeader = styled.div`
+  display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+`;
+
+const AgendaTitle = styled.span`
+  ${sectionIconSlot}
+  font-size: 1rem; font-weight: 600;
+`;
+
 /* ── Data ── */
 
 interface CalEvent {
@@ -1018,8 +1028,8 @@ const Calendar: React.FC = () => {
 
           return (
             <AgendaPanel>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-                <span style={{ fontSize: '1rem', fontWeight: 600 }}>{panelTitle}</span>
+              <AgendaHeader>
+                <AgendaTitle><IconAgenda />{panelTitle}</AgendaTitle>
                 <AgendaDate>{panelDate}</AgendaDate>
                 {showingSelected && !isSelectedToday && (
                   <DayDetailClose onClick={() => setSelectedDay(null)} style={{ marginLeft: 'auto' }}>
@@ -1028,7 +1038,7 @@ const Calendar: React.FC = () => {
                     </svg>
                   </DayDetailClose>
                 )}
-              </div>
+              </AgendaHeader>
               {panelEvents.length > 0 ? (
                 <DayEventList>
                   {panelEvents.map((ev, i) => (

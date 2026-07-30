@@ -6,6 +6,7 @@ import { Lead } from '../api/leads';
 import { media } from '../styles/media';
 import { glassSurface } from '../styles/glassSurface';
 import { glassAvatar, glassPillTinted } from '../styles/liquidGlass';
+import { sectionIconSlot, IconInfo, IconJourney, IconTag, IconSparkle, IconReply } from './SectionIcons';
 
 /* ── Avatar color from name hash ── */
 
@@ -358,6 +359,7 @@ const DpColCenter = styled.div`
 `;
 
 export const DpSectionTitle = styled.h3`
+  ${sectionIconSlot}
   margin: 0 0 8px;
   font-size: 0.6875rem;
   font-weight: 700;
@@ -819,7 +821,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
         <DpBody>
           {/* Left: Avatar + Name + About + Journey + Tags */}
           <DpColLeft>
-            <DpSectionTitle>{t('leads.about')}</DpSectionTitle>
+            <DpSectionTitle><IconInfo />{t('leads.about')}</DpSectionTitle>
             <DpSectionContent>
             <DpField>
               <DpFieldLabel><DpFieldIcon><svg viewBox="0 0 16 16" fill="none"><path d="M1 3.5h14v9H1v-9zm0 0l7 4.5 7-4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg></DpFieldIcon>{t('leads.email')}</DpFieldLabel>
@@ -864,7 +866,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
 
             <DpDivider />
 
-            <DpSectionTitle>{t('leads.leadJourney')}</DpSectionTitle>
+            <DpSectionTitle><IconJourney />{t('leads.leadJourney')}</DpSectionTitle>
             <DpSectionContent>
             <DpTimeline>
               <DpTimelineItem>
@@ -916,7 +918,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
             </DpSectionContent>
 
             <DpDivider />
-            <DpSectionTitle>{t('leads.tags')}</DpSectionTitle>
+            <DpSectionTitle><IconTag />{t('leads.tags')}</DpSectionTitle>
             <DpSectionContent>
             <DpTagList>
               {lead.industry_tags && lead.industry_tags.length > 0
@@ -932,7 +934,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
             {(lead._tech_score != null || lead._email_draft_score != null || lead._collab_primary) && (
               <>
                 <DpDivider />
-                <DpSectionTitle>{t('leads.aiAnalysis')}</DpSectionTitle>
+                <DpSectionTitle><IconSparkle />{t('leads.aiAnalysis')}</DpSectionTitle>
                 <DpSectionContent>
                   <AiTabBar>
                     <AiTab $active={aiTab === 'scores'} onClick={() => setAiTab('scores')}>{t('leads.aiTabScores')}</AiTab>
@@ -1024,7 +1026,7 @@ const LeadDetailPanel: React.FC<LeadDetailPanelProps> = ({
               return (
                 <>
                   <DpDivider />
-                  <DpSectionTitle>{t('leads.replyInfo')}</DpSectionTitle>
+                  <DpSectionTitle><IconReply />{t('leads.replyInfo')}</DpSectionTitle>
                   <DpSectionContent>
                   <DpField>
                     <DpFieldLabel>{t('leads.replyCategory')}</DpFieldLabel>

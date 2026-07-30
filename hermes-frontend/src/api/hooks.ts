@@ -390,7 +390,7 @@ export const useDismissAllNotifications = () => {
 
 /* ── Verified Emails ── */
 
-export const useVerifiedEmails = (params?: { page?: number; limit?: number; search?: string; status?: string; verification_method?: string }) =>
+export const useVerifiedEmails = (params?: { page?: number; limit?: number; search?: string; status?: string; verification_method?: string; dateFrom?: string; dateTo?: string }) =>
   useQuery({
     queryKey: ['verified-emails', params],
     queryFn: () => verifiedEmailsApi.list(params).then(r => r.data),

@@ -9,6 +9,8 @@ import { VerifiedEmailItem, verifiedEmailsApi } from '../../api/services';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS } from '../../config/agents';
 import { glassGhostButton } from '../../styles/liquidGlass';
+import { sectionIconSlot, IconMailPlus } from '../../components/SectionIcons';
+import DateRangeFilter, { DateRange } from '../../components/DateRangeFilter';
 
 /* ══════════════════════════════════════
    Verified Emails Pool — 共用已驗證郵箱
@@ -324,7 +326,11 @@ const Modal = styled.div`
   padding: 24px; width: 400px; max-width: 90vw;
 `;
 
-const ModalTitle = styled.h6`margin: 0 0 16px; font-size: 1rem; font-weight: 600; color: ${({ theme }) => theme.colors.textPrimary};`;
+const ModalTitle = styled.h6`
+  ${sectionIconSlot}
+  margin: 0 0 16px; font-size: 1rem; font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
 
 const Field = styled.div`margin-bottom: 12px;`;
 const Label = styled.label`display: block; font-size: 0.75rem; font-weight: 500; color: ${({ theme }) => theme.colors.textSecondary}; margin-bottom: 4px;`;
@@ -366,7 +372,13 @@ const VerifiedEmailsPage: React.FC = () => {
   };
 
   const limit = 20;
-  const { data, isLoading } = useVerifiedEmails({ page, limit, search: search || undefined });
+  const [dateRange, setDateRange] = useState<DateRange>({});
+  const { data, isLoading } = useVerifiedEmails({
+    page, limit,
+    search: search || undefined,
+    dateFrom: dateRange.from,
+    dateTo: dateRange.to,
+  });
   const { data: stats } = useVerifiedEmailStats();
   const createMut = useCreateVerifiedEmail();
   const deleteMut = useDeleteVerifiedEmail();
@@ -443,6 +455,7 @@ const VerifiedEmailsPage: React.FC = () => {
             value={search}
             onChange={e => { setSearch(e.target.value); setPage(1); }}
           />
+          <DateRangeFilter value={dateRange} onChange={v => { setDateRange(v); setPage(1); }} />
           <Btn onClick={handleExport}><ExportIcon /> {t('verifiedEmails.export')}</Btn>
           <Btn $variant="primary" onClick={() => setShowAdd(true)}><PlusIcon /> {t('verifiedEmails.add')}</Btn>
         </ToolbarActions>
@@ -525,7 +538,7 @@ const VerifiedEmailsPage: React.FC = () => {
       {showAdd && (
         <Overlay onClick={() => setShowAdd(false)}>
           <Modal onClick={e => e.stopPropagation()}>
-            <ModalTitle>{t('verifiedEmails.addTitle')}</ModalTitle>
+            <ModalTitle><IconMailPlus />{t('verifiedEmails.addTitle')}</ModalTitle>
             <Field>
               <Label>{t('verifiedEmails.labelEmail')}</Label>
               <Input

@@ -15,6 +15,7 @@ import { tasksApi, TaskItem } from '../../api/services';
 import { useNotifications, useUnreadCount, useMarkNotificationRead, useMarkAllNotificationsRead, useDismissNotification, useDismissAllNotifications } from '../../api/hooks';
 import { NotificationItem } from '../../api/notifications';
 import DiceBearAvatar from '../DiceBearAvatar';
+import { sectionIconSlot, IconBell, IconSignOut } from '../SectionIcons';
 
 interface TopbarProps {
   title: string;
@@ -344,6 +345,7 @@ const NotifCloseBtn = styled.button`
 `;
 
 const NotifPanelTitle = styled.h3`
+  ${sectionIconSlot}
   margin: 0;
   font-size: 0.9rem;
   font-weight: 600;
@@ -663,6 +665,7 @@ const LogoutIconWrap = styled.div`
 `;
 
 const LogoutTitle = styled.h3`
+  ${sectionIconSlot}
   margin: 0 0 6px; font-size: 1rem; font-weight: 600;
   color: ${({ theme }) => theme.colors.textPrimary};
 `;
@@ -1074,7 +1077,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
         <NotifOverlay $open={notifOpen} onClick={() => setNotifOpen(false)} />
         <NotifPanel $open={notifOpen}>
           <NotifPanelHeader>
-            <NotifPanelTitle>{t('topbar.notificationTitle')} {unread > 0 && `(${unread})`}</NotifPanelTitle>
+            <NotifPanelTitle><IconBell />{t('topbar.notificationTitle')} {unread > 0 && `(${unread})`}</NotifPanelTitle>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {unread > 0 && (
                 <NotifMarkAllBtn onClick={() => markAllRead.mutate()}>{t('topbar.markAllRead')}</NotifMarkAllBtn>
@@ -1130,7 +1133,7 @@ export const Topbar: React.FC<TopbarProps> = ({ title, actionLabel, onAction, on
         <LogoutOverlay onClick={() => setShowLogoutDialog(false)}>
           <LogoutDialog onClick={(e) => e.stopPropagation()}>
             <LogoutIconWrap><DropdownLogoutIcon /></LogoutIconWrap>
-            <LogoutTitle>{t('nav.signOut')}</LogoutTitle>
+            <LogoutTitle><IconSignOut />{t('nav.signOut')}</LogoutTitle>
             <LogoutDesc>{t('nav.logoutConfirm')}</LogoutDesc>
             <LogoutActions>
               <LogoutCancelBtn onClick={() => setShowLogoutDialog(false)}>

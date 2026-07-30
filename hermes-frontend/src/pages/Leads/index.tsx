@@ -18,6 +18,7 @@ import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER, SOURCE_AGENT } from '../../config/agents';
 import LeadDetailPanel, { hashColorIndex, AvatarIcon, Avatar, ReplyBadge, DpSectionTitle, DpActionBtn, DpField, DpFieldLabel, DpFieldValue, DpFieldIcon, getReplyBadge, NEXT_STATUS, REPLY_ICONS, DpStatusPill, STATUS_PILL_COLORS } from '../../components/LeadDetailPanel';
 import LeadEmails from '../../components/LeadEmails';
+import DateRangeFilter, { DateRange } from '../../components/DateRangeFilter';
 
 /* ══════════════════════════════════════
    CMS Leads — Luno Contacts-style UI
@@ -1269,7 +1270,14 @@ const Leads: React.FC = () => {
 
   // 攞可攞到嘅全部 leads（backend DTO 限 limit ≤ 100）。
   // status/search filtering client side 做。
-  const { data, isLoading, error, refetch, isFetching } = useLeads({ page: 1, limit: 100 });
+  const [dateRange, setDateRange] = useState<DateRange>({});
+  /* Date range goes to the server, so it filters the whole table rather than
+     just the 100-row window this page pulls for its client-side tabs/search. */
+  const { data, isLoading, error, refetch, isFetching } = useLeads({
+    page: 1, limit: 100,
+    dateFrom: dateRange.from,
+    dateTo: dateRange.to,
+  });
   const [refreshing, setRefreshing] = useState(false);
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -1547,6 +1555,7 @@ const Leads: React.FC = () => {
             </>}
           </SubPillTrack>
           )}
+          <DateRangeFilter value={dateRange} onChange={v => { setDateRange(v); setPage(1); }} />
           <SearchWrap>
             <SearchIcon><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></SearchIcon>
             <SearchInput

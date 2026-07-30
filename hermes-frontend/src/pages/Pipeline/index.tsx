@@ -5,6 +5,7 @@ import { glassSurface } from '../../styles/glassSurface';
 import { PageHeader, Button, FilterBar, FormField, Table, Pagination, StatusBadge, Card } from '../../components';
 import { useLeads } from '../../api/hooks';
 import { Lead } from '../../api/leads';
+import { sectionIconSlot, IconStageNew, IconStageContacted, IconStageReplied, IconStageQualified } from '../../components/SectionIcons';
 
 const PipelineContainer = styled.div`
   display: flex;
@@ -36,10 +37,19 @@ const ColumnHeader = styled.div`
 `;
 
 const ColumnTitle = styled.h3`
+  ${sectionIconSlot}
   font-size: 1rem;
   font-weight: 700;
   margin: 0;
 `;
+
+/* Kanban stages are a closed set, so each column gets its own icon */
+const STAGE_ICONS: Record<string, React.FC> = {
+  new: IconStageNew,
+  pending: IconStageContacted,
+  contacted: IconStageReplied,
+  qualified: IconStageQualified,
+};
 
 const ColumnCount = styled.span`
   background: ${({ theme }) => theme.colors.accent};
@@ -177,7 +187,10 @@ const Pipeline: React.FC = () => {
           return (
             <KanbanColumn key={stage}>
               <ColumnHeader>
-                <ColumnTitle>{t(`pipeline.stages.${stage}`)}</ColumnTitle>
+                <ColumnTitle>
+                  {(() => { const Ico = STAGE_ICONS[stage]; return Ico ? <Ico /> : null; })()}
+                  {t(`pipeline.stages.${stage}`)}
+                </ColumnTitle>
                 <ColumnCount>{stageLeads.length}</ColumnCount>
               </ColumnHeader>
               {stageLeads.map((lead: Lead) => (

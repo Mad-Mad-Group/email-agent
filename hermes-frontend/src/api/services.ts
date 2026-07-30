@@ -277,7 +277,7 @@ export interface VerifiedEmailItem {
 }
 
 export const verifiedEmailsApi = {
-  list: (params?: { page?: number; limit?: number; search?: string; status?: string; verification_method?: string }) =>
+  list: (params?: { page?: number; limit?: number; search?: string; status?: string; verification_method?: string; dateFrom?: string; dateTo?: string }) =>
     client.get('/verified-emails', { params }),
   stats: () => client.get('/verified-emails/stats'),
   create: (data: { email: string; company_name: string; notes?: string }) =>

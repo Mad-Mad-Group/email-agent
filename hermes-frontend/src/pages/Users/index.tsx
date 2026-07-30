@@ -9,6 +9,7 @@ import { glassSurface } from '../../styles/glassSurface';
 import { useUsers, useMe, useTokenUsage } from '../../api/hooks';
 import { UserItem, usersApi } from '../../api/services';
 import { glassAvatar, glassPillTinted } from '../../styles/liquidGlass';
+import { sectionIconSlot, IconUser, IconShield } from '../../components/SectionIcons';
 
 /* ══════════════════════════════════════
    CMS Users — LUNO Contacts-style UI
@@ -481,6 +482,7 @@ const DpFieldValue = styled.span`
 `;
 
 const DpSectionTitle = styled.h3`
+  ${sectionIconSlot}
   margin: 0 0 14px;
   font-size: 0.6875rem;
   font-weight: 700;
@@ -1011,7 +1013,7 @@ const Users: React.FC = () => {
                 <>
                   {/* ── View Mode ── */}
                   <DpSection>
-                    <DpSectionTitle>{t('users.basicInfo')}</DpSectionTitle>
+                    <DpSectionTitle><IconUser />{t('users.basicInfo')}</DpSectionTitle>
                     <DpGrid>
                       <DpField>
                         <DpFieldLabel>{t('users.role')}</DpFieldLabel>
@@ -1027,7 +1029,7 @@ const Users: React.FC = () => {
                   {/* Permissions Section */}
                   {(selectedUser.permissions ?? []).length > 0 && (
                     <DpSection>
-                      <DpSectionTitle>{t('users.permissions')}</DpSectionTitle>
+                      <DpSectionTitle><IconShield />{t('users.permissions')}</DpSectionTitle>
                       <DpPermGrid>
                         {(selectedUser.permissions ?? []).map(perm => {
                           const PERM_ICONS: Record<string, string> = {

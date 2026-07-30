@@ -63,6 +63,9 @@ export interface LeadListParams {
   industry?: string;
   source?: string;
   search?: string;
+  /** YYYY-MM-DD, inclusive of both ends */
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 export interface LeadListResponse {

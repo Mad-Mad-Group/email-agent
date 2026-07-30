@@ -74,6 +74,19 @@ export class LeadsService {
     if (q.verification) filter._status = q.verification;
     if (q.industry) filter.industry_tags = q.industry;
     if (q.source) filter.source = q.source;
+    if (q.dateFrom || q.dateTo) {
+      /**
+       * _imported_at is a String, not a Date, and the stored formats are mixed
+       * ("2026-07-19 09:32:58" for most rows, ISO with a T for others). Both are
+       * zero-padded and big-endian, so a lexicographic compare on the date part
+       * is correct for either shape. The upper bound is an exclusive "< next day"
+       * rather than "<= dateTo" so any time-of-day suffix is still included.
+       */
+      const range: Record<string, string> = {};
+      if (q.dateFrom) range.$gte = q.dateFrom;
+      if (q.dateTo) range.$lt = this.nextDay(q.dateTo);
+      filter._imported_at = range;
+    }
     if (q.search) {
       const rx = new RegExp(this.escapeRegex(q.search), 'i');
       filter.$or = [{ company_name: rx }, { email: rx }];
@@ -272,6 +285,13 @@ export class LeadsService {
 
   private escapeRegex(s: string): string {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  /** YYYY-MM-DD -> next day, for an exclusive upper bound on a string date */
+  private nextDay(isoDate: string): string {
+    const d = new Date(`${isoDate}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 1);
+    return d.toISOString().slice(0, 10);
   }
 
   private assertObjectId(id: string): void {

@@ -3,6 +3,7 @@ import styled, { css } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { glassSurface, glassSurfaceLight } from '../../styles/glassSurface';
 import { useDialog } from '../../components';
+import { sectionIconSlot, IconBraces } from '../../components/SectionIcons';
 
 /* ══════════════════════════════════════
    Email Template Editor
@@ -432,6 +433,7 @@ const VariablePanel = styled.div`
 `;
 
 const VarSectionTitle = styled.div`
+  ${sectionIconSlot}
   font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -737,7 +739,7 @@ const EmailTemplateEditor: React.FC = () => {
           </PreviewContent>
         ) : (
           <VariablePanel>
-            <VarSectionTitle>{t('emailTemplate.clickToInsertVar')}</VarSectionTitle>
+            <VarSectionTitle><IconBraces />{t('emailTemplate.clickToInsertVar')}</VarSectionTitle>
             {TEMPLATE_VARIABLES.map((v) => (
               <VarItem key={v.key} onClick={() => insertVariable(v.key)}>
                 <VarKey>{v.key}</VarKey>

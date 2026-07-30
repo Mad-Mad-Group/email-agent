@@ -8,6 +8,7 @@ import { useSettings, useNotificationPrefs, useUpdateNotificationPrefs, useWhats
 import { settingsApi, emailSettingsApi } from '../../api/services';
 import { useAuth } from '../../contexts/AuthContext';
 import { glassAvatar } from '../../styles/liquidGlass';
+import { sectionIconSlot, IconSend, IconInbox } from '../../components/SectionIcons';
 
 /* ══════════════════════════════════════
    CMS Settings — LUNO-style UI
@@ -380,6 +381,7 @@ const EmailSmtpIcon = () => (
 );
 
 const SectionTitle = styled.div`
+  ${sectionIconSlot}
   font-size: 0.875rem; font-weight: 600;
   color: ${({ theme }) => theme.colors.accent};
   padding-bottom: 4px;
@@ -1260,7 +1262,7 @@ const Settings: React.FC = () => {
                   <>
                     <DefaultBanner>{t('settings.smtpDesc')}</DefaultBanner>
 
-                    <SectionTitle>{t('settings.smtpSection')}</SectionTitle>
+                    <SectionTitle><IconSend />{t('settings.smtpSection')}</SectionTitle>
                     <FormGroup>
                       <Label>{t('settings.smtpHost')} *</Label>
                       <Input $error={!!smtpErrors.smtpHost} disabled={!smtpEditing} value={smtpForm.smtpHost} onChange={e => { handleSmtpChange('smtpHost', e.target.value); setSmtpErrors(prev => { const n = { ...prev }; delete n.smtpHost; return n; }); }} placeholder="smtp.gmail.com" />
@@ -1306,7 +1308,7 @@ const Settings: React.FC = () => {
                       <FormHint>{t('settings.smtpFromHint', 'Format: Your Name <email@example.com>. Leave empty to use SMTP username.')}</FormHint>
                     </FormGroup>
 
-                    <SectionTitle style={{ marginTop: 16 }}>{t('settings.imapSection')}</SectionTitle>
+                    <SectionTitle style={{ marginTop: 16 }}><IconInbox />{t('settings.imapSection')}</SectionTitle>
                     <FormGroup>
                       <Label>{t('settings.imapHost')} *</Label>
                       <Input $error={!!smtpErrors.imapHost} disabled={!smtpEditing} value={smtpForm.imapHost} onChange={e => { handleSmtpChange('imapHost', e.target.value); setSmtpErrors(prev => { const n = { ...prev }; delete n.imapHost; return n; }); }} placeholder="imap.gmail.com" />
