@@ -8,11 +8,12 @@ import { UserCredentialsService } from '../user-credentials/user-credentials.ser
 import { User, UserDocument } from '../users/schemas/user.schema';
 
 /**
- * EmailService — 三條路徑（優先順序）:
+ * EmailService — 四條路徑（優先順序）:
  *
  * 1. Per-user SMTP（user.smtpHost 有值）→ 用 user 自己嘅 SMTP 設定
  * 2. Per-user OAuth（user_credentials 有 refresh token）→ 用 XOAUTH2
- * 3. Shared .env fallback → 用 server-wide SMTP_HOST/SMTP_USER/SMTP_PASS
+ * 3. Admin SMTP fallback → 用 admin 用戶嘅 SMTP 設定
+ * 4. Shared .env fallback → 用 server-wide SMTP_HOST/SMTP_USER/SMTP_PASS
  */
 @Injectable()
 export class EmailService implements OnModuleInit {
@@ -83,8 +84,26 @@ export class EmailService implements OnModuleInit {
     };
   }
 
+  /** 取得 admin 用戶嘅 SMTP 設定作為 fallback */
+  private async getAdminSmtp() {
+    const admin = await this.userModel
+      .findOne({ role: 'admin', deleted_at: null, smtpHost: { $ne: '' }, smtpUser: { $ne: '' }, smtpPass: { $ne: '' } })
+      .select('smtpHost smtpPort smtpUser smtpPass smtpFrom')
+      .lean()
+      .exec();
+    if (!admin) return null;
+    const a = admin as any;
+    return {
+      smtpHost: a.smtpHost as string,
+      smtpPort: (a.smtpPort ?? 587) as number,
+      smtpUser: a.smtpUser as string,
+      smtpPass: a.smtpPass as string,
+      smtpFrom: (a.smtpFrom || a.smtpUser) as string,
+    };
+  }
+
   /**
-   * 智能發送：user SMTP → OAuth → .env fallback
+   * 智能發送：user SMTP → OAuth → admin SMTP → .env fallback
    * 如果傳入 userId，會先嘗試 user 自己嘅設定
    */
   async smartSend(args: {
@@ -118,7 +137,16 @@ export class EmailService implements OnModuleInit {
       }
     }
 
-    // 3) .env shared fallback
+    // 3) Admin SMTP fallback
+    const adminSmtp = await this.getAdminSmtp();
+    if (adminSmtp) {
+      const t = this.createUserTransport(adminSmtp);
+      const info = await t.sendMail({ from: adminSmtp.smtpFrom, to, subject, html });
+      this.logger.log(`mail sent via admin-SMTP fallback to=${to} msgId=${info.messageId}`);
+      return info;
+    }
+
+    // 4) .env shared fallback
     return this.sendMail(to, subject, html);
   }
 

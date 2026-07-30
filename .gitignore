@@ -28,6 +28,7 @@ cms/worker/*.json
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
+logs/
 
 # Coverage
 coverage/
@@ -35,3 +36,4 @@ cms/worker/agent.ts
 cms/.DS_Store
 AGENTS.md
 cms/server/dist/
+.DS_Store

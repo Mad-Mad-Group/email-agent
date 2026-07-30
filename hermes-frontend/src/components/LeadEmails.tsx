@@ -471,7 +471,7 @@ const LeadEmails: React.FC<{ companyName: string; leadId?: string }> = ({ compan
               <EmailTimelineTime>
                 {d.created_at ? new Date(d.created_at).toLocaleString('zh-HK', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }) : ''}
               </EmailTimelineTime>
-              <EmailCard $status={d.status}>
+              <EmailCard $status={d.status ?? undefined}>
                 {/* Top row: recipient left, actions right */}
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
                   <EmailRecipient style={{ marginBottom: 0 }}>

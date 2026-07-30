@@ -120,6 +120,9 @@ export class UsersService {
 
   /* ── Email SMTP / IMAP settings ── */
 
+  /**
+   * 檢查用戶（或 admin fallback）是否有可用 SMTP 設定
+   */
   async hasSmtpConfigured(id: string): Promise<boolean> {
     const user = await this.userModel
       .findById(id)
@@ -128,7 +131,42 @@ export class UsersService {
       .exec();
     if (!user) return false;
     const u = user as any;
-    return !!(u.smtpHost && u.smtpUser && u.smtpPass);
+    if (u.smtpHost && u.smtpUser && u.smtpPass) return true;
+
+    // Fallback: 檢查 admin 用戶嘅 SMTP
+    return this.hasAdminSmtp();
+  }
+
+  /**
+   * 檢查是否有任何 admin 用戶設定咗 SMTP
+   */
+  async hasAdminSmtp(): Promise<boolean> {
+    const admin = await this.userModel
+      .findOne({ role: 'admin', deleted_at: null, smtpHost: { $ne: '' }, smtpUser: { $ne: '' }, smtpPass: { $ne: '' } })
+      .select('smtpHost smtpUser smtpPass')
+      .lean()
+      .exec();
+    return !!admin;
+  }
+
+  /**
+   * 取得 admin 用戶嘅 SMTP 設定作為 fallback
+   */
+  async getAdminSmtpConfig(): Promise<{ smtpHost: string; smtpPort: number; smtpUser: string; smtpPass: string; smtpFrom: string } | null> {
+    const admin = await this.userModel
+      .findOne({ role: 'admin', deleted_at: null, smtpHost: { $ne: '' }, smtpUser: { $ne: '' }, smtpPass: { $ne: '' } })
+      .select('smtpHost smtpPort smtpUser smtpPass smtpFrom')
+      .lean()
+      .exec();
+    if (!admin) return null;
+    const a = admin as any;
+    return {
+      smtpHost: a.smtpHost,
+      smtpPort: a.smtpPort ?? 587,
+      smtpUser: a.smtpUser,
+      smtpPass: a.smtpPass,
+      smtpFrom: a.smtpFrom || a.smtpUser,
+    };
   }
 
   private readonly emailFields = [

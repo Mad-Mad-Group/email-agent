@@ -182,6 +182,13 @@ const IconSettings = () => (
   </svg>
 );
 
+const IconSchedule2 = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="currentColor" viewBox="0 0 16 16">
+    <path d="M8 3.5a.5.5 0 0 0-1 0V8a.5.5 0 0 0 .252.434l3.5 2a.5.5 0 0 0 .496-.868L8 7.71V3.5z" />
+    <path opacity="0.5" d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16zm7-8A7 7 0 1 1 1 8a7 7 0 0 1 14 0z" />
+  </svg>
+);
+
 const IconUserInfo = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" fill="currentColor" viewBox="0 0 16 16">
     <path d="M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z" />
@@ -720,7 +727,9 @@ const Sidebar: React.FC<SidebarProps> = ({ mobileOpen = false, onMobileClose, co
       </MenuList>
       <BottomMenuList>
         <li><MLink to="/cms-agents"><IconAgent /><FitSpan>{t('nav.agents')}</FitSpan>{counts['/cms-agents'] ? <Badge>{counts['/cms-agents']}</Badge> : null}</MLink></li>
+        <li><MLink to="/cms-schedules"><IconSchedule2 /><FitSpan>{t('nav.schedules')}</FitSpan></MLink></li>
         <li><MLink to="/cms-users"><IconUsers /><FitSpan>{t('nav.team')}</FitSpan></MLink></li>
+        <li><MLink to="/cms-settings"><IconSettings /><FitSpan>{t('nav.settings')}</FitSpan></MLink></li>
       </BottomMenuList>
       </ScrollArea>
 

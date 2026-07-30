@@ -399,7 +399,7 @@ const IsometricWorld: React.FC<{ bgUrl?: string; hideAtmosphere?: boolean }> = (
           <Cloud key={`cloud-${i}`} $top={c.top} $dur={c.dur} $delay={c.delay} $size={c.size} $rtl={c.rtl} />
         ))}
         {BUTTERFLIES.map((b, i) => (
-          <Butterfly key={`fly-${i}`} $top={b.top} $dur={b.dur} $delay={b.delay} $color={b.color} />
+          <Butterfly key={`fly-${i}`} $top={b.top} $left={b.left} $dur={b.dur} $delay={b.delay} $color={b.color} />
         ))}
       </AnimLayer>
     )}

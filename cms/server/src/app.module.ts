@@ -22,6 +22,7 @@ import { CalendarModule } from './calendar/calendar.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { VerifiedEmailsModule } from './verified-emails/verified-emails.module';
 import { TokenUsageModule } from './token-usage/token-usage.module';
+import { PipelineSchedulesModule } from './pipeline-schedules/pipeline-schedules.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -58,6 +59,7 @@ import { AppController } from './app.controller';
     NotificationsModule,
     VerifiedEmailsModule,
     TokenUsageModule,
+    PipelineSchedulesModule,
   ],
   controllers: [AppController],
 })
