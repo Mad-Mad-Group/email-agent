@@ -115,10 +115,27 @@ async function reportQuotaExceeded(detail: string): Promise<void> {
   }
 }
 
+/**
+ * 點樣叫 hermes。以前寫死 'hermes'，即係只能靠 worker 本機 PATH 解析 —— agent
+ * 必須同 worker 同一部機。而家由 HERMES_CMD 決定（空白分隔嘅完整命令）：
+ *
+ *   HERMES_CMD="hermes"                        本機（預設，行為同以前一樣）
+ *   HERMES_CMD="/opt/hermes/bin/hermes"        本機但唔喺 PATH
+ *   HERMES_CMD="ssh agent-host hermes"         喺另一部機跑
+ *   HERMES_CMD="docker exec -i hermes hermes"  喺容器內跑
+ *
+ * 注意：prompt 係當作一個 argv 元素傳，execFile 唔經 shell，所以本機同
+ * docker exec 都安全。但 ssh 會喺遠端經 shell 重組 argv —— prompt 有特殊字元
+ * 時可能出事，長 prompt 亦可能撞 ARG_MAX。要穩定嘅遠端方案，應該喺 agent 機
+ * 開一個 HTTP endpoint 而唔係經 ssh。
+ */
+const HERMES_CMD = (process.env.HERMES_CMD || 'hermes').split(/\s+/).filter(Boolean);
+const [HERMES_BIN, ...HERMES_BASE_ARGS] = HERMES_CMD;
+
 function callHermes(prompt: string, timeoutMs = 300_000): Promise<string> {
   const t0 = Date.now();
   return new Promise((resolve, reject) => {
-    execFile('hermes', ['-z', prompt, '--yolo', '--ignore-rules'], {
+    execFile(HERMES_BIN, [...HERMES_BASE_ARGS, '-z', prompt, '--yolo', '--ignore-rules'], {
       encoding: 'utf8',
       timeout: timeoutMs,
       maxBuffer: 16 * 1024 * 1024,
@@ -2081,6 +2098,8 @@ async function handleTask(task: any, db: any): Promise<void> {
 
 async function main() {
   log(`啟動 → API=${API} skill=${SKILL || 'any'} exclude=${SKILL_EXCLUDE || 'none'} concurrency=${concurrency}`);
+  // 明確記錄用邊個 hermes —— 「兩部機結果唔同」嘅第一個要查嘅就係呢個
+  log(`hermes 命令: ${HERMES_CMD.join(' ')}`);
   await loginWithRetry();
   await refreshConcurrency();
   let lastConcurrencyCheck = Date.now();
