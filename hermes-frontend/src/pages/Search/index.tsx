@@ -13,6 +13,7 @@ import SpriteAvatar from '../../components/SpriteAvatar';
 import LeadDetailPanel from '../../components/LeadDetailPanel';
 import LeadEmails from '../../components/LeadEmails';
 import { AGENTS, FARMER } from '../../config/agents';
+import { glassAvatar } from '../../styles/liquidGlass';
 
 /* ══════════════════════════════════════
    CMS Search — LUNO-style UI
@@ -128,6 +129,7 @@ const OrbitAvatar = styled.div`
   overflow: hidden;
   border: 2px solid ${({ theme }) => theme.colors.border};
   ${media.mobile} { width: 34px; height: 34px; }
+  ${glassAvatar}
 `;
 
 const OrbitDot = styled.div<{ $color: string; $s: number }>`
@@ -934,6 +936,7 @@ const RcAvatar = styled.div<{ $color: string }>`
   display: flex; align-items: center; justify-content: center;
   font-size: 0.8125rem; font-weight: 700;
   flex-shrink: 0;
+  ${glassAvatar}
 `;
 
 const RcBody = styled.div`

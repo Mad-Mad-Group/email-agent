@@ -3,6 +3,7 @@ import styled, { keyframes, useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { glassSurface } from '../../styles/glassSurface';
 import { media } from '../../styles/media';
+import { glassAvatar } from '../../styles/liquidGlass';
 
 /* ══════════════════════════════════════
    LUNO CRM Customers — 1:1 replica
@@ -134,6 +135,7 @@ const Avatar = styled.img`
   width: 40px; height: 40px; border-radius: 50%; object-fit: cover;
   margin-right: ${({ theme }) => theme.spacing.sm}px; vertical-align: middle;
   ${media.tablet} { width: 32px; height: 32px; }
+  ${glassAvatar}
 `;
 
 const NameCell = styled.div`

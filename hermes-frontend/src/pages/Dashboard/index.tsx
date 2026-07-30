@@ -6,6 +6,7 @@ import { useLeads, useEmailQueue, useTokenTimeseries, useTokenBalance } from '..
 import { Lead } from '../../api/leads';
 import { EmailItem } from '../../api/emailQueue';
 import { media } from '../../styles/media';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { glassSurface } from '../../styles/glassSurface';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER, ACTIVITY_AGENT } from '../../config/agents';
@@ -182,12 +183,18 @@ interface VFunnelBar { label: string; value: number; pct: string }
 const StatsRow = styled.div`
   display: flex; align-items: flex-start; gap: 16px; padding-right: 28px;
   flex-wrap: wrap;
+  /* The funnel is a fixed 200px (4 x 44px cols + gaps) and won't shrink, so on
+     a phone it starved StatsLeft down to ~41px and the heading collapsed into a
+     vertical sliver behind the bars. Stack them instead. */
+  ${media.mobile} { flex-direction: column; gap: 4px; padding-right: 16px; }
 `;
 const StatsLeft = styled.div`
   flex: 1; min-width: 0;
+  ${media.mobile} { flex: none; width: 100%; }
 `;
 const VFunnelWrap = styled.div`
   display: flex; align-items: flex-end; gap: 8px; padding: 0; flex-shrink: 0; margin-top: 12px;
+  ${media.mobile} { width: 100%; justify-content: space-between; margin-top: 4px; }
 `;
 const VFunnelCol = styled.div`
   display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; width: 44px;
@@ -607,13 +614,32 @@ const TokenBarChart: React.FC<{ data: { period: string; total_tokens: number }[]
   const svgRef = useRef<SVGSVGElement>(null);
   const [hover, setHover] = useState<{ idx: number; x: number; y: number } | null>(null);
 
-  const items = data.length > 0 ? data : [];
+  const isMobile = useIsMobile();
+
+  /* The 700x120 viewBox scales to ~0.41 on a phone, which renders the 7px
+     labels at under 3px. Phones get a near-square viewBox (scale ~0.85), a
+     larger font, thicker bars, and at most MAX_MOBILE_BARS of the most recent
+     points so the bars aren't hairlines. */
+  const MAX_MOBILE_BARS = 12;
+  const items = useMemo(() => {
+    const all = data.length > 0 ? data : [];
+    return isMobile && all.length > MAX_MOBILE_BARS ? all.slice(-MAX_MOBILE_BARS) : all;
+  }, [data, isMobile]);
+
   const maxVal = Math.max(...items.map(d => d.total_tokens), 1);
-  const w = 700, h = 120, pl = 50, pr = 10, pt = 10, pb = 24;
+  const w = isMobile ? 340 : 700;
+  const h = isMobile ? 200 : 120;
+  const pl = isMobile ? 40 : 50;
+  const pr = isMobile ? 8 : 10;
+  const pt = isMobile ? 12 : 10;
+  const pb = isMobile ? 30 : 24;
+  const fs = isMobile ? 10 : 7;
   const chartW = w - pl - pr, chartH = h - pt - pb;
   const barCount = items.length || 1;
   const gap = Math.min(chartW / barCount, 64);
-  const barW = gap * 0.35;
+  const barW = gap * (isMobile ? 0.5 : 0.35);
+  /* Even at 12 bars the x labels would collide, so label every other bar */
+  const labelEvery = isMobile && barCount > 8 ? 2 : 1;
 
   const formatNum = (n: number) => {
     if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
@@ -664,7 +690,7 @@ const TokenBarChart: React.FC<{ data: { period: string; total_tokens: number }[]
           return (
             <g key={`tick${i}`}>
               <line x1={pl} y1={y} x2={pl + chartW} y2={y} stroke={theme.colors.border} strokeWidth="0.5" strokeDasharray={i === 0 ? undefined : '3,3'} />
-              <text x={pl - 8} y={y} textAnchor="end" fill={theme.colors.textTertiary} fontSize="7" fontWeight="400" dominantBaseline="central">{formatNum(tick)}</text>
+              <text x={pl - 8} y={y} textAnchor="end" fill={theme.colors.textTertiary} fontSize={fs} fontWeight="400" dominantBaseline="central">{formatNum(tick)}</text>
             </g>
           );
         })}
@@ -675,7 +701,9 @@ const TokenBarChart: React.FC<{ data: { period: string; total_tokens: number }[]
           const y = pt + chartH - barH;
           const isHovered = hover?.idx === i;
           // Short label
-          const label = d.period.length > 7 ? d.period.slice(-5) : d.period;
+          /* On phones always trim to 5 chars ("2025-08" -> "25-08"); the full
+             form nearly touches its neighbour at this bar spacing. */
+          const label = isMobile || d.period.length > 7 ? d.period.slice(-5) : d.period;
           return (
             <g key={i} style={{ cursor: 'pointer' }}
                onMouseMove={(e) => handleMouseMove(e, i)}
@@ -692,12 +720,14 @@ const TokenBarChart: React.FC<{ data: { period: string; total_tokens: number }[]
                 <>
                   <circle cx={x + barW / 2} cy={y} r={4} fill={theme.colors.accent} />
                   <text x={x + barW / 2} y={y - 10} textAnchor="middle" fill={theme.colors.accent}
-                    fontSize="7" fontWeight="700">{formatNum(d.total_tokens)}</text>
+                    fontSize={fs} fontWeight="700">{formatNum(d.total_tokens)}</text>
                 </>
               )}
-              <text x={pl + i * gap + gap / 2} y={pt + chartH + 16}
-                textAnchor="middle" fill={theme.colors.textTertiary}
-                fontSize="7" fontWeight="400">{label}</text>
+              {i % labelEvery === 0 && (
+                <text x={pl + i * gap + gap / 2} y={pt + chartH + (isMobile ? 20 : 16)}
+                  textAnchor="middle" fill={theme.colors.textTertiary}
+                  fontSize={fs} fontWeight="400">{label}</text>
+              )}
             </g>
           );
         })}

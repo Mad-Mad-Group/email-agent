@@ -1,5 +1,6 @@
 import React from 'react';
 import styled, { useTheme, keyframes, css } from 'styled-components';
+import { glassPillTinted } from '../../styles/liquidGlass';
 
 type Status = 'new' | 'pending' | 'contacted' | 'rejected' | 'qualified' | 'draft' | 'approved' | 'sent' | 'running' | 'idle' | 'active';
 
@@ -21,13 +22,16 @@ const Pill = styled.span<{ $bg: string; $fg: string; $isRunning?: boolean }>`
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: ${({ theme }) => theme.spacing.xs}px ${({ theme }) => theme.spacing.sm}px;
+  padding: 4px 11px;
   border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.875rem;
+  font-weight: 600;
   font-family: ${({ theme }) => theme.fonts.primary};
-  background: ${({ $bg }) => $bg};
-  color: ${({ $fg }) => $fg};
+  ${({ $bg }) => glassPillTinted($bg)}
+  /* $fg was white on several statuses, which the lighter tint can't support.
+     textPrimary is dark in light mode / light in dark mode, so it reads either
+     way — the status hue still comes through via the LED dot and the tint. */
+  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const LedDot = styled.span<{ $fg: string; $active?: boolean }>`

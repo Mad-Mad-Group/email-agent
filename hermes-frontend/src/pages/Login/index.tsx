@@ -6,6 +6,7 @@ import { Button, FormField } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER } from '../../config/agents';
+import { glassTrack, glassAvatar } from '../../styles/liquidGlass';
 
 const LANGUAGES = [
   { code: 'en', label: 'EN' },
@@ -84,6 +85,7 @@ const OrbitAvatar = styled.div`
   box-shadow: ${({ theme }) => theme.shadows.card};
   overflow: hidden;
   border: 2px solid ${({ theme }) => theme.colors.border};
+  ${glassAvatar}
 `;
 
 const OrbitDot = styled.div<{ $color: string; $s: number }>`
@@ -221,9 +223,7 @@ const LangPill = styled.div`
   display: inline-flex;
   border-radius: 999px;
   z-index: 3;
-  background: ${({ theme }) => theme.colors.surface}88;
-  backdrop-filter: blur(8px);
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  ${glassTrack}
   padding: 3px;
 
   @media (max-width: 900px) {

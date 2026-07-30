@@ -1,5 +1,6 @@
 import React from 'react';
 import styled, { css } from 'styled-components';
+import { glassGhostButton } from '../../styles/liquidGlass';
 
 interface ButtonProps {
   variant?: 'default' | 'primary' | 'sm';
@@ -31,7 +32,9 @@ const StyledButton = styled.button<{ $variant: string }>`
   padding: ${({ theme }) => theme.spacing.sm}px ${({ theme }) => theme.spacing.md}px;
   border-radius: ${({ theme }) => theme.radii.control}px;
   border: 1px solid ${({ theme }) => theme.colors.border};
-  background: ${({ theme }) => theme.colors.surface};
+  /* Default (secondary) variant is glass; primaryStyles is applied further down
+     and keeps its solid accent fill. */
+  ${glassGhostButton}
   color: ${({ theme }) => theme.colors.textPrimary};
   cursor: pointer;
   transition: background 160ms var(--ease-out), border-color 160ms var(--ease-out), opacity 160ms var(--ease-out), transform 160ms var(--ease-out);

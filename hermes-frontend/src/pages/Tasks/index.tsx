@@ -8,6 +8,7 @@ import { TaskItem } from '../../api/services';
 import { media } from '../../styles/media';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER } from '../../config/agents';
+import { glassAvatar } from '../../styles/liquidGlass';
 
 /* ══════════════════════════════════════
    CMS Tasks — Luno jKanban Board style
@@ -374,6 +375,7 @@ const AgentAvatar = styled.span<{ $bg: string }>`
   background: ${({ $bg }) => $bg};
   overflow: hidden;
   img { width: 100%; height: 100%; object-fit: cover; }
+  ${glassAvatar}
 `;
 
 const AvatarName = styled.span`

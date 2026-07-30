@@ -7,6 +7,7 @@ import { glassSurface } from '../../styles/glassSurface';
 import { useSettings, useNotificationPrefs, useUpdateNotificationPrefs, useWhatsappTemplates, useUpdateWhatsappTemplates, useEmailSettings, useUpdateEmailSettings } from '../../api/hooks';
 import { settingsApi, emailSettingsApi } from '../../api/services';
 import { useAuth } from '../../contexts/AuthContext';
+import { glassAvatar } from '../../styles/liquidGlass';
 
 /* ══════════════════════════════════════
    CMS Settings — LUNO-style UI
@@ -42,6 +43,7 @@ const HeroAvatar = styled.div`
   color: ${({ theme }) => theme.colors.textInverted};
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  ${glassAvatar}
 `;
 
 const HeroInfo = styled.div`flex: 1;`;

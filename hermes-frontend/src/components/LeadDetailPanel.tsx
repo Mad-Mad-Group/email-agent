@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { Lead } from '../api/leads';
 import { media } from '../styles/media';
 import { glassSurface } from '../styles/glassSurface';
+import { glassAvatar, glassPillTinted } from '../styles/liquidGlass';
 
 /* ── Avatar color from name hash ── */
 
@@ -69,6 +70,7 @@ export const Avatar = styled.div<{ $colorIndex: number }>`
   flex-shrink: 0;
   box-shadow: 0 2px 8px rgba(42,120,214,0.12);
   line-height: 1;
+  ${glassAvatar}
 `;
 
 
@@ -125,12 +127,12 @@ export const ReplyBadge = styled.span<{ $bg: string; $fg: string }>`
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 2px 10px;
+  padding: 4px 11px;
   border-radius: 99px;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  background: ${({ $bg }) => $bg};
-  color: ${({ $fg }) => $fg};
+  ${({ $bg }) => glassPillTinted($bg)}
+  color: ${({ theme }) => theme.colors.textPrimary};
   white-space: nowrap;
   svg { width: 12px; height: 12px; flex-shrink: 0; }
 `;
@@ -270,12 +272,12 @@ export const DpStatusPill = styled.span<{ $status?: string }>`
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   font-weight: 700;
-  padding: 3px 10px;
+  padding: 4px 11px;
   border-radius: 99px;
-  background: ${({ $status }) => STATUS_PILL_COLORS[$status || '']?.bg || '#f0f0f0'};
-  color: ${({ $status }) => STATUS_PILL_COLORS[$status || '']?.fg || '#888'};
+  ${({ $status }) => glassPillTinted(STATUS_PILL_COLORS[$status || '']?.bg || '#f0f0f0')}
+  color: ${({ theme }) => theme.colors.textPrimary};
   &::before {
     content: '';
     width: 6px;

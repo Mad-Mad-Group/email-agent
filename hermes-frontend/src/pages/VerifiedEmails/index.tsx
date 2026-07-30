@@ -8,6 +8,7 @@ import { useVerifiedEmails, useVerifiedEmailStats, useCreateVerifiedEmail, useDe
 import { VerifiedEmailItem, verifiedEmailsApi } from '../../api/services';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS } from '../../config/agents';
+import { glassGhostButton } from '../../styles/liquidGlass';
 
 /* ══════════════════════════════════════
    Verified Emails Pool — 共用已驗證郵箱
@@ -65,6 +66,8 @@ const PageCard = styled.div`
   border-radius: ${({ theme }) => theme.radii.card}px;
   padding: 24px;
   display: flex; flex-direction: column; gap: ${({ theme }) => theme.spacing.md}px;
+  min-width: 0;
+  ${media.mobile} { padding: 12px; }
 `;
 
 const Breadcrumb = styled.ol`
@@ -87,6 +90,14 @@ const PageSub = styled.p`font-size: 0.8125rem; color: ${({ theme }) => theme.col
 
 const ToolbarRow = styled.div`
   display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  min-width: 0;
+`;
+
+/* Search + Export + Add. On phones the search field takes its own line so the
+   two buttons aren't pushed off-screen. */
+const ToolbarActions = styled.div`
+  display: flex; align-items: center; gap: 8px;
+  ${media.mobile} { width: 100%; flex-wrap: wrap; }
 `;
 
 const SearchInput = styled.input`
@@ -96,6 +107,9 @@ const SearchInput = styled.input`
   font-size: 0.8125rem; width: 220px; outline: none; transition: border-color 0.15s;
   &::placeholder { color: ${({ theme }) => theme.colors.textTertiary}; }
   &:focus { border-color: ${({ theme }) => theme.colors.accent}; }
+  /* Fixed 220px + both buttons overflowed a 299px row; min-width:0 lets an
+     input actually shrink below its intrinsic size. */
+  ${media.mobile} { width: 100%; min-width: 0; flex: 1 1 100%; }
 `;
 
 const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'ghost' }>`
@@ -103,10 +117,13 @@ const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'ghost' }>`
   padding: 6px 14px; border-radius: ${({ theme }) => theme.radii.control}px;
   font-size: 0.8125rem; font-weight: 500;
   cursor: pointer; border: 1px solid transparent; transition: background 150ms var(--ease-out), color 150ms var(--ease-out), border-color 150ms var(--ease-out), opacity 150ms var(--ease-out);
+  /* Only the secondary/ghost variant gets glass — primary and danger keep their
+     solid fills so they stay visually dominant. */
+  ${({ $variant }) => (!$variant || $variant === 'ghost') && glassGhostButton}
   ${({ $variant, theme }) => {
     if ($variant === 'primary') return `background: ${theme.colors.accent}; color: ${theme.colors.textInverted}; &:hover { opacity: 0.9; }`;
     if ($variant === 'danger') return `background: transparent; color: ${theme.colors.accent}; border-color: ${theme.colors.accent}; &:hover { background: ${theme.colors.accent}; color: ${theme.colors.textInverted}; }`;
-    return `background: ${theme.colors.surface}; color: ${theme.colors.textSecondary}; border-color: ${theme.colors.border}; &:hover { background: ${theme.colors.surfaceMuted}; }`;
+    return `color: ${theme.colors.textSecondary}; border-color: ${theme.colors.border};`;
   }}
 `;
 
@@ -114,9 +131,14 @@ const Btn = styled.button<{ $variant?: 'primary' | 'danger' | 'ghost' }>`
 
 const StatCardsRow = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  /* 200px minimum only fit 4 across an 867px grid, leaving one card stranded
+     on its own row — 150px lets narrower widths pack more per row. */
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: ${({ theme }) => theme.spacing.md}px;
-  ${media.mobile} { grid-template-columns: repeat(2, 1fr); }
+  /* All five on one row */
+  ${media.desktop} { grid-template-columns: repeat(5, 1fr); }
+  /* One card per row on phones */
+  ${media.mobile} { grid-template-columns: 1fr; gap: 6px; }
 `;
 
 const LunoStatCard = styled.div<{ $accent: string }>`
@@ -127,6 +149,11 @@ const LunoStatCard = styled.div<{ $accent: string }>`
   padding: 18px 20px 16px;
   transition: transform 0.18s, box-shadow 0.18s;
   &:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.10); }
+  /* Full-width rows: label and value sit side by side so each row stays short */
+  ${media.mobile} {
+    padding: 8px 12px; border-left-width: 3px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
 `;
 
 const StatWatermark = styled.span<{ $color: string }>`
@@ -136,16 +163,22 @@ const StatWatermark = styled.span<{ $color: string }>`
   color: ${({ $color }) => $color};
   line-height: 0;
   svg { width: 100%; height: 100%; }
+  ${media.mobile} { width: 30px; height: 30px; right: 8px; bottom: -2px; }
 `;
 
 const StatLabel = styled.span`
   font-size: 0.6875rem; font-weight: 700; text-transform: uppercase;
   letter-spacing: 0.06em; opacity: 0.55;
   color: ${({ theme }) => theme.colors.textPrimary}; margin-bottom: 6px; display: block;
+  ${media.mobile} { font-size: 0.6875rem; letter-spacing: 0.04em; margin-bottom: 0; line-height: 1.2; }
 `;
 
 const StatValueRow = styled.div`display: flex; align-items: baseline; gap: 6px;`;
-const StatNumber = styled.span<{ $color: string }>`font-size: 2rem; font-weight: 700; color: ${({ $color }) => $color}; line-height: 1; font-variant-numeric: tabular-nums;`;
+const StatNumber = styled.span<{ $color: string }>`
+  font-size: 2rem; font-weight: 700; color: ${({ $color }) => $color}; line-height: 1;
+  font-variant-numeric: tabular-nums;
+  ${media.mobile} { font-size: 1.375rem; }
+`;
 const StatUnit = styled.span`font-size: 0.875rem; color: ${({ theme }) => theme.colors.textTertiary};`;
 
 /* watermark icons (stroke style, matching Leads) */
@@ -404,7 +437,7 @@ const VerifiedEmailsPage: React.FC = () => {
 
       {/* Toolbar */}
       <ToolbarRow>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <ToolbarActions>
           <SearchInput
             placeholder={t('verifiedEmails.searchPlaceholder')}
             value={search}
@@ -412,7 +445,7 @@ const VerifiedEmailsPage: React.FC = () => {
           />
           <Btn onClick={handleExport}><ExportIcon /> {t('verifiedEmails.export')}</Btn>
           <Btn $variant="primary" onClick={() => setShowAdd(true)}><PlusIcon /> {t('verifiedEmails.add')}</Btn>
-        </div>
+        </ToolbarActions>
       </ToolbarRow>
 
       {/* Table */}

@@ -11,6 +11,7 @@ import { media } from '../../styles/media';
 import { glassSurface } from '../../styles/glassSurface';
 import { useDialog } from '../../components';
 import EmailTemplateEditor from './EmailTemplateEditor';
+import { glassAvatar } from '../../styles/liquidGlass';
 
 /* ══════════════════════════════════════
    Email Queue — LUNO-style 3-panel UI
@@ -417,6 +418,7 @@ const AvatarCircle = styled.div<{ $bg: string }>`
   user-select: none;
   box-shadow: none;
   border: 1px solid rgba(255,255,255,0.25);
+  ${glassAvatar}
 `;
 
 const SenderCol = styled.div`

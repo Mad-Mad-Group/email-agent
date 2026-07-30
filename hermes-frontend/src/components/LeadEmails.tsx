@@ -9,6 +9,7 @@ import { EmailItem } from '../api/emailQueue';
 import { useDialog } from '../components';
 import { ReplyBadge, DpSectionTitle } from './LeadDetailPanel';
 import client from '../api/client';
+import { glassAvatar } from '../styles/liquidGlass';
 
 /* ── (mock data removed — real API only) ── */
 
@@ -308,6 +309,7 @@ const AgentAvatar = styled.div`
   font-weight: 700;
   flex-shrink: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  ${glassAvatar}
 `;
 /* segment styled components removed — plain text only */
 

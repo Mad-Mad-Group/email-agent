@@ -1,9 +1,16 @@
 import { css } from 'styled-components';
+import { liquidGlass } from './liquidGlass';
 
 /**
- * Card surface — solid white bg + soft shadow. Replaces glassSurface.
+ * Card surface — liquid glass, matching the Dashboard's pastel stat cards.
+ *
+ * This was previously a solid white fill. Every card in the app routes through
+ * here, so the definition lives in ./liquidGlass and this stays an alias.
  */
-export const glassSurface = css`
+export const glassSurface = liquidGlass;
+
+/** Solid fill, for the few places translucency hurts legibility. */
+export const solidSurface = css`
   background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
   box-shadow: ${({ theme }) => theme.shadows.card};

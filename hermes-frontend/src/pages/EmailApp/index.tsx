@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import styled, { useTheme } from 'styled-components';
 import { glassSurface } from '../../styles/glassSurface';
 import { media } from '../../styles/media';
+import { glassAvatar } from '../../styles/liquidGlass';
 
 /* ══════════════════════════════════════
    LUNO Email App Page — pixel-perfect replica
@@ -269,6 +270,7 @@ const AvatarCircle = styled.div<{ $bg: string }>`
     min-width: 32px;
     font-size: 0.75rem;
   }
+  ${glassAvatar}
 `;
 
 const EmailContent = styled.div`

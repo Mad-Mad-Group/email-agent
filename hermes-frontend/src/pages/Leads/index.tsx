@@ -10,7 +10,9 @@ import { usersApi } from '../../api/services';
 import { Lead, leadsApi } from '../../api/leads';
 import client from '../../api/client';
 import { media } from '../../styles/media';
+import { useIsMobile } from '../../hooks/useIsMobile';
 import { glassSurface } from '../../styles/glassSurface';
+import { glassPill, glassTrack, glassAvatar } from '../../styles/liquidGlass';
 import { useDialog } from '../../components';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER, SOURCE_AGENT } from '../../config/agents';
@@ -214,7 +216,7 @@ const TabsRow = styled.div`
   align-items: center;
   gap: 2px;
   padding: 3px;
-  background: ${({ theme }) => theme.colors.canvas};
+  ${glassTrack}
   border-radius: 999px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -224,6 +226,46 @@ const TabsRow = styled.div`
   width: fit-content;
   max-width: 100%;
   min-width: 0;
+`;
+
+/* Phones swap both pill tracks for a native dropdown — see MobileFilterSelect */
+const MobileFilterRow = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+`;
+
+const MobileFilterSelect = styled.select`
+  width: 100%;
+  padding: 10px 34px 10px 12px;
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radii.control}px;
+  background: ${({ theme }) => theme.colors.surface};
+  font-size: 0.9375rem;
+  font-family: ${({ theme }) => theme.fonts.primary};
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  box-shadow: 0 1px 2px rgba(15,23,42,0.04);
+  transition: border-color 0.15s;
+  &:focus {
+    border-color: ${({ theme }) => theme.colors.accent};
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
+  }
+  /* The dropdown list doesn't inherit the control's size in Chrome, and it
+     doesn't scale with the mobile viewport either — size the options directly. */
+  option {
+    font-size: 1rem;
+    font-weight: 500;
+    padding: 10px 12px;
+    color: ${({ theme }) => theme.colors.textPrimary};
+    background: ${({ theme }) => theme.colors.surface};
+  }
 `;
 
 const TabItem = styled.button<{ $active?: boolean; $color?: string }>`
@@ -256,9 +298,8 @@ const TabSlider = styled.div<{ $left: number; $width: number }>`
   bottom: 3px;
   left: ${({ $left }) => $left}px;
   width: ${({ $width }) => $width}px;
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassPill}
   border-radius: 999px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.1);
   transition: left 0.3s cubic-bezier(.4,0,.2,1), width 0.3s cubic-bezier(.4,0,.2,1);
   z-index: 0;
 `;
@@ -290,7 +331,7 @@ const SubPillTrack = styled.div`
   align-items: center;
   gap: 2px;
   padding: 3px;
-  background: ${({ theme }) => theme.colors.canvas};
+  ${glassTrack}
   border-radius: 999px;
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
@@ -349,9 +390,8 @@ const SubSlider = styled.div<{ $left: number; $width: number }>`
   bottom: 3px;
   left: ${({ $left }) => $left}px;
   width: ${({ $width }) => $width}px;
-  background: ${({ theme }) => theme.colors.surface};
+  ${glassPill}
   border-radius: 999px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
   transition: left 0.3s cubic-bezier(.4,0,.2,1), width 0.3s cubic-bezier(.4,0,.2,1);
   z-index: 0;
 `;
@@ -509,8 +549,11 @@ const NameAvatar = styled.div<{ $idx: number }>`
   justify-content: center;
   font-size: 0.8125rem;
   font-weight: 700;
-  background: ${({ theme, $idx }) => theme.pastel[NAME_AVATAR_KEYS[$idx]]}55;
+  background: linear-gradient(135deg,
+    ${({ theme, $idx }) => theme.pastel[NAME_AVATAR_KEYS[$idx]]}80 0%,
+    ${({ theme, $idx }) => theme.pastel[NAME_AVATAR_KEYS[$idx]]}40 100%);
   color: ${({ theme, $idx }) => theme.strong[NAME_AVATAR_KEYS[$idx]]};
+  ${glassAvatar}
 `;
 
 const NameText = styled.div`
@@ -1048,6 +1091,7 @@ const Leads: React.FC = () => {
   const { t } = useTranslation();
   const { showConfirm } = useDialog();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
   const isNew = (l: Lead) => l.status === 'new' || l.status === null || l.status === undefined;
 
@@ -1428,7 +1472,36 @@ const Leads: React.FC = () => {
           <div><PageTitle>{t('leads.title')}</PageTitle><PageSub>{t('leads.subtitle')}</PageSub></div>
         </div>
 
-        {/* ── Orbital-style View Tabs ── */}
+        {/* ── Phones: two dropdowns instead of the pill tracks ── */}
+        {isMobile ? (
+          <MobileFilterRow>
+            <MobileFilterSelect
+              value={activeTab}
+              onChange={e => handleTabClick(e.target.value)}
+              aria-label={t('leads.title')}
+            >
+              {TABS.map(tab => (
+                <option key={tab.key} value={tab.key}>
+                  {tab.label} ({tabCounts[tab.key] ?? 0})
+                </option>
+              ))}
+            </MobileFilterSelect>
+            {curTab.subs.length > 1 && (
+              <MobileFilterSelect
+                value={activeSub}
+                onChange={e => handleSubClick(e.target.value)}
+                aria-label={curTab.label}
+              >
+                {curTab.subs.map(sub => (
+                  <option key={sub.key} value={sub.key}>
+                    {sub.label} ({subCounts[sub.key] ?? 0})
+                  </option>
+                ))}
+              </MobileFilterSelect>
+            )}
+          </MobileFilterRow>
+        ) : (
+        /* ── Orbital-style View Tabs ── */
         <TabsRow ref={tabsRowRef}>
           <TabSlider $left={tabSlider.left} $width={tabSlider.width} />
           {TABS.map(tab => (
@@ -1447,9 +1520,11 @@ const Leads: React.FC = () => {
             </TabItem>
           ))}
         </TabsRow>
+        )}
 
         {/* ── Sub-status pills in track bar + right-side actions ── */}
         <SubPillRow>
+          {!isMobile && (
           <SubPillTrack ref={subTrackRef}>
             {curTab.subs.length > 1 && <>
               <SubSlider $left={subSlider.left} $width={subSlider.width} />
@@ -1471,6 +1546,7 @@ const Leads: React.FC = () => {
               ))}
             </>}
           </SubPillTrack>
+          )}
           <SearchWrap>
             <SearchIcon><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></SearchIcon>
             <SearchInput

@@ -8,6 +8,7 @@ import { media } from '../../styles/media';
 import { glassSurface } from '../../styles/glassSurface';
 import { useUsers, useMe, useTokenUsage } from '../../api/hooks';
 import { UserItem, usersApi } from '../../api/services';
+import { glassAvatar, glassPillTinted } from '../../styles/liquidGlass';
 
 /* ══════════════════════════════════════
    CMS Users — LUNO Contacts-style UI
@@ -230,6 +231,7 @@ const AvatarCircle = styled.div<{ $bg: string }>`
   font-size: 0.8125rem; font-weight: 600; color: ${({ theme }) => theme.colors.textPrimary};
   flex-shrink: 0;
   box-shadow: none;
+  ${glassAvatar}
 `;
 
 const UserName = styled.span`
@@ -242,13 +244,13 @@ const UserName = styled.span`
 
 const RoleBadge = styled.span<{ $bg: string; $fg: string }>`
   display: inline-flex; align-items: center; gap: 4px;
-  padding: 3px 12px; border-radius: 99px;
-  font-size: 0.75rem; font-weight: 600;
-  background: ${({ $bg }) => $bg};
-  color: ${({ $fg }) => $fg};
+  padding: 4px 13px; border-radius: 99px;
+  font-size: 0.875rem; font-weight: 600;
+  /* Was a fully opaque pastel — darker than the Dashboard cards, so the dark
+     serif label was hard to read. */
+  ${({ $bg }) => glassPillTinted($bg)}
+  color: ${({ theme }) => theme.colors.textPrimary};
   text-transform: capitalize;
-  border: 1px solid ${({ $bg }) => $bg}55;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
   svg { width: 11px; height: 11px; flex-shrink: 0; }
 `;
 
@@ -257,11 +259,11 @@ const RoleBadge = styled.span<{ $bg: string; $fg: string }>`
 const PermList = styled.div`display: flex; gap: 4px; flex-wrap: wrap;`;
 
 const PermTag = styled.span<{ $bg?: string; $fg?: string }>`
-  display: inline-block; padding: 2px 8px; border-radius: 12px;
-  font-size: 0.6875rem;
+  display: inline-block; padding: 3px 10px; border-radius: 12px;
+  font-size: 0.8125rem;
   font-weight: 600;
-  background: ${({ theme, $bg }) => $bg ?? theme.colors.surfaceMuted};
-  color: ${({ theme, $fg }) => $fg ?? theme.colors.textSecondary};
+  ${({ theme, $bg }) => glassPillTinted($bg ?? theme.colors.surfaceMuted)}
+  color: ${({ theme }) => theme.colors.textPrimary};
 `;
 
 const PermCount = styled.span`

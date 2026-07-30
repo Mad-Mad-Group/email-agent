@@ -16,6 +16,7 @@ import CalendarPage from '../Calendar';
 import LeadsPage from '../Leads';
 import VerifiedPoolPage from '../VerifiedEmails';
 import OnboardingTour, { OnboardingHelpBtn, isOnboardingCompleted } from '../../components/OnboardingTour';
+import { glassPill, glassAvatarEdge } from '../../styles/liquidGlass';
 
 /* ── Skill → i18n key mapping ── */
 const SKILL_I18N: Record<string, { nameKey: string; typeKey: string }> = {
@@ -652,6 +653,9 @@ const StatusAvatar = styled.div<{ $src: string }>`
   background-repeat: no-repeat;
   image-rendering: pixelated;
   flex-shrink: 0;
+  /* Edge-only: the sheen variant would overwrite background-image and blank
+     out the sprite. */
+  ${glassAvatarEdge}
 `;
 
 const StatusName = styled.span`
@@ -1023,9 +1027,11 @@ const CalendarModalBody = styled.div`
 
 const PoolTab = styled.button<{ $active: boolean }>`
   padding: 6px 14px;
+  /* Active stays a solid accent block so its white label keeps contrast */
+  ${({ $active }) => !$active && glassPill}
   border-radius: 999px;
   border: 1px solid ${({ $active, theme }) => $active ? 'transparent' : theme.colors.border};
-  background: ${({ $active, theme }) => $active ? theme.colors.accent : 'transparent'};
+  background: ${({ $active, theme }) => $active ? theme.colors.accent : undefined};
   color: ${({ $active, theme }) => $active ? theme.colors.textInverted : theme.colors.textSecondary};
   font-size: 0.8125rem;
   font-weight: 600;
