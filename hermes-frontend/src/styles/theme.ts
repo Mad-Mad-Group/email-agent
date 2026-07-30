@@ -1,7 +1,7 @@
 import { HermesTheme } from '../types/theme';
 
 const shared = {
-  radii: { card: 16, tile: 16, control: 8 },
+  radii: { card: 16, tile: 16, control: 8, badge: 999 },
   fonts: {
     primary: "'Source Serif 4', 'Noto Serif TC', 'PingFang TC', 'PingFang SC', Georgia, 'Microsoft JhengHei', serif",
     display: "'Righteous', 'Plus Jakarta Sans', 'Noto Serif TC', sans-serif",
@@ -47,6 +47,10 @@ export const lightTheme: HermesTheme = {
     textTertiary: '#9CA3AF',
     textInverted: '#FFFFFF',
     accent: '#2A78D6',
+    // 語意色
+    danger: '#DC2626',
+    blue: '#2A78D6',
+    green: '#16A34A',
   },
   pastel: {
     mauve: '#E8A0CC',
@@ -105,6 +109,10 @@ export const darkTheme: HermesTheme = {
     textTertiary: '#6B7280',
     textInverted: '#0B080B',
     accent: '#3987E5',
+    // 語意色（深色模式提高亮度確保對比度）
+    danger: '#EF4444',
+    blue: '#3987E5',
+    green: '#22C55E',
   },
   pastel: {
     mauve: '#3D2636',

@@ -460,8 +460,13 @@ const DpField = styled.div<{ $stacked?: boolean }>`
 `;
 
 const DpFieldLabel = styled.span<{ $stacked?: boolean }>`
+<<<<<<< Updated upstream
   font-size: 0.75rem;
   font-weight: 600;
+=======
+  font-size: 0.6875rem;
+  font-weight: 700;
+>>>>>>> Stashed changes
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: ${({ theme }) => theme.colors.textTertiary};

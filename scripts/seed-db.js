@@ -143,6 +143,16 @@ const COLLECTIONS = [
       { key: { user_id: 1 }, unique: true },
     ],
   },
+  {
+    name: 'pipeline_schedules',
+    indexes: [
+      { key: { user_id: 1 } },
+      { key: { enabled: 1 } },
+      { key: { type: 1 } },
+      { key: { next_run_at: 1 } },
+      { key: { enabled: 1, next_run_at: 1 } },
+    ],
+  },
 ];
 
 // ── 預設角色 ──────────────────────────────────────────

@@ -21,6 +21,7 @@ import TasksPage from './pages/Tasks';
 import UsersPage from './pages/Users';
 import SettingsPage from './pages/Settings';
 import AgentPanel from './pages/AgentPanel';
+import SchedulesPage from './pages/Schedules';
 
 import UserInfoPage from './pages/UserInfo';
 import { DialogProvider } from './components';
@@ -107,6 +108,7 @@ function App() {
                   <Route path="/cms-users" element={<UsersPage />} />
                   <Route path="/cms-settings" element={<SettingsPage />} />
                   <Route path="/cms-agents" element={<AgentPanel />} />
+                  <Route path="/cms-schedules" element={<SchedulesPage />} />
                   <Route path="/cms-verified-emails" element={<Navigate to="/client-pool?view=verified" replace />} />
                   <Route path="/cms-user-info" element={<UserInfoPage />} />
                   {/* RESOURCES */}

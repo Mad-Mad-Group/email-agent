@@ -150,7 +150,7 @@ const Register: React.FC = () => {
         company_name: companyName,
         company_description: companyDesc,
       });
-      navigate('/cms-agents');
+      navigate('/cms-search');
     } catch (err: any) {
       setError(err.response?.data?.message || t('register.registrationFailed'));
     }

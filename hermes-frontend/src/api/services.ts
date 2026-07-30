@@ -223,6 +223,42 @@ export const jobsApi = {
   run: (name: string) => client.post(`/jobs/${name}/run`),
 };
 
+/* ── Pipeline Schedules ── */
+
+export interface PipelineScheduleItem {
+  _id: string;
+  name: string;
+  type: 'search' | 'send_approved' | 'reply_check' | 'followup' | 'full_pipeline';
+  cron: string;
+  params: Record<string, any>;
+  enabled: boolean;
+  user_id: string;
+  last_run_at: string | null;
+  next_run_at: string | null;
+  last_run_status: 'success' | 'failed' | null;
+  last_run_error: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreatePipelineSchedulePayload {
+  name: string;
+  type: PipelineScheduleItem['type'];
+  cron: string;
+  params?: Record<string, any>;
+  enabled?: boolean;
+}
+
+export const pipelineSchedulesApi = {
+  list: () => client.get('/pipeline-schedules'),
+  get: (id: string) => client.get(`/pipeline-schedules/${id}`),
+  create: (data: CreatePipelineSchedulePayload) => client.post('/pipeline-schedules', data),
+  update: (id: string, data: Partial<CreatePipelineSchedulePayload>) => client.patch(`/pipeline-schedules/${id}`, data),
+  remove: (id: string) => client.delete(`/pipeline-schedules/${id}`),
+  toggle: (id: string) => client.post(`/pipeline-schedules/${id}/toggle`),
+  trigger: (id: string) => client.post(`/pipeline-schedules/${id}/trigger`),
+};
+
 /* ── Verified Emails ── */
 
 export interface VerifiedEmailItem {

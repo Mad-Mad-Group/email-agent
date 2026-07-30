@@ -140,7 +140,7 @@ ClientRadar AI 是一套 B2B 銷售線索管理系統，包含：
 
 ### 步驟 1：確認環境
 
-確認 Node.js 版本 >= 20.6.0，MongoDB 已安裝並運行。
+確認 Node.js 版本 >= 20.6.0，以及 MongoDB 可用（本地或雲端）。
 
 ```bash
 # 檢查 Node.js 版本
@@ -151,16 +151,32 @@ node -v
 brew install node@20
 # 或用 nvm：
 nvm install 20 && nvm use 20
+```
 
-# 檢查 MongoDB 是否運行
+**MongoDB — 二選一：**
+
+**方案 A：本地 MongoDB**
+```bash
+# 檢查是否運行
 mongosh --eval "db.runCommand({ping:1})"
 # 應顯示 { ok: 1 }
 
-# 如果 MongoDB 未安裝：
+# 如果未安裝：
 brew tap mongodb/brew
 brew install mongodb-community
 brew services start mongodb-community
 ```
+連接字串：`mongodb://localhost:27017/lead_scraper`
+
+**方案 B：MongoDB Atlas（雲端，推薦多人/多設備使用）**
+1. 前往 [mongodb.com/atlas](https://www.mongodb.com/atlas) 建立免費 cluster
+2. 在 Database Access 建立帳號密碼
+3. 在 Network Access 加入你的 IP（或暫時用 `0.0.0.0/0` 允許所有）
+4. 點擊 Connect → Drivers，複製連接字串
+
+連接字串格式：`mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/lead_scraper`
+
+> 選用 Atlas 的話，所有設備（Backend、Worker）填同一條連接字串即可共用資料。
 
 ### 步驟 2：Clone 並進入專案
 
@@ -211,15 +227,37 @@ cd ..
 cp cms/server/.env.example cms/server/.env
 ```
 
-然後編輯 `cms/server/.env`，**必須修改**的項目：
+然後編輯 `cms/server/.env`，以下是完整範例（`⚠️` 標記的必須修改）：
 
-| 變量 | 說明 | 範例 |
-|------|------|------|
-| `MONGODB_URI` | MongoDB 連接字串 | `mongodb://localhost:27017/lead_scraper` |
-| `JWT_SECRET` | JWT 簽名密鑰（必須改） | 用 `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` 產生 |
-| `REFRESH_TOKEN_KEY` | Refresh token 加密密鑰（必須改） | 同上方法產生 |
+```env
+# ── MongoDB ──────────────────────────────────────────
+# 本地：mongodb://localhost:27017/lead_scraper
+# Atlas：mongodb+srv://user:pass@cluster0.xxxxx.mongodb.net/lead_scraper
+MONGODB_URI=mongodb://localhost:27017/lead_scraper          # ⚠️ 填入你的連接字串
 
-其餘變量（SMTP、CORS、PORT 等）可先用預設值，後續按需修改。
+# ── JWT 認證 ─────────────────────────────────────────
+# 產生方法：node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+JWT_SECRET=your-jwt-secret-change-me                        # ⚠️ 必須改為隨機字串
+JWT_EXPIRES_IN=7d
+
+# ── Refresh Token 加密 ──────────────────────────────
+REFRESH_TOKEN_KEY=your-refresh-token-key-change-me          # ⚠️ 必須改為隨機字串
+
+# ── SMTP（系統級 fallback，可選）─────────────────────
+# 使用者可在 Settings 頁面設定個人 SMTP，此處為 fallback
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM="ClientRadar" <noreply@example.com>
+
+# ── Server ───────────────────────────────────────────
+PORT=4000
+
+# ── CORS ─────────────────────────────────────────────
+# 留空=允許 localhost + 內網，填 URL=額外允許的 origin
+CORS_ORIGIN=
+```
 
 ### 步驟 7：設定 Worker 環境變量
 
@@ -227,14 +265,33 @@ cp cms/server/.env.example cms/server/.env
 cp cms/worker/.env.example cms/worker/.env
 ```
 
-然後編輯 `cms/worker/.env`，**必須修改**的項目：
+然後編輯 `cms/worker/.env`，以下是完整範例（`⚠️` 標記的必須修改）：
 
-| 變量 | 說明 | 範例 |
-|------|------|------|
-| `MONGODB_URI` | 與 Backend 相同 | `mongodb://localhost:27017/lead_scraper` |
-| `API_URL` | Backend API 地址 | `http://localhost:4000/api` |
-| `AGENT_EMAIL` | Worker 登入帳號 | `admin@test.com`（步驟 9 建立） |
-| `AGENT_PASS` | Worker 登入密碼 | `123456`（步驟 9 建立） |
+```env
+# ── MongoDB ──────────────────────────────────────────
+# 必須與 Backend 指向同一個 DB
+MONGODB_URI=mongodb://localhost:27017/lead_scraper          # ⚠️ 與步驟 6 相同
+
+# ── CMS API 連線 ────────────────────────────────────
+# Worker 透過 API 登入並 claim tasks
+API_URL=http://localhost:4000/api                           # ⚠️ 指向 Backend 地址
+
+# Worker 登入帳號（步驟 9 的 seed script 會建立此帳號）
+AGENT_EMAIL=admin@test.com                                  # ⚠️ 與 seed script 一致
+AGENT_PASS=123456                                           # ⚠️ 與 seed script 一致
+AGENT_ID=WORKER-1
+POLL_MS=2000
+
+# ── 測試收件人（開發時所有郵件發送至此地址）──────────
+TEST_RECIPIENT_EMAIL=your-email@example.com
+
+# ── SMTP（Worker fallback，可選）────────────────────
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASS=your-app-password
+SMTP_FROM="ClientRadar" <your-email@gmail.com>
+```
 
 ### 步驟 8：設定 Frontend 環境變量
 
@@ -242,11 +299,16 @@ cp cms/worker/.env.example cms/worker/.env
 cp hermes-frontend/.env.example hermes-frontend/.env
 ```
 
-然後編輯 `hermes-frontend/.env`，**必須修改**的項目：
+然後編輯 `hermes-frontend/.env`，以下是完整範例（`⚠️` 標記的必須修改）：
 
-| 變量 | 說明 | 範例 |
-|------|------|------|
-| `VITE_API_URL` | Backend API 地址 | `http://localhost:4000/api` |
+```env
+# ── Backend API 地址 ─────────────────────────────────
+# 本地開發：http://localhost:4000/api
+# UAT/其他設備：http://<server-ip>:4000/api
+VITE_API_URL=http://localhost:4000/api                      # ⚠️ 指向 Backend 地址
+```
+
+> **三者如何連起來：** Server、Worker 的 `MONGODB_URI` 必須指向同一個 DB；Frontend 的 `VITE_API_URL` 和 Worker 的 `API_URL` 必須指向 Server 的地址。如果三者分開部署在不同機器，把 `localhost` 換成對應機器的 IP 即可。
 
 ### 步驟 9：初始化 MongoDB
 

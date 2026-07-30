@@ -1826,13 +1826,24 @@ const SearchPage: React.FC = () => {
   }, []);
 
   /* ── Pipeline SSE state ── */
-  const [campaignId, setCampaignId] = useState<string | null>(null);
+  const [campaignId, setCampaignId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('search-campaign-id');
+    } catch { return null; }
+  });
   const [pipelineLogs, setPipelineLogs] = useState<Array<{time: string, stage: string, message: string, level: string, msgKey?: string, msgParams?: Record<string, any>}>>([]);
-  const [latestLogStage, setLatestLogStage] = useState<string>('');
+  const [latestLogStage, setLatestLogStage] = useState<string>(() => {
+    try {
+      return localStorage.getItem('search-pipeline-stage') || '';
+    } catch { return ''; }
+  });
   const [pipelineProgress, setPipelineProgress] = useState<{stage: string, current: number, total: number, percent: number} | null>(null);
   const [pipelineComplete, setPipelineComplete] = useState(false);
   const [realResults, setRealResults] = useState<MockLead[]>([]);
   const pipelineLogRef = useRef<HTMLDivElement>(null);
+  const [resuming, setResuming] = useState(() => {
+    try { return !!localStorage.getItem('search-campaign-id'); } catch { return false; }
+  });
 
   // ponytail: lazy permission request — only ask the user once a pipeline has
   // actually completed. Asking on mount gets blanket-denied in most browsers.
@@ -1863,11 +1874,51 @@ const SearchPage: React.FC = () => {
     });
   }, [ensureNotificationPermission]);
 
+  /* ── Persist campaign state to localStorage ── */
+  useEffect(() => {
+    try {
+      if (campaignId && !pipelineComplete) {
+        localStorage.setItem('search-campaign-id', campaignId);
+      } else {
+        localStorage.removeItem('search-campaign-id');
+      }
+    } catch {}
+  }, [campaignId, pipelineComplete]);
+
+  useEffect(() => {
+    try {
+      if (latestLogStage && !pipelineComplete) {
+        localStorage.setItem('search-pipeline-stage', latestLogStage);
+      } else {
+        localStorage.removeItem('search-pipeline-stage');
+      }
+    } catch {}
+  }, [latestLogStage, pipelineComplete]);
+
+  /* ── Resume pipeline on mount (after refresh) ── */
+  useEffect(() => {
+    if (!resuming || !campaignId) return;
+    // Check if the campaign is still active
+    hermesApi.getCampaign(campaignId).then(res => {
+      const campaign = (res.data as any)?.data ?? res.data;
+      if (campaign?.status === 'completed') {
+        // Already done — fetch results
+        fetchLeadsAndFinish(campaignId);
+      }
+      // If not completed, SSE listener (registered in the other useEffect) will handle updates
+      setResuming(false);
+    }).catch(() => {
+      // Campaign not found — clear stale state
+      setCampaignId(null);
+      setLatestLogStage('');
+      setResuming(false);
+      try { localStorage.removeItem('search-campaign-id'); localStorage.removeItem('search-pipeline-stage'); } catch {}
+    });
+  }, []); // run once on mount
+
   /* ── Connect SSE on mount ── */
   useEffect(() => {
     const apiBase = import.meta.env.VITE_API_URL || '/api';
-    // apiBase is like "http://host:port/api" — SSE endpoint is at /api/events
-    // If apiBase ends with /api, strip it and append /api/events
     const sseUrl = apiBase.replace(/\/api\/?$/, '') + '/api/events';
     sseClient.connect(sseUrl);
     return () => {
@@ -1905,7 +1956,7 @@ const SearchPage: React.FC = () => {
         setRealResults([]);
         setPipelineComplete(true);
         fireCompletionNotification(0);
-        /* localStorage campaign persistence removed — refresh clears search */
+        /* Campaign complete — localStorage will be cleared by the persist effect */
         return;
       }
       Promise.all(leadIds.map(id => leadsApi.get(id).then(r => {
@@ -1921,7 +1972,7 @@ const SearchPage: React.FC = () => {
           if (mapped.length > 0) {
             setBadge('/cms-leads', mapped.length);
           }
-          /* localStorage campaign persistence removed — refresh clears search */
+          /* Campaign complete — localStorage will be cleared by the persist effect */
         });
     }).catch(err => {
       console.error('[Search] Failed to fetch campaign leads:', err);
@@ -2081,8 +2132,6 @@ const SearchPage: React.FC = () => {
         const id = data?.campaign_id;
         if (id) {
           setCampaignId(id);
-          // ponytail: remember campaignId so a refresh can restore the pipeline.
-          /* localStorage campaign persistence removed — refresh clears search */
         }
       },
     });

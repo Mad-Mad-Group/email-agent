@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { leadsApi, LeadListParams } from './leads';
 import { emailQueueApi, EmailListParams } from './emailQueue';
 import { notificationsApi } from './notifications';
-import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi, AgentSkillStats, verifiedEmailsApi, notificationPrefsApi, tokenUsageApi, emailSettingsApi, EmailSettings, whatsappTemplatesApi, WhatsappTemplate } from './services';
+import { tasksApi, searchApi, hermesApi, SearchPayload, usersApi, settingsApi, aiApi, AgentSkillStats, verifiedEmailsApi, notificationPrefsApi, NotificationPrefs, tokenUsageApi, emailSettingsApi, EmailSettings, whatsappTemplatesApi, WhatsappTemplate, pipelineSchedulesApi, CreatePipelineSchedulePayload } from './services';
 import { authApi } from './auth';
 
 /* ── Auth ── */
@@ -434,7 +434,7 @@ export const useNotificationPrefs = () =>
 export const useUpdateNotificationPrefs = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (prefs: { email_on_complete?: boolean; browser_on_complete?: boolean }) =>
+    mutationFn: (prefs: Partial<NotificationPrefs>) =>
       notificationPrefsApi.update(prefs),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['notification-prefs'] });
@@ -487,3 +487,52 @@ export const useSmtpStatus = () =>
     queryFn: () => emailSettingsApi.smtpStatus().then(r => r.data),
     staleTime: 60_000,
   });
+
+/* ── Pipeline Schedules ── */
+
+export const usePipelineSchedules = () =>
+  useQuery({
+    queryKey: ['pipeline-schedules'],
+    queryFn: () => pipelineSchedulesApi.list().then(r => r.data),
+  });
+
+export const useCreatePipelineSchedule = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: CreatePipelineSchedulePayload) => pipelineSchedulesApi.create(data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pipeline-schedules'] }),
+  });
+};
+
+export const useUpdatePipelineSchedule = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<CreatePipelineSchedulePayload> }) =>
+      pipelineSchedulesApi.update(id, data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pipeline-schedules'] }),
+  });
+};
+
+export const useDeletePipelineSchedule = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => pipelineSchedulesApi.remove(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pipeline-schedules'] }),
+  });
+};
+
+export const useTogglePipelineSchedule = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => pipelineSchedulesApi.toggle(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pipeline-schedules'] }),
+  });
+};
+
+export const useTriggerPipelineSchedule = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => pipelineSchedulesApi.trigger(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['pipeline-schedules'] }),
+  });
+};

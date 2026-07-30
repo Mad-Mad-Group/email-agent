@@ -38,11 +38,12 @@ async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null
 /**
  * Convert a base64 VAPID key to a Uint8Array for the subscribe call.
  */
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
+function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const rawData = atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
+  // 明確用 ArrayBuffer 建構，避免 TS 6 推導成 ArrayBufferLike（可能係 SharedArrayBuffer）
+  const outputArray = new Uint8Array(new ArrayBuffer(rawData.length));
   for (let i = 0; i < rawData.length; i++) {
     outputArray[i] = rawData.charCodeAt(i);
   }

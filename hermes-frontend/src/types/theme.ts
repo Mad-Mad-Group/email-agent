@@ -17,6 +17,10 @@ export interface HermesTheme {
     textTertiary: string;
     textInverted: string;
     accent: string;
+    /* 語意色 */
+    danger: string;
+    blue: string;
+    green: string;
   };
   pastel: {
     mauve: string;
@@ -72,6 +76,7 @@ export interface HermesTheme {
     card: number;
     tile: number;
     control: number;
+    badge: number;
   };
   fonts: {
     primary: string;
