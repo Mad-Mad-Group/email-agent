@@ -242,8 +242,17 @@ const VerticalFunnel: React.FC<{ bars: VFunnelBar[] }> = ({ bars }) => {
 
 /* ── Donut Chart ── */
 const DonutWrap = styled.div`
-  display: flex; align-items: center; gap: 20px; justify-content: center; padding: 8px;
+  display: flex; align-items: center; gap: 16px; justify-content: center; padding: 8px;
   flex-wrap: wrap;
+  /* Without this the flex box is shrink-to-fit, so LegendList's flex:1 has no
+     free space to claim and the bars collapse to the text's intrinsic width. */
+  width: 100%;
+  box-sizing: border-box;
+  /* The donut renders at a hard-coded 220px and won't shrink, which left the
+     legend (and so its progress bars) only ~98px inside a 354px card. Capping
+     it here hands that width back to the legend; the SVG has max-width:100%
+     and height:auto, so this scales it cleanly. */
+  & > div:first-child svg { width: 168px; height: 168px; }
   ${media.tablet} {
     gap: 10px; padding: 2px;
     & > div:first-child svg { width: 165px; height: 165px; }

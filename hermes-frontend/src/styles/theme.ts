@@ -3,8 +3,12 @@ import { HermesTheme } from '../types/theme';
 const shared = {
   radii: { card: 16, tile: 16, control: 8, badge: 999 },
   fonts: {
-    primary: "'Source Serif 4', 'Noto Serif TC', 'PingFang TC', 'PingFang SC', Georgia, 'Microsoft JhengHei', serif",
-    display: "'Righteous', 'Plus Jakarta Sans', 'Noto Serif TC', sans-serif",
+    /* Noto Serif SC comes before TC: TC has no glyphs for simplified-only
+       characters (设/确/话/验/务…), so on a zhCN page those fell through to
+       PingFang — a sans — and every line mixed serif with sans. Both are listed
+       so either script gets a serif; PingFang stays as the offline fallback. */
+    primary: "'Source Serif 4', 'Noto Serif SC', 'Noto Serif TC', 'PingFang SC', 'PingFang TC', Georgia, 'Microsoft JhengHei', serif",
+    display: "'Righteous', 'Plus Jakarta Sans', 'Noto Serif SC', 'Noto Serif TC', sans-serif",
     mono: "'JetBrains Mono', ui-monospace, monospace",
   },
   spacing: { xs: 4, sm: 8, md: 16, lg: 24, xl: 32, xxl: 48 },
