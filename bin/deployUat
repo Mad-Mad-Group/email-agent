@@ -1,0 +1,490 @@
+#!/usr/bin/env bash
+#
+# ClientRadar CMS — 一鍵 Build + Deploy 到 UAT（含 pm2）
+#
+# 用法（yarn 直接傳參數；npm 要加 -- 分隔）:
+#   yarn deploy:uat                     npm run deploy:uat
+#   yarn deploy:uat server frontend     npm run deploy:uat -- server frontend
+#   yarn deploy:uat --dry-run           npm run deploy:uat -- --dry-run
+#   yarn deploy:uat --skip-build        # 用現有 dist/，唔重新 build
+#   yarn deploy:uat --yes               # 唔問確認
+#   （或直接 ./bin/deployUat [同樣參數]）
+#
+# ⚠ 唔使自己先行 build:uat —— 本 script 已經內建 build（見下面流程）。
+#
+# 流程:
+#   本機 preflight → .env.uat 驗證 → 本機 build (./build.sh --uat) → 確認
+#   → rsync → 遠端 npm ci → pm2 startOrReload → health check → nginx / hermes 檢查
+#
+# ── 三個 app 全部用 .env.uat ──────────────────────────
+#   cms/server/.env.uat       runtime  → rsync 上遠端變 .env（pm2 --env-file=.env 讀）
+#   cms/worker/.env.uat       runtime  → 同上
+#   hermes-frontend/.env.uat  BUILD 時  → vite build --mode uat 會 inline 入 bundle
+#
+#   ⚠ frontend 嗰個係 build-time：值一經 build 就寫死喺 JS 入面，改完要重新
+#     build 先生效，唔係喺伺服器改 .env 就得。
+#   ⚠ server/worker 嘅遠端 .env 每次 deploy 都會被 .env.uat 覆蓋 —— 即係
+#     .env.uat 係唯一真相來源。唔好直接改伺服器上嘅 .env，改完會被蓋走。
+#
+# 遠端佈局:
+#   /var/www/agent-backend/    cms/server       pm2: agent-backend  (:4000)
+#   /var/www/agent-worker/     cms/worker       pm2: agent-worker
+#   /var/www/agent-frontend/   hermes-frontend  nginx static (冇 pm2 process)
+#
+
+set -uo pipefail
+
+# ── 連線設定 ────────────────────────────────────────
+SSH_HOST=madmad@madmad-office-uat
+SSH_PORT=22
+SSH_CERT="-i $HOME/.ssh/mad_dev_master"
+
+# ── 遠端路徑 ────────────────────────────────────────
+REMOTE_BACKEND=/var/www/agent-backend
+REMOTE_WORKER=/var/www/agent-worker
+REMOTE_FRONTEND=/var/www/agent-frontend
+
+# ── 名稱 / 位址 ─────────────────────────────────────
+PM2_BACKEND=agent-backend
+PM2_WORKER=agent-worker
+NGINX_CONF=uat-agent.madmadgroup.dev
+PUBLIC_URL=https://uat-agent.madmadgroup.dev   # Cloudflare 前置，對外係 https
+API_PORT=4000
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+# ── 顏色 ────────────────────────────────────────────
+GREEN='\033[0;32m'; YELLOW='\033[0;33m'; RED='\033[0;31m'
+BLUE='\033[0;34m'; BOLD='\033[1m'; NC='\033[0m'
+
+ok()   { echo -e "  ${GREEN}✔${NC} $1"; }
+warn() { echo -e "  ${YELLOW}⚠${NC} $1"; }
+fail() { echo -e "  ${RED}✘${NC} $1"; }
+step() { echo -e "\n${BLUE}${BOLD}▸ $1${NC}"; }
+die()  { fail "$1"; exit 1; }
+
+# ── 參數解析 ────────────────────────────────────────
+DO_SERVER=false; DO_WORKER=false; DO_FRONTEND=false
+SKIP_BUILD=false; ASSUME_YES=false; DRY_RUN=false
+PICKED=false
+
+for arg in "$@"; do
+  case "$arg" in
+    server)   DO_SERVER=true;   PICKED=true ;;
+    worker)   DO_WORKER=true;   PICKED=true ;;
+    frontend) DO_FRONTEND=true; PICKED=true ;;
+    --skip-build) SKIP_BUILD=true ;;
+    --yes|-y)     ASSUME_YES=true ;;
+    --dry-run|-n) DRY_RUN=true ;;
+    -h|--help)    sed -n '3,32p' "$0" | sed -E 's/^# ?//'; exit 0 ;;
+    *) die "未知參數: ${arg}（用 --help 查看用法）" ;;
+  esac
+done
+
+if [ "$PICKED" = false ]; then
+  DO_SERVER=true; DO_WORKER=true; DO_FRONTEND=true
+fi
+
+# ── SSH / rsync helper ──────────────────────────────
+# shellcheck disable=SC2086  # $SSH_CERT 要 word-split
+SSH_OPTS="-p $SSH_PORT $SSH_CERT -o ConnectTimeout=10"
+
+sshx() { ssh $SSH_OPTS "$SSH_HOST" "$@"; }
+# node / npm / pm2 唔喺 UAT 嘅非互動 PATH（由 nvm 出），每條指令都要先 source
+sshn() { ssh $SSH_OPTS "$SSH_HOST" "source ~/.nvm/nvm.sh >/dev/null 2>&1; $*"; }
+
+RSYNC_RSH="ssh -p $SSH_PORT $SSH_CERT"
+RSYNC_BASE=(-az --no-perms --no-owner --no-group --omit-dir-times -e "$RSYNC_RSH")
+[ "$DRY_RUN" = true ] && RSYNC_BASE+=(-n -v)
+
+# 同步一個 dist/ 目錄（clean sync，清走舊產物殘留）
+sync_dist() {
+  rsync "${RSYNC_BASE[@]}" --delete --exclude='.DS_Store' "$1/" "$SSH_HOST:$2/"
+}
+# 同步 root 層嘅指定檔案
+sync_files() {
+  local src="$1"; shift
+  local dest="$1"; shift
+  rsync "${RSYNC_BASE[@]}" "${@/#/$src/}" "$SSH_HOST:$dest/"
+}
+# .env.uat → 遠端 .env（權威覆蓋，每次 deploy 都同步）。
+# 遠端命名為 .env 而唔係 .env.uat，係因為 pm2.yaml 用 --env-file=.env，
+# 而 NestJS 嘅 ConfigModule.forRoot() 亦會由 cwd 讀 .env —— 兩者都原生食到，
+# 唔使為 UAT 特別改 pm2.yaml（同時保持 pm2.yaml 本機/UAT 通用）。
+push_env() {
+  local src="$1" dest="$2"
+  rsync "${RSYNC_BASE[@]}" "$src/.env.uat" "$SSH_HOST:$dest/.env"
+}
+
+check_nginx() {
+  step "nginx conf"
+  # 推去 /tmp 令下面印出嘅 sudo 指令可以即刻 copy-paste 行。
+  # 用 -a 而唔用 RSYNC_BASE：dry-run 都要真正推，否則 diff 會對住舊檔。
+  rsync -az --no-perms --no-owner --no-group -e "$RSYNC_RSH" \
+    "nginx/$NGINX_CONF" "$SSH_HOST:/tmp/$NGINX_CONF" 2>/dev/null
+
+  if sshx "diff -qBb /etc/nginx/sites-available/$NGINX_CONF /tmp/$NGINX_CONF >/dev/null 2>&1"; then
+    ok "遠端 nginx conf 已經同 repo 一致"
+    if sshx "curl -sf -o /dev/null -w '%{http_code}' $PUBLIC_URL/api/health" | grep -q 200; then
+      ok "$PUBLIC_URL/api/health → 200（/api/ proxy 生效）"
+    else
+      warn "$PUBLIC_URL/api/health 唔通 — 檢查 nginx 有冇 reload、backend 有冇起"
+    fi
+  else
+    echo ""
+    echo -e "  ${YELLOW}遠端 nginx conf 同 repo 唔同（或者未裝）。差異：${NC}"
+    sshx "diff -uBb /etc/nginx/sites-available/$NGINX_CONF /tmp/$NGINX_CONF 2>&1 | head -40" | sed 's/^/    /'
+    echo ""
+    echo "  UAT 嘅 sudo 要密碼，所以本 script 唔會自己裝。跑一次呢句："
+    echo "  （先備份，nginx -t 唔過就自動還原 —— 唔會留一個壞 conf 落去，"
+    echo "    因為 sites-enabled 有 symlink，壞 conf 會令整部機所有 vhost reload 失敗）"
+    echo ""
+    echo -e "  ${BOLD}ssh $SSH_HOST '\\
+sudo cp /etc/nginx/sites-available/$NGINX_CONF{,.bak} && \\
+sudo cp /tmp/$NGINX_CONF /etc/nginx/sites-available/ && \\
+{ sudo nginx -t && sudo systemctl reload nginx && echo OK; } || \\
+{ echo \"nginx -t 失敗，還原\"; sudo mv /etc/nginx/sites-available/$NGINX_CONF{.bak,}; }'${NC}"
+    echo ""
+    echo "  ⚠ 未裝之前 $PUBLIC_URL 打唔到 API："
+    echo "    /api/* 會被 SPA fallback 食走返 index.html →"
+    echo "    login 收到 HTML、/api/events 變 text/html（SSE 斷線）。"
+  fi
+}
+
+echo ""
+echo "═══════════════════════════════════════════"
+echo "  ClientRadar CMS — Deploy to UAT"
+echo "═══════════════════════════════════════════"
+TARGETS=""
+[ "$DO_SERVER" = true ]   && TARGETS="$TARGETS server"
+[ "$DO_WORKER" = true ]   && TARGETS="$TARGETS worker"
+[ "$DO_FRONTEND" = true ] && TARGETS="$TARGETS frontend"
+echo "  目標: ${TARGETS# }"
+echo "  遠端: $SSH_HOST"
+[ "$SKIP_BUILD" = true ] && echo "  模式: 跳過 build"
+[ "$DRY_RUN" = true ]    && echo "  模式: DRY RUN（唔會改遠端、唔會 restart pm2）"
+
+# ══════════════════════════════════════════════════
+# 1. Preflight
+# ══════════════════════════════════════════════════
+step "Preflight — 本機"
+
+command -v node &>/dev/null || die "找唔到 node"
+NODE_MAJOR=$(node -v | sed 's/^v//' | cut -d. -f1)
+NODE_MINOR=$(node -v | sed 's/^v//' | cut -d. -f2)
+if [ "$NODE_MAJOR" -lt 20 ] || { [ "$NODE_MAJOR" -eq 20 ] && [ "$NODE_MINOR" -lt 6 ]; }; then
+  die "Node 版本過舊: $(node -v)（需要 ≥ 20.6，因為用咗 --env-file）"
+fi
+ok "Node $(node -v) / npm $(npm -v)"
+command -v rsync &>/dev/null || die "找唔到 rsync"
+ok "$(rsync --version | head -1 | cut -d, -f1)"
+
+step "Preflight — 遠端 ($SSH_HOST)"
+
+sshx true 2>/dev/null || die "SSH 連唔到 ${SSH_HOST}（檢查 ~/.ssh/config 同 ${SSH_CERT}）"
+ok "SSH 通"
+
+REMOTE_ENV=$(sshn 'echo "node=$(node -v 2>/dev/null) npm=$(npm -v 2>/dev/null) pm2=$(pm2 -v 2>/dev/null)"')
+case "$REMOTE_ENV" in
+  *node=v*) : ;;
+  *) die "遠端搵唔到 node（${REMOTE_ENV}）— 檢查 ~/.nvm/nvm.sh 同 nvm default" ;;
+esac
+case "$REMOTE_ENV" in
+  *pm2=[0-9]*) : ;;
+  *) die "遠端搵唔到 pm2（${REMOTE_ENV}）— 先 'npm i -g pm2'" ;;
+esac
+ok "遠端 $REMOTE_ENV"
+
+# ══════════════════════════════════════════════════
+# 1b. .env.uat 驗證
+# ══════════════════════════════════════════════════
+# 呢兩個值錯咗都唔會令 build 或 deploy 報錯，但 UAT 會靜靜地壞（見下），
+# 所以喺 build 之前就攔住 —— frontend 嗰個尤其重要，值一 build 就寫死。
+step ".env.uat 驗證"
+
+envval() { grep -E "^$2=" "$1" 2>/dev/null | tail -1 | cut -d= -f2-; }
+
+for app in server:cms/server worker:cms/worker frontend:hermes-frontend; do
+  label=${app%%:*}; dir=${app#*:}
+  case "$label" in
+    server)   [ "$DO_SERVER" = true ]   || continue ;;
+    worker)   [ "$DO_WORKER" = true ]   || continue ;;
+    frontend) [ "$DO_FRONTEND" = true ] || continue ;;
+  esac
+  [ -f "$dir/.env.uat" ] || die "$dir/.env.uat 唔存在。三個 app 嘅 UAT 設定都放喺各自嘅 .env.uat。"
+  ok "$dir/.env.uat"
+done
+
+if [ "$DO_FRONTEND" = true ]; then
+  FE_API=$(envval hermes-frontend/.env.uat VITE_API_URL)
+  case "$FE_API" in
+    /*) ok "VITE_API_URL=${FE_API}（同源，經 nginx /api/ proxy）" ;;
+    *localhost*|*127.0.0.1*)
+      die "hermes-frontend/.env.uat 嘅 VITE_API_URL=$FE_API 係 localhost。
+     Vite 會喺 build 時把呢個值寫死入 JS bundle，即係每個訪客嘅瀏覽器都會去撳
+     「自己部機」嘅 localhost:4000 —— UAT 一定壞，而且唔會有任何錯誤訊息。
+     應該設 VITE_API_URL=/api（同源，由 nginx 嘅 /api/ location proxy 落 :4000）。" ;;
+    "") die "hermes-frontend/.env.uat 冇 VITE_API_URL" ;;
+    *)  warn "VITE_API_URL=$FE_API — 唔係 /api，會變跨域，要確認 CORS_ORIGIN 有放行" ;;
+  esac
+fi
+
+if [ "$DO_SERVER" = true ]; then
+  SV_CORS=$(envval cms/server/.env.uat CORS_ORIGIN)
+  case "$SV_CORS" in
+    *https://uat-agent.madmadgroup.dev*|__strict__) ok "CORS_ORIGIN=$SV_CORS" ;;
+    *http://uat-agent.madmadgroup.dev*)
+      die "cms/server/.env.uat 嘅 CORS_ORIGIN 只有 http://，冇 https://。
+     Cloudflare 喺前面 terminate TLS，瀏覽器嘅 Origin 係 https://uat-agent.madmadgroup.dev，
+     所以只寫 http:// 會令 login POST 拋 CORS blocked → 前端見到 500（唔係 401）。
+     應該設 CORS_ORIGIN=https://uat-agent.madmadgroup.dev,http://uat-agent.madmadgroup.dev" ;;
+    "") die "cms/server/.env.uat 嘅 CORS_ORIGIN 係空。
+     main.ts 嘅 allow-list 只認 localhost:5173/4173 同 192.168.x.x / 10.x.x.x 嘅
+     :5173。瀏覽器對 same-origin 嘅 POST 一樣會send Origin header，所以空值會令
+     $PUBLIC_URL 嘅 login POST 直接被擋 —— 症狀似「登入失敗」，好易誤判成密碼錯。
+     應該設 CORS_ORIGIN=$PUBLIC_URL" ;;
+    *) warn "CORS_ORIGIN=$SV_CORS — 唔包含 uat-agent.madmadgroup.dev，login 可能被擋" ;;
+  esac
+fi
+
+# ══════════════════════════════════════════════════
+# 2. 本機 Build
+# ══════════════════════════════════════════════════
+if [ "$SKIP_BUILD" = false ]; then
+  BUILD_TARGETS=()
+  [ "$DO_SERVER" = true ]   && BUILD_TARGETS+=(server)
+  [ "$DO_WORKER" = true ]   && BUILD_TARGETS+=(worker)
+  [ "$DO_FRONTEND" = true ] && BUILD_TARGETS+=(frontend)
+
+  # 沿用現有 build.sh（已有 npm install fallback / 失敗抽頭 50 行 + 完整 log）。
+  # --uat 令 frontend 行 build:uat（vite build --mode uat → 讀 .env.uat）。
+  # server / worker 唔受影響：佢哋 build 時唔讀 env，env 純粹係 runtime 嘢。
+  for t in "${BUILD_TARGETS[@]}"; do
+    ./build.sh "$t" --uat || die "build $t 失敗 — 睇上面錯誤同 logs/build/"
+  done
+else
+  step "跳過 build（--skip-build）"
+  [ "$DO_FRONTEND" = true ] && warn "frontend 用現有 dist/ —— 如果佢係用其他 mode build 出嚟，VITE_API_URL 可能唔係 UAT 嘅值"
+fi
+
+# ── 驗證 build 產物真係喺度（--skip-build 時尤其重要）──
+step "檢查 build 產物"
+if [ "$DO_SERVER" = true ]; then
+  [ -f cms/server/dist/main.js ] \
+    || die "cms/server/dist/main.js 唔存在。如果見到 dist/src/main.js，即係 tsconfig.build.json 嘅 include 冇生效。"
+  ok "cms/server/dist/main.js"
+fi
+if [ "$DO_WORKER" = true ]; then
+  for f in leader.js agent.js brand.js; do
+    [ -f "cms/worker/dist/$f" ] || die "cms/worker/dist/$f 唔存在（跑 cd cms/worker && npm run build）"
+  done
+  ok "cms/worker/dist/{leader,agent,brand}.js"
+fi
+if [ "$DO_FRONTEND" = true ]; then
+  [ -f hermes-frontend/dist/index.html ] || die "hermes-frontend/dist/index.html 唔存在"
+  ok "hermes-frontend/dist/ ($(du -sh hermes-frontend/dist | cut -f1))"
+fi
+
+# ══════════════════════════════════════════════════
+# 3. 確認
+# ══════════════════════════════════════════════════
+if [ "$ASSUME_YES" = false ] && [ "$DRY_RUN" = false ]; then
+  echo ""
+  echo "  會 sync 去 ${SSH_HOST}："
+  [ "$DO_SERVER" = true ]   && echo "    cms/server/dist       → $REMOTE_BACKEND/dist       (pm2 reload $PM2_BACKEND)"
+  [ "$DO_WORKER" = true ]   && echo "    cms/worker/dist       → $REMOTE_WORKER/dist        (pm2 reload $PM2_WORKER)"
+  [ "$DO_FRONTEND" = true ] && echo "    hermes-frontend/dist  → $REMOTE_FRONTEND/          (--delete，靜態)"
+  echo ""
+  printf '  Are you sure to upload to uat server (y/n)? '
+  read -r answer
+  if [ "$answer" = "${answer#[Yy]}" ]; then
+    echo "  Bye!"
+    exit 0
+  fi
+fi
+
+# ══════════════════════════════════════════════════
+# 4. Sync
+# ══════════════════════════════════════════════════
+# 逐個 app 用窄範圍 rsync，而唔用一個大 --include 白名單 + --delete：
+# 咁樣 remote 嘅 node_modules/ 同 uploads/ 完全冇機會被清走。
+
+if [ "$DO_SERVER" = true ]; then
+  step "Sync cms/server → $REMOTE_BACKEND"
+  sshx "mkdir -p $REMOTE_BACKEND"
+  if [ "$DRY_RUN" = false ]; then
+    # 保留上一代 dist 做快速 rollback（只留一代）
+    sshx "[ -d $REMOTE_BACKEND/dist ] && rm -rf $REMOTE_BACKEND/dist.bak && cp -a $REMOTE_BACKEND/dist $REMOTE_BACKEND/dist.bak || true"
+  fi
+  sync_dist cms/server/dist "$REMOTE_BACKEND/dist"
+  sync_files cms/server "$REMOTE_BACKEND" package.json package-lock.json pm2.yaml
+  push_env cms/server "$REMOTE_BACKEND"
+  ok "dist + package.json + package-lock.json + pm2.yaml + .env.uat→.env"
+fi
+
+if [ "$DO_WORKER" = true ]; then
+  step "Sync cms/worker → $REMOTE_WORKER"
+  sshx "mkdir -p $REMOTE_WORKER"
+  if [ "$DRY_RUN" = false ]; then
+    sshx "[ -d $REMOTE_WORKER/dist ] && rm -rf $REMOTE_WORKER/dist.bak && cp -a $REMOTE_WORKER/dist $REMOTE_WORKER/dist.bak || true"
+  fi
+  sync_dist cms/worker/dist "$REMOTE_WORKER/dist"
+  sync_files cms/worker "$REMOTE_WORKER" package.json package-lock.json pm2.yaml
+  push_env cms/worker "$REMOTE_WORKER"
+  ok "dist + package.json + package-lock.json + pm2.yaml + .env.uat→.env"
+fi
+
+if [ "$DO_FRONTEND" = true ]; then
+  step "Sync hermes-frontend → $REMOTE_FRONTEND"
+  sshx "mkdir -p $REMOTE_FRONTEND"
+  # 純靜態，--delete 係想要嘅（會清走舊 hash 檔同任何殘留檔）
+  sync_dist hermes-frontend/dist "$REMOTE_FRONTEND"
+  ok "dist/ → $REMOTE_FRONTEND/"
+fi
+
+if [ "$DRY_RUN" = true ]; then
+  # nginx 檢查係唯讀（diff + curl），dry-run 都行 —— 呢個正正係你想預先知嘅嘢
+  [ "$DO_FRONTEND" = true ] && check_nginx
+  step "DRY RUN 完 — 上面係 rsync 會做嘅改動，冇碰過遠端，亦冇 restart pm2"
+  exit 0
+fi
+
+# ══════════════════════════════════════════════════
+# 5. 遠端 install + pm2
+# ══════════════════════════════════════════════════
+if [ "$DO_SERVER" = true ]; then
+  step "遠端 install + pm2 — $PM2_BACKEND"
+  # mkdir uploads: uploads.controller.ts 用 multer diskStorage({destination:'./uploads'})，
+  # multer 唔會自己開目錄，唔存在就第一次上傳 ENOENT。
+  sshn "set -e
+    cd $REMOTE_BACKEND
+    mkdir -p uploads
+    npm ci --omit=dev --no-audit --no-fund
+    pm2 startOrReload pm2.yaml" || die "遠端 server install / pm2 失敗"
+  ok "$PM2_BACKEND 已 start/reload"
+fi
+
+if [ "$DO_WORKER" = true ]; then
+  step "遠端 install + pm2 — $PM2_WORKER"
+  sshn "set -e
+    cd $REMOTE_WORKER
+    npm ci --omit=dev --no-audit --no-fund
+    pm2 startOrReload pm2.yaml" || die "遠端 worker install / pm2 失敗"
+  ok "$PM2_WORKER 已 start/reload"
+fi
+
+if [ "$DO_SERVER" = true ] || [ "$DO_WORKER" = true ]; then
+  # pm2-madmad systemd unit 已 enabled，所以只需 save（唔使再 pm2 startup）
+  sshn "pm2 save >/dev/null" && ok "pm2 save（開機自啟已保存）"
+fi
+
+# ══════════════════════════════════════════════════
+# 6. 驗證
+# ══════════════════════════════════════════════════
+HEALTH_OK=true
+
+if [ "$DO_SERVER" = true ]; then
+  step "Health check"
+  for i in $(seq 1 10); do
+    if sshx "curl -sf -o /dev/null http://127.0.0.1:$API_PORT/api/health"; then
+      ok "GET /api/health → 200（第 $i 次）"
+      break
+    fi
+    [ "$i" -eq 10 ] && HEALTH_OK=false
+    sleep 2
+  done
+
+  if [ "$HEALTH_OK" = false ]; then
+    fail "/api/health 10 次都唔通 — 抽 pm2 log:"
+    sshn "pm2 logs $PM2_BACKEND --lines 30 --nostream 2>&1" | sed 's/^/    /'
+  fi
+fi
+
+step "pm2 狀態"
+sshn "pm2 list 2>/dev/null" | grep -E "id │ name|$PM2_BACKEND|$PM2_WORKER|───" | sed 's/^/  /'
+
+# ── CORS 檢查 ──
+# 確認遠端 .env 真係我哋啱啱 push 上去嘅 .env.uat（唔係舊嘅殘留）。
+# CORS_ORIGIN 本身喺 build 前已驗過（見 1b），呢度係核對落地結果。
+if [ "$DO_SERVER" = true ]; then
+  step "遠端 .env 核對"
+  REMOTE_CORS=$(sshx "grep -E '^CORS_ORIGIN=' $REMOTE_BACKEND/.env 2>/dev/null | tail -1 | cut -d= -f2-")
+  LOCAL_CORS=$(envval cms/server/.env.uat CORS_ORIGIN)
+  if [ "$REMOTE_CORS" = "$LOCAL_CORS" ]; then
+    ok "遠端 CORS_ORIGIN=${REMOTE_CORS}（同 .env.uat 一致）"
+  else
+    warn "遠端 CORS_ORIGIN='$REMOTE_CORS' ≠ .env.uat 嘅 '$LOCAL_CORS'"
+    echo "     .env.uat 係唯一真相來源 —— 改本機 cms/server/.env.uat 再重新 deploy。"
+    echo "     直接改伺服器上嘅 .env 冇用，下次 deploy 會被蓋走。"
+  fi
+fi
+
+# ── hermes 檢查（worker 會 online 但做唔到 AI 嘢）──
+# 呢個係 run-time 靜默失敗：pm2 顯示 online，但每個 S1/S2/S3 task 都 ENOENT，
+# pm2 status 完全睇唔出，所以每次 deploy 都真正行一次 --version 驗到底。
+if [ "$DO_WORKER" = true ]; then
+  step "Hermes 檢查"
+  # 用 worker 完全一樣嘅方式行一次 hermes --version：
+  # 設咗 HERMES_HOST 就 ssh 去嗰部機，否則試本機。
+  HERMES_OUT=$(sshn "cd $REMOTE_WORKER
+    set -a; . ./.env 2>/dev/null; set +a
+    if [ -n \"\${HERMES_HOST:-}\" ]; then
+      ssh -o BatchMode=yes -o StrictHostKeyChecking=accept-new -o ConnectTimeout=15 \
+        \${HERMES_KEY:+-i \$HERMES_KEY -o IdentitiesOnly=yes} \
+        \"\${HERMES_USER:+\$HERMES_USER@}\$HERMES_HOST\" \
+        \"\${HERMES_REMOTE_BIN:-\\\$HOME/.local/bin/hermes} --version\" 2>&1 | head -3
+    else
+      \${HERMES_CMD:-hermes} --version 2>&1 | head -3
+    fi" || true)
+
+  HERMES_WHERE=$(sshx "grep -E '^HERMES_HOST=' $REMOTE_WORKER/.env 2>/dev/null | tail -1 | cut -d= -f2-")
+  [ -z "$HERMES_WHERE" ] && HERMES_WHERE="(本機)"
+
+  case "$HERMES_OUT" in
+    *[Hh]ermes*|*[0-9].[0-9]*)
+      ok "hermes @ $HERMES_WHERE 行得通 → $(echo "$HERMES_OUT" | head -1)" ;;
+    *)
+      echo ""
+      echo -e "  ${YELLOW}╔═══════════════════════════════════════════════════════════╗${NC}"
+      echo -e "  ${YELLOW}║  ⚠  hermes 行唔通 — worker 會 online 但每個 AI task 都會死  ║${NC}"
+      echo -e "  ${YELLOW}╚═══════════════════════════════════════════════════════════╝${NC}"
+      echo "     位置: $HERMES_WHERE"
+      echo "     輸出: $(echo "$HERMES_OUT" | head -2 | tr '\n' ' ')"
+      echo ""
+      echo "     喺 $REMOTE_WORKER/.env 加一行（set 個 IP 就得）:"
+      echo "       HERMES_HOST=<hermes 機 IP>"
+      echo ""
+      echo "     設完: pm2 reload $PM2_WORKER"
+      echo "     前置: UAT → hermes 機要做 SSH key 免密碼" ;;
+  esac
+fi
+
+# ══════════════════════════════════════════════════
+# 7. nginx
+# ══════════════════════════════════════════════════
+
+[ "$DO_FRONTEND" = true ] && check_nginx
+
+# ══════════════════════════════════════════════════
+# 收尾
+# ══════════════════════════════════════════════════
+echo ""
+echo "═══════════════════════════════════════════"
+if [ "$HEALTH_OK" = true ]; then
+  echo -e "  ${GREEN}✅ Deploy 完成${NC}"
+else
+  echo -e "  ${RED}⚠  Deploy 完成但 health check 掛${NC}"
+fi
+echo "═══════════════════════════════════════════"
+echo ""
+echo "  前台:     $PUBLIC_URL"
+echo "  API docs: $PUBLIC_URL/api/docs"
+echo ""
+echo "  睇 log:   ssh $SSH_HOST 'source ~/.nvm/nvm.sh && pm2 logs $PM2_BACKEND'"
+echo "  睇狀態:   ssh $SSH_HOST 'source ~/.nvm/nvm.sh && pm2 list'"
+echo "  Rollback: ssh $SSH_HOST 'source ~/.nvm/nvm.sh && cd $REMOTE_BACKEND \\"
+echo "              && rm -rf dist && mv dist.bak dist && pm2 reload $PM2_BACKEND'"
+echo ""
+
+[ "$HEALTH_OK" = true ] || exit 1

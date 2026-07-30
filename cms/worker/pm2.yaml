@@ -1,0 +1,28 @@
+# PM2 config — cms/worker (AI agent leader)
+#
+# 用法（喺本目錄內跑，script / --env-file 都相對 cwd 解析）：
+#   pm2 startOrReload pm2.yaml
+#   pm2 logs agent-worker
+#
+# ⚠ instances 一定要 1 + fork —— leader.js 自己 fork 4 個 sub-worker
+#   (S1 search / S2 analyze / S3 draft / S4 send)，pm2 再開多份就變 8 個
+#   agent 搶同一批 task。
+#
+# ⚠ node_args 唔可以省 —— worker 冇裝 dotenv，全靠 node 嘅 --env-file。
+#   唔傳就係「開得成但每個 env 都 undefined」，run-time 才死，唔係 start-time。
+apps:
+  - name: agent-worker
+    script: ./dist/leader.js
+    node_args: --env-file=.env
+    instances: 1
+    exec_mode: fork
+    watch: false
+    max_memory_restart: 1G
+    # leader.ts 嘅 shutdown 最多等 30 秒放 sub-worker 收工；
+    # pm2 default kill_timeout 只有 1600ms，會喺半路 SIGKILL 撞爛做緊嘅 task。
+    kill_timeout: 35000
+    min_uptime: 10s
+    max_restarts: 10
+    restart_delay: 10000
+    env:
+      NODE_ENV: production

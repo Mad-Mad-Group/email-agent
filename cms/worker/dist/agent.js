@@ -141,25 +141,87 @@ async function reportQuotaExceeded(detail) {
     }
 }
 /**
- * 點樣叫 hermes。以前寫死 'hermes'，即係只能靠 worker 本機 PATH 解析 —— agent
- * 必須同 worker 同一部機。而家由 HERMES_CMD 決定（空白分隔嘅完整命令）：
+ * 點樣叫 hermes。
  *
- *   HERMES_CMD="hermes"                        本機（預設，行為同以前一樣）
- *   HERMES_CMD="/opt/hermes/bin/hermes"        本機但唔喺 PATH
- *   HERMES_CMD="ssh agent-host hermes"         喺另一部機跑
- *   HERMES_CMD="docker exec -i hermes hermes"  喺容器內跑
+ * 本機（預設，行為同以前一樣）：
+ *   HERMES_CMD=hermes                        靠 PATH
+ *   HERMES_CMD=/opt/hermes/bin/hermes        唔喺 PATH
+ *   HERMES_CMD=docker exec -i hermes hermes  容器內
  *
- * 注意：prompt 係當作一個 argv 元素傳，execFile 唔經 shell，所以本機同
- * docker exec 都安全。但 ssh 會喺遠端經 shell 重組 argv —— prompt 有特殊字元
- * 時可能出事，長 prompt 亦可能撞 ARG_MAX。要穩定嘅遠端方案，應該喺 agent 機
- * 開一個 HTTP endpoint 而唔係經 ssh。
+ * 另一部機 —— set 個 IP 就得：
+ *   HERMES_HOST=192.168.1.104
+ *   HERMES_USER=madmad                       （預設 madmad）
+ *   HERMES_KEY=/home/madmad/.ssh/id_ed25519  （可選，唔設就用 ssh 預設）
+ *   HERMES_REMOTE_BIN=$HOME/.local/bin/hermes（預設，因為 ~/.local/bin 通常
+ *                                             唔喺非互動 shell 嘅 PATH）
  */
 const HERMES_CMD = (process.env.HERMES_CMD || 'hermes').split(/\s+/).filter(Boolean);
 const [HERMES_BIN, ...HERMES_BASE_ARGS] = HERMES_CMD;
+const HERMES_HOST = process.env.HERMES_HOST || '';
+// 冇預設 user —— 留空即係唔加 "user@"，等 ssh 自己由 ~/.ssh/config 嘅 User 決定。
+// 咁 HERMES_HOST 就可以填一個 ssh config alias（例如 hermes-macmini），User /
+// IdentityFile / Port 全部由 config 供。硬套一個預設 user 會覆蓋 config 個 User，
+// 令 alias 靜靜地連錯帳戶（症狀係 Permission denied，好難查）。
+const HERMES_USER = process.env.HERMES_USER || '';
+const HERMES_KEY = process.env.HERMES_KEY || '';
+const HERMES_REMOTE_BIN = process.env.HERMES_REMOTE_BIN || '$HOME/.local/bin/hermes';
+/**
+ * POSIX shell 單引號包裝。單引號內所有字元（換行、"、`、$、(、~）都係字面值，
+ * 只有 ' 本身要 escape 成 '\'' —— 收尾、插一個轉義嘅單引號、再開返。
+ */
+function shQuote(s) {
+    return `'${s.replace(/'/g, `'\\''`)}'`;
+}
+/**
+ * 縮短 execFile 嘅錯誤訊息。
+ *
+ * execFile 會把【整條指令】塞入 err.message（"Command failed: <cmd>\n<stderr>"），
+ * 而我哋條指令包住成個 prompt（幾千字）。原本直接 log / 存 DB 嘅後果：
+ *   - 一個失敗 task 印十幾次完整 prompt（實測 log 檔幾秒就漲到 64KB）
+ *   - failTask() 把成串傳去 API → 每條 failed task 都存幾 KB 廢話落 Mongo
+ *   - 真正有用嘅一行（Permission denied / Connection refused）反而被埋沒
+ *
+ * 真正有用嘅 stderr 喺最尾一行，所以只留頭尾。
+ */
+function shortenExecError(err, max = 300) {
+    const msg = err?.message ?? String(err);
+    const lines = String(msg).split('\n').map((s) => s.trim()).filter(Boolean);
+    if (lines.length === 0)
+        return String(msg).slice(0, max);
+    const tail = lines[lines.length - 1];
+    // 頭一行係 "Command failed: <cmd…>" —— 剝走 cmd，只留標籤
+    const head = lines[0].startsWith('Command failed:') ? 'Command failed' : lines[0];
+    return (head === tail ? head : `${head}: ${tail}`).slice(0, max);
+}
+/**
+ * 砌出真正要 exec 嘅 [binary, argv]。
+ *
+ * ⚠ 為什麼遠端要自己 quote：ssh 唔會保留 argv 邊界 —— 佢把 argv[1:] 用空格
+ *   拼成一條字串，交俾遠端 shell 重新拆解。worker 嘅 prompt 係多行、帶引號同
+ *   括號嘅，唔 quote 就一遇到 "(" 即刻 syntax error，每個 AI task 都會死。
+ *   （用 execFile 唔經本機 shell 都救唔到，因為拆解係喺遠端發生。）
+ */
+function hermesArgv(args) {
+    if (!HERMES_HOST)
+        return [HERMES_BIN, [...HERMES_BASE_ARGS, ...args]];
+    const ssh = ['-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=accept-new',
+        '-o', 'ConnectTimeout=15'];
+    if (HERMES_KEY) {
+        // 明確指定 key 就唔好再試其他 —— 否則 ssh 會先 offer agent / 其他 id_* key，
+        // 撞到 MaxAuthTries 就算指定嗰條 key 係對嘅都會 Permission denied。
+        ssh.push('-i', HERMES_KEY, '-o', 'IdentitiesOnly=yes');
+    }
+    // 空 HERMES_USER 就唔加 "user@"，交俾 ~/.ssh/config 嘅 User 決定（見上面註釋）
+    const target = HERMES_USER ? `${HERMES_USER}@${HERMES_HOST}` : HERMES_HOST;
+    // HERMES_REMOTE_BIN 故意唔 quote —— 要留 $HOME 喺遠端展開
+    const remote = [HERMES_REMOTE_BIN, ...args.map(shQuote)].join(' ');
+    return ['ssh', [...ssh, target, remote]];
+}
 function callHermes(prompt, timeoutMs = 300000) {
     const t0 = Date.now();
+    const [bin, argv] = hermesArgv(['-z', prompt, '--yolo', '--ignore-rules']);
     return new Promise((resolve, reject) => {
-        (0, child_process_1.execFile)(HERMES_BIN, [...HERMES_BASE_ARGS, '-z', prompt, '--yolo', '--ignore-rules'], {
+        (0, child_process_1.execFile)(bin, argv, {
             encoding: 'utf8',
             timeout: timeoutMs,
             maxBuffer: 16 * 1024 * 1024,
@@ -174,7 +236,7 @@ function callHermes(prompt, timeoutMs = 300000) {
                 void reportQuotaExceeded(quota);
             }
             if (err) {
-                console.log(`[hermes] ✗ ${elapsed}s — error: ${err.message?.slice(0, 200)}`);
+                console.log(`[hermes] ✗ ${elapsed}s — error: ${shortenExecError(err)}`);
                 reject(err);
             }
             else {
@@ -999,6 +1061,13 @@ async function doSearch(p, db) {
     let totalSkipped = 0;
     let staleRounds = 0; // 連續無新結果嘅輪數
     const excludeNames = []; // 避免 hermes 重複返回同樣結果
+    // hermes「叫到但冇新結果」同「完全叫唔到」係兩件事，一定要分開數。
+    // 唔分開嘅話，hermes 掛（ssh refused / ENOENT / 額度用盡）會被當成
+    // 「市場上搵唔到客」→ task 標記成功完成 0 lead，ops 睇唔出係基建故障，
+    // 而個 task 亦唔會喺 hermes 復原之後重試。
+    let hermesOk = 0;
+    let hermesFailures = 0;
+    let lastHermesError = '';
     for (let round = 1;; round++) {
         const still_need = target - ids.length;
         if (still_need <= 0)
@@ -1073,10 +1142,13 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
         }
         catch (e) {
             const searchElapsed = ((Date.now() - searchT0) / 1000).toFixed(1);
-            log(`  [search] 第 ${round} 輪 hermes 失敗 (${searchElapsed}s): ${e?.message ?? e}`);
+            hermesFailures++;
+            lastHermesError = shortenExecError(e);
+            log(`  [search] 第 ${round} 輪 hermes 失敗 (${searchElapsed}s): ${lastHermesError}`);
             staleRounds++;
             continue;
         }
+        hermesOk++;
         const searchElapsed = ((Date.now() - searchT0) / 1000).toFixed(1);
         log(`  [search] hermes 回應 (${searchElapsed}s)：${arr.length} 筆結果 → ${JSON.stringify(arr).slice(0, 300)}`);
         console.log(`[search-debug] 完整結果:\n${JSON.stringify(arr, null, 2)}`);
@@ -1147,6 +1219,13 @@ RESPONSE FORMAT — reply with ONLY a raw JSON array, no other text:
         else {
             staleRounds = 0; // 有新結果就重置
         }
+    }
+    // hermes 一次都冇成功叫到 → 係基建故障，唔係「市場上搵唔到客」。
+    // 一定要 throw：唔 throw 就會標記成「成功完成，0 個 lead」，令人以為關鍵字唔好，
+    // 而且個 task 已被消耗，hermes 復原之後唔會自動重試。
+    // throw 之後會經 failTask() → task 變 failed → reap-stalled-tasks cron 可以 requeue。
+    if (hermesOk === 0 && hermesFailures > 0) {
+        throw new Error(`hermes 完全叫唔到（${hermesFailures} 輪全部失敗），最後錯誤：${lastHermesError}`);
     }
     if (ids.length > 0) {
         await notify(db, `搜尋完成：搵到 ${ids.length} 個新 lead`, {
@@ -2026,7 +2105,7 @@ async function handleTask(task, db) {
     catch (e) {
         log(`✗ ${task.task_id} 失敗:`, e?.message ?? e);
         try {
-            await failTask(task.task_id, e?.message ?? String(e));
+            await failTask(task.task_id, shortenExecError(e, 500));
             await notify(db, `任務失敗：${task.title || task.task_id}`, {
                 message: e?.message ?? String(e),
                 type: 'task',
@@ -2047,8 +2126,14 @@ async function handleTask(task, db) {
 }
 async function main() {
     log(`啟動 → API=${API} skill=${SKILL || 'any'} exclude=${SKILL_EXCLUDE || 'none'} concurrency=${concurrency}`);
-    // 明確記錄用邊個 hermes —— 「兩部機結果唔同」嘅第一個要查嘅就係呢個
-    log(`hermes 命令: ${HERMES_CMD.join(' ')}`);
+    // 明確記錄用邊個 hermes —— 「兩部機結果唔同」嘅第一個要查嘅就係呢個。
+    // ⚠ 一定要反映 HERMES_HOST：只印 HERMES_CMD 嘅話，設咗遠端都會顯示 "hermes"，
+    //   睇 log 會以為行本機，然後查錯方向（遠端模式壞嘅時候尤其誤導）。
+    log(HERMES_HOST
+        ? `hermes 命令: 遠端 ${HERMES_USER ? `${HERMES_USER}@` : ''}${HERMES_HOST}`
+            + ` → ${HERMES_REMOTE_BIN}`
+            + `${HERMES_KEY ? ` (key=${HERMES_KEY})` : ' (user/key 由 ~/.ssh/config 供)'}`
+        : `hermes 命令: 本機 ${HERMES_CMD.join(' ')}`);
     await loginWithRetry();
     await refreshConcurrency();
     let lastConcurrencyCheck = Date.now();

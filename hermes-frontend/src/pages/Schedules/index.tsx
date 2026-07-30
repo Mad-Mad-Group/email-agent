@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import styled, { useTheme } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { media } from '../../styles/media';
+import SpriteAvatar from '../../components/SpriteAvatar';
+import { AGENTS } from '../../config/agents';
 import {
   usePipelineSchedules,
   useCreatePipelineSchedule,

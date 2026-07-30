@@ -8,6 +8,7 @@
     "dev": "vite",
     "check:no-quarter": "bash ../scripts/check-no-quarter.sh",
     "build": "npm run check:no-quarter && tsc -b && vite build",
+    "build:uat": "npm run check:no-quarter && tsc -b && vite build --mode uat",
     "lint": "oxlint",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",

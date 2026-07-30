@@ -3,6 +3,11 @@
 # ClientRadar AI — Backend 部署腳本
 # 用法: ./scripts/deploy-backend.sh
 # 喺 Backend Mac 上執行
+#
+# ⚠ Deploy 去 UAT 請用 repo root 嘅 ./deploy-uat.sh —— 唔好混用本腳本。
+#   本腳本用 pm2 名 "clientradar-api"，deploy-uat.sh 用 "agent-backend"，
+#   兩者一齊行會開出兩個 process 爭同一個 port 4000。
+#   本腳本只適用於「喺目標機自己 git pull + build」嘅舊流程。
 # ─────────────────────────────────────────────
 set -euo pipefail
 

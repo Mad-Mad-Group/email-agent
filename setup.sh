@@ -133,11 +133,20 @@ echo ""
 echo "▸ Initializing MongoDB..."
 echo "  (建立 collections、indexes、預設角色及管理員帳號)"
 
-if node "$ROOT/scripts/seed-db.js" 2>/dev/null; then
+# 唔好用 2>/dev/null —— 之前咁做令 require('mongodb') MODULE_NOT_FOUND 被完全
+# 蓋住，seed 一直靜靜地冇行過，只見到下面句籠統嘅「請確認 MongoDB 正在運行」。
+# MONGODB_URI 冇 export 就會用 localhost 預設；用 Atlas 就要 --env-file。
+if [ -f "$ROOT/cms/server/.env" ] && grep -q '^MONGODB_URI=' "$ROOT/cms/server/.env"; then
+  SEED_CMD=(node --env-file="$ROOT/cms/server/.env" "$ROOT/scripts/seed-db.js")
+else
+  SEED_CMD=(node "$ROOT/scripts/seed-db.js")
+fi
+
+if "${SEED_CMD[@]}"; then
   ok "MongoDB seed 完成"
 else
-  warn "MongoDB seed 失敗 — 請確認 MongoDB 正在運行，或稍後手動執行:"
-  echo "       node scripts/seed-db.js"
+  warn "MongoDB seed 失敗（錯誤已印喺上面）。修好後手動再行:"
+  echo "       node --env-file=cms/server/.env scripts/seed-db.js"
 fi
 
 echo ""

@@ -9,10 +9,30 @@
  *   MONGODB_URI=mongodb://... node scripts/seed-db.js # 指定連線
  *   node scripts/seed-db.js --admin-email=admin@test.com --admin-pass=123456
  *
+ * DB 係 Atlas（雲端）嘅話，由本機直接指去目標 DB 就得，唔需要喺伺服器上行：
+ *   node --env-file=cms/server/.env scripts/seed-db.js
+ *
  * ⚠️ 此腳本是冪等的 — 重複執行不會刪除現有資料
  */
 
-const { MongoClient } = require('mongodb');
+// repo root 冇 package.json / node_modules，所以 bare require 解析唔到。
+// 依賴借用 cms/server 嘅（bcryptjs 本來已經咁做，mongodb 之前漏咗，
+// 令 `node scripts/seed-db.js` 直接 MODULE_NOT_FOUND —— 而 setup.sh 用
+// 2>/dev/null 蓋住咗，所以一直靜靜地失敗）。
+function requireDep(name) {
+  try {
+    return require(name);
+  } catch {
+    try {
+      return require(`../cms/server/node_modules/${name}`);
+    } catch {
+      console.error(`  ✘ 搵唔到 ${name}。請先: cd cms/server && npm install`);
+      process.exit(1);
+    }
+  }
+}
+
+const { MongoClient } = requireDep('mongodb');
 const crypto = require('crypto');
 
 // ── 參數解析 ──────────────────────────────────────────
@@ -179,19 +199,8 @@ const DEFAULT_ROLES = [
 // ── bcryptjs 簡易實現（避免依賴安裝問題）──────────────
 // 使用 crypto 產生密碼 hash，與 bcryptjs 相容
 async function hashPassword(password) {
-  try {
-    const bcrypt = require('bcryptjs');
-    return await bcrypt.hash(password, 10);
-  } catch {
-    // 如果 bcryptjs 不在此目錄，嘗試從 server 目錄載入
-    try {
-      const bcrypt = require('../cms/server/node_modules/bcryptjs');
-      return await bcrypt.hash(password, 10);
-    } catch {
-      fail('bcryptjs 未安裝。請先執行 cd cms/server && npm install');
-      process.exit(1);
-    }
-  }
+  const bcrypt = requireDep('bcryptjs');
+  return await bcrypt.hash(password, 10);
 }
 
 // ── 主程式 ────────────────────────────────────────────

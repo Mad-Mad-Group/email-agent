@@ -1,0 +1,16 @@
+{
+  "name": "clientradar-cms",
+  "version": "0.0.0",
+  "private": true,
+  "description": "ClientRadar CMS — cms/server (NestJS) + cms/worker (AI agent) + hermes-frontend (Vite SPA)",
+  "engines": {
+    "node": ">=20.6.0"
+  },
+  "scripts": {
+    "deploy:uat": "bin/deployUat",
+    "build": "./build.sh",
+    "build:uat": "./build.sh --uat",
+    "seed": "node --env-file=cms/server/.env scripts/seed-db.js",
+    "seed:uat": "node --env-file=cms/server/.env.uat scripts/seed-db.js"
+  }
+}

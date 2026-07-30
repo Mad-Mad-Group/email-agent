@@ -1,0 +1,24 @@
+# PM2 config — cms/server (NestJS API)
+#
+# 用法（喺本目錄內跑，script / --env-file 都相對 cwd 解析）：
+#   pm2 startOrReload pm2.yaml
+#   pm2 logs agent-backend
+#
+# ⚠ instances 一定要 1 + fork，唔可以照抄其他 project 嘅 cluster:2 ——
+#   jobs.service.ts 有 5 個 @Cron、pipeline-schedules.service.ts 有 1 個（每分鐘），
+#   開 2 個 instance 會令每個 cron 重複觸發兩次（重複搵客 / 重複發信）。
+#   另外 main.ts 冇 process.send('ready')，所以亦唔可以用 wait_ready: true。
+apps:
+  - name: agent-backend
+    script: ./dist/main.js
+    node_args: --env-file=.env
+    instances: 1
+    exec_mode: fork
+    watch: false
+    max_memory_restart: 512M
+    kill_timeout: 10000       # 留時間放走 in-flight request
+    min_uptime: 10s
+    max_restarts: 10
+    restart_delay: 5000
+    env:
+      NODE_ENV: production

@@ -1,4 +1,8 @@
 {
   "extends": "./tsconfig.json",
+  // 限死 src/ —— 否則 cleanup-users.ts / scripts/*.ts 會令 TS 推 rootDir 為 "."，
+  // 產出變 dist/src/main.js，而所有 pm2 / deploy 指令都係指 dist/main.js。
+  // 嗰啲 script 本身用 ts-node 直跑（見 package.json 嘅 leads:recover），唔需要編譯。
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
 }

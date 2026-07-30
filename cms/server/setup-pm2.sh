@@ -1,8 +1,17 @@
 #!/bin/bash
 # PM2 Setup Script — 開機自動啟動 NestJS Server
 # 喺 lead_scraper/cms/server/ 目錄下行: bash setup-pm2.sh
+#
+# ⚠ 已被 ../../deploy-uat.sh + ./pm2.yaml 取代 —— 唔好再用。
+#   本腳本用 pm2 名 "lead-cms"，同 pm2.yaml 嘅 "agent-backend" 唔同，
+#   兩者一齊行會開出兩個 process 爭同一個 port 4000。
+#   保留只為參考舊做法。
 
 set -e
+
+echo "⚠ setup-pm2.sh 已停用，請改用 repo root 嘅 ./deploy-uat.sh server" >&2
+echo "  只想本機起 pm2？喺 cms/server/ 內跑: pm2 startOrReload pm2.yaml" >&2
+exit 1
 
 echo "=== 1. 安裝 pm2 ==="
 npm install -g pm2

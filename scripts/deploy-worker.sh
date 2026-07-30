@@ -3,6 +3,11 @@
 # ClientRadar AI — Worker 部署腳本
 # 用法: ./scripts/deploy-worker.sh
 # 喺 Worker Mac 上執行
+#
+# ⚠ Deploy 去 UAT 請用 repo root 嘅 ./deploy-uat.sh —— 唔好混用本腳本。
+#   本腳本用 pm2 名 "clientradar-worker"，deploy-uat.sh 用 "agent-worker"，
+#   兩者一齊行會開出兩套 leader，各自 fork 4 個 sub-worker 搶同一批 task。
+#   本腳本只適用於「喺目標機自己 git pull + build」嘅舊流程。
 # ─────────────────────────────────────────────
 set -euo pipefail
 

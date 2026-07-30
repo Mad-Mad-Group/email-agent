@@ -9,11 +9,15 @@
 #   ./build.sh frontend         # 只 build frontend
 #   ./build.sh --clean          # 先清除舊 build 產物再 build 全部
 #   ./build.sh --skip-install   # 跳過 npm install（假設 deps 已裝好）
+#   ./build.sh --uat            # frontend 用 .env.uat build（vite --mode uat）
 #
 # 產出:
 #   cms/server/dist/       — NestJS 編譯結果
 #   cms/worker/dist/       — Worker 編譯結果
 #   hermes-frontend/dist/  — Vite 靜態檔案
+#
+# 註：--uat 只影響 frontend。server / worker build 時唔讀 env（env 純粹係
+#     runtime 嘢，由 pm2 嘅 --env-file 供），所以佢哋唔需要分 mode。
 #
 
 set -uo pipefail
@@ -38,18 +42,20 @@ step()  { echo -e "\n${BLUE}${BOLD}▸ $1${NC}"; }
 TARGET="all"
 CLEAN=false
 SKIP_INSTALL=false
+UAT=false
 
 for arg in "$@"; do
   case "$arg" in
     server|worker|frontend) TARGET="$arg" ;;
     --clean)         CLEAN=true ;;
     --skip-install)  SKIP_INSTALL=true ;;
+    --uat)           UAT=true ;;
     -h|--help)
-      sed -n '3,16p' "$0" | sed 's/^# \?//'
+      sed -n '3,20p' "$0" | sed -E 's/^# ?//'
       exit 0
       ;;
     *)
-      fail "未知參數: $arg（用 --help 查看用法）"
+      fail "未知參數: ${arg}（用 --help 查看用法）"
       exit 1
       ;;
   esac
@@ -77,7 +83,7 @@ NODE_MAJOR=$(echo "$NODE_VER" | cut -d. -f1)
 NODE_MINOR=$(echo "$NODE_VER" | cut -d. -f2)
 
 if [ "$NODE_MAJOR" -lt 20 ] || { [ "$NODE_MAJOR" -eq 20 ] && [ "$NODE_MINOR" -lt 6 ]; }; then
-  fail "Node 版本過舊: v$NODE_VER（需要 ≥ 20.6，因為用咗 --env-file）"
+  fail "Node 版本過舊: v${NODE_VER}（需要 ≥ 20.6，因為用咗 --env-file）"
   exit 1
 fi
 ok "Node v$NODE_VER"
@@ -211,7 +217,12 @@ if [ "$TARGET" = "all" ] || [ "$TARGET" = "worker" ]; then
 fi
 
 if [ "$TARGET" = "all" ] || [ "$TARGET" = "frontend" ]; then
-  build_one "hermes-frontend" "hermes-frontend" "npm run build"
+  if [ "$UAT" = true ]; then
+    [ -f hermes-frontend/.env.uat ] || { fail "hermes-frontend/.env.uat 唔存在（--uat 要用佢）"; exit 1; }
+    build_one "hermes-frontend" "hermes-frontend" "npm run build:uat"
+  else
+    build_one "hermes-frontend" "hermes-frontend" "npm run build"
+  fi
 fi
 
 # ── 總結 ────────────────────────────────────────────

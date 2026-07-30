@@ -7,6 +7,10 @@
 hermes-migration-*.tar.gz
 *hermes-home*.tar.gz
 
+# 本 repo 統一用 npm（三個 app 都係 package-lock.json，遠端 deploy 亦用 npm ci）。
+# yarn.lock 一出現就會同 package-lock.json 漂移，兩個都變唔可信 —— 擋住佢。
+yarn.lock
+
 # Node / TS build output
 node_modules/
 dist/
