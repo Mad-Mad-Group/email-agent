@@ -346,7 +346,7 @@ const Schedules: React.FC = () => {
       <PageCard>
         {/* ── Hero ── */}
         <HeroBody>
-          <SpriteAvatar src={AGENTS.S3.sprite} frames={AGENTS.S3.frames} frameW={AGENTS.S3.frameW} frameH={AGENTS.S3.frameH} size={52} />
+          <SpriteAvatar src={AGENTS.S3.sprite} frames={AGENTS.S3.frames} frameW={AGENTS.S3.frameW} frameH={AGENTS.S3.frameH} trim={AGENTS.S3.trim} size={52} />
           <HeroInfo>
             <HeroName>{t('settings.schedulesTab')}</HeroName>
             <HeroSub>{t('settings.schedEmpty').replace(/Click.*$/, '').replace(/點擊.*$/, '').replace(/点击.*$/, '').trim() || t('settings.schedulesTab')}</HeroSub>

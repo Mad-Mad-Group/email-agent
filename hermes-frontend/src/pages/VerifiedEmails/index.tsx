@@ -422,7 +422,7 @@ const VerifiedEmailsPage: React.FC = () => {
     <Page>
       <PageCard>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <SpriteAvatar src={AGENTS.S4.sprite} frames={AGENTS.S4.frames} frameW={AGENTS.S4.frameW} frameH={AGENTS.S4.frameH} size={48} />
+        <SpriteAvatar src={AGENTS.S4.sprite} frames={AGENTS.S4.frames} frameW={AGENTS.S4.frameW} frameH={AGENTS.S4.frameH} trim={AGENTS.S4.trim} size={48} />
         <div><PageTitle>{t('verifiedEmails.title')}</PageTitle><PageSub>{t('verifiedEmails.subtitle')}</PageSub></div>
       </div>
 

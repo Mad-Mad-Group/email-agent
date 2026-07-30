@@ -17,6 +17,12 @@ export interface AgentIdentity {
   frameW: number;
   /** Frame height in px */
   frameH: number;
+  /**
+   * Opaque box within a frame (source px), covering every frame. The art sits
+   * small inside its cell, so pass this to SpriteAvatar's `trim` to scale the
+   * character rather than the mostly-transparent cell.
+   */
+  trim: { x: number; y: number; w: number; h: number };
   /** Brand color */
   accent: string;
   /** Light bg gradient start */
@@ -25,25 +31,36 @@ export interface AgentIdentity {
   bg2: string;
 }
 
+/**
+ * `trim` is the opaque box of each sheet, measured across all frames. The art is
+ * drawn small inside its cell (the farmer fills only 20% of an 80x80 frame, the
+ * chicken 31%), so rendering the whole cell wastes most of the element on
+ * transparency and the character reads as a speck. Pass it to SpriteAvatar's
+ * `trim` prop to scale just the character.
+ */
 export const AGENTS: Record<string, AgentIdentity> = {
   S1: {
     id: 'S1', nameKey: 'agents.s1Name', typeKey: 'agents.s1Type',
     sprite: '/assets/pixel-world/sprites/fox-idle.png', frames: 6, frameW: 48, frameH: 48,
+    trim: { x: 9, y: 15, w: 27, h: 17 },
     accent: '#f97316', bg1: '#fff7ed', bg2: '#ffedd5',
   },
   S2: {
     id: 'S2', nameKey: 'agents.s2Name', typeKey: 'agents.s2Type',
     sprite: '/assets/pixel-world/sprites/cow-idle.png', frames: 5, frameW: 48, frameH: 48,
+    trim: { x: 10, y: 15, w: 32, h: 17 },
     accent: '#64748b', bg1: '#f8fafc', bg2: '#f1f5f9',
   },
   S3: {
     id: 'S3', nameKey: 'agents.s3Name', typeKey: 'agents.s3Type',
     sprite: '/assets/pixel-world/sprites/chicken-idle.png', frames: 5, frameW: 48, frameH: 48,
+    trim: { x: 17, y: 17, w: 15, h: 15 },
     accent: '#ef4444', bg1: '#fef2f2', bg2: '#fee2e2',
   },
   S4: {
     id: 'S4', nameKey: 'agents.s4Name', typeKey: 'agents.s4Type',
     sprite: '/assets/pixel-world/sprites/duck-idle.png', frames: 4, frameW: 48, frameH: 48,
+    trim: { x: 17, y: 17, w: 16, h: 15 },
     accent: '#22c55e', bg1: '#f0fdf4', bg2: '#dcfce7',
   },
 };
@@ -53,6 +70,12 @@ export const FARMER = {
   frames: 4,
   frameW: 80,
   frameH: 80,
+  /**
+   * The figure only occupies a 16x19 box inside the 80x80 cell (measured across
+   * all 4 frames), so rendering the whole cell wastes 82% of the element on
+   * transparency. Pass this as SpriteAvatar's `trim` to scale just the figure.
+   */
+  trim: { x: 32, y: 35, w: 16, h: 19 },
   accent: '#8b6914',
   nameKey: 'agents.farmer',
 };

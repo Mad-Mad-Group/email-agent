@@ -793,7 +793,7 @@ const Users: React.FC = () => {
     <Page>
       <PageCard>
       <HeroRow>
-        <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} size={120} />
+        <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} trim={FARMER.trim} size={56} />
         <div><PageTitle>{t('users.title')}</PageTitle><PageSub>{t('users.subtitle')}</PageSub></div>
       </HeroRow>
       <StatsGrid>

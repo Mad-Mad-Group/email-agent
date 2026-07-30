@@ -1538,7 +1538,7 @@ const Dashboard: React.FC = () => {
                             const agentId = ACTIVITY_AGENT[item.type];
                             const agent = agentId ? AGENTS[agentId] : null;
                             return agent ? (
-                              <SpriteAvatar src={agent.sprite} frames={agent.frames} frameW={agent.frameW} frameH={agent.frameH} size={56} />
+                              <SpriteAvatar src={agent.sprite} frames={agent.frames} frameW={agent.frameW} frameH={agent.frameH} trim={agent.trim} size={56} />
                             ) : (
                               <FeedIcon $bg={`${theme.strong.gold}20`} $fg={theme.strong.gold}><IconPen /></FeedIcon>
                             );

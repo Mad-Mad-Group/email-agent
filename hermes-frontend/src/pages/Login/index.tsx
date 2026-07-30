@@ -6,7 +6,7 @@ import { Button, FormField } from '../../components';
 import { useAuth } from '../../contexts/AuthContext';
 import SpriteAvatar from '../../components/SpriteAvatar';
 import { AGENTS, FARMER } from '../../config/agents';
-import { glassTrack, glassAvatar } from '../../styles/liquidGlass';
+import { glassTrack } from '../../styles/liquidGlass';
 
 const LANGUAGES = [
   { code: 'en', label: 'EN' },
@@ -55,6 +55,28 @@ const OrbitalHero = styled.div`
     filter: blur(30px);
     pointer-events: none;
   }
+
+  /* Radar sweep — a rotating wedge. The product is called ClientRadar, so the
+     orbit system reads as a radar rather than generic decoration. */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: conic-gradient(
+      from 0deg,
+      ${({ theme }) => theme.colors.accent}00 0deg,
+      ${({ theme }) => theme.colors.accent}00 300deg,
+      ${({ theme }) => theme.colors.accent}12 350deg,
+      ${({ theme }) => theme.colors.accent}26 360deg
+    );
+    animation: ${orbitSpin} 8s linear infinite;
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    &::after { animation: none; }
+  }
 `;
 
 const OrbitPath = styled.div<{ $frac: number; $dur: number; $reverse?: boolean }>`
@@ -62,9 +84,14 @@ const OrbitPath = styled.div<{ $frac: number; $dur: number; $reverse?: boolean }
   width: ${({ $frac }) => $frac * 100}%;
   height: ${({ $frac }) => $frac * 100}%;
   border-radius: 50%;
-  border: 1px solid ${({ theme }) => theme.colors.border};
+  /* theme.colors.border on the canvas measured 1.36:1 — effectively invisible.
+     Tinted with the accent and faded outward so the rings recede with depth. */
+  border: 1px solid ${({ theme, $frac }) => `${theme.colors.accent}${
+    $frac < 0.3 ? '4d' : $frac < 0.55 ? '38' : $frac < 0.8 ? '26' : '1a'
+  }`};
   animation: ${orbitSpin} ${({ $dur }) => $dur}s linear infinite;
   ${({ $reverse }) => $reverse && 'animation-direction: reverse;'}
+  @media (prefers-reduced-motion: reduce) { animation: none; }
 `;
 
 const OrbitNodeWrap = styled.div<{ $dur: number; $reverse?: boolean }>`
@@ -74,18 +101,30 @@ const OrbitNodeWrap = styled.div<{ $dur: number; $reverse?: boolean }>`
   animation-direction: ${({ $reverse }) => ($reverse ? 'normal' : 'reverse')};
 `;
 
+/* No disc: the characters sit straight on the background. A soft drop-shadow
+   keeps them legible over the rings without boxing them in. */
 const OrbitAvatar = styled.div`
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: ${({ theme }) => theme.colors.surface};
+  width: 60px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: ${({ theme }) => theme.shadows.card};
-  overflow: hidden;
-  border: 2px solid ${({ theme }) => theme.colors.border};
-  ${glassAvatar}
+  filter: drop-shadow(0 2px 3px rgba(11, 8, 11, 0.22));
+`;
+
+/* Names the cast instead of leaving them as anonymous mascots */
+const OrbitName = styled.div`
+  position: absolute;
+  top: calc(100% + 5px);
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: ${({ theme }) => theme.colors.accent};
+  opacity: 0.75;
+  pointer-events: none;
 `;
 
 const OrbitDot = styled.div<{ $color: string; $s: number }>`
@@ -95,6 +134,15 @@ const OrbitDot = styled.div<{ $color: string; $s: number }>`
   background: ${({ $color }) => $color};
   box-shadow: 0 0 ${({ $s }) => $s * 2}px ${({ $color }) => $color}55;
 `;
+
+/**
+ * With `trim`, SpriteAvatar's `size` is the character's *height*. These animals
+ * have very different aspects (the cow is 32x17, the farmer 16x19), so sizing
+ * them all by height makes the wide ones overflow the disc. This returns the
+ * height that makes the whole character fit inside a `box` square.
+ */
+const fitSize = (trim: { w: number; h: number }, box: number) =>
+  Math.round((trim.h * box) / Math.max(trim.w, trim.h));
 
 const ORBIT_RINGS = [
   { frac: 0.20, dur: 75, reverse: false },
@@ -118,6 +166,79 @@ const Page = styled.div`
   min-height: 100vh;
   background: ${({ theme }) => theme.colors.canvas};
   overflow: hidden;
+`;
+
+/* ═══════════════════════════════════════
+   Backdrop — was a flat single colour.
+   Three stacked layers, all non-interactive and behind everything:
+     1. blueprint grid   — engineering-drawing language, very low contrast
+     2. two soft glows   — warm top-left, accent near the radar centre
+     3. film grain       — kills the banding that large gradients produce
+   ═══════════════════════════════════════ */
+
+const GRID = 34; // px
+
+const Backdrop = styled.div`
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    /* grid */
+    repeating-linear-gradient(
+      to right,
+      ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.035)' : 'rgba(11,8,11,0.035)'} 0 1px,
+      transparent 1px ${GRID}px
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      ${({ theme }) => theme.mode === 'dark' ? 'rgba(255,255,255,0.035)' : 'rgba(11,8,11,0.035)'} 0 1px,
+      transparent 1px ${GRID}px
+    ),
+    /* glows */
+    radial-gradient(
+      680px circle at 12% 18%,
+      ${({ theme }) => theme.strong.gold}${({ theme }) => theme.mode === 'dark' ? '14' : '1c'} 0%,
+      transparent 68%
+    ),
+    radial-gradient(
+      900px circle at 78% 46%,
+      ${({ theme }) => theme.colors.accent}${({ theme }) => theme.mode === 'dark' ? '1a' : '1f'} 0%,
+      transparent 70%
+    );
+
+  /* Grain on top of the gradients */
+  &::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: ${({ theme }) => theme.mode === 'dark' ? 0.05 : 0.035};
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+`;
+
+/* Terminal watermark — states what the product does, in the language the
+   audience already reads (CLI conventions stay English). Decorative only. */
+const TerminalMark = styled.pre`
+  position: fixed;
+  left: 12vw;
+  bottom: 5vh;
+  z-index: 1;
+  margin: 0;
+  font-family: ${({ theme }) => theme.fonts.mono};
+  font-size: 0.6875rem;
+  line-height: 1.75;
+  color: ${({ theme }) => theme.colors.textPrimary};
+  opacity: 0.3;
+  pointer-events: none;
+  user-select: none;
+  white-space: pre;
+
+  .prompt { color: ${({ theme }) => theme.colors.accent}; }
+  .ok { color: ${({ theme }) => theme.strong.olive}; }
+  .dim { opacity: 0.65; }
+
+  @media (max-width: 900px), (max-height: 720px) { display: none; }
 `;
 
 const LeftSide = styled.div`
@@ -308,6 +429,7 @@ const Login: React.FC = () => {
 
   return (
     <Page>
+      <Backdrop />
       <LangPill>
         <LangPillInner>
           <LangSlider $index={Math.max(0, LANGUAGES.findIndex(l => l.code === i18n.language))} />
@@ -363,13 +485,15 @@ const Login: React.FC = () => {
           <OrbitPath $frac={ORBIT_RINGS[0].frac} $dur={ORBIT_RINGS[0].dur}>
             <OrbitNodeWrap style={orbitNodePos(0)} $dur={ORBIT_RINGS[0].dur}>
               <OrbitAvatar>
-                <SpriteAvatar src={AGENTS.S1.sprite} frames={AGENTS.S1.frames} frameW={AGENTS.S1.frameW} frameH={AGENTS.S1.frameH} size={36} />
+                <SpriteAvatar src={AGENTS.S1.sprite} frames={AGENTS.S1.frames} frameW={AGENTS.S1.frameW} frameH={AGENTS.S1.frameH} trim={AGENTS.S1.trim} size={fitSize(AGENTS.S1.trim, 44)} />
               </OrbitAvatar>
+              <OrbitName>{t(AGENTS.S1.nameKey)}</OrbitName>
             </OrbitNodeWrap>
             <OrbitNodeWrap style={orbitNodePos(180)} $dur={ORBIT_RINGS[0].dur}>
               <OrbitAvatar>
-                <SpriteAvatar src={AGENTS.S3.sprite} frames={AGENTS.S3.frames} frameW={AGENTS.S3.frameW} frameH={AGENTS.S3.frameH} size={36} />
+                <SpriteAvatar src={AGENTS.S3.sprite} frames={AGENTS.S3.frames} frameW={AGENTS.S3.frameW} frameH={AGENTS.S3.frameH} trim={AGENTS.S3.trim} size={fitSize(AGENTS.S3.trim, 44)} />
               </OrbitAvatar>
+              <OrbitName>{t(AGENTS.S3.nameKey)}</OrbitName>
             </OrbitNodeWrap>
           </OrbitPath>
 
@@ -377,18 +501,21 @@ const Login: React.FC = () => {
           <OrbitPath $frac={ORBIT_RINGS[1].frac} $dur={ORBIT_RINGS[1].dur} $reverse>
             <OrbitNodeWrap style={orbitNodePos(30)} $dur={ORBIT_RINGS[1].dur} $reverse>
               <OrbitAvatar>
-                <SpriteAvatar src={AGENTS.S2.sprite} frames={AGENTS.S2.frames} frameW={AGENTS.S2.frameW} frameH={AGENTS.S2.frameH} size={36} />
+                <SpriteAvatar src={AGENTS.S2.sprite} frames={AGENTS.S2.frames} frameW={AGENTS.S2.frameW} frameH={AGENTS.S2.frameH} trim={AGENTS.S2.trim} size={fitSize(AGENTS.S2.trim, 44)} />
               </OrbitAvatar>
+              <OrbitName>{t(AGENTS.S2.nameKey)}</OrbitName>
             </OrbitNodeWrap>
             <OrbitNodeWrap style={orbitNodePos(150)} $dur={ORBIT_RINGS[1].dur} $reverse>
               <OrbitAvatar>
-                <SpriteAvatar src={AGENTS.S4.sprite} frames={AGENTS.S4.frames} frameW={AGENTS.S4.frameW} frameH={AGENTS.S4.frameH} size={36} />
+                <SpriteAvatar src={AGENTS.S4.sprite} frames={AGENTS.S4.frames} frameW={AGENTS.S4.frameW} frameH={AGENTS.S4.frameH} trim={AGENTS.S4.trim} size={fitSize(AGENTS.S4.trim, 44)} />
               </OrbitAvatar>
+              <OrbitName>{t(AGENTS.S4.nameKey)}</OrbitName>
             </OrbitNodeWrap>
             <OrbitNodeWrap style={orbitNodePos(270)} $dur={ORBIT_RINGS[1].dur} $reverse>
               <OrbitAvatar>
-                <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} size={36} />
+                <SpriteAvatar src={FARMER.sprite} frames={FARMER.frames} frameW={FARMER.frameW} frameH={FARMER.frameH} trim={FARMER.trim} size={fitSize(FARMER.trim, 44)} />
               </OrbitAvatar>
+              <OrbitName>{t(FARMER.nameKey)}</OrbitName>
             </OrbitNodeWrap>
           </OrbitPath>
 
@@ -428,6 +555,12 @@ const Login: React.FC = () => {
             <OrbitNodeWrap style={orbitNodePos(300)} $dur={ORBIT_RINGS[5].dur} $reverse><OrbitDot $color={theme.colors.accent} $s={4} /></OrbitNodeWrap>
           </OrbitPath>
       </OrbitalHero>
+
+      <TerminalMark aria-hidden="true">
+        <span className="prompt">$</span> clientradar scan --industry=restaurant --region=HK{'\n'}
+        <span className="ok">  ✓</span> 31 leads found <span className="dim">· 4 agents on duty</span>{'\n'}
+        <span className="ok">  ✓</span> 2 qualified <span className="dim">· 28 contacted · 0 bounced</span>
+      </TerminalMark>
     </Page>
   );
 };

@@ -1476,7 +1476,7 @@ const Leads: React.FC = () => {
     <Page>
         <PageCard>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <SpriteAvatar src={AGENTS.S1.sprite} frames={AGENTS.S1.frames} frameW={AGENTS.S1.frameW} frameH={AGENTS.S1.frameH} size={48} />
+          <SpriteAvatar src={AGENTS.S1.sprite} frames={AGENTS.S1.frames} frameW={AGENTS.S1.frameW} frameH={AGENTS.S1.frameH} trim={AGENTS.S1.trim} size={48} />
           <div><PageTitle>{t('leads.title')}</PageTitle><PageSub>{t('leads.subtitle')}</PageSub></div>
         </div>
 
