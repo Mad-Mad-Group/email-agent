@@ -1,0 +1,1226 @@
+<title>ClientRadar AI — 產品說明報告</title>
+
+<style>
+  /* ============ tokens ============ */
+  :root {
+    --paper:   #F5F7FA;
+    --surface: #FFFFFF;
+    --raised:  #FAFBFD;
+    --ink:     #151A23;
+    --ink-2:   #38414F;
+    --muted:   #5E6879;
+    --line:    #DDE3EC;
+    --line-2:  #EBEFF5;
+    --accent:  #20487D;
+    --accent-soft: #E7EDF7;
+    --ok:      #1F6E42;
+    --ok-bg:   #E4F1E9;
+    --warn:    #8F5605;
+    --warn-bg: #FAEEDC;
+    --bad:     #9E2A21;
+    --bad-bg:  #FAE7E5;
+
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Mono", Menlo, Consolas, monospace;
+    --sans: "PingFang TC", "Hiragino Sans TC", "Microsoft JhengHei", "Noto Sans TC",
+            -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+
+    --w-rail: 250px;
+    --gap: 1.5rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:   #0E1218;
+      --surface: #161C25;
+      --raised:  #1C232E;
+      --ink:     #E8ECF3;
+      --ink-2:   #C0C8D4;
+      --muted:   #8B94A3;
+      --line:    #2A323E;
+      --line-2:  #222933;
+      --accent:  #85AAE0;
+      --accent-soft: #1B2634;
+      --ok:      #6FC292;
+      --ok-bg:   #172A20;
+      --warn:    #DFA65A;
+      --warn-bg: #2C2418;
+      --bad:     #E08A82;
+      --bad-bg:  #2E1D1B;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:   #0E1218;
+    --surface: #161C25;
+    --raised:  #1C232E;
+    --ink:     #E8ECF3;
+    --ink-2:   #C0C8D4;
+    --muted:   #8B94A3;
+    --line:    #2A323E;
+    --line-2:  #222933;
+    --accent:  #85AAE0;
+    --accent-soft: #1B2634;
+    --ok:      #6FC292;
+    --ok-bg:   #172A20;
+    --warn:    #DFA65A;
+    --warn-bg: #2C2418;
+    --bad:     #E08A82;
+    --bad-bg:  #2E1D1B;
+  }
+
+  :root[data-theme="light"] {
+    --paper:   #F5F7FA;
+    --surface: #FFFFFF;
+    --raised:  #FAFBFD;
+    --ink:     #151A23;
+    --ink-2:   #38414F;
+    --muted:   #5E6879;
+    --line:    #DDE3EC;
+    --line-2:  #EBEFF5;
+    --accent:  #20487D;
+    --accent-soft: #E7EDF7;
+    --ok:      #1F6E42;
+    --ok-bg:   #E4F1E9;
+    --warn:    #8F5605;
+    --warn-bg: #FAEEDC;
+    --bad:     #9E2A21;
+    --bad-bg:  #FAE7E5;
+  }
+
+  /* ============ base ============ */
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.75;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 0 1.25rem 6rem;
+  }
+
+  /* ============ masthead ============ */
+  .masthead { padding: 4rem 0 2rem; }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 1rem;
+  }
+
+  .masthead h1 {
+    font-size: clamp(2rem, 5vw, 3.1rem);
+    line-height: 1.15;
+    letter-spacing: -.02em;
+    font-weight: 700;
+    margin: 0 0 .6rem;
+    text-wrap: balance;
+  }
+
+  .masthead .lede {
+    font-size: clamp(1rem, 2.2vw, 1.2rem);
+    color: var(--ink-2);
+    max-width: 46ch;
+    margin: 0 0 1.75rem;
+  }
+
+  /* the one flourish: a radar sweep rule */
+  .sweep {
+    height: 2px;
+    border: 0;
+    margin: 0 0 1.75rem;
+    background: linear-gradient(90deg, var(--accent) 0%, var(--accent) 12%, var(--line) 55%, transparent 100%);
+  }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .4rem 2rem;
+    font-size: .85rem;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+  .meta b { color: var(--ink-2); font-weight: 600; }
+
+  /* ============ layout ============ */
+  .cols {
+    display: grid;
+    grid-template-columns: var(--w-rail) minmax(0, 1fr);
+    gap: 3.5rem;
+    align-items: start;
+  }
+
+  @media (max-width: 900px) {
+    .cols { grid-template-columns: minmax(0, 1fr); gap: 2rem; }
+  }
+
+  /* ============ rail ============ */
+  .rail {
+    position: sticky;
+    top: 1.5rem;
+    font-size: .875rem;
+  }
+  @media (max-width: 900px) {
+    .rail {
+      position: static;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 1rem 1.15rem;
+    }
+  }
+
+  .rail-title {
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin: 0 0 .85rem;
+    padding-bottom: .6rem;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .rail ol { list-style: none; margin: 0; padding: 0; counter-reset: rail; }
+  .rail li { counter-increment: rail; }
+  .rail a {
+    display: grid;
+    grid-template-columns: 1.9rem 1fr;
+    gap: .2rem;
+    padding: .42rem 0;
+    color: var(--ink-2);
+    text-decoration: none;
+    border-bottom: 1px solid var(--line-2);
+  }
+  .rail li:last-child a { border-bottom: 0; }
+  .rail a::before {
+    content: counter(rail, decimal-leading-zero);
+    font-family: var(--mono);
+    font-size: .72rem;
+    color: var(--muted);
+    padding-top: .18em;
+  }
+  .rail a:hover { color: var(--accent); }
+  .rail a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  /* ============ sections ============ */
+  section { scroll-margin-top: 1.5rem; }
+
+  h2 {
+    font-size: clamp(1.5rem, 3.2vw, 2rem);
+    line-height: 1.25;
+    letter-spacing: -.015em;
+    font-weight: 700;
+    margin: 4rem 0 .4rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--ink);
+    text-wrap: balance;
+  }
+  section:first-of-type h2 { margin-top: 0; padding-top: 0; border-top: 0; }
+
+  h2 .num {
+    display: block;
+    font-family: var(--mono);
+    font-size: .72rem;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    font-weight: 500;
+    margin-bottom: .5rem;
+  }
+
+  h3 {
+    font-size: 1.22rem;
+    line-height: 1.35;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    margin: 2.75rem 0 .75rem;
+    text-wrap: balance;
+  }
+
+  h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin: 1.75rem 0 .6rem;
+    color: var(--ink);
+  }
+
+  p { margin: 0 0 1rem; max-width: 70ch; }
+  .prose-wide p { max-width: none; }
+
+  strong { font-weight: 700; }
+  code {
+    font-family: var(--mono);
+    font-size: .855em;
+    background: var(--accent-soft);
+    color: var(--ink);
+    padding: .12em .38em;
+    border-radius: 3px;
+    word-break: break-word;
+  }
+
+  a { color: var(--accent); text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  ul, ol { margin: 0 0 1rem; padding-left: 1.3rem; max-width: 70ch; }
+  li { margin-bottom: .35rem; }
+
+  /* ============ tables ============ */
+  .scroller {
+    overflow-x: auto;
+    margin: 0 0 1.5rem;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--surface);
+  }
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    min-width: 480px;
+    font-size: .9rem;
+    line-height: 1.6;
+  }
+  thead th {
+    text-align: left;
+    font-weight: 700;
+    font-size: .76rem;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--raised);
+    padding: .7rem .9rem;
+    border-bottom: 1px solid var(--line);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: .7rem .9rem;
+    border-bottom: 1px solid var(--line-2);
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: var(--raised); }
+  td.num, th.num { font-variant-numeric: tabular-nums; text-align: center; white-space: nowrap; }
+
+  /* ============ status chips ============ */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: .38em;
+    font-family: var(--mono);
+    font-size: .72rem;
+    font-weight: 600;
+    letter-spacing: .04em;
+    padding: .16em .55em .2em;
+    border-radius: 3px;
+    white-space: nowrap;
+  }
+  .chip::before {
+    content: "";
+    width: .5em; height: .5em;
+    border-radius: 50%;
+    background: currentColor;
+    flex: none;
+  }
+  .chip.ok   { color: var(--ok);   background: var(--ok-bg); }
+  .chip.warn { color: var(--warn); background: var(--warn-bg); }
+  .chip.bad  { color: var(--bad);  background: var(--bad-bg); }
+
+  /* ============ callouts ============ */
+  .note {
+    border-left: 3px solid var(--accent);
+    background: var(--surface);
+    padding: 1rem 1.15rem;
+    margin: 0 0 1.5rem;
+    border-radius: 0 5px 5px 0;
+    font-size: .935rem;
+  }
+  .note > :last-child { margin-bottom: 0; }
+  .note.warn { border-left-color: var(--warn); }
+  .note.bad  { border-left-color: var(--bad); }
+  .note-label {
+    display: block;
+    font-family: var(--mono);
+    font-size: .7rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: .45rem;
+  }
+
+  /* ============ severity groups (triage) ============ */
+  .tier {
+    border: 1px solid var(--line);
+    border-left: 5px solid var(--line);
+    border-radius: 0 6px 6px 0;
+    background: var(--surface);
+    padding: 1.15rem 1.3rem .5rem;
+    margin: 0 0 1.5rem;
+  }
+  .tier.t1 { border-left-color: var(--bad); }
+  .tier.t2 { border-left-color: var(--warn); }
+  .tier.t3 { border-left-color: var(--muted); }
+  .tier h4 { margin-top: 0; }
+  .tier .scroller { border: 0; border-radius: 0; background: transparent; }
+  .tier thead th { background: transparent; }
+
+  /* ============ mermaid ============ */
+  .diagram {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 1.5rem 1rem;
+    margin: 0 0 1.5rem;
+  }
+  .diagram pre.mermaid {
+    margin: 0;
+    background: transparent;
+    display: flex;
+    justify-content: center;
+    min-width: 320px;
+  }
+
+  /* ============ doc map ============ */
+  .docmap {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: .8rem;
+    margin: 0 0 1.5rem;
+    padding: 0;
+    list-style: none;
+  }
+  .docmap li {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: .9rem 1rem;
+    margin: 0;
+    font-size: .875rem;
+  }
+  .docmap .who {
+    display: block;
+    font-family: var(--mono);
+    font-size: .68rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: .35rem;
+  }
+  .docmap .what { font-weight: 700; display: block; margin-bottom: .2rem; }
+  .docmap.self li:first-child { border-color: var(--accent); background: var(--accent-soft); }
+
+  footer {
+    margin-top: 4.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+    font-size: .82rem;
+    color: var(--muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">產品說明報告 · MAD MAD Group</p>
+    <h1>ClientRadar AI</h1>
+    <p class="lede">一個「AI 版業務開發員」—— 由搵客名單到約到會議，中間所有重複工作自動化。</p>
+    <hr class="sweep">
+    <div class="meta">
+      <span><b>對象</b> PM · QA · 管理層</span>
+      <span><b>版本</b> v1.0</span>
+      <span><b>日期</b> 2026-08-03</span>
+      <span><b>依據</b> <code>dev</code> branch 實際 code</span>
+    </div>
+  </header>
+
+  <div class="cols">
+
+    <nav class="rail" aria-label="目錄">
+      <p class="rail-title">目錄</p>
+      <ol>
+        <li><a href="#p0">文件分工與標記</a></li>
+        <li><a href="#p1">用嚟做咩</a></li>
+        <li><a href="#p2">有咩功能</a></li>
+        <li><a href="#p3">App Flow</a></li>
+        <li><a href="#p4">QA 專區</a></li>
+        <li><a href="#p5">附錄</a></li>
+      </ol>
+    </nav>
+
+    <main>
+
+      <!-- ══════════ 0 ══════════ -->
+      <section id="p0">
+        <h2><span class="num">前言</span>文件分工與標記</h2>
+
+        <p>公司現有四份文件，各自對象唔同。本報告係唯一一份寫俾非技術人員睇嘅。</p>
+
+        <ul class="docmap self">
+          <li><span class="who">PM · QA · 管理層</span><span class="what">本報告</span>產品定位、功能清單、流程、測試須知</li>
+          <li><span class="who">開發者 · 技術 QA</span><span class="what">uat-functional-spec.md</span>功能對應 API 同 worker function</li>
+          <li><span class="who">開發者</span><span class="what">PROJECT.md</span>安裝、環境變數、啟動指令</li>
+          <li><span class="who">接手團隊</span><span class="what">HANDOVER.md</span>系統交接、資料庫欄位</li>
+        </ul>
+
+        <h4>全文狀態標記</h4>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>標記</th><th>意思</th></tr></thead>
+            <tbody>
+              <tr><td><span class="chip ok">可用</span></td><td>功能完整，可以正常測試</td></tr>
+              <tr><td><span class="chip warn">半成品</span></td><td>有 UI 但唔 work、或者做咗一半</td></tr>
+              <tr><td><span class="chip bad">未實作</span></td><td>買返嚟嘅 admin template 殘留，<strong>唔係本產品功能</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span class="note-label">命名</span>
+          <p>倉庫叫 <code>email-agent</code>，舊 code 有啲叫 <code>hermes</code>，但<strong>產品對外名叫 ClientRadar AI</strong>。三個名指同一樣嘢。</p>
+        </div>
+      </section>
+
+      <!-- ══════════ 1 ══════════ -->
+      <section id="p1">
+        <h2><span class="num">第一部分</span>呢個系統用嚟做咩</h2>
+
+        <h3>一句話</h3>
+        <p><strong>ClientRadar AI 係一個「AI 版業務開發員」。</strong> 你打一句「牙科診所、九龍」，佢就會自動去 Google Maps 搵晒所有牙科診所、逐間去對方網站抓聯絡 email、讀完對方網站之後寫一封度身訂造嘅開發信、俾你審核、發出去、然後每半個鐘去你嘅信箱睇有冇人覆、有人覆就自動分類同建立會議、五日冇人覆就自動寫跟進信。</p>
+
+        <p>英文行內叫呢個角色做 <strong>SDR（Sales Development Rep，業務開發代表）</strong>。呢套系統做嘅，就係將一個 SDR 由「搵名單」到「約到會議」之間嘅所有重複工作自動化。</p>
+
+        <h3>解決咩問題</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>傳統人手做法</th><th>ClientRadar AI</th></tr></thead>
+            <tbody>
+              <tr><td>開住 Google Maps 逐間 copy 公司名同電話，一日搵到幾十間</td><td>輸入關鍵字 + 地區，背景自動跑，一次過搵幾十至幾百間</td></tr>
+              <tr><td>逐間入網站搵 contact email，好多搵唔到</td><td>三層策略自動抓：直接爬網站 → 隱身瀏覽器搵 contact 頁 → 猜 <code>info@域名</code></td></tr>
+              <tr><td>逐間睇對方做咩生意，諗點樣切入</td><td>AI 讀完對方網站，自動出「合作角度 + 建議方案」</td></tr>
+              <tr><td>逐封手寫 cold email，寫得攰就開始 copy paste 變罐頭</td><td>AI 逐封獨立寫，仲會自我評分 0–100 分話你知封信好唔好</td></tr>
+              <tr><td>用 Excel 記住邊個發咗、邊個覆咗、邊個要跟進</td><td>系統自動記錄狀態，自動排跟進</td></tr>
+              <tr><td>逐封覆信自己讀、自己判斷、自己入 calendar</td><td>AI 自動分類回覆，約會議自動入行事曆</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>邊個用</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>角色</th><th>做咩</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Sales / BD</strong></td><td>日常主力使用者：搵客、審核 AI 寫嘅信、處理回覆</td></tr>
+              <tr><td><strong>Marketing Manager</strong></td><td>設定 AI 寫信嘅評分規則（語氣、長短、必須提到咩）、睇儀表板數據</td></tr>
+              <tr><td><strong>Admin / Super Admin</strong></td><td>管理團隊成員、系統設定、AI 並行數</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note warn">
+          <span class="note-label">重要</span>
+          <p>權限系統目前<strong>未真正生效</strong>。任何登入用戶實際上入得晒所有頁面，只有少數幾個小部件同少量後端操作真係擋到。詳見 <a href="#issues">已知問題 #13</a>。做權限相關測試前要知呢點。</p>
+        </div>
+
+        <h3>產品邊界 —— 唔做咩</h3>
+        <p>呢段對 PM 定 scope 好重要。</p>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>唔係</th><th>解釋</th></tr></thead>
+            <tbody>
+              <tr><td><strong>唔係群發 marketing 工具</strong></td><td>冇「一封信發俾 5000 人」呢個概念。每封信都係 AI 針對嗰間公司獨立寫嘅，一對一。</td></tr>
+              <tr><td><strong>唔係客服 inbox</strong></td><td>系統會掃你信箱、分類回覆、草擬回覆，但唔係一個俾你日常收發信嘅 email client。</td></tr>
+              <tr><td><strong>唔會自己偷偷發信</strong></td><td>每封信都要人手撳 approve 先發得出去。呢個係設計上刻意留低嘅唯一人手關卡。</td></tr>
+              <tr><td><strong>唔係 CRM 全套</strong></td><td>有 lead 管理同行事曆，但冇報價單、合約、發票、pipeline 金額呢類完整 CRM 功能。</td></tr>
+              <tr><td><strong>暫時淨係做得 email</strong></td><td>WhatsApp 有資料欄位同後端 API，但冇 UI，實際用唔到。</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>系統由咩組成</h3>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart TB
+    U["👤 使用者<br/>（瀏覽器）"]
+
+    subgraph OWN["公司自己嘅機"]
+        FE["🖥️ 前端網頁<br/>使用者見到嘅所有畫面"]
+        BE["🧠 後端<br/>派任務 · 存資料 · 即時推送"]
+        WK["🤖 AI Worker<br/>4 隊打工仔 S1–S4"]
+        DB[("🗄️ 資料庫<br/>MongoDB")]
+    end
+
+    HM["🕵️ Hermes AI Agent<br/>（另一部 Mac mini）<br/>LLM + 隱身瀏覽器"]
+    NET["🌐 Google Maps · LinkedIn<br/>對方公司網站"]
+    MAIL["📮 你自己嘅信箱<br/>SMTP 發信 · IMAP 收信"]
+
+    U &lt;--&gt; FE
+    FE &lt;--&gt; BE
+    BE &lt;--&gt; DB
+    WK --&gt;|"每 2 秒問：有冇工開？"| BE
+    WK &lt;--&gt; DB
+    WK --&gt;|"經 SSH"| HM
+    HM --&gt; NET
+    WK &lt;--&gt; MAIL
+    BE -.-&gt;|"即時推送<br/>畫面自動更新"| FE
+</pre>
+        </div>
+
+        <div class="scroller">
+          <table>
+            <thead><tr><th>組件</th><th>好似係</th><th>唔開會點</th></tr></thead>
+            <tbody>
+              <tr><td><strong>前端網頁</strong></td><td>舖面</td><td>用戶開唔到網站</td></tr>
+              <tr><td><strong>後端</strong></td><td>老闆 —— 出工作單、記帳、通知</td><td>前端登入唔到，成個系統死</td></tr>
+              <tr><td><strong>AI Worker</strong></td><td>4 隊打工仔（S1 搵客／S2 抓資料同分析／S3 寫信／S4 發信收信）</td><td><strong>畫面唔會報錯</strong>，但所有任務永遠停喺「等待中」唔郁</td></tr>
+              <tr><td><strong>Hermes AI Agent</strong></td><td>出面請返嚟嘅偵探 —— 佢先有 AI 腦同隱身瀏覽器</td><td>搵客（S1）直接失敗。<strong>呢部係另一部機，唔喺呢個 repo 入面</strong></td></tr>
+              <tr><td><strong>你自己嘅信箱</strong></td><td>你張咭片 —— 系統用你個人 SMTP 發信、IMAP 收信</td><td>未設定就搵唔到客（系統會擋住你）</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span class="note-label">QA 必記</span>
+          <p>四樣嘢都要開齊先測試得。最容易撞板嘅係 Worker 或 Hermes 冇開 —— 畫面唔會彈錯誤，只係「一直轉圈但永遠冇結果」。</p>
+        </div>
+      </section>
+
+      <!-- ══════════ 2 ══════════ -->
+      <section id="p2">
+        <h2><span class="num">第二部分</span>有咩功能</h2>
+
+        <h3>A. 帳號與個人設定</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>功能</th><th>使用者做到咩</th><th>喺邊</th><th>狀態</th></tr></thead>
+            <tbody>
+              <tr><td>自助註冊</td><td>姓名、email、密碼（最少 8 位）、<strong>公司名稱（必填）</strong>、公司描述</td><td><code>/register</code></td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>登入</td><td>Email + 密碼，可喺登入頁直接轉語言</td><td><code>/login</code></td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>保持登入</td><td>登入後 7 日內唔使再登入</td><td>—</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>改密碼</td><td>舊密碼 + 新密碼</td><td>個人資料頁</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td><strong>公司資料</strong></td><td>公司名、描述、網址 —— <strong>直接餵去 AI，係影響開發信品質嘅關鍵</strong></td><td><code>/cms-user-info</code></td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>忘記密碼</td><td>撳咗會收到重設 email</td><td><code>/login</code></td><td><span class="chip warn">半成品</span> email 條 link 冇對應頁面</td></tr>
+              <tr><td>團隊管理</td><td>Admin 睇成員、改角色</td><td><code>/cms-users</code></td><td><span class="chip warn">半成品</span> 冇「新增用戶」</td></tr>
+              <tr><td>Gmail / Outlook 一鍵連接</td><td>免填 SMTP，直接授權</td><td>—</td><td><span class="chip bad">未實作</span> 前端入口從未顯示</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>B. 搵客（核心入口）</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>功能</th><th>使用者做到咩</th><th>狀態</th></tr></thead>
+            <tbody>
+              <tr><td>關鍵字搜尋</td><td>輸入行業關鍵字（例：牙科診所）</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>地區選擇</td><td>香港 18 區下拉選單，或自由輸入</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>目標數量</td><td>指定想搵幾多間</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>來源選擇</td><td>Google Maps／舊網站模式／Google Search／LinkedIn</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>即時進度</td><td>進度環 + 逐階段 log，唔使 refresh</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>結果卡</td><td>搵到一間就即刻出一張卡</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>中途停止</td><td>撳一下停晒成條線</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>攔截提示</td><td>未設定 SMTP／Worker 冇開會即時彈提示</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>換機續看</td><td>開另一部電腦登入，仲睇到緊喺度跑嘅搜尋</td><td><span class="chip ok">可用</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>C. 客戶資料自動充實</h3>
+        <p>全部由 AI Worker 自動做，冇獨立畫面，結果顯示喺客戶詳情。</p>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>功能</th><th>做咩</th><th>狀態</th></tr></thead>
+            <tbody>
+              <tr><td>三層 email 抓取</td><td>① 直接爬網站 → ② 隱身瀏覽器搵 contact／about／頁尾 → ③ 猜 <code>info@域名</code></td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>其他聯絡資料</td><td>電話、WhatsApp 號碼、公司描述、服務項目</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>舊網站評分</td><td>評估對方網站幾舊 —— 舊 = 有得傾改版</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>AI 網站分析</td><td>出「合作方向 + 建議方案 + 理由 + 適合服務」</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>已驗證信箱池比對</td><td>之前成功聯絡過嘅公司直接攞返 email，慳返充實同分析兩步</td><td><span class="chip ok">可用</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>D. 客戶池管理</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>功能</th><th>使用者做到咩</th><th>狀態</th></tr></thead>
+            <tbody>
+              <tr><td>三個工作流分頁</td><td><strong>AI 處理中</strong>／<strong>等你審核</strong>／<strong>已發送追蹤中</strong>，每個有子篩選</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>搜尋與篩選</td><td>關鍵字、日期範圍、「只睇舊網站」、按技術分數排序、分頁</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>客戶詳情</td><td>可拖曳側面板：基本資料、客戶歷程時間軸、標籤、AI 分析、回覆內容</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>手動加客戶</td><td>自己輸入一間公司</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>重跑某階段</td><td>對單一客戶重新做充實／分析／寫信</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>刪除</td><td>單筆軟刪除／清空全部（Super Admin）</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>模擬無回覆</td><td>測試用：即刻觸發跟進流程，唔使等 5 日</td><td><span class="chip ok">可用</span> QA 好有用</td></tr>
+              <tr><td><strong>已驗證信箱池</strong></td><td>全公司共用嘅「確認可以聯絡到」信箱清單</td><td><span class="chip ok">可用</span> 注意係跨用戶共用</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>E. AI 寫信</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>功能</th><th>使用者做到咩</th><th>狀態</th></tr></thead>
+            <tbody>
+              <tr><td>自動撰寫開發信</td><td>AI 綜合「對方公司資料 + 你嘅公司資料 + 評分規則」寫信</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>信心分數</td><td>每封信 AI 自評 0–100 分，由 5 個維度加權計出</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>評分規則設定</td><td>語氣、字數範圍、必須提到嘅要點、自訂指示</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>跟進信</td><td>5 日冇回覆自動寫較短、較親切嘅跟進信（最多 2 次）</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>重新開發信</td><td>回覆「冇興趣」嘅換角度重寫一次（每客戶最多一次）</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>自動回覆草稿</td><td>對方覆咗，AI 自動草擬「Re:」回覆，一樣入佇列等審核</td><td><span class="chip ok">可用</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>F. 郵件佇列（審核關卡）</h3>
+        <div class="note bad">
+          <span class="note-label">入口問題</span>
+          <p><strong>呢一頁冇喺左邊側邊欄出現。</strong>要入去只可以喺頂部搜尋框打「Outbox / 寄件匣」，或直接打網址 <code>/cms-email-queue</code>。呢個係整個產品最重要嘅人手關卡，但最難搵到。</p>
+        </div>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>功能</th><th>使用者做到咩</th><th>狀態</th></tr></thead>
+            <tbody>
+              <tr><td>佇列列表</td><td>按狀態篩選（全部／待審核／已審核／已拒絕／已發送／失敗）、搜尋</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>預覽草稿</td><td>睇主旨 + 內文 + AI 信心分數 + AI 摘要</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>編輯</td><td>直接改主旨同內文</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>逐封審核</td><td>Approve／Reject（可填原因）／Send</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>手動觸發</td><td>「檢查回覆」「檢查跟進」兩個掣，唔使等排程</td><td><span class="chip ok">可用</span> QA 好有用</td></tr>
+              <tr><td>回覆分類顯示</td><td>睇到 AI 分類、摘要、語氣、建議下一步</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td><strong>批量審核／發送</strong></td><td>多選一次過 Approve / Reject / Send</td><td><span class="chip warn">半成品</span> <strong>必定 404</strong></td></tr>
+              <tr><td>郵件範本編輯器</td><td>圖文編輯、插入變數、即時預覽、分類</td><td><span class="chip warn">半成品</span> <strong>唔會儲存</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>G. 回覆追蹤</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>功能</th><th>做咩</th><th>狀態</th></tr></thead>
+            <tbody>
+              <tr><td>IMAP 掃信箱</td><td>每 30 分鐘用你自己嘅信箱憑證掃過去 14 日嘅信</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>配對寄件人</td><td>按寄件地址配對，配唔到就用主旨反查</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>AI 分類回覆</td><td>5 類：有興趣／冇興趣／約會議／自動回覆／有提問</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>自動草擬回覆</td><td>有興趣／約會議／有提問 → 自動寫回覆入佇列</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>自動建立會議</td><td>「約會議」→ 自動開行事曆事件（讀唔到時間就下星期一 10:00）</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>自動升級信箱</td><td>有真人回覆過嘅地址自動加入已驗證信箱池</td><td><span class="chip ok">可用</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>H. 自動跟進</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>功能</th><th>做咩</th><th>狀態</th></tr></thead>
+            <tbody>
+              <tr><td>無回覆跟進</td><td>每日 10:00 掃「已聯絡但超過 5 日冇覆」→ 自動排跟進信（每客戶最多 2 次）</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>冇興趣重試</td><td>覆「冇興趣」→ 自動排一次換角度重新開發</td><td><span class="chip ok">可用</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>I. 定期排程</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>功能</th><th>使用者做到咩</th><th>狀態</th></tr></thead>
+            <tbody>
+              <tr><td>建立排程</td><td>設定定期自動執行嘅工作</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>頻率設定</td><td>每日／平日／每週／每 N 小時／每 N 分鐘／進階 cron</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>開關與即時執行</td><td>啟用／停用切換、「立即執行」掣</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>執行狀態</td><td>上次／下次執行時間、結果</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>類型：搜尋 / 完整流程 / 檢查回覆 / 檢查跟進</td><td>—</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>類型：<strong>發送已審核</strong></td><td>—</td><td><span class="chip warn">半成品</span> <strong>必定失敗</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>J. 監控與數據</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>功能</th><th>使用者做到咩</th><th>喺邊</th><th>狀態</th></tr></thead>
+            <tbody>
+              <tr><td>AI 村莊</td><td>遊戲風介面：4 隻 AI agent 動物角色、3D 等距視圖、即時活動 log、統計、告示板</td><td><code>/cms-agents</code></td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>任務看板</td><td>待處理／處理中／已完成／失敗 四欄，撳入去睇時間軸同錯誤</td><td><code>/cms-tasks</code></td><td><span class="chip warn">半成品</span> 混住假資料 · 冇側邊欄入口</td></tr>
+              <tr><td>儀表板</td><td>Token 用量、今日行程、待辦卡、轉換漏斗、回覆分類圓餅圖</td><td><code>/dashboard</code></td><td><span class="chip warn">半成品</span> 空帳戶顯示模擬數據</td></tr>
+              <tr><td>Token 用量</td><td>睇 AI 用咗幾多 token、成本計算機</td><td><code>/cms-users</code></td><td><span class="chip ok">可用</span> Admin 限定 · 數字係估算</td></tr>
+              <tr><td>行事曆</td><td>月／週檢視、迷你月曆、今日行程</td><td><code>/app-calendar</code></td><td><span class="chip warn">半成品</span> <strong>只睇得，加唔到改唔到</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>K. 系統設定</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>功能</th><th>使用者做到咩</th><th>狀態</th></tr></thead>
+            <tbody>
+              <tr><td><strong>個人 SMTP / IMAP</strong></td><td>填自己信箱嘅發信同收信設定 —— <strong>唔填就用唔到搜尋</strong></td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>連線測試</td><td>撳一下測試 SMTP + IMAP 通唔通</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>AI Agent IP</td><td>設定 Hermes 機器位址</td><td><span class="chip ok">可用</span> Admin 限定</td></tr>
+              <tr><td>並行數</td><td>調整 S1–S4 同時處理幾多任務（1–10），約 30 秒生效，唔使重啟</td><td><span class="chip ok">可用</span> Admin 限定</td></tr>
+              <tr><td>郵件評分規則</td><td>語氣、字數範圍、必含要點、自訂指示</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>通知偏好</td><td>完成時發 email／瀏覽器通知</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>「跟進設定」分頁</td><td>—</td><td><span class="chip warn">半成品</span> 假 UI，Save 掣灰色</td></tr>
+              <tr><td>「自動發送規則」分頁</td><td>—</td><td><span class="chip warn">半成品</span> 假 UI，Save 掣灰色</td></tr>
+              <tr><td>WhatsApp 訊息範本</td><td>—</td><td><span class="chip bad">未實作</span> 有 API 冇 UI</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>L. 使用體驗</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>功能</th><th>說明</th><th>狀態</th></tr></thead>
+            <tbody>
+              <tr><td>三語介面</td><td>繁體中文（預設）／簡體中文／English</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>深／淺色主題</td><td>頂部切換，記住選擇</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>新手導覽</td><td>6 步聚光燈教學，可重開</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>即時更新</td><td>背景做完一步畫面即刻更新，唔使 refresh</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>通知中心</td><td>頂部鈴鐺、未讀數、標記已讀、清除</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>全域搜尋</td><td>搵頁面／客戶／郵件／任務</td><td><span class="chip ok">可用</span> <strong>入 Outbox 同 Tasks 嘅唯一途徑</strong></td></tr>
+              <tr><td>瀏覽器推播</td><td>Web Push 通知</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>響應式</td><td>手機 / 平板 / 桌面都用得</td><td><span class="chip ok">可用</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ══════════ 3 ══════════ -->
+      <section id="p3">
+        <h2><span class="num">第三部分</span>App Flow</h2>
+
+        <h3>Flow 1 — 新用戶第一次用</h3>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    A["註冊<br/>姓名 · Email · 密碼<br/>公司名（必填）"] --&gt; B["自動登入<br/>去到搜尋頁"]
+    B --&gt; C["6 步新手導覽"]
+    C --&gt; D{"有冇設定 SMTP？"}
+    D --&gt;|"冇"| E["🚫 彈出攔截視窗<br/>搜尋掣按唔到"]
+    E --&gt; F["去設定頁<br/>填 SMTP + IMAP"]
+    F --&gt; G["撳「測試連線」"]
+    G --&gt;|"失敗"| F
+    G --&gt;|"成功"| H["去個人資料頁<br/>填公司描述同網址"]
+    D --&gt;|"有"| H
+    H --&gt; I["✅ 可以開始搵客"]
+</pre>
+        </div>
+
+        <div class="scroller">
+          <table>
+            <thead><tr><th class="num">#</th><th>使用者見到</th><th>系統做緊</th><th>預期結果</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>註冊表格</td><td>密碼加密儲存，角色預設 staff，即時發登入憑證</td><td>註冊完直接入到系統</td></tr>
+              <tr><td class="num">2</td><td>搜尋頁 + 新手導覽</td><td>—</td><td>導覽可撳 <code>?</code> 重開</td></tr>
+              <tr><td class="num">3</td><td><strong>攔截視窗「SMTP 未設定」</strong></td><td>定期問後端「呢個用戶設定咗未」</td><td><strong>未設定就搜尋唔到、亦加唔到客戶</strong></td></tr>
+              <tr><td class="num">4</td><td>設定頁填發信／收信資料</td><td>儲存到個人帳戶</td><td>—</td></tr>
+              <tr><td class="num">5</td><td>撳「測試連線」</td><td>真係去連 SMTP 同 IMAP</td><td>成功／失敗即時回報</td></tr>
+              <tr><td class="num">6</td><td>個人資料頁填公司描述</td><td>存起</td><td><strong>會逐字餵去 AI —— 填得差，出嚟嘅信就差</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span class="note-label">QA 重點</span>
+          <p>呢個系統<strong>冇 onboarding wizard</strong>。唯一真正嘅關卡係 SMTP。公司描述雖然唔強制，但直接影響 AI 輸出品質，測試信件品質前一定要填。</p>
+        </div>
+
+        <h3>Flow 2 — 主線：由搜尋到發信</h3>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    U["👤 輸入關鍵字 + 地區 + 數量"] --&gt; C["建立一個 Campaign<br/>+ 派第一張工作單"]
+    C --&gt; W{"Worker 有冇開？"}
+    W --&gt;|"冇"| STUCK["⏸️ 工作單永遠停喺「等待中」<br/>畫面唔會報錯"]
+    W --&gt;|"有"| S1["S1 搵客<br/>隱身瀏覽器爬 Google Maps／LinkedIn<br/>⏱️ 5–15 分鐘"]
+
+    S1 --&gt; DEDUP["去重<br/>按公司名或網址對比現有客戶"]
+    DEDUP --&gt; FAN["逐個客戶分開處理"]
+
+    FAN --&gt; CHK{"呢間公司喺已驗證<br/>信箱池入面？"}
+    CHK --&gt;|"有"| S3
+    CHK --&gt;|"冇"| S2A["S2 充實<br/>三層抓 email、電話、公司描述"]
+    S2A --&gt; S2B["S2 分析<br/>AI 讀網站出合作角度"]
+    S2B --&gt; S3["S3 寫信<br/>AI 撰寫 + 自評 0–100 分"]
+
+    S3 --&gt; Q["📥 入郵件佇列<br/>狀態＝待審核"]
+    Q --&gt; S4["S4「發送」"]
+    S4 --&gt; FLAG{"真發信開關<br/>開咗未？"}
+    FLAG --&gt;|"冇（預設）"| HOLD["🛑 唔會真發<br/>只標記，留低等人審核"]
+    FLAG --&gt;|"開咗"| AUTO["真係經你個 SMTP 發出去"]
+
+    HOLD --&gt; HUMAN["👤 人手關卡<br/>去郵件佇列審核"]
+    HUMAN --&gt; APPR["Approve → Send"]
+    APPR --&gt; SENT["✅ 已發送<br/>客戶狀態→已聯絡"]
+    AUTO --&gt; SENT
+</pre>
+        </div>
+
+        <div class="scroller">
+          <table>
+            <thead><tr><th class="num">#</th><th>使用者見到</th><th>系統做緊</th><th>預期結果 / 耗時</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>撳「搜尋」，進度環開始轉</td><td>建立 Campaign，派一張 S1 工作單</td><td>即時</td></tr>
+              <tr><td class="num">2</td><td>進度 log：「搜尋中…」</td><td>S1 Worker 每 2 秒問後端攞工作單</td><td><strong>5–15 分鐘，唔好當佢 hang 咗</strong></td></tr>
+              <tr><td class="num">3</td><td>「搵到 N 間公司」</td><td>隱身瀏覽器爬完，按公司名／網址去重</td><td>重複嘅會 skip</td></tr>
+              <tr><td class="num">4</td><td>「充實中」</td><td>每間公司分開跑；命中已驗證信箱池就跳過充實同分析</td><td>命中就快好多</td></tr>
+              <tr><td class="num">5</td><td>「分析中」</td><td>AI 讀對方網站出合作角度</td><td>—</td></tr>
+              <tr><td class="num">6</td><td>「撰寫中」</td><td>AI 寫信 + 5 個維度評分</td><td>信入咗佇列，狀態＝待審核</td></tr>
+              <tr><td class="num">7</td><td>「發送中」→「完成」</td><td>預設<strong>唔會真發</strong>，只標記完成</td><td><strong>信仍然喺佇列等人審核</strong></td></tr>
+              <tr><td class="num">8</td><td>結果卡出齊</td><td>Campaign 標記完成</td><td>通知偏好開咗會收到總結 email</td></tr>
+              <tr><td class="num">9</td><td>👤 去郵件佇列（頂部搜尋「Outbox」）</td><td>—</td><td>睇草稿、改、Approve</td></tr>
+              <tr><td class="num">10</td><td>撳 Send</td><td>經你個人 SMTP 發出</td><td>郵件→已發送，客戶→已聯絡</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>分支同例外</h4>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>情況</th><th>系統點做</th></tr></thead>
+            <tbody>
+              <tr><td>某一步失敗</td><td>自動重試最多 2 次；仲係失敗就<strong>跳過呢個客戶</strong>，但 Campaign 照計數，唔會卡死</td></tr>
+              <tr><td>完全搵唔到結果</td><td>S1 刻意報「失敗」而唔係「完成 0 間」，等你知係出事而唔係真係冇客</td></tr>
+              <tr><td>中途撳停止</td><td>Campaign 同所有未做嘅工作單標記「已取消」；<strong>已取消嘅唔會被自動回收機制救返</strong></td></tr>
+              <tr><td>任務卡死超過 15 分鐘</td><td>每 10 分鐘一次嘅回收機制會掉返去「等待中」重新排隊</td></tr>
+              <tr><td>某個客戶漏咗某一步</td><td>每 10 分鐘一次嘅「補漏」機制會掃描並補派（每次最多 20 個）</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span class="note-label">PM 重點</span>
+          <p>整條線只有<strong>第 9–10 步</strong>係人手，其餘全自動。呢個係產品最大賣點，亦係最大風險 —— 一旦真發信開關開咗，AI 寫嘅信就會直接出街。</p>
+        </div>
+
+        <h3>Flow 3 — 回覆處理與自動跟進</h3>
+        <div class="diagram">
+<pre class="mermaid">
+flowchart TD
+    T["⏰ 每 30 分鐘自動觸發"] --&gt; IMAP["用你個人 IMAP<br/>掃過去 14 日嘅信"]
+    IMAP --&gt; M{"配對到係邊個客戶覆？"}
+    M --&gt;|"配唔到"| SKIP["略過"]
+    M --&gt;|"配到"| AI["🤖 AI 分析呢封覆信"]
+
+    AI --&gt; C1["有興趣"]
+    AI --&gt; C2["約會議"]
+    AI --&gt; C3["有提問"]
+    AI --&gt; C4["冇興趣"]
+    AI --&gt; C5["自動回覆<br/>（放假 / 自動回條）"]
+
+    C1 --&gt; D1["✍️ 自動草擬回覆<br/>入佇列等審核"]
+    C3 --&gt; D1
+    C2 --&gt; D2["✍️ 自動草擬回覆<br/>+ 📅 自動開會議"]
+    C4 --&gt; D3["🔄 排一次重新開發信<br/>（每客戶最多一次）"]
+    C5 --&gt; SKIP
+
+    C1 --&gt; V["📇 寄件人升級做<br/>已驗證信箱（全公司共用）"]
+    C2 --&gt; V
+    C3 --&gt; V
+    C4 --&gt; V
+
+    F["⏰ 每日 10:00"] --&gt; FC["掃：已聯絡 + 冇覆 + 超過 5 日<br/>+ 跟進次數 &lt; 2"]
+    FC --&gt; FD["✍️ 自動寫跟進信<br/>入佇列等審核"]
+</pre>
+        </div>
+
+        <div class="scroller">
+          <table>
+            <thead><tr><th>分類</th><th class="num">草擬回覆</th><th class="num">開會議</th><th class="num">重新開發</th><th class="num">升級信箱</th></tr></thead>
+            <tbody>
+              <tr><td>有興趣</td><td class="num">✓</td><td class="num">—</td><td class="num">—</td><td class="num">✓</td></tr>
+              <tr><td>約會議</td><td class="num">✓</td><td class="num">✓</td><td class="num">—</td><td class="num">✓</td></tr>
+              <tr><td>有提問</td><td class="num">✓</td><td class="num">—</td><td class="num">—</td><td class="num">✓</td></tr>
+              <tr><td>冇興趣</td><td class="num">—</td><td class="num">—</td><td class="num">✓ 限一次</td><td class="num">✓</td></tr>
+              <tr><td>自動回覆</td><td class="num">—</td><td class="num">—</td><td class="num">—</td><td class="num">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note">
+          <span class="note-label">重要</span>
+          <p>所有 AI 草擬嘅回覆同跟進信，<strong>一樣要入郵件佇列俾人審核</strong>，唔會自動出街。</p>
+          <p>唔想等 30 分鐘／5 日，可以用郵件佇列頁嘅「檢查回覆」「檢查跟進」兩個掣，或者客戶池嘅「模擬無回覆」。</p>
+        </div>
+
+        <h3>Flow 4 — 背景自動排程</h3>
+        <p>呢啲冇任何 UI，但會令資料自己變。QA 見到「我冇做過嘢但數字變咗」，多數就係呢度。</p>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>頻率</th><th>做咩</th><th>對 QA 嘅影響</th></tr></thead>
+            <tbody>
+              <tr><td><strong>每 10 分鐘</strong></td><td>回收卡死超過 15 分鐘嘅任務</td><td>一個「卡住」嘅任務可能自己郁返</td></tr>
+              <tr><td><strong>每 10 分鐘</strong></td><td>翻新等超過 30 分鐘嘅任務，避免餓死</td><td>—</td></tr>
+              <tr><td><strong>每 10 分鐘</strong></td><td><strong>補漏</strong>：掃客戶補做漏咗嘅階段（每次最多 20 個）</td><td><strong>你手動刪咗嘅中間狀態可能自己補返</strong></td></tr>
+              <tr><td><strong>每 30 分鐘</strong></td><td>排一次回覆檢查</td><td>信箱新信會自動被讀同分類</td></tr>
+              <tr><td><strong>每日 10:00</strong></td><td>排一次跟進檢查</td><td>跟進信會自己出現喺佇列</td></tr>
+              <tr><td><strong>每分鐘</strong></td><td>檢查用戶自訂排程有冇到期</td><td>排程最多遲一分鐘觸發</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="note warn">
+          <span class="note-label">注意</span>
+          <p>另有一個「示範模式」開關，會將回覆檢查由 30 分鐘縮到 <strong>10 秒</strong>。呢個開關<strong>冇 UI</strong>，只可由後端切換，重啟就 reset。做效能測試前要確認佢係關住。</p>
+        </div>
+      </section>
+
+      <!-- ══════════ 4 ══════════ -->
+      <section id="p4">
+        <h2><span class="num">第四部分</span>QA 專區</h2>
+
+        <h3>狀態機速查</h3>
+
+        <h4>任務狀態</h4>
+        <div class="diagram">
+<pre class="mermaid">
+stateDiagram-v2
+    [*] --&gt; 等待中
+    等待中 --&gt; 執行中 : Worker 認領
+    執行中 --&gt; 已完成 : 成功
+    執行中 --&gt; 失敗 : 出錯
+    執行中 --&gt; 等待中 : 卡死超過 15 分鐘被回收
+    等待中 --&gt; 已取消 : 使用者停止 Campaign
+    執行中 --&gt; 已取消 : 使用者停止 Campaign
+    已完成 --&gt; [*]
+    失敗 --&gt; [*]
+    已取消 --&gt; [*]
+</pre>
+        </div>
+        <p><strong>「失敗」同「已取消」意思唔同</strong>：失敗＝跳過呢個客戶但成條線繼續；已取消＝成條線停晒，而且<strong>唔會被自動回收機制救返</strong>。</p>
+
+        <h4>郵件狀態</h4>
+        <div class="diagram">
+<pre class="mermaid">
+stateDiagram-v2
+    [*] --&gt; 待審核
+    待審核 --&gt; 已審核 : Approve
+    待審核 --&gt; 已拒絕 : Reject
+    已審核 --&gt; 已發送 : Send
+    已審核 --&gt; 已拒絕 : Reject
+    已審核 --&gt; 待審核 : 打回頭
+    已拒絕 --&gt; 待審核 : 打回頭
+    失敗 --&gt; 已審核 : 重試
+    失敗 --&gt; 待審核 : 重試
+    已發送 --&gt; [*] : 終態
+</pre>
+        </div>
+        <ul>
+          <li>只有<strong>待審核</strong>同<strong>已審核</strong>兩個狀態改得內容</li>
+          <li><strong>已發送</strong>係終態，改唔到亦退唔到</li>
+          <li>系統有兩條發信路徑：使用者由畫面撳 Send（嚴格照上圖）、同 Worker 自動發（會由待審核直接寫成已發送，跳過規則）。<strong>兩條都要測。</strong></li>
+        </ul>
+
+        <h4>客戶狀態</h4>
+        <div class="diagram">
+<pre class="mermaid">
+stateDiagram-v2
+    [*] --&gt; 新客戶
+    新客戶 --&gt; 待處理 : 標記有興趣
+    新客戶 --&gt; 已聯絡 : 發信成功
+    待處理 --&gt; 已聯絡 : 發信成功
+    待處理 --&gt; 新客戶 : 退回
+    已聯絡 --&gt; [*] : 終態
+</pre>
+        </div>
+        <p>「新客戶」喺資料庫入面實際存做空值（沿用舊系統格式）。另有一個獨立嘅資料驗證狀態，同呢個唔同軸，唔好搞亂。</p>
+
+        <h4>其他列舉值</h4>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>類別</th><th>可能值</th></tr></thead>
+            <tbody>
+              <tr><td>Campaign</td><td>執行中 → 已完成 ／ 已取消</td></tr>
+              <tr><td>回覆分類</td><td>有興趣 · 冇興趣 · 約會議 · 自動回覆 · 有提問</td></tr>
+              <tr><td>信箱驗證方式</td><td>收到 2 封真人回覆 · 1 封回覆 + AI 判斷係真人 · 人手加入</td></tr>
+              <tr><td>行事曆事件類型</td><td>會議 · 跟進 · 死線 · 其他</td></tr>
+              <tr><td>排程執行結果</td><td>已派發 · 失敗 —— <strong>「已派發」只代表工作單出咗，唔代表跑得成功</strong></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>測試前必讀 6 件事</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th class="num">#</th><th>要知</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td><strong>真發信開關（<code>ENABLE_REAL_SEND</code>）預設係關。</strong>唔開就唔會真係發信出街 —— 呢個係安全掣，測試環境應該保持關住。</td></tr>
+              <tr><td class="num">2</td><td><strong><code>TEST_RECIPIENT_EMAIL</code> 會截住所有郵件</strong>，而且係<strong>喺 AI 寫草稿嗰一刻就將收件人寫死</strong>，唔係發信先轉。改咗呢個設定，之前寫好嘅草稿仍然指住舊地址。主旨會加 <code>[TEST→原本地址]</code> 前綴。</td></tr>
+              <tr><td class="num">3</td><td><strong>Worker 冇開 → 畫面唔會報錯</strong>，任務只係永遠停喺「等待中」。搜尋頁會提示「冇 Worker 上線」，但其他頁唔會。</td></tr>
+              <tr><td class="num">4</td><td><strong>Hermes（另一部機）冇開 → 搵客直接失敗。</strong>呢部機唔喺呢個 repo，要另外確認。</td></tr>
+              <tr><td class="num">5</td><td><strong>一次搜尋要 5–15 分鐘。</strong>唔好當佢 hang 咗就報 bug。</td></tr>
+              <tr><td class="num">6</td><td><strong>後端同 Worker 都必須只開一個 instance。</strong>開多過一個會令所有定時任務重複觸發、工作單被搶。</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 id="issues">已知問題清單</h3>
+        <p>按「會唔會令 QA 開錯 bug」排序。<strong>首四項最重要。</strong></p>
+
+        <div class="tier t1">
+          <h4>🔴 唔好開 bug（設計如此／template 殘留）</h4>
+          <div class="scroller">
+            <table>
+              <thead><tr><th class="num">#</th><th>情況</th><th>說明</th></tr></thead>
+              <tbody>
+                <tr><td class="num">1</td><td><strong>約 30 個「建設中」頁面</strong></td><td><code>/app-chat</code>、<code>/app-kanban</code>、<code>/portfolio</code>、<code>/bank-accounts</code>、<code>/transactions</code>、<code>/account-billing</code>、<code>/docs</code>… 全部係買返嚟嘅 LUNO admin template 殘留。<strong>冇喺側邊欄出現</strong>，但打網址入到。<strong>唔係本產品功能。</strong></td></tr>
+                <tr><td class="num">2</td><td><strong><code>/app-email</code> 同 <code>/app-contacts</code> 係純靜態 demo</strong></td><td>前者係完整 webmail 介面（收件匣、草稿、撰寫、排程寄出），後者係客戶表 —— 兩個都<strong>完全冇接後端</strong>，睇落好完整但撳落去咩都唔會發生。</td></tr>
+                <tr><td class="num">3</td><td><strong>側邊欄只有 8 個入口</strong></td><td>搵客 · 儀表板 · 客戶池 · 行事曆 · AI 代理 · 排程 · 團隊 · 設定。<strong>郵件佇列同任務看板冇入口</strong>（要用頂部全域搜尋），<strong>個人資料頁完全冇任何連結</strong>（只可打網址 <code>/cms-user-info</code>）。</td></tr>
+                <tr><td class="num">4</td><td><strong>已驗證信箱池係跨用戶共用</strong></td><td>設計如此。A 用戶確認到嘅聯絡人，B 用戶下次搜尋會直接攞嚟用。唔係資料外洩 bug。</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tier t2">
+          <h4>🟠 真係壞咗（值得開 ticket）</h4>
+          <div class="scroller">
+            <table>
+              <thead><tr><th class="num">#</th><th>問題</th><th>影響</th></tr></thead>
+              <tbody>
+                <tr><td class="num">5</td><td><strong>批量 Approve / Reject / Send 必定 404</strong></td><td>前端叫三個後端唔存在嘅位址。<strong>已核實。</strong>多選之後撳掣一定失敗。</td></tr>
+                <tr><td class="num">6</td><td><strong>排程類型「發送已審核」必定失敗</strong></td><td>後端派得出工作單，但 Worker 冇對應處理邏輯，會 fall through 去一般發信邏輯然後 crash。<strong>已核實。</strong></td></tr>
+                <tr><td class="num">7</td><td><strong>忘記密碼條 link 冇對應頁面</strong></td><td>Email 照發、後端接收 API 照 work，但前端冇對應頁，撳落去會彈返登入頁。整個重設密碼流程實際行唔通。</td></tr>
+                <tr><td class="num">8</td><td><strong>Gmail / Outlook 一鍵連接完全用唔到</strong></td><td>後端 OAuth、測試發信、解除連接全部寫好，但前端入口組件 import 咗之後從未顯示；後端本身亦有欄位名同守衛缺失問題。</td></tr>
+                <tr><td class="num">9</td><td><strong>任務看板混住假資料</strong></td><td>永遠會見到 5 條寫死嘅假任務混喺真資料入面。</td></tr>
+                <tr><td class="num">10</td><td><strong>郵件範本編輯器唔會儲存</strong></td><td>只存喺瀏覽器記憶體，refresh 即消失。</td></tr>
+                <tr><td class="num">11</td><td><strong>設定頁兩個分頁係假 UI</strong></td><td>「跟進設定」同「自動發送規則」的 Save 掣係強制 disabled，填咗都唔會存。</td></tr>
+                <tr><td class="num">12</td><td><strong>WhatsApp 範本冇 UI</strong></td><td>後端 API 做好晒，設定頁只有一行註解，冇任何介面。</td></tr>
+                <tr><td class="num">13</td><td><strong>權限系統未生效</strong></td><td>細粒度權限檢查永遠放行；管理員路由守衛雖然寫咗但冇任何路由用到。實際結果：<strong>任何登入用戶都入得晒所有頁面。</strong>只有幾個小部件（設定頁 AI Agent 分頁、Token 用量分頁、客戶來源欄）同少量後端操作（改系統設定、用戶管理、清空所有客戶）真係擋到。<strong>做權限測試冇意義，直到呢項修好。</strong></td></tr>
+                <tr><td class="num">14</td><td><strong>行事曆加唔到嘢</strong></td><td>後端有完整增刪改查，但 UI 只接咗「讀取」。另外 Worker 建立事件時冇寫入用戶識別，可能導致事件顯示唔到。</td></tr>
+                <tr><td class="num">15</td><td><strong>Dashboard 會顯示假數據</strong></td><td>帳戶零客戶零郵件時自動切換成模擬數據（有 banner 標示）。測試空帳戶時唔好當佢係真數字。</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="tier t3">
+          <h4>🟡 需要留意</h4>
+          <div class="scroller">
+            <table>
+              <thead><tr><th class="num">#</th><th>情況</th></tr></thead>
+              <tbody>
+                <tr><td class="num">16</td><td>Token 用量係<strong>字元數估算</strong>，唔係 AI 供應商實報數字，唔好當帳單用</td></tr>
+                <tr><td class="num">17</td><td>大部分日期喺資料庫存做文字而唔係日期格式（沿用舊 Python 系統），日期排序／篩選可能有 edge case</td></tr>
+                <tr><td class="num">18</td><td>後端同 Worker 兩邊都會寫同一個資料庫，Worker 有時繞過後端驗證直接寫</td></tr>
+                <tr><td class="num">19</td><td>幾個內部通訊位址冇加驗證（工作單認領、即時推送）—— 內網環境要留意</td></tr>
+                <tr><td class="num">20</td><td>「新增用戶」功能唔存在，團隊新成員只能自己去註冊頁註冊</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <h3>測試環境檢查清單</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th class="num">#</th><th>要開嘅嘢</th><th>點確認</th></tr></thead>
+            <tbody>
+              <tr><td class="num">1</td><td>後端（4000 埠）</td><td>開 <code>&lt;主機&gt;:4000/api/health</code>，應該回 ok</td></tr>
+              <tr><td class="num">2</td><td>前端（5173 埠）</td><td>瀏覽器開得到登入頁</td></tr>
+              <tr><td class="num">3</td><td>AI Worker</td><td>搜尋頁<strong>冇</strong>顯示「冇 Worker 上線」警告；或 <code>/cms-agents</code> 見到 4 隻 agent 有活動</td></tr>
+              <tr><td class="num">4</td><td>Hermes 機（另一部 Mac mini）</td><td>跑一次搜尋，S1 唔係即刻失敗</td></tr>
+              <tr><td class="num">5</td><td>個人 SMTP / IMAP</td><td>設定頁撳「測試連線」兩項都綠</td></tr>
+              <tr><td class="num">6</td><td>真發信開關</td><td>確認係關（除非刻意測真發信）</td></tr>
+              <tr><td class="num">7</td><td>示範模式</td><td>確認係關（否則回覆檢查每 10 秒跑一次）</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ══════════ 5 ══════════ -->
+      <section id="p5">
+        <h2><span class="num">附錄</span>名詞、畫面、語言</h2>
+
+        <h3>A. 名詞對照表</h3>
+        <p>PM 同 QA 溝通時對齊用詞。</p>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>英文</th><th>中文</th><th>白話解釋</th></tr></thead>
+            <tbody>
+              <tr><td>Lead</td><td>線索 / 客戶</td><td>一間潛在客戶公司</td></tr>
+              <tr><td>Campaign</td><td>活動</td><td>一次搜尋任務，包住佢搵到嘅所有客戶</td></tr>
+              <tr><td>Pipeline</td><td>流水線</td><td>由搵客到發信嘅完整自動流程</td></tr>
+              <tr><td>S1 / S2 / S3 / S4</td><td>四隊 AI 工人</td><td>S1 搵客 · S2 抓資料+分析 · S3 寫信 · S4 發信+收信</td></tr>
+              <tr><td>Enrich</td><td>充實</td><td>幫已搵到嘅公司補齊 email、電話等聯絡資料</td></tr>
+              <tr><td>Analyze</td><td>分析</td><td>AI 讀對方網站，出合作角度</td></tr>
+              <tr><td>Draft</td><td>草稿</td><td>AI 寫好但未發嘅信</td></tr>
+              <tr><td>Outreach</td><td>開發 / 外展</td><td>主動聯絡陌生潛在客戶</td></tr>
+              <tr><td>Follow-up</td><td>跟進</td><td>對方冇覆之後再發嘅信</td></tr>
+              <tr><td>Re-outreach</td><td>重新開發</td><td>對方話冇興趣之後換角度再試一次</td></tr>
+              <tr><td>Verified Email Pool</td><td>已驗證信箱池</td><td>全公司共用嘅「確認聯絡到」信箱清單</td></tr>
+              <tr><td>Confidence Score</td><td>信心分數</td><td>AI 對自己寫嗰封信嘅自評（0–100）</td></tr>
+              <tr><td>SMTP / IMAP</td><td>發信 / 收信協定</td><td>SMTP＝寄信出去，IMAP＝讀返信箱</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>B. 畫面總覽</h3>
+        <h4>真實功能頁面</h4>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>畫面</th><th>網址</th><th>入口</th><th>狀態</th></tr></thead>
+            <tbody>
+              <tr><td>登入</td><td><code>/login</code></td><td>—</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>註冊</td><td><code>/register</code></td><td>登入頁</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td><strong>搵客</strong></td><td><code>/cms-search</code></td><td>側邊欄 · <strong>預設首頁</strong></td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>我的儀表板</td><td><code>/dashboard</code></td><td>側邊欄</td><td><span class="chip warn">半成品</span></td></tr>
+              <tr><td>客戶池</td><td><code>/client-pool</code></td><td>側邊欄</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>已驗證信箱</td><td><code>/client-pool?view=verified</code></td><td>客戶池分頁</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>行事曆</td><td><code>/app-calendar</code></td><td>側邊欄</td><td><span class="chip warn">半成品</span> 唯讀</td></tr>
+              <tr><td>AI 代理</td><td><code>/cms-agents</code></td><td>側邊欄</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>排程</td><td><code>/cms-schedules</code></td><td>側邊欄</td><td><span class="chip warn">半成品</span> 一種類型必失敗</td></tr>
+              <tr><td>團隊管理</td><td><code>/cms-users</code></td><td>側邊欄</td><td><span class="chip warn">半成品</span> 加唔到新用戶</td></tr>
+              <tr><td>系統設定</td><td><code>/cms-settings</code></td><td>側邊欄</td><td><span class="chip warn">半成品</span> 兩分頁係假 UI</td></tr>
+              <tr><td><strong>郵件佇列</strong></td><td><code>/cms-email-queue</code></td><td><strong>只有頂部全域搜尋</strong></td><td><span class="chip warn">半成品</span> 批量掣壞</td></tr>
+              <tr><td>任務看板</td><td><code>/cms-tasks</code></td><td><strong>只有頂部全域搜尋</strong></td><td><span class="chip warn">半成品</span> 混住假資料</td></tr>
+              <tr><td>個人資料</td><td><code>/cms-user-info</code></td><td><strong>冇任何連結，要打網址</strong></td><td><span class="chip ok">可用</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4>非功能頁面</h4>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>類別</th><th>例子</th><th>狀態</th></tr></thead>
+            <tbody>
+              <tr><td>Template 殘留（約 30 個）</td><td><code>/app-chat</code> <code>/app-kanban</code> <code>/app-todo</code> <code>/portfolio</code> <code>/transactions</code> <code>/bank-accounts</code> <code>/account-billing</code> <code>/docs</code> …</td><td><span class="chip bad">未實作</span> 顯示「建設中」</td></tr>
+              <tr><td>靜態 demo 介面</td><td><code>/app-email</code>（webmail）· <code>/app-contacts</code>（客戶表）</td><td><span class="chip bad">未實作</span> 睇落完整但冇接後端</td></tr>
+              <tr><td>舊版轉址</td><td><code>/cms-leads</code> → <code>/client-pool</code></td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>找唔到嘅網址</td><td>任何其他</td><td>自動轉去 <code>/cms-search</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>C. 支援語言</h3>
+        <div class="scroller">
+          <table>
+            <thead><tr><th>語言</th><th>狀態</th></tr></thead>
+            <tbody>
+              <tr><td>繁體中文</td><td><span class="chip ok">可用</span> <strong>預設</strong></td></tr>
+              <tr><td>简体中文</td><td><span class="chip ok">可用</span></td></tr>
+              <tr><td>English</td><td><span class="chip ok">可用</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>介面文字全部三語齊備。地區選擇器內建香港 18 區，主要市場係香港。</p>
+      </section>
+
+      <footer>
+        <p>本報告由 code 直接核實撰寫 · 2026-08-03 · MAD MAD Group<br>
+        功能狀態會隨開發變化，重大改動後請更新。</p>
+      </footer>
+
+    </main>
+  </div>
+</div>
